@@ -1,0 +1,105 @@
+"use client";
+
+import { useEffect, useState, useCallback } from "react";
+import { CheckCircle2, XCircle, AlertCircle, Info, X } from "lucide-react";
+import { create } from "zustand";
+
+type ToastType = "success" | "error" | "warning" | "info";
+
+interface ToastItem {
+  id: string;
+  message: string;
+  type: ToastType;
+  exiting?: boolean;
+}
+
+interface ToastStore {
+  toasts: ToastItem[];
+  add: (message: string, type?: ToastType) => void;
+  remove: (id: string) => void;
+  markExiting: (id: string) => void;
+}
+
+export const useToastStore = create<ToastStore>((set) => ({
+  toasts: [],
+  add: (message, type = "success") => {
+    const id = Math.random().toString(36).slice(2);
+    set((s) => ({ toasts: [...s.toasts.slice(-4), { id, message, type }] }));
+  },
+  remove: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
+  markExiting: (id) =>
+    set((s) => ({
+      toasts: s.toasts.map((t) => (t.id === id ? { ...t, exiting: true } : t)),
+    })),
+}));
+
+export function toast(message: string, type: ToastType = "success") {
+  useToastStore.getState().add(message, type);
+}
+
+const ICONS: Record<ToastType, React.ComponentType<{ className?: string }>> = {
+  success: CheckCircle2,
+  error: XCircle,
+  warning: AlertCircle,
+  info: Info,
+};
+
+const COLORS: Record<ToastType, string> = {
+  success: "text-emerald-600",
+  error: "text-red-500",
+  warning: "text-amber-500",
+  info: "text-blue-500",
+};
+
+function ToastItem({ item }: { item: ToastItem }) {
+  const { remove, markExiting } = useToastStore();
+  const Icon = ICONS[item.type];
+
+  useEffect(() => {
+    const exitTimer = setTimeout(() => markExiting(item.id), 3000);
+    const removeTimer = setTimeout(() => remove(item.id), 3300);
+    return () => {
+      clearTimeout(exitTimer);
+      clearTimeout(removeTimer);
+    };
+  }, [item.id, remove, markExiting]);
+
+  return (
+    <div
+      className={`flex items-center gap-3 px-4 py-3 bg-card-bg border border-border-warm rounded-xl shadow-lg shadow-black/5 max-w-sm w-full ${
+        item.exiting ? "toast-exit" : "toast-enter"
+      }`}
+      style={{
+        animation: item.exiting
+          ? "toast-out 300ms ease-in forwards"
+          : "toast-in 300ms ease-out forwards",
+      }}
+    >
+      <Icon className={`w-5 h-5 flex-shrink-0 ${COLORS[item.type]}`} />
+      <p className="text-sm text-foreground flex-1 font-medium">{item.message}</p>
+      <button
+        onClick={() => {
+          markExiting(item.id);
+          setTimeout(() => remove(item.id), 300);
+        }}
+        className="p-0.5 rounded hover:bg-surface text-text-secondary cursor-pointer flex-shrink-0"
+      >
+        <X className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
+}
+
+export function ToastContainer() {
+  const toasts = useToastStore((s) => s.toasts);
+
+  if (toasts.length === 0) return null;
+
+  return (
+    <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-2 items-end">
+      {toasts.map((item) => (
+        <ToastItem key={item.id} item={item} />
+      ))}
+    </div>
+  );
+}
