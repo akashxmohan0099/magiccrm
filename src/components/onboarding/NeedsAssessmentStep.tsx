@@ -51,9 +51,11 @@ export function NeedsAssessmentStep() {
     prevStep,
     setFeatureSelections,
     getIndustryConfig,
+    getPersonaConfig,
   } = useOnboardingStore();
 
   const config = getIndustryConfig();
+  const persona = getPersonaConfig();
 
   const [quizIndex, setQuizIndex] = useState(-1);
   const [direction, setDirection] = useState(1);
@@ -62,6 +64,10 @@ export function NeedsAssessmentStep() {
   const answeredYes = Object.values(needs).filter(Boolean).length;
 
   const getQuestionLabel = (key: keyof NeedsAssessment): string => {
+    // Persona overrides > Industry overrides > Default
+    if (persona?.questionOverrides?.[key]) {
+      return persona.questionOverrides[key].label;
+    }
     if (config?.questionOverrides?.[key]) {
       return config.questionOverrides[key].label;
     }
@@ -69,6 +75,9 @@ export function NeedsAssessmentStep() {
   };
 
   const getQuestionSubtitle = (key: keyof NeedsAssessment): string => {
+    if (persona?.questionOverrides?.[key]) {
+      return persona.questionOverrides[key].subtitle;
+    }
     if (config?.questionOverrides?.[key]) {
       return config.questionOverrides[key].subtitle;
     }
@@ -143,7 +152,11 @@ export function NeedsAssessmentStep() {
 
         <div className="text-center mb-8">
           <h2 className="text-[24px] font-bold text-foreground tracking-tight mb-3">
-            {config ? `What does your ${config.label.toLowerCase()} business need?` : "What does your business need?"}
+            {persona
+              ? `What does your ${persona.label.toLowerCase()} business need?`
+              : config
+              ? `What does your ${config.label.toLowerCase()} business need?`
+              : "What does your business need?"}
           </h2>
           <p className="text-text-secondary text-[15px]">
             {hasSmartDefaults

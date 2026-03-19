@@ -8,11 +8,13 @@ import {
   FEATURE_CATEGORIES,
   INDUSTRY_CONFIGS,
   IndustryConfig,
+  PersonaConfig,
 } from "@/types/onboarding";
 
 interface OnboardingStore {
   step: number;
   selectedIndustry: string;
+  selectedPersona: string;
   businessContext: BusinessContext;
   needs: NeedsAssessment;
   teamSize: TeamSize;
@@ -24,7 +26,9 @@ interface OnboardingStore {
   nextStep: () => void;
   prevStep: () => void;
   setSelectedIndustry: (id: string) => void;
+  setSelectedPersona: (id: string) => void;
   getIndustryConfig: () => IndustryConfig | undefined;
+  getPersonaConfig: () => PersonaConfig | undefined;
   setBusinessContext: (ctx: Partial<BusinessContext>) => void;
   setNeed: (key: keyof NeedsAssessment, value: boolean) => void;
   toggleNeed: (key: keyof NeedsAssessment) => void;
@@ -43,6 +47,7 @@ export const useOnboardingStore = create<OnboardingStore>()(
     (set, get) => ({
       step: 0,
       selectedIndustry: "",
+      selectedPersona: "",
       businessContext: {
         businessName: "",
         businessDescription: "",
@@ -81,9 +86,18 @@ export const useOnboardingStore = create<OnboardingStore>()(
         });
       },
 
+      setSelectedPersona: (id) => set({ selectedPersona: id }),
+
       getIndustryConfig: () => {
         const { selectedIndustry } = get();
         return INDUSTRY_CONFIGS.find((c) => c.id === selectedIndustry);
+      },
+
+      getPersonaConfig: () => {
+        const { selectedIndustry, selectedPersona } = get();
+        const industry = INDUSTRY_CONFIGS.find((c) => c.id === selectedIndustry);
+        if (!industry?.personas || !selectedPersona) return undefined;
+        return industry.personas.find((p) => p.id === selectedPersona);
       },
 
       setBusinessContext: (ctx) =>
@@ -102,9 +116,16 @@ export const useOnboardingStore = create<OnboardingStore>()(
       applySmartDefaults: () => {
         const config = get().getIndustryConfig();
         if (!config || !config.smartDefaults) return;
+        const persona = get().getPersonaConfig();
+        // Merge: industry defaults + persona overrides
+        const mergedNeeds = {
+          ...config.smartDefaults,
+          ...(persona?.smartDefaultOverrides || {}),
+        };
+        const teamSize = persona?.suggestedTeamSize || config.suggestedTeamSize || get().teamSize;
         set((s) => ({
-          needs: { ...s.needs, ...config.smartDefaults },
-          teamSize: config.suggestedTeamSize || s.teamSize,
+          needs: { ...s.needs, ...mergedNeeds },
+          teamSize,
         }));
       },
 
@@ -143,11 +164,17 @@ export const useOnboardingStore = create<OnboardingStore>()(
     }),
     {
       name: "magic-crm-onboarding",
-      version: 2,
+      version: 3,
       migrate: (persisted: any, version: number) => {
-        if (version < 2) {
-          // Reset step to 0 on schema change to avoid broken state
-          return { ...persisted, step: 0, selectedIndustry: persisted.selectedIndustry || "", isBuilding: false, buildComplete: false };
+        if (version < 3) {
+          return {
+            ...persisted,
+            step: 0,
+            selectedIndustry: persisted.selectedIndustry || "",
+            selectedPersona: persisted.selectedPersona || "",
+            isBuilding: false,
+            buildComplete: false,
+          };
         }
         return persisted;
       },

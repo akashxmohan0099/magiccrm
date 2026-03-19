@@ -37,6 +37,20 @@ export interface IndustryConfig {
   descriptionPlaceholder: string;
   // Example business names
   namePlaceholder: string;
+  // Role-specific personas within this industry
+  personas?: PersonaConfig[];
+}
+
+export interface PersonaConfig {
+  id: string;
+  label: string;
+  description: string;
+  // Only specify differences from industry defaults
+  smartDefaultOverrides?: Partial<Record<keyof NeedsAssessment, boolean>>;
+  questionOverrides?: Partial<Record<keyof NeedsAssessment, { label: string; subtitle: string }>>;
+  suggestedTeamSize?: TeamSize;
+  descriptionPlaceholder?: string;
+  namePlaceholder?: string;
 }
 
 export const INDUSTRY_CONFIGS: IndustryConfig[] = [
@@ -67,6 +81,47 @@ export const INDUSTRY_CONFIGS: IndustryConfig[] = [
     descriptionPlaceholder: "e.g. Mobile lash technician in Brisbane",
     namePlaceholder: "e.g. Glow Studio",
     suggestedTeamSize: "Just me",
+    personas: [
+      {
+        id: "hair-salon",
+        label: "Hair Salon / Hairstylist",
+        description: "Solo stylist or multi-chair salon",
+        suggestedTeamSize: "2-5",
+        descriptionPlaceholder: "e.g. Boutique hair salon in Surry Hills",
+      },
+      {
+        id: "barber",
+        label: "Barber / Barbershop",
+        description: "Classic cuts and grooming",
+        suggestedTeamSize: "2-5",
+        namePlaceholder: "e.g. The Sharp Edge",
+      },
+      {
+        id: "nail-tech",
+        label: "Nail Tech / Nail Salon",
+        description: "Manicures, acrylics, nail art",
+        namePlaceholder: "e.g. Polished by Sarah",
+      },
+      {
+        id: "lash-brow-tech",
+        label: "Lash & Brow Tech",
+        description: "Extensions, lifts, microblading",
+        namePlaceholder: "e.g. Lash Lab Co",
+      },
+      {
+        id: "makeup-artist",
+        label: "Makeup Artist",
+        description: "Bridal, events, editorial",
+        smartDefaultOverrides: { acceptBookings: false },
+      },
+      {
+        id: "spa-massage",
+        label: "Spa / Massage",
+        description: "Day spas, remedial, relaxation",
+        suggestedTeamSize: "2-5",
+        namePlaceholder: "e.g. Serenity Day Spa",
+      },
+    ],
   },
   {
     id: "trades-construction",
@@ -95,6 +150,50 @@ export const INDUSTRY_CONFIGS: IndustryConfig[] = [
     descriptionPlaceholder: "e.g. Residential electrical contractor in Gold Coast",
     namePlaceholder: "e.g. Spark Right Electrical",
     suggestedTeamSize: "2-5",
+    personas: [
+      {
+        id: "plumber",
+        label: "Plumber",
+        description: "Residential and commercial plumbing",
+        namePlaceholder: "e.g. Dave's Plumbing",
+      },
+      {
+        id: "electrician",
+        label: "Electrician",
+        description: "Wiring, switchboards, installations",
+        namePlaceholder: "e.g. Spark Right Electrical",
+      },
+      {
+        id: "builder-carpenter",
+        label: "Builder / Carpenter",
+        description: "Renovations, extensions, new builds",
+        suggestedTeamSize: "6-15",
+        namePlaceholder: "e.g. Summit Constructions",
+      },
+      {
+        id: "painter",
+        label: "Painter",
+        description: "Interior and exterior painting",
+        namePlaceholder: "e.g. Fresh Coat Painters",
+      },
+      {
+        id: "hvac-technician",
+        label: "HVAC Technician",
+        description: "Heating, cooling, air conditioning",
+      },
+      {
+        id: "landscaper",
+        label: "Landscaper",
+        description: "Gardens, hardscaping, maintenance",
+        namePlaceholder: "e.g. Green Edge Landscaping",
+      },
+      {
+        id: "cleaner",
+        label: "Cleaner",
+        description: "Residential, commercial, end-of-lease",
+        smartDefaultOverrides: { runMarketing: true },
+      },
+    ],
   },
   {
     id: "professional-services",
@@ -123,6 +222,43 @@ export const INDUSTRY_CONFIGS: IndustryConfig[] = [
     descriptionPlaceholder: "e.g. Business coaching for SMEs",
     namePlaceholder: "e.g. Apex Advisory",
     suggestedTeamSize: "2-5",
+    personas: [
+      {
+        id: "accountant-bookkeeper",
+        label: "Accountant / Bookkeeper",
+        description: "Tax, BAS, payroll, advisory",
+        namePlaceholder: "e.g. Clear Books Accounting",
+        smartDefaultOverrides: { acceptBookings: false },
+      },
+      {
+        id: "lawyer-solicitor",
+        label: "Lawyer / Solicitor",
+        description: "Legal advice, conveyancing, family law",
+      },
+      {
+        id: "consultant",
+        label: "Consultant",
+        description: "Business, management, IT strategy",
+        namePlaceholder: "e.g. Apex Advisory",
+      },
+      {
+        id: "real-estate-agent",
+        label: "Real Estate Agent",
+        description: "Property sales and management",
+        smartDefaultOverrides: { runMarketing: true },
+      },
+      {
+        id: "financial-advisor",
+        label: "Financial Advisor",
+        description: "Wealth, super, insurance planning",
+      },
+      {
+        id: "marketing-agency",
+        label: "Marketing Agency",
+        description: "Digital marketing, SEO, social",
+        smartDefaultOverrides: { runMarketing: true },
+      },
+    ],
   },
   {
     id: "health-fitness",
@@ -150,6 +286,37 @@ export const INDUSTRY_CONFIGS: IndustryConfig[] = [
     descriptionPlaceholder: "e.g. Personal training studio in Bondi",
     namePlaceholder: "e.g. Peak Performance PT",
     suggestedTeamSize: "Just me",
+    personas: [
+      {
+        id: "personal-trainer",
+        label: "Personal Trainer",
+        description: "1-on-1 and small group training",
+      },
+      {
+        id: "gym-studio-owner",
+        label: "Gym / Studio Owner",
+        description: "Boutique gym or fitness studio",
+        suggestedTeamSize: "6-15",
+      },
+      {
+        id: "yoga-pilates-studio",
+        label: "Yoga / Pilates Studio",
+        description: "Class-based movement studio",
+        suggestedTeamSize: "2-5",
+      },
+      {
+        id: "physio-chiro",
+        label: "Physio / Chiro",
+        description: "Allied health practitioner",
+        suggestedTeamSize: "2-5",
+        smartDefaultOverrides: { manageDocuments: true },
+      },
+      {
+        id: "nutritionist",
+        label: "Nutritionist",
+        description: "Meal planning, health coaching",
+      },
+    ],
   },
   {
     id: "creative-services",
@@ -178,6 +345,34 @@ export const INDUSTRY_CONFIGS: IndustryConfig[] = [
     descriptionPlaceholder: "e.g. Wedding photography and videography",
     namePlaceholder: "e.g. Luminous Studios",
     suggestedTeamSize: "Just me",
+    personas: [
+      {
+        id: "photographer",
+        label: "Photographer",
+        description: "Wedding, portrait, commercial",
+        namePlaceholder: "e.g. Luminous Studios",
+      },
+      {
+        id: "graphic-designer",
+        label: "Graphic Designer",
+        description: "Branding, print, digital design",
+      },
+      {
+        id: "web-designer-developer",
+        label: "Web Designer / Developer",
+        description: "Websites, apps, digital products",
+      },
+      {
+        id: "videographer",
+        label: "Videographer",
+        description: "Events, corporate, content",
+      },
+      {
+        id: "interior-designer",
+        label: "Interior Designer",
+        description: "Residential and commercial interiors",
+      },
+    ],
   },
   {
     id: "hospitality-events",
@@ -205,6 +400,35 @@ export const INDUSTRY_CONFIGS: IndustryConfig[] = [
     descriptionPlaceholder: "e.g. Boutique event planning and catering",
     namePlaceholder: "e.g. Sage & Thyme Events",
     suggestedTeamSize: "2-5",
+    personas: [
+      {
+        id: "wedding-planner",
+        label: "Wedding Planner",
+        description: "Full-service wedding planning",
+        namePlaceholder: "e.g. Sage & Thyme Weddings",
+      },
+      {
+        id: "event-planner",
+        label: "Event Planner",
+        description: "Corporate events, parties, conferences",
+      },
+      {
+        id: "caterer",
+        label: "Caterer",
+        description: "Full-service catering, private chef",
+      },
+      {
+        id: "venue-manager",
+        label: "Venue Manager",
+        description: "Function rooms, event spaces",
+        suggestedTeamSize: "6-15",
+      },
+      {
+        id: "florist",
+        label: "Florist",
+        description: "Wedding flowers, event floristry",
+      },
+    ],
   },
   {
     id: "education-coaching",
@@ -233,6 +457,36 @@ export const INDUSTRY_CONFIGS: IndustryConfig[] = [
     descriptionPlaceholder: "e.g. Private music lessons for kids and adults",
     namePlaceholder: "e.g. Melody Music Academy",
     suggestedTeamSize: "Just me",
+    personas: [
+      {
+        id: "tutor",
+        label: "Tutor",
+        description: "Academic tutoring, test prep",
+        namePlaceholder: "e.g. BrightPath Tutoring",
+      },
+      {
+        id: "life-business-coach",
+        label: "Life / Business Coach",
+        description: "Personal development, business growth",
+      },
+      {
+        id: "music-teacher",
+        label: "Music Teacher",
+        description: "Piano, guitar, voice lessons",
+        namePlaceholder: "e.g. Melody Music Academy",
+      },
+      {
+        id: "driving-instructor",
+        label: "Driving Instructor",
+        description: "Learner driver lessons",
+      },
+      {
+        id: "online-course-creator",
+        label: "Online Course Creator",
+        description: "Digital courses, memberships",
+        smartDefaultOverrides: { runMarketing: true, acceptBookings: false },
+      },
+    ],
   },
   {
     id: "retail-ecommerce",
@@ -260,6 +514,30 @@ export const INDUSTRY_CONFIGS: IndustryConfig[] = [
     descriptionPlaceholder: "e.g. Online boutique selling handmade jewelry",
     namePlaceholder: "e.g. Luna & Stone",
     suggestedTeamSize: "Just me",
+    personas: [
+      {
+        id: "online-store",
+        label: "Online Store",
+        description: "Shopify, WooCommerce, standalone",
+      },
+      {
+        id: "boutique-shop",
+        label: "Boutique Shop",
+        description: "Fashion, gifts, specialty retail",
+        suggestedTeamSize: "2-5",
+      },
+      {
+        id: "handmade-artisan",
+        label: "Handmade / Artisan",
+        description: "Etsy, markets, handcrafted goods",
+      },
+      {
+        id: "food-beverage",
+        label: "Food & Beverage",
+        description: "Small-batch food, coffee, bakery",
+        suggestedTeamSize: "2-5",
+      },
+    ],
   },
   {
     id: "other",
