@@ -142,7 +142,7 @@ export function KnowledgeBase() {
           {filtered.map((article) => (
             <div
               key={article.id}
-              className="bg-card-bg rounded-xl border border-border-warm p-4 flex items-center justify-between hover:shadow-sm transition-shadow"
+              className="bg-card-bg rounded-xl border border-border-light p-4 flex items-center justify-between hover:shadow-sm transition-shadow"
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
@@ -199,7 +199,7 @@ export function KnowledgeBase() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. How to reset your password"
-              className="w-full px-3 py-2 bg-card-bg border border-border-warm rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
+              className="w-full px-3 py-2 bg-card-bg border border-border-light rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20 focus:border-foreground"
             />
           </FormField>
 
@@ -226,7 +226,7 @@ export function KnowledgeBase() {
                 type="checkbox"
                 checked={published}
                 onChange={(e) => setPublished(e.target.checked)}
-                className="w-4 h-4 rounded border-border-warm text-brand focus:ring-brand/20"
+                className="w-4 h-4 rounded border-border-light text-foreground focus:ring-foreground/20"
               />
               <span className="text-sm text-foreground">
                 Make this article visible to clients

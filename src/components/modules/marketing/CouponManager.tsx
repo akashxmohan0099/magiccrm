@@ -69,7 +69,7 @@ export function CouponManager() {
             handleToggleActive(c);
           }}
           className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer ${
-            c.active ? "bg-brand" : "bg-border-warm"
+            c.active ? "bg-brand" : "bg-border-light"
           }`}
         >
           <span
@@ -151,7 +151,7 @@ export function CouponManager() {
             }}
           />
         ) : (
-          <div className="bg-card-bg rounded-xl border border-border-warm overflow-hidden">
+          <div className="bg-card-bg rounded-xl border border-border-light overflow-hidden">
             <DataTable<Coupon>
               columns={columns}
               data={coupons}
@@ -174,7 +174,7 @@ export function CouponManager() {
                 type="text"
                 value={form.code}
                 onChange={(e) => set("code", e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-border-warm bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 uppercase"
+                className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 uppercase"
                 placeholder="e.g. SPRING25"
               />
             </FormField>
@@ -209,7 +209,7 @@ export function CouponManager() {
                 type="number"
                 value={form.discountValue}
                 onChange={(e) => set("discountValue", e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-border-warm bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
+                className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
                 placeholder="0"
                 min="0"
                 step={form.discountType === "percentage" ? "1" : "0.01"}
@@ -222,7 +222,7 @@ export function CouponManager() {
                 type="number"
                 value={form.maxUses}
                 onChange={(e) => set("maxUses", e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-border-warm bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
+                className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
                 placeholder="Unlimited"
                 min="1"
               />
@@ -238,7 +238,7 @@ export function CouponManager() {
               />
             </FormField>
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-border-warm">
+            <div className="flex justify-end gap-3 pt-4 border-t border-border-light">
               <Button
                 variant="secondary"
                 size="sm"

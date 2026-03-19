@@ -109,7 +109,7 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
             type="text"
             value={form.name}
             onChange={(e) => set("name", e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-border-warm bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
+            className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
             placeholder="Full name"
           />
         </FormField>
@@ -119,7 +119,7 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
             type="email"
             value={form.email}
             onChange={(e) => set("email", e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-border-warm bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
+            className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
             placeholder="email@example.com"
           />
         </FormField>
@@ -129,7 +129,7 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
             type="tel"
             value={form.phone}
             onChange={(e) => set("phone", e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-border-warm bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
+            className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
             placeholder="(555) 123-4567"
           />
         </FormField>
@@ -139,7 +139,7 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
             type="text"
             value={form.company}
             onChange={(e) => set("company", e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-border-warm bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
+            className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
             placeholder="Company name"
           />
         </FormField>
@@ -149,7 +149,7 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
             type="text"
             value={form.source}
             onChange={(e) => set("source", e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-border-warm bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
+            className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
             placeholder="e.g. Referral, Website, Social"
           />
         </FormField>
@@ -167,7 +167,7 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
             type="number"
             value={form.value}
             onChange={(e) => set("value", e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-border-warm bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
+            className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
             placeholder="0.00"
             min="0"
             step="0.01"
@@ -183,7 +183,7 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
           />
         </FormField>
 
-        <div className="flex justify-end gap-3 pt-4 border-t border-border-warm">
+        <div className="flex justify-end gap-3 pt-4 border-t border-border-light">
           <Button variant="secondary" size="sm" onClick={onClose} type="button">
             Cancel
           </Button>

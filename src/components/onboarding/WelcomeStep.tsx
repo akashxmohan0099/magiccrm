@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Sparkles, ArrowRight, Wand2, Puzzle, Zap } from "lucide-react";
+import { ArrowRight, Clock, Layers, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useOnboardingStore } from "@/store/onboarding";
 
@@ -13,75 +13,67 @@ export function WelcomeStep() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="max-w-xl mx-auto text-center"
+      className="max-w-xl mx-auto text-center pt-12"
     >
+      {/* Logo mark */}
       <motion.div
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-        className="w-16 h-16 bg-gradient-to-br from-[#FFE072] to-[#D4A017] rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-lg shadow-[#D4A017]/20"
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ delay: 0.1, type: "spring", stiffness: 200, damping: 20 }}
+        className="mb-10"
       >
-        <Sparkles className="w-8 h-8 text-white" />
+        <div className="w-12 h-12 bg-foreground rounded-2xl flex items-center justify-center mx-auto shadow-sm">
+          <div className="w-5 h-5 bg-white rounded-md" />
+        </div>
       </motion.div>
 
       <motion.h1
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="text-4xl font-bold text-foreground mb-4"
+        transition={{ delay: 0.2 }}
+        className="text-[32px] font-bold text-foreground mb-4 leading-tight"
       >
-        Welcome to{" "}
-        <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D4A017] to-[#B8860B]">
-          Magic CRM
-        </span>
+        Let&apos;s build your CRM
       </motion.h1>
 
       <motion.p
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-        className="text-[17px] text-text-secondary mb-12 leading-relaxed max-w-md mx-auto"
+        transition={{ delay: 0.3 }}
+        className="text-[16px] text-text-secondary mb-14 leading-relaxed max-w-sm mx-auto"
       >
-        Answer a few questions about your business, and we&apos;ll build a CRM
-        tailored exactly to how you work.
+        A few questions about your business, and we&apos;ll assemble a platform with only the tools you need.
       </motion.p>
 
+      {/* Value props - horizontal */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
-        className="grid grid-cols-3 gap-4 mb-12"
+        transition={{ delay: 0.4 }}
+        className="flex items-center justify-center gap-8 mb-14"
       >
         {[
-          { icon: Wand2, title: "Answer", desc: "Tell us what you need" },
-          { icon: Puzzle, title: "Assemble", desc: "We build your CRM" },
-          { icon: Zap, title: "Launch", desc: "Ready in minutes" },
+          { icon: Clock, text: "2 minutes" },
+          { icon: Layers, text: "12 modules" },
+          { icon: Settings2, text: "Fully customizable" },
         ].map((item, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.55 + i * 0.08 }}
-            className="p-5 bg-card-bg rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
-          >
-            <item.icon className="w-6 h-6 text-brand mb-3 mx-auto" />
-            <h3 className="font-semibold text-foreground text-sm mb-0.5">{item.title}</h3>
-            <p className="text-[12px] text-text-tertiary">{item.desc}</p>
-          </motion.div>
+          <div key={i} className="flex items-center gap-2 text-text-secondary">
+            <item.icon className="w-4 h-4" />
+            <span className="text-[13px] font-medium">{item.text}</span>
+          </div>
         ))}
       </motion.div>
 
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.7 }}
-        className="space-y-3"
+        transition={{ delay: 0.5 }}
       >
-        <Button size="lg" onClick={nextStep} className="px-10">
-          Get Started <ArrowRight className="w-5 h-5" />
+        <Button size="lg" onClick={nextStep} className="px-12">
+          Get started <ArrowRight className="w-5 h-5" />
         </Button>
-        <p className="text-[13px] text-text-tertiary">
-          Takes about 2 minutes. You can change everything later.
+        <p className="text-[12px] text-text-tertiary mt-4">
+          Free to set up. No credit card needed.
         </p>
       </motion.div>
     </motion.div>

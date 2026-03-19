@@ -12,20 +12,20 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ variant = "primary", size = "md", loading, className = "", children, disabled, ...props }, ref) => {
     const base =
-      "inline-flex items-center justify-center font-semibold rounded-full transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed tracking-tight active:scale-[0.97] select-none";
+      "inline-flex items-center justify-center font-semibold rounded-xl transition-all duration-200 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed tracking-tight select-none active:scale-[0.96] hover:shadow-sm";
 
     const variants = {
       primary:
-        "bg-primary text-white hover:bg-primary-hover shadow-[0px_1px_2px_0px_rgba(37,99,235,0.15),0px_-1px_1px_0px_rgba(0,0,0,0.10)_inset] hover:shadow-[0px_4px_16px_0px_rgba(37,99,235,0.30),0px_-1px_1px_0px_rgba(0,0,0,0.10)_inset]",
+        "bg-foreground text-white hover:bg-foreground/90 shadow-sm",
       secondary:
-        "bg-card-bg text-foreground border border-border-warm hover:bg-surface shadow-sm hover:shadow",
+        "bg-card-bg text-foreground border border-border-light hover:bg-surface",
       ghost: "text-text-secondary hover:text-foreground hover:bg-surface",
-      danger: "bg-red-600 text-white hover:bg-red-700 shadow-sm hover:shadow-md",
+      danger: "bg-red-600 text-white hover:bg-red-700 shadow-sm",
     };
 
     const sizes = {
-      sm: "px-4 py-1.5 text-sm gap-1.5",
-      md: "px-5 py-2.5 text-sm gap-2",
+      sm: "px-4 py-1.5 text-[13px] gap-1.5",
+      md: "px-5 py-2.5 text-[13px] gap-2",
       lg: "px-8 py-3 text-[15px] gap-2.5",
     };
 

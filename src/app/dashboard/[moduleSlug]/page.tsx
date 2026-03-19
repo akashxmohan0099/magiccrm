@@ -37,8 +37,13 @@ const MODULE_COMPONENTS: Record<string, React.ComponentType> = {
 export default function ModulePage({ params }: { params: Promise<{ moduleSlug: string }> }) {
   const { moduleSlug } = use(params);
   const mod = getModuleBySlug(moduleSlug);
+  const isEnabled = useModuleEnabled(mod?.id ?? "");
 
   if (!mod) {
+    notFound();
+  }
+
+  if (!isEnabled) {
     notFound();
   }
 

@@ -102,7 +102,7 @@ export function QuoteForm({ open, onClose, quote }: QuoteFormProps) {
           />
         </FormField>
 
-        <div className="flex items-center justify-between pt-4 border-t border-border-warm">
+        <div className="flex items-center justify-between pt-4 border-t border-border-light">
           <div className="text-lg font-semibold text-foreground">
             Total: ${total.toFixed(2)}
           </div>

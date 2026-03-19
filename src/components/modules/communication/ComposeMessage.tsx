@@ -31,24 +31,33 @@ export function ComposeMessage({ conversationId }: ComposeMessageProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="px-4 py-3 border-t border-border-warm flex items-end gap-2"
+      className="px-4 py-4 border-t border-border-light relative"
     >
-      <textarea
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder="Type a message..."
-        rows={1}
-        className="flex-1 px-3 py-2 rounded-lg border border-border-warm bg-surface text-foreground text-sm resize-none focus:outline-none focus:ring-2 focus:ring-brand/40"
-        style={{ maxHeight: "120px" }}
-      />
-      <button
-        type="submit"
-        disabled={!content.trim()}
-        className="p-2.5 rounded-lg bg-brand text-white disabled:opacity-40 transition-opacity cursor-pointer hover:bg-brand/90"
-      >
-        <Send className="w-4 h-4" />
-      </button>
+      <div className="relative">
+        <textarea
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Type a message... Shift+Enter for new line"
+          rows={1}
+          className="flex-1 w-full px-4 py-3 rounded-xl border border-border-light bg-card-bg text-foreground text-[15px] resize-none focus:outline-none focus:ring-2 focus:ring-foreground/10 focus:border-foreground transition-all placeholder:text-text-tertiary"
+          style={{ maxHeight: "120px" }}
+        />
+        <div className="absolute right-3 bottom-3 flex items-center gap-2">
+          {content.length > 0 && (
+            <span className={`text-[11px] font-medium ${content.length > 160 ? "text-red-500" : "text-text-tertiary"}`}>
+              {content.length}
+            </span>
+          )}
+          <button
+            type="submit"
+            disabled={!content.trim()}
+            className="p-2 rounded-lg bg-foreground text-white disabled:opacity-40 transition-all cursor-pointer hover:bg-foreground/90 active:scale-95"
+          >
+            <Send className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
     </form>
   );
 }

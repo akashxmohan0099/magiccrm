@@ -43,7 +43,7 @@ export function RevenueLog() {
     <FeatureSection moduleId="payments" featureId="revenue-log">
       <div className="mt-6">
         <div className="flex items-center gap-2 mb-4">
-          <TrendingUp className="w-4 h-4 text-brand" />
+          <TrendingUp className="w-4 h-4 text-foreground" />
           <h3 className="text-sm font-semibold text-foreground">Revenue Log</h3>
         </div>
 
@@ -65,8 +65,8 @@ export function RevenueLog() {
                     isFirst ? "" : "border-t border-border-light"
                   }`}
                 >
-                  <div className="p-1.5 bg-brand-light rounded-lg shrink-0">
-                    <DollarSign className="w-4 h-4 text-brand" />
+                  <div className="p-1.5 bg-surface rounded-lg shrink-0">
+                    <DollarSign className="w-4 h-4 text-foreground" />
                   </div>
 
                   <div className="flex-1 min-w-0">

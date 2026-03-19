@@ -2,25 +2,21 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, ChevronDown } from "lucide-react";
+import { ArrowRight, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useOnboardingStore } from "@/store/onboarding";
-import { INDUSTRIES } from "@/types/onboarding";
 
 export function BusinessContextStep() {
-  const { businessContext, setBusinessContext, nextStep } = useOnboardingStore();
-  const [industryOpen, setIndustryOpen] = useState(false);
+  const { businessContext, setBusinessContext, nextStep, prevStep, getIndustryConfig } =
+    useOnboardingStore();
+  const [focusedField, setFocusedField] = useState<string | null>(null);
+
+  const config = getIndustryConfig();
 
   const isValid =
     businessContext.businessName.trim() &&
     businessContext.businessDescription.trim() &&
-    businessContext.industry &&
-    (businessContext.industry !== "Other" || businessContext.industryOther.trim()) &&
     businessContext.location.trim();
-
-  const displayIndustry = businessContext.industry === "Other" && businessContext.industryOther
-    ? businessContext.industryOther
-    : businessContext.industry;
 
   return (
     <motion.div
@@ -31,136 +27,104 @@ export function BusinessContextStep() {
       className="max-w-lg mx-auto"
     >
       <div className="mb-10">
-        <h2 className="text-2xl font-semibold text-foreground tracking-tight mb-2">
+        <button
+          onClick={prevStep}
+          className="flex items-center gap-1.5 text-[13px] text-text-secondary hover:text-foreground transition-colors cursor-pointer mb-6"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          Back
+        </button>
+
+        <h2 className="text-[24px] font-bold text-foreground tracking-tight mb-2">
           Tell us about your business
         </h2>
-        <p className="text-text-secondary">
-          We&apos;ll use this to personalize your CRM.
+        <p className="text-text-secondary text-[15px]">
+          {config
+            ? `We'll customize your ${config.label.toLowerCase()} CRM based on this.`
+            : "We'll use this to personalize your CRM."}
         </p>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-5">
         {/* Business Name */}
-        <div>
-          <label className="block text-sm font-medium text-foreground mb-2">
+        <div className="relative">
+          <motion.label
+            className="absolute left-4 text-[13px] font-medium text-foreground pointer-events-none origin-left"
+            animate={{
+              y: businessContext.businessName || focusedField === 'name' ? -24 : 12,
+              scale: businessContext.businessName || focusedField === 'name' ? 0.85 : 1,
+              opacity: 1,
+            }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+          >
             Business name
-          </label>
+          </motion.label>
           <input
             type="text"
             value={businessContext.businessName}
             onChange={(e) => setBusinessContext({ businessName: e.target.value })}
-            placeholder="Your business name"
-            className="w-full px-4 py-3 rounded-xl border border-border-warm bg-card-bg text-foreground placeholder:text-text-secondary/50 focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none transition-all"
+            onFocus={() => setFocusedField('name')}
+            onBlur={() => setFocusedField(null)}
+            placeholder={config?.namePlaceholder || "Your business name"}
+            className="w-full px-4 py-3 rounded-xl border border-border-light bg-card-bg text-foreground placeholder:text-text-tertiary focus:border-foreground focus:ring-2 focus:ring-foreground/10 outline-none transition-all text-[15px]"
           />
         </div>
 
         {/* Business Description */}
-        <div>
-          <label className="block text-sm font-medium text-foreground mb-2">
+        <div className="relative">
+          <motion.label
+            className="absolute left-4 text-[13px] font-medium text-foreground pointer-events-none origin-left"
+            animate={{
+              y: businessContext.businessDescription || focusedField === 'description' ? -24 : 12,
+              scale: businessContext.businessDescription || focusedField === 'description' ? 0.85 : 1,
+              opacity: 1,
+            }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+          >
             What does your business do?
-          </label>
+          </motion.label>
           <input
             type="text"
             value={businessContext.businessDescription}
             onChange={(e) => setBusinessContext({ businessDescription: e.target.value })}
-            placeholder="We run a mobile dog grooming service"
-            className="w-full px-4 py-3 rounded-xl border border-border-warm bg-card-bg text-foreground placeholder:text-text-secondary/50 focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none transition-all"
+            onFocus={() => setFocusedField('description')}
+            onBlur={() => setFocusedField(null)}
+            placeholder={config?.descriptionPlaceholder || "Describe what your business does"}
+            className="w-full px-4 py-3 rounded-xl border border-border-light bg-card-bg text-foreground placeholder:text-text-tertiary focus:border-foreground focus:ring-2 focus:ring-foreground/10 outline-none transition-all text-[15px]"
           />
-        </div>
-
-        {/* Industry Selector */}
-        <div>
-          <label className="block text-sm font-medium text-foreground mb-2">
-            Industry
-          </label>
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setIndustryOpen(!industryOpen)}
-              className={`w-full px-4 py-3 rounded-xl border bg-card-bg text-left flex items-center justify-between transition-all cursor-pointer ${
-                industryOpen
-                  ? "border-brand ring-2 ring-brand/20"
-                  : "border-border-warm hover:border-[#D4CDB8]"
-              }`}
-            >
-              <span className={displayIndustry ? "text-foreground" : "text-text-secondary/50"}>
-                {displayIndustry || "Select your industry"}
-              </span>
-              <ChevronDown
-                className={`w-4 h-4 text-text-secondary transition-transform ${
-                  industryOpen ? "rotate-180" : ""
-                }`}
-              />
-            </button>
-
-            {industryOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.15 }}
-                className="absolute z-20 w-full mt-1 bg-card-bg border border-border-warm rounded-xl shadow-lg overflow-hidden"
-              >
-                {INDUSTRIES.map((industry) => (
-                  <button
-                    key={industry}
-                    onClick={() => {
-                      setBusinessContext({ industry });
-                      if (industry !== "Other") {
-                        setBusinessContext({ industryOther: "" });
-                      }
-                      setIndustryOpen(false);
-                    }}
-                    className={`w-full px-4 py-2.5 text-left text-sm transition-colors cursor-pointer ${
-                      businessContext.industry === industry
-                        ? "bg-brand-light text-brand font-medium"
-                        : "text-foreground hover:bg-surface"
-                    }`}
-                  >
-                    {industry}
-                  </button>
-                ))}
-              </motion.div>
-            )}
-          </div>
-
-          {/* Other free text */}
-          {businessContext.industry === "Other" && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              transition={{ duration: 0.2 }}
-              className="mt-3"
-            >
-              <input
-                type="text"
-                value={businessContext.industryOther}
-                onChange={(e) => setBusinessContext({ industryOther: e.target.value })}
-                placeholder="Tell us your industry"
-                autoFocus
-                className="w-full px-4 py-3 rounded-xl border border-border-warm bg-card-bg text-foreground placeholder:text-text-secondary/50 focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none transition-all"
-              />
-            </motion.div>
-          )}
+          <p className="text-[11px] text-text-tertiary mt-1.5">
+            One sentence is fine. This helps us understand your workflow.
+          </p>
         </div>
 
         {/* Location */}
-        <div>
-          <label className="block text-sm font-medium text-foreground mb-2">
+        <div className="relative">
+          <motion.label
+            className="absolute left-4 text-[13px] font-medium text-foreground pointer-events-none origin-left"
+            animate={{
+              y: businessContext.location || focusedField === 'location' ? -24 : 12,
+              scale: businessContext.location || focusedField === 'location' ? 0.85 : 1,
+              opacity: 1,
+            }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+          >
             Where are you based?
-          </label>
+          </motion.label>
           <input
             type="text"
             value={businessContext.location}
             onChange={(e) => setBusinessContext({ location: e.target.value })}
+            onFocus={() => setFocusedField('location')}
+            onBlur={() => setFocusedField(null)}
             placeholder="City or region"
-            className="w-full px-4 py-3 rounded-xl border border-border-warm bg-card-bg text-foreground placeholder:text-text-secondary/50 focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none transition-all"
+            className="w-full px-4 py-3 rounded-xl border border-border-light bg-card-bg text-foreground placeholder:text-text-tertiary focus:border-foreground focus:ring-2 focus:ring-foreground/10 outline-none transition-all text-[15px]"
           />
         </div>
       </div>
 
       <div className="mt-10">
         <Button size="lg" onClick={nextStep} disabled={!isValid} className="w-full">
-          Next <ArrowRight className="w-5 h-5" />
+          Continue <ArrowRight className="w-5 h-5" />
         </Button>
       </div>
     </motion.div>

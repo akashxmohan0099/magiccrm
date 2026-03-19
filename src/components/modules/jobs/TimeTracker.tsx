@@ -49,8 +49,8 @@ export function TimeTracker({ jobId }: TimeTrackerProps) {
   return (
     <div className="space-y-4">
       {/* Total */}
-      <div className="flex items-center gap-2 p-3 bg-brand-light rounded-lg">
-        <Clock className="w-4 h-4 text-brand" />
+      <div className="flex items-center gap-2 p-3 bg-surface rounded-lg">
+        <Clock className="w-4 h-4 text-foreground" />
         <span className="text-sm font-medium text-foreground">
           Total: {totalHours} hours
         </span>
@@ -67,7 +67,7 @@ export function TimeTracker({ jobId }: TimeTrackerProps) {
           onChange={(e) => setDescription(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="What did you work on?"
-          className="w-full px-3 py-2 bg-card-bg border border-border-warm rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
+          className="w-full px-3 py-2 bg-card-bg border border-border-light rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
         />
         <div className="flex items-center gap-2">
           <input
@@ -77,13 +77,13 @@ export function TimeTracker({ jobId }: TimeTrackerProps) {
             onKeyDown={handleKeyDown}
             placeholder="Minutes"
             min={1}
-            className="w-28 px-3 py-2 bg-card-bg border border-border-warm rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
+            className="w-28 px-3 py-2 bg-card-bg border border-border-light rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
           />
           <input
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="flex-1 px-3 py-2 bg-card-bg border border-border-warm rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
+            className="flex-1 px-3 py-2 bg-card-bg border border-border-light rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
           />
           <Button
             size="sm"

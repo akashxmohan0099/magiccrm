@@ -38,11 +38,11 @@ export function FeatureDrilldownStep({ category, categoryIndex, totalCategories 
       className="max-w-xl mx-auto"
     >
       <div className="flex items-center gap-3 mb-2">
-        <div className="p-2 bg-brand-light rounded-lg">
-          {IconComponent && <IconComponent className="w-5 h-5 text-brand" />}
+        <div className="p-2 bg-surface rounded-lg">
+          {IconComponent && <IconComponent className="w-5 h-5 text-foreground" />}
         </div>
         <div>
-          <p className="text-xs text-brand font-medium">
+          <p className="text-xs text-foreground font-medium">
             Feature {categoryIndex + 1} of {totalCategories}
           </p>
           <h2 className="text-2xl font-bold text-foreground tracking-tight">{category.name}</h2>
@@ -60,15 +60,15 @@ export function FeatureDrilldownStep({ category, categoryIndex, totalCategories 
             onClick={() => toggleFeature(category.id, feature.id)}
             className={`w-full p-4 rounded-xl border text-left transition-all duration-200 flex items-center gap-4 cursor-pointer ${
               feature.selected
-                ? "border-brand bg-brand-light"
-                : "border-border-warm bg-card-bg hover:border-[#D4CDB8]"
+                ? "border-brand bg-surface"
+                : "border-border-light bg-card-bg hover:border-[#D4CDB8]"
             }`}
           >
             <div
               className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition-all ${
                 feature.selected
                   ? "bg-brand border-brand"
-                  : "border-border-warm"
+                  : "border-border-light"
               }`}
             >
               {feature.selected && <Check className="w-4 h-4 text-white" />}

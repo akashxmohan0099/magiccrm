@@ -138,7 +138,7 @@ export function JobsPage() {
             placeholder="Search jobs..."
           />
         </div>
-        <div className="flex items-center bg-surface rounded-lg border border-border-warm p-0.5">
+        <div className="flex items-center bg-surface rounded-lg border border-border-light p-0.5">
           <button
             onClick={() => setView("list")}
             className={`p-1.5 rounded-md transition-colors cursor-pointer ${
@@ -171,7 +171,7 @@ export function JobsPage() {
           onAction={handleNewJob}
         />
       ) : view === "list" ? (
-        <div className="bg-card-bg rounded-xl border border-border-warm overflow-hidden">
+        <div className="bg-card-bg rounded-xl border border-border-light overflow-hidden">
           <DataTable
             columns={columns}
             data={filtered}
@@ -187,7 +187,7 @@ export function JobsPage() {
           renderCard={(job) => (
             <div
               onClick={() => setDetailJobId(job.id)}
-              className="bg-card-bg rounded-lg border border-border-warm p-3 shadow-sm hover:shadow-md transition-shadow"
+              className="bg-card-bg rounded-lg border border-border-light p-3 shadow-sm hover:shadow-md transition-shadow"
             >
               <p className="text-sm font-medium text-foreground mb-1">
                 {job.title}

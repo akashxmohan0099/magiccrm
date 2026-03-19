@@ -44,7 +44,7 @@ export function MessageThread({ conversationId }: MessageThreadProps) {
   return (
     <>
       {/* Header */}
-      <div className="px-5 py-3 border-b border-border-warm">
+      <div className="px-5 py-3 border-b border-border-light">
         <h3 className="text-sm font-semibold text-foreground">{conversation.clientName}</h3>
         {conversation.subject && (
           <p className="text-xs text-text-secondary">{conversation.subject}</p>

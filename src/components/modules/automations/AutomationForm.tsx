@@ -93,7 +93,7 @@ export function AutomationForm({ open, onClose, rule }: AutomationFormProps) {
   };
 
   const inputClass =
-    "w-full px-3 py-2 bg-card-bg border border-border-warm rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand";
+    "w-full px-3 py-2 bg-card-bg border border-border-light rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand";
 
   return (
     <SlideOver
@@ -133,7 +133,7 @@ export function AutomationForm({ open, onClose, rule }: AutomationFormProps) {
             type="button"
             onClick={() => update("enabled", !form.enabled)}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${
-              form.enabled ? "bg-brand" : "bg-border-warm"
+              form.enabled ? "bg-brand" : "bg-border-light"
             }`}
           >
             <span
@@ -144,7 +144,7 @@ export function AutomationForm({ open, onClose, rule }: AutomationFormProps) {
           </button>
         </FormField>
 
-        <div className="flex justify-end gap-2 pt-4 border-t border-border-warm">
+        <div className="flex justify-end gap-2 pt-4 border-t border-border-light">
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>

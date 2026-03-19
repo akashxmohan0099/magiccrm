@@ -73,8 +73,8 @@ export function DocumentPreview({ open, onClose, documentId }: DocumentPreviewPr
           {/* Header */}
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-3 min-w-0">
-              <div className="w-12 h-12 rounded-lg bg-brand-light flex items-center justify-center flex-shrink-0">
-                <FileText className="w-6 h-6 text-brand" />
+              <div className="w-12 h-12 rounded-lg bg-surface flex items-center justify-center flex-shrink-0">
+                <FileText className="w-6 h-6 text-foreground" />
               </div>
               <div className="min-w-0">
                 <h3 className="text-xl font-semibold text-foreground tracking-tight truncate">
@@ -84,7 +84,7 @@ export function DocumentPreview({ open, onClose, documentId }: DocumentPreviewPr
                   {document.category}
                 </p>
                 {document.isTemplate && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-brand-light text-brand border border-brand/20 mt-1">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-surface text-foreground border border-foreground/20 mt-1">
                     Template
                   </span>
                 )}
@@ -168,7 +168,7 @@ export function DocumentPreview({ open, onClose, documentId }: DocumentPreviewPr
                 Sharing
               </h4>
               <div className="flex items-center gap-2">
-                <div className="flex-1 px-3 py-2 bg-card-bg border border-border-warm rounded-lg text-sm text-text-secondary truncate">
+                <div className="flex-1 px-3 py-2 bg-card-bg border border-border-light rounded-lg text-sm text-text-secondary truncate">
                   https://app.magiccrm.com/shared/{document.id}
                 </div>
                 <Button

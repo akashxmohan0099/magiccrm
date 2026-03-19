@@ -119,7 +119,7 @@ export function UploadForm({ open, onClose, defaultIsTemplate = false }: UploadF
   };
 
   const inputClass =
-    "w-full px-3 py-2 bg-card-bg border border-border-warm rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand";
+    "w-full px-3 py-2 bg-card-bg border border-border-light rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20 focus:border-foreground";
 
   return (
     <SlideOver
@@ -181,7 +181,7 @@ export function UploadForm({ open, onClose, defaultIsTemplate = false }: UploadF
               type="checkbox"
               checked={form.isTemplate}
               onChange={(e) => update("isTemplate", e.target.checked)}
-              className="rounded border-border-warm text-brand focus:ring-brand/20"
+              className="rounded border-border-light text-foreground focus:ring-foreground/20"
             />
             <span className="text-sm text-foreground">Save as template</span>
           </label>
@@ -191,13 +191,13 @@ export function UploadForm({ open, onClose, defaultIsTemplate = false }: UploadF
               type="checkbox"
               checked={form.shared}
               onChange={(e) => update("shared", e.target.checked)}
-              className="rounded border-border-warm text-brand focus:ring-brand/20"
+              className="rounded border-border-light text-foreground focus:ring-foreground/20"
             />
             <span className="text-sm text-foreground">Share with client</span>
           </label>
         </div>
 
-        <div className="flex justify-end gap-2 pt-4 border-t border-border-warm">
+        <div className="flex justify-end gap-2 pt-4 border-t border-border-light">
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>

@@ -12,7 +12,7 @@ export function DashboardSkeleton() {
   return (
     <div className="min-h-screen bg-background flex">
       {/* Sidebar skeleton */}
-      <aside className="w-64 bg-card-bg border-r border-border-warm flex flex-col fixed h-full">
+      <aside className="w-64 bg-card-bg border-r border-border-light flex flex-col fixed h-full">
         <div className="p-5 border-b border-border-light">
           <div className="flex items-center gap-2">
             <Skeleton className="w-8 h-8 rounded-lg" />
@@ -31,7 +31,7 @@ export function DashboardSkeleton() {
 
       {/* Main skeleton */}
       <main className="flex-1 ml-64">
-        <div className="bg-card-bg border-b border-border-warm px-8 py-4 flex items-center justify-between">
+        <div className="bg-card-bg border-b border-border-light px-8 py-4 flex items-center justify-between">
           <Skeleton className="w-64 h-10 rounded-lg" />
           <div className="flex items-center gap-3">
             <Skeleton className="w-10 h-10 rounded-lg" />

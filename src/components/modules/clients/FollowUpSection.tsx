@@ -116,7 +116,7 @@ export function FollowUpSection({ clientId }: FollowUpSectionProps) {
                 ? "bg-card-bg border-border-light opacity-60"
                 : isOverdue(reminder.dueDate)
                 ? "bg-red-50 border-red-200"
-                : "bg-card-bg border-border-warm"
+                : "bg-card-bg border-border-light"
             }`}
           >
             <button
@@ -124,7 +124,7 @@ export function FollowUpSection({ clientId }: FollowUpSectionProps) {
               className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center cursor-pointer transition-colors ${
                 reminder.completed
                   ? "bg-brand border-brand text-white"
-                  : "border-border-warm hover:border-brand"
+                  : "border-border-light hover:border-brand"
               }`}
             >
               {reminder.completed && <Check className="w-3 h-3" />}
@@ -165,7 +165,7 @@ export function FollowUpSection({ clientId }: FollowUpSectionProps) {
       </div>
 
       {isAdding && (
-        <div className="mt-3 p-3 rounded-lg border border-brand/30 bg-brand-light/50">
+        <div className="mt-3 p-3 rounded-lg border border-brand/30 bg-surface/50">
           <div className="space-y-2">
             <input
               type="text"
@@ -174,7 +174,7 @@ export function FollowUpSection({ clientId }: FollowUpSectionProps) {
               onKeyDown={handleKeyDown}
               placeholder="Reminder title..."
               autoFocus
-              className="w-full px-3 py-1.5 bg-card-bg border border-border-warm rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
+              className="w-full px-3 py-1.5 bg-card-bg border border-border-light rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
             />
             <DateField
               value={newDate}

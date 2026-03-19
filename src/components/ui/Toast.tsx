@@ -44,11 +44,11 @@ const ICONS: Record<ToastType, React.ComponentType<{ className?: string }>> = {
   info: Info,
 };
 
-const COLORS: Record<ToastType, string> = {
-  success: "text-emerald-600",
-  error: "text-red-500",
-  warning: "text-amber-500",
-  info: "text-blue-500",
+const COLORS: Record<ToastType, { text: string; bg: string; border: string }> = {
+  success: { text: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200" },
+  error: { text: "text-red-600", bg: "bg-red-50", border: "border-red-200" },
+  warning: { text: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200" },
+  info: { text: "text-blue-600", bg: "bg-blue-50", border: "border-blue-200" },
 };
 
 function ToastItem({ item }: { item: ToastItem }) {
@@ -64,9 +64,10 @@ function ToastItem({ item }: { item: ToastItem }) {
     };
   }, [item.id, remove, markExiting]);
 
+  const colors = COLORS[item.type];
   return (
     <div
-      className={`flex items-center gap-3 px-4 py-3 bg-card-bg border border-border-warm rounded-xl shadow-lg shadow-black/5 max-w-sm w-full ${
+      className={`flex items-center gap-3 px-4 py-3 ${colors.bg} border ${colors.border} rounded-xl shadow-lg shadow-black/5 max-w-sm w-full ${
         item.exiting ? "toast-exit" : "toast-enter"
       }`}
       style={{
@@ -75,14 +76,14 @@ function ToastItem({ item }: { item: ToastItem }) {
           : "toast-in 300ms ease-out forwards",
       }}
     >
-      <Icon className={`w-5 h-5 flex-shrink-0 ${COLORS[item.type]}`} />
-      <p className="text-sm text-foreground flex-1 font-medium">{item.message}</p>
+      <Icon className={`w-5 h-5 flex-shrink-0 ${colors.text}`} />
+      <p className={`text-[13px] flex-1 font-medium ${colors.text}`}>{item.message}</p>
       <button
         onClick={() => {
           markExiting(item.id);
           setTimeout(() => remove(item.id), 300);
         }}
-        className="p-0.5 rounded hover:bg-surface text-text-secondary cursor-pointer flex-shrink-0"
+        className={`p-0.5 rounded hover:opacity-75 transition-opacity cursor-pointer flex-shrink-0 ${colors.text}`}
       >
         <X className="w-3.5 h-3.5" />
       </button>

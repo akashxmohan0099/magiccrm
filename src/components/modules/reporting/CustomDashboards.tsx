@@ -41,9 +41,9 @@ const WIDGETS = [
 
 export function CustomDashboards() {
   return (
-    <div className="bg-card-bg border border-border-warm rounded-xl p-6">
+    <div className="bg-card-bg border border-border-light rounded-xl p-6">
       <div className="flex items-center gap-2 mb-2">
-        <BarChart3 className="w-5 h-5 text-brand" />
+        <BarChart3 className="w-5 h-5 text-foreground" />
         <h2 className="text-lg font-semibold text-foreground tracking-tight">
           Custom Dashboards
         </h2>
@@ -63,7 +63,7 @@ export function CustomDashboards() {
               className="border border-border-light rounded-lg p-4 bg-surface hover:border-brand/30 transition-colors"
             >
               <div className="flex items-center gap-2 mb-1">
-                <div className="p-1.5 rounded-md bg-brand-light text-brand">
+                <div className="p-1.5 rounded-md bg-surface text-foreground">
                   <Icon className="w-4 h-4" />
                 </div>
                 <h3 className="text-sm font-semibold text-foreground">
@@ -79,7 +79,7 @@ export function CustomDashboards() {
                 {widget.mockBars.map((val, i) => (
                   <div
                     key={i}
-                    className="flex-1 bg-brand/20 rounded-sm"
+                    className="flex-1 bg-foreground/20 rounded-sm"
                     style={{ height: `${(val / maxBar) * 100}%` }}
                   />
                 ))}

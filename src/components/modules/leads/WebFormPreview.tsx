@@ -23,7 +23,7 @@ export function WebFormPreview() {
           Web Form
         </h3>
 
-        <div className="bg-card-bg rounded-xl border border-border-warm overflow-hidden">
+        <div className="bg-card-bg rounded-xl border border-border-light overflow-hidden">
           {/* Header */}
           <div className="flex items-center gap-2 px-5 py-3 border-b border-border-light bg-surface">
             <Globe className="w-4 h-4 text-text-secondary" />
@@ -38,25 +38,25 @@ export function WebFormPreview() {
               <label className="block text-xs font-medium text-text-secondary mb-1.5">
                 Name
               </label>
-              <div className="w-full h-9 rounded-lg border border-border-warm bg-surface" />
+              <div className="w-full h-9 rounded-lg border border-border-light bg-surface" />
             </div>
 
             <div>
               <label className="block text-xs font-medium text-text-secondary mb-1.5">
                 Email
               </label>
-              <div className="w-full h-9 rounded-lg border border-border-warm bg-surface" />
+              <div className="w-full h-9 rounded-lg border border-border-light bg-surface" />
             </div>
 
             <div>
               <label className="block text-xs font-medium text-text-secondary mb-1.5">
                 Message
               </label>
-              <div className="w-full h-20 rounded-lg border border-border-warm bg-surface" />
+              <div className="w-full h-20 rounded-lg border border-border-light bg-surface" />
             </div>
 
-            <div className="h-9 w-28 rounded-lg bg-brand/20 flex items-center justify-center">
-              <span className="text-xs font-medium text-brand">Submit</span>
+            <div className="h-9 w-28 rounded-lg bg-foreground/20 flex items-center justify-center">
+              <span className="text-xs font-medium text-foreground">Submit</span>
             </div>
           </div>
 

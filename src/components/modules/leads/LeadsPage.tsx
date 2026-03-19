@@ -92,7 +92,7 @@ export function LeadsPage() {
             onClick={() => setView("list")}
             className={`p-1.5 rounded-md transition-colors cursor-pointer ${
               view === "list"
-                ? "bg-brand text-white"
+                ? "bg-card-bg text-foreground shadow-sm"
                 : "text-text-secondary hover:text-foreground"
             }`}
           >
@@ -102,7 +102,7 @@ export function LeadsPage() {
             onClick={() => setView("pipeline")}
             className={`p-1.5 rounded-md transition-colors cursor-pointer ${
               view === "pipeline"
-                ? "bg-brand text-white"
+                ? "bg-card-bg text-foreground shadow-sm"
                 : "text-text-secondary hover:text-foreground"
             }`}
           >
@@ -120,7 +120,7 @@ export function LeadsPage() {
           onAction={handleAdd}
         />
       ) : view === "list" ? (
-        <div className="bg-card-bg rounded-xl border border-border-warm overflow-hidden">
+        <div className="bg-card-bg rounded-xl border border-border-light overflow-hidden">
           <DataTable<Lead>
             columns={columns}
             data={filtered}

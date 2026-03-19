@@ -149,7 +149,7 @@ export function InvoicingPage() {
               onAction={handleNewInvoice}
             />
           ) : (
-            <div className="bg-card-bg rounded-xl border border-border-warm overflow-hidden">
+            <div className="bg-card-bg rounded-xl border border-border-light overflow-hidden">
               <DataTable<Invoice>
                 columns={invoiceColumns}
                 data={invoices}
@@ -172,7 +172,7 @@ export function InvoicingPage() {
               onAction={handleNewQuote}
             />
           ) : (
-            <div className="bg-card-bg rounded-xl border border-border-warm overflow-hidden">
+            <div className="bg-card-bg rounded-xl border border-border-light overflow-hidden">
               <DataTable<Quote>
                 columns={quoteColumns}
                 data={quotes}

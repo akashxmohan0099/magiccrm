@@ -74,7 +74,7 @@ export function CampaignList({ onEdit }: CampaignListProps) {
         />
       </div>
 
-      <div className="bg-card-bg rounded-xl border border-border-warm overflow-hidden">
+      <div className="bg-card-bg rounded-xl border border-border-light overflow-hidden">
         <DataTable<Campaign>
           columns={columns}
           data={filtered}

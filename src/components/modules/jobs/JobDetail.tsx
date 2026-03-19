@@ -109,7 +109,7 @@ export function JobDetail({ open, onClose, jobId, onEdit }: JobDetailProps) {
           </div>
 
           {/* Tabs */}
-          <div className="border-b border-border-warm">
+          <div className="border-b border-border-light">
             <div className="flex gap-4">
               {tabs.map((tab) => (
                 <button
@@ -117,7 +117,7 @@ export function JobDetail({ open, onClose, jobId, onEdit }: JobDetailProps) {
                   onClick={() => setActiveTab(tab.key)}
                   className={`pb-2 text-sm font-medium transition-colors cursor-pointer ${
                     activeTab === tab.key
-                      ? "text-brand border-b-2 border-brand"
+                      ? "text-foreground border-b-2 border-foreground"
                       : "text-text-secondary hover:text-foreground"
                   }`}
                 >

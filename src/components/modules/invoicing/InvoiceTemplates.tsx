@@ -45,12 +45,12 @@ export function InvoiceTemplates() {
                 onClick={() => setSelected(tmpl.id)}
                 className={`relative text-left p-4 rounded-xl border-2 transition-all cursor-pointer ${
                   isSelected
-                    ? "border-brand bg-brand-light"
-                    : "border-border-warm bg-card-bg hover:border-border-light hover:bg-surface"
+                    ? "border-brand bg-surface"
+                    : "border-border-light bg-card-bg hover:border-border-light hover:bg-surface"
                 }`}
               >
                 {isSelected && (
-                  <div className="absolute top-3 right-3 text-brand">
+                  <div className="absolute top-3 right-3 text-foreground">
                     <CheckCircle className="w-5 h-5" />
                   </div>
                 )}

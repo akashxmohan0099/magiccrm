@@ -45,7 +45,7 @@ export function SatisfactionWidget({ ticketId }: SatisfactionWidgetProps) {
               className={`w-5 h-5 transition-colors ${
                 star <= displayRating
                   ? "fill-yellow-400 text-yellow-400"
-                  : "fill-none text-border-warm"
+                  : "fill-none text-border-light"
               }`}
             />
           </button>

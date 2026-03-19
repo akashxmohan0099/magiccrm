@@ -87,7 +87,7 @@ export function PaymentForm({ open, onClose }: PaymentFormProps) {
             placeholder="0.00"
             min={0}
             step={0.01}
-            className="w-full px-3 py-2 bg-card-bg border border-border-warm rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
+            className="w-full px-3 py-2 bg-card-bg border border-border-light rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
           />
         </FormField>
 
@@ -127,7 +127,7 @@ export function PaymentForm({ open, onClose }: PaymentFormProps) {
           />
         </FormField>
 
-        <div className="flex justify-end gap-2 pt-4 border-t border-border-warm">
+        <div className="flex justify-end gap-2 pt-4 border-t border-border-light">
           <Button variant="ghost" onClick={onClose}>Cancel</Button>
           <Button onClick={handleSubmit}>Record Payment</Button>
         </div>

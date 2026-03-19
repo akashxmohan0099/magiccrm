@@ -95,7 +95,7 @@ export function ExportReports() {
   };
 
   return (
-    <div className="bg-card-bg border border-border-warm rounded-xl p-6">
+    <div className="bg-card-bg border border-border-light rounded-xl p-6">
       <h2 className="text-lg font-semibold text-foreground tracking-tight mb-4">
         Export Reports
       </h2>

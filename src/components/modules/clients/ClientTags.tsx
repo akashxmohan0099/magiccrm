@@ -65,12 +65,12 @@ export function ClientTags({ clientId }: ClientTagsProps) {
         {client.tags.map((tag) => (
           <span
             key={tag}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-brand-light text-brand border border-brand/20"
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-surface text-foreground border border-foreground/20"
           >
             {tag}
             <button
               onClick={() => handleRemoveTag(tag)}
-              className="hover:text-brand/70 cursor-pointer"
+              className="hover:text-foreground/70 cursor-pointer"
             >
               <X className="w-3 h-3" />
             </button>
@@ -91,7 +91,7 @@ export function ClientTags({ clientId }: ClientTagsProps) {
             onKeyDown={handleKeyDown}
             placeholder="Enter tag name..."
             autoFocus
-            className="flex-1 px-3 py-1.5 bg-card-bg border border-border-warm rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
+            className="flex-1 px-3 py-1.5 bg-card-bg border border-border-light rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20 focus:border-foreground"
           />
           <Button size="sm" onClick={handleAddTag}>
             Add

@@ -38,7 +38,7 @@ export function ActivityFeed() {
   const { entries, clearEntries } = useActivityStore();
 
   return (
-    <div className="bg-card-bg border border-border-warm rounded-xl p-6">
+    <div className="bg-card-bg border border-border-light rounded-xl p-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-foreground tracking-tight">
           Activity Feed

@@ -48,7 +48,7 @@ export function ClientsPage() {
             {client.tags.map((tag) => (
               <span
                 key={tag}
-                className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-brand-light text-brand border border-brand/20"
+                className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-surface text-foreground border border-border-light"
               >
                 {tag}
               </span>
@@ -92,7 +92,7 @@ export function ClientsPage() {
           </p>
         </div>
       ) : (
-        <div className="bg-card-bg rounded-xl border border-border-warm overflow-hidden">
+        <div className="bg-card-bg rounded-xl border border-border-light overflow-hidden">
           <DataTable
             columns={columns}
             data={filtered}

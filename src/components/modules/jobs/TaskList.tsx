@@ -45,7 +45,7 @@ export function TaskList({ jobId }: TaskListProps) {
           </div>
           <div className="h-2 bg-surface rounded-full overflow-hidden">
             <div
-              className="h-full bg-brand rounded-full transition-all duration-300"
+              className="h-full bg-foreground rounded-full transition-all duration-300"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
@@ -61,10 +61,10 @@ export function TaskList({ jobId }: TaskListProps) {
           >
             <button
               onClick={() => toggleTask(jobId, task.id)}
-              className="flex-shrink-0 text-text-secondary hover:text-brand cursor-pointer"
+              className="flex-shrink-0 text-text-secondary hover:text-foreground cursor-pointer"
             >
               {task.completed ? (
-                <CheckSquare className="w-4 h-4 text-brand" />
+                <CheckSquare className="w-4 h-4 text-foreground" />
               ) : (
                 <Square className="w-4 h-4" />
               )}
@@ -96,12 +96,12 @@ export function TaskList({ jobId }: TaskListProps) {
           onChange={(e) => setNewTask(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Add a task..."
-          className="flex-1 px-3 py-2 bg-card-bg border border-border-warm rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
+          className="flex-1 px-3 py-2 bg-card-bg border border-border-light rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
         />
         <button
           onClick={handleAdd}
           disabled={!newTask.trim()}
-          className="p-2 rounded-lg bg-brand text-white hover:bg-brand-hover disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed transition-colors"
+          className="p-2 rounded-lg bg-foreground text-white hover:bg-foreground disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed transition-colors"
         >
           <Plus className="w-4 h-4" />
         </button>

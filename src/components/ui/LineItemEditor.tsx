@@ -36,20 +36,20 @@ export function LineItemEditor({ items, onChange }: LineItemEditorProps) {
               value={item.description}
               onChange={(e) => updateItem(item.id, "description", e.target.value)}
               placeholder="Description"
-              className="flex-1 px-3 py-2 bg-card-bg border border-border-warm rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/20"
+              className="flex-1 px-3 py-2 bg-card-bg border border-border-light rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-foreground/10"
             />
             <input
               type="number"
               value={item.quantity}
               onChange={(e) => updateItem(item.id, "quantity", Number(e.target.value))}
-              className="w-20 px-3 py-2 bg-card-bg border border-border-warm rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-brand/20"
+              className="w-20 px-3 py-2 bg-card-bg border border-border-light rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-brand/20"
               min={1}
             />
             <input
               type="number"
               value={item.unitPrice}
               onChange={(e) => updateItem(item.id, "unitPrice", Number(e.target.value))}
-              className="w-28 px-3 py-2 bg-card-bg border border-border-warm rounded-lg text-sm text-right focus:outline-none focus:ring-2 focus:ring-brand/20"
+              className="w-28 px-3 py-2 bg-card-bg border border-border-light rounded-lg text-sm text-right focus:outline-none focus:ring-2 focus:ring-brand/20"
               min={0}
               step={0.01}
             />

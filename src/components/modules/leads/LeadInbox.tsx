@@ -52,10 +52,10 @@ export function LeadInbox() {
             {sorted.map((lead) => (
               <div
                 key={lead.id}
-                className="flex items-center gap-4 bg-card-bg rounded-lg border border-border-warm p-4 hover:shadow-sm transition-shadow"
+                className="flex items-center gap-4 bg-card-bg rounded-lg border border-border-light p-4 hover:shadow-sm transition-shadow"
               >
-                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-brand-light flex items-center justify-center">
-                  <Inbox className="w-5 h-5 text-brand" />
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-surface flex items-center justify-center">
+                  <Inbox className="w-5 h-5 text-foreground" />
                 </div>
 
                 <div className="flex-1 min-w-0">

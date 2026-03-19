@@ -23,7 +23,7 @@ function StarRating({ rating }: { rating?: number }) {
           className={`w-4 h-4 ${
             i <= rating
               ? "fill-amber-400 text-amber-400"
-              : "text-border-warm"
+              : "text-border-light"
           }`}
         />
       ))}
@@ -87,7 +87,7 @@ export function ReviewCollection() {
             {reviewRequests.map((req) => (
               <div
                 key={req.id}
-                className="flex items-center justify-between p-4 bg-card-bg rounded-xl border border-border-warm"
+                className="flex items-center justify-between p-4 bg-card-bg rounded-xl border border-border-light"
               >
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">
@@ -132,7 +132,7 @@ export function ReviewCollection() {
               )}
             </FormField>
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-border-warm">
+            <div className="flex justify-end gap-3 pt-4 border-t border-border-light">
               <Button
                 variant="secondary"
                 size="sm"

@@ -20,6 +20,261 @@ export interface NeedsAssessment {
 
 export type TeamSize = "" | "Just me" | "2-5" | "6-15" | "16+";
 
+// ── Industry definitions with smart defaults and tailored copy ──
+
+export interface IndustryConfig {
+  id: string;
+  label: string;
+  emoji: string;
+  description: string;
+  // Which needs are typically YES for this industry
+  smartDefaults: Partial<Record<keyof NeedsAssessment, boolean>>;
+  // Tailored question labels per industry
+  questionOverrides?: Partial<Record<keyof NeedsAssessment, { label: string; subtitle: string }>>;
+  // Suggested team size
+  suggestedTeamSize?: TeamSize;
+  // Example business description placeholder
+  descriptionPlaceholder: string;
+  // Example business names
+  namePlaceholder: string;
+}
+
+export const INDUSTRY_CONFIGS: IndustryConfig[] = [
+  {
+    id: "beauty-wellness",
+    label: "Beauty & Wellness",
+    emoji: "\u2728",
+    description: "Salons, spas, makeup artists, lash techs, barbers",
+    smartDefaults: {
+      manageCustomers: true,
+      acceptBookings: true,
+      sendInvoices: true,
+      communicateClients: true,
+      runMarketing: true,
+      receiveInquiries: true,
+      handleSupport: false,
+      manageProjects: false,
+      manageDocuments: false,
+    },
+    questionOverrides: {
+      manageCustomers: { label: "Do you keep client profiles with service history?", subtitle: "Track preferences, allergies, past treatments, and visit history." },
+      acceptBookings: { label: "Do clients book appointments with you?", subtitle: "Online booking links, availability, and automated reminders." },
+      sendInvoices: { label: "Do you charge per service or send invoices?", subtitle: "Per-visit payments, package deals, or invoiced corporate clients." },
+      communicateClients: { label: "Do you message clients about bookings or promotions?", subtitle: "Appointment confirmations, rescheduling, and special offers via SMS or DM." },
+      runMarketing: { label: "Do you promote your services on social media?", subtitle: "Before/after posts, seasonal promos, and review requests." },
+      receiveInquiries: { label: "Do new clients reach out through DMs or your website?", subtitle: "Capture inquiries from Instagram, Facebook, Google, and your website." },
+    },
+    descriptionPlaceholder: "e.g. Mobile lash technician in Brisbane",
+    namePlaceholder: "e.g. Glow Studio",
+    suggestedTeamSize: "Just me",
+  },
+  {
+    id: "trades-construction",
+    label: "Trades & Construction",
+    emoji: "\uD83D\uDD27",
+    description: "Plumbers, electricians, builders, HVAC, landscapers",
+    smartDefaults: {
+      manageCustomers: true,
+      sendInvoices: true,
+      manageProjects: true,
+      receiveInquiries: true,
+      communicateClients: true,
+      manageDocuments: true,
+      handleSupport: false,
+      acceptBookings: false,
+      runMarketing: false,
+    },
+    questionOverrides: {
+      manageCustomers: { label: "Do you keep records of job sites and client details?", subtitle: "Property addresses, contact info, and job history per client." },
+      sendInvoices: { label: "Do you quote jobs and send invoices?", subtitle: "Quotes that convert to invoices, progress payments, and receipts." },
+      manageProjects: { label: "Do you manage jobs with multiple stages?", subtitle: "Track jobs from quote to completion with task lists and photos." },
+      receiveInquiries: { label: "Do homeowners or businesses request quotes from you?", subtitle: "Capture leads from Google, word of mouth, or your website." },
+      manageDocuments: { label: "Do you deal with contracts, permits, or compliance docs?", subtitle: "Store and share contracts, safety docs, and certificates." },
+      communicateClients: { label: "Do you update clients on job progress?", subtitle: "Send updates, photos, and ETAs via text or email." },
+    },
+    descriptionPlaceholder: "e.g. Residential electrical contractor in Gold Coast",
+    namePlaceholder: "e.g. Spark Right Electrical",
+    suggestedTeamSize: "2-5",
+  },
+  {
+    id: "professional-services",
+    label: "Professional Services",
+    emoji: "\uD83D\uDCBC",
+    description: "Consultants, accountants, lawyers, agencies, coaches",
+    smartDefaults: {
+      manageCustomers: true,
+      sendInvoices: true,
+      manageProjects: true,
+      communicateClients: true,
+      receiveInquiries: true,
+      manageDocuments: true,
+      handleSupport: true,
+      acceptBookings: true,
+      runMarketing: false,
+    },
+    questionOverrides: {
+      manageCustomers: { label: "Do you manage an ongoing client roster?", subtitle: "Client profiles, engagement history, and relationship tracking." },
+      sendInvoices: { label: "Do you bill clients for your services?", subtitle: "Hourly billing, retainers, project-based invoicing, and expense tracking." },
+      manageProjects: { label: "Do you run projects or engagements with deliverables?", subtitle: "Track milestones, tasks, and deliverables per client engagement." },
+      manageDocuments: { label: "Do you send proposals, contracts, or reports?", subtitle: "Proposals, SOWs, NDAs, and deliverable documents." },
+      handleSupport: { label: "Do clients come back with questions or follow-ups?", subtitle: "Track follow-up requests and ongoing client support." },
+      acceptBookings: { label: "Do clients book consultations or meetings with you?", subtitle: "Discovery calls, strategy sessions, and recurring check-ins." },
+    },
+    descriptionPlaceholder: "e.g. Business coaching for SMEs",
+    namePlaceholder: "e.g. Apex Advisory",
+    suggestedTeamSize: "2-5",
+  },
+  {
+    id: "health-fitness",
+    label: "Health & Fitness",
+    emoji: "\uD83C\uDFCB\uFE0F",
+    description: "Personal trainers, physios, yoga studios, gyms, nutritionists",
+    smartDefaults: {
+      manageCustomers: true,
+      acceptBookings: true,
+      sendInvoices: true,
+      communicateClients: true,
+      runMarketing: true,
+      receiveInquiries: true,
+      handleSupport: false,
+      manageProjects: false,
+      manageDocuments: false,
+    },
+    questionOverrides: {
+      manageCustomers: { label: "Do you track client progress and health records?", subtitle: "Training plans, measurements, progress photos, and session notes." },
+      acceptBookings: { label: "Do clients book sessions or classes?", subtitle: "1-on-1 sessions, group classes, and recurring weekly bookings." },
+      sendInvoices: { label: "Do you charge per session, by package, or membership?", subtitle: "Session packs, monthly memberships, or per-visit billing." },
+      runMarketing: { label: "Do you promote classes, offers, or transformations?", subtitle: "Transformation stories, class schedules, and seasonal promos." },
+      communicateClients: { label: "Do you check in with clients between sessions?", subtitle: "Form checks, accountability messages, and scheduling updates." },
+    },
+    descriptionPlaceholder: "e.g. Personal training studio in Bondi",
+    namePlaceholder: "e.g. Peak Performance PT",
+    suggestedTeamSize: "Just me",
+  },
+  {
+    id: "creative-services",
+    label: "Creative & Design",
+    emoji: "\uD83C\uDFA8",
+    description: "Photographers, designers, videographers, content creators",
+    smartDefaults: {
+      manageCustomers: true,
+      sendInvoices: true,
+      manageProjects: true,
+      communicateClients: true,
+      receiveInquiries: true,
+      manageDocuments: true,
+      acceptBookings: true,
+      runMarketing: true,
+      handleSupport: false,
+    },
+    questionOverrides: {
+      manageCustomers: { label: "Do you manage a client list with project history?", subtitle: "Track past projects, preferences, brand guidelines, and contacts." },
+      sendInvoices: { label: "Do you send quotes and invoices for projects?", subtitle: "Project quotes, milestone invoicing, and deposit collection." },
+      manageProjects: { label: "Do your projects have stages like brief, draft, review, deliver?", subtitle: "Track creative projects from briefing through to final delivery." },
+      receiveInquiries: { label: "Do potential clients reach out for quotes or availability?", subtitle: "Inquiry forms, DMs, and referral tracking." },
+      manageDocuments: { label: "Do you send contracts or share deliverables?", subtitle: "Creative briefs, contracts, mood boards, and file delivery." },
+      acceptBookings: { label: "Do clients book shoots, sessions, or calls?", subtitle: "Discovery calls, shoot days, and review sessions." },
+    },
+    descriptionPlaceholder: "e.g. Wedding photography and videography",
+    namePlaceholder: "e.g. Luminous Studios",
+    suggestedTeamSize: "Just me",
+  },
+  {
+    id: "hospitality-events",
+    label: "Hospitality & Events",
+    emoji: "\uD83C\uDF7D\uFE0F",
+    description: "Restaurants, caterers, event planners, venues, food trucks",
+    smartDefaults: {
+      manageCustomers: true,
+      acceptBookings: true,
+      sendInvoices: true,
+      communicateClients: true,
+      receiveInquiries: true,
+      manageProjects: true,
+      runMarketing: true,
+      handleSupport: false,
+      manageDocuments: false,
+    },
+    questionOverrides: {
+      manageCustomers: { label: "Do you keep records of past clients and events?", subtitle: "Guest preferences, dietary needs, and event history." },
+      acceptBookings: { label: "Do clients book events, tables, or catering?", subtitle: "Event bookings, table reservations, and catering inquiries." },
+      sendInvoices: { label: "Do you send quotes and invoices for events or orders?", subtitle: "Event proposals, deposit invoices, and final settlement." },
+      manageProjects: { label: "Do you plan events with multiple moving parts?", subtitle: "Vendor coordination, timelines, checklists, and floor plans." },
+      receiveInquiries: { label: "Do new clients inquire about availability or menus?", subtitle: "Capture event inquiries, menu requests, and venue tours." },
+    },
+    descriptionPlaceholder: "e.g. Boutique event planning and catering",
+    namePlaceholder: "e.g. Sage & Thyme Events",
+    suggestedTeamSize: "2-5",
+  },
+  {
+    id: "education-coaching",
+    label: "Education & Coaching",
+    emoji: "\uD83D\uDCDA",
+    description: "Tutors, course creators, music teachers, driving schools",
+    smartDefaults: {
+      manageCustomers: true,
+      acceptBookings: true,
+      sendInvoices: true,
+      communicateClients: true,
+      receiveInquiries: true,
+      handleSupport: true,
+      manageDocuments: true,
+      runMarketing: false,
+      manageProjects: false,
+    },
+    questionOverrides: {
+      manageCustomers: { label: "Do you track students or learner progress?", subtitle: "Student profiles, progress notes, and attendance records." },
+      acceptBookings: { label: "Do students book lessons or sessions?", subtitle: "One-on-one lessons, group classes, and recurring schedules." },
+      sendInvoices: { label: "Do you charge per lesson, term, or course?", subtitle: "Per-session billing, term invoices, or course packages." },
+      communicateClients: { label: "Do you communicate with students or parents?", subtitle: "Lesson reminders, progress updates, and schedule changes." },
+      handleSupport: { label: "Do students have questions outside of sessions?", subtitle: "Homework help, resource sharing, and follow-up Q&A." },
+      manageDocuments: { label: "Do you share worksheets, resources, or certificates?", subtitle: "Course materials, worksheets, and completion certificates." },
+    },
+    descriptionPlaceholder: "e.g. Private music lessons for kids and adults",
+    namePlaceholder: "e.g. Melody Music Academy",
+    suggestedTeamSize: "Just me",
+  },
+  {
+    id: "retail-ecommerce",
+    label: "Retail & E-commerce",
+    emoji: "\uD83D\uDED2",
+    description: "Online stores, boutiques, wholesalers, dropshippers",
+    smartDefaults: {
+      manageCustomers: true,
+      sendInvoices: true,
+      communicateClients: true,
+      receiveInquiries: true,
+      runMarketing: true,
+      handleSupport: true,
+      manageDocuments: false,
+      acceptBookings: false,
+      manageProjects: false,
+    },
+    questionOverrides: {
+      manageCustomers: { label: "Do you track customer orders and purchase history?", subtitle: "Customer profiles, order history, and lifetime value tracking." },
+      sendInvoices: { label: "Do you send invoices for wholesale or custom orders?", subtitle: "Wholesale invoicing, custom order quotes, and receipts." },
+      runMarketing: { label: "Do you run promotions, email campaigns, or social ads?", subtitle: "Product launches, seasonal sales, and abandoned cart emails." },
+      handleSupport: { label: "Do customers contact you about orders or returns?", subtitle: "Order inquiries, returns processing, and product questions." },
+      communicateClients: { label: "Do you message customers about orders or promotions?", subtitle: "Shipping updates, restock alerts, and loyalty rewards." },
+    },
+    descriptionPlaceholder: "e.g. Online boutique selling handmade jewelry",
+    namePlaceholder: "e.g. Luna & Stone",
+    suggestedTeamSize: "Just me",
+  },
+  {
+    id: "other",
+    label: "Something else",
+    emoji: "\uD83D\uDE80",
+    description: "Tell us about your business and we'll figure it out",
+    smartDefaults: {},
+    descriptionPlaceholder: "Describe what your business does",
+    namePlaceholder: "Your business name",
+  },
+];
+
+// Legacy compat - flat industry list
+export const INDUSTRIES = INDUSTRY_CONFIGS.map((c) => c.label);
+
 export const NEEDS_QUESTIONS: { key: keyof NeedsAssessment; label: string }[] = [
   { key: "manageCustomers", label: "Do you keep track of clients or customers?" },
   { key: "receiveInquiries", label: "Do you get inquiries or leads from new customers?" },
@@ -30,17 +285,6 @@ export const NEEDS_QUESTIONS: { key: keyof NeedsAssessment; label: string }[] = 
   { key: "runMarketing", label: "Do you promote your business or run marketing?" },
   { key: "handleSupport", label: "Do you handle support requests or follow-ups after the job?" },
   { key: "manageDocuments", label: "Do you deal with contracts, agreements, or shared documents?" },
-];
-
-export const INDUSTRIES = [
-  "Hospitality",
-  "Retail",
-  "Health and Wellness",
-  "Professional Services",
-  "Trades and Construction",
-  "Creative Services",
-  "Education",
-  "Other",
 ];
 
 export const TEAM_SIZE_OPTIONS: Exclude<TeamSize, "">[] = [

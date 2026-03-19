@@ -53,7 +53,7 @@ export function ModuleSettings() {
   };
 
   return (
-    <div className="bg-card-bg border border-border-warm rounded-xl p-6 max-w-2xl">
+    <div className="bg-card-bg border border-border-light rounded-xl p-6 max-w-2xl">
       <h2 className="text-lg font-semibold text-foreground tracking-tight mb-2">
         Module Settings
       </h2>
@@ -82,7 +82,7 @@ export function ModuleSettings() {
                 type="button"
                 onClick={() => toggleModule(mod.id)}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer shrink-0 ml-4 ${
-                  enabled ? "bg-brand" : "bg-border-warm"
+                  enabled ? "bg-brand" : "bg-border-light"
                 }`}
               >
                 <span

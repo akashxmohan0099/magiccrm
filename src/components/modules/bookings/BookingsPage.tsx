@@ -116,7 +116,7 @@ export function BookingsPage() {
             onClick={() => setView("list")}
             className={`p-1.5 rounded-md transition-colors cursor-pointer ${
               view === "list"
-                ? "bg-brand text-white"
+                ? "bg-card-bg text-foreground shadow-sm"
                 : "text-text-secondary hover:text-foreground"
             }`}
           >
@@ -126,7 +126,7 @@ export function BookingsPage() {
             onClick={() => setView("calendar")}
             className={`p-1.5 rounded-md transition-colors cursor-pointer ${
               view === "calendar"
-                ? "bg-brand text-white"
+                ? "bg-card-bg text-foreground shadow-sm"
                 : "text-text-secondary hover:text-foreground"
             }`}
           >
@@ -144,7 +144,7 @@ export function BookingsPage() {
           onAction={handleAdd}
         />
       ) : view === "list" ? (
-        <div className="bg-card-bg rounded-xl border border-border-warm overflow-hidden">
+        <div className="bg-card-bg rounded-xl border border-border-light overflow-hidden">
           <DataTable<Booking>
             columns={columns}
             data={filtered}

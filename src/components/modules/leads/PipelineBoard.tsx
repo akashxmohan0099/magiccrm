@@ -49,7 +49,7 @@ export function PipelineBoard({ leads: externalLeads }: PipelineBoardProps) {
       keyExtractor={(lead) => lead.id}
       onMove={handleMove}
       renderCard={(lead) => (
-        <div className="bg-card-bg rounded-lg border border-border-warm p-3 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-card-bg rounded-lg border border-border-light p-3 shadow-sm hover:shadow-md transition-shadow">
           <p className="text-sm font-medium text-foreground truncate">
             {lead.name}
           </p>

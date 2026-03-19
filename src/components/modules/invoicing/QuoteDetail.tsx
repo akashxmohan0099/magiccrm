@@ -115,7 +115,7 @@ export function QuoteDetail({ open, onClose, quoteId, onEdit }: QuoteDetailProps
           )}
 
           {/* Actions */}
-          <div className="flex items-center gap-2 pt-4 border-t border-border-warm">
+          <div className="flex items-center gap-2 pt-4 border-t border-border-light">
             <Button variant="primary" size="sm" onClick={handleConvert}>
               <ArrowRightCircle className="w-4 h-4" /> Convert to Invoice
             </Button>

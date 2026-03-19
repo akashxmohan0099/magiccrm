@@ -6,10 +6,13 @@ import {
   TeamSize,
   FeatureDetail,
   FEATURE_CATEGORIES,
+  INDUSTRY_CONFIGS,
+  IndustryConfig,
 } from "@/types/onboarding";
 
 interface OnboardingStore {
   step: number;
+  selectedIndustry: string;
   businessContext: BusinessContext;
   needs: NeedsAssessment;
   teamSize: TeamSize;
@@ -20,9 +23,12 @@ interface OnboardingStore {
   setStep: (step: number) => void;
   nextStep: () => void;
   prevStep: () => void;
+  setSelectedIndustry: (id: string) => void;
+  getIndustryConfig: () => IndustryConfig | undefined;
   setBusinessContext: (ctx: Partial<BusinessContext>) => void;
   setNeed: (key: keyof NeedsAssessment, value: boolean) => void;
   toggleNeed: (key: keyof NeedsAssessment) => void;
+  applySmartDefaults: () => void;
   setTeamSize: (size: TeamSize) => void;
   setFeatureSelections: (categoryId: string, features: FeatureDetail[]) => void;
   toggleFeature: (categoryId: string, featureId: string) => void;
@@ -36,6 +42,7 @@ export const useOnboardingStore = create<OnboardingStore>()(
   persist(
     (set, get) => ({
       step: 0,
+      selectedIndustry: "",
       businessContext: {
         businessName: "",
         businessDescription: "",
@@ -63,6 +70,22 @@ export const useOnboardingStore = create<OnboardingStore>()(
       nextStep: () => set((s) => ({ step: s.step + 1 })),
       prevStep: () => set((s) => ({ step: Math.max(0, s.step - 1) })),
 
+      setSelectedIndustry: (id) => {
+        const config = INDUSTRY_CONFIGS.find((c) => c.id === id);
+        set({
+          selectedIndustry: id,
+          businessContext: {
+            ...get().businessContext,
+            industry: config?.label || "",
+          },
+        });
+      },
+
+      getIndustryConfig: () => {
+        const { selectedIndustry } = get();
+        return INDUSTRY_CONFIGS.find((c) => c.id === selectedIndustry);
+      },
+
       setBusinessContext: (ctx) =>
         set((s) => ({ businessContext: { ...s.businessContext, ...ctx } })),
 
@@ -75,6 +98,15 @@ export const useOnboardingStore = create<OnboardingStore>()(
         set((s) => ({
           needs: { ...s.needs, [key]: !s.needs[key] },
         })),
+
+      applySmartDefaults: () => {
+        const config = get().getIndustryConfig();
+        if (!config || !config.smartDefaults) return;
+        set((s) => ({
+          needs: { ...s.needs, ...config.smartDefaults },
+          teamSize: config.suggestedTeamSize || s.teamSize,
+        }));
+      },
 
       setTeamSize: (size) => set({ teamSize: size }),
 

@@ -16,37 +16,43 @@ interface TabsProps {
 
 export function Tabs({ tabs, activeTab, onChange }: TabsProps) {
   return (
-    <div className="flex gap-1 border-b border-border-warm mb-6">
+    <div className="flex gap-0.5 border-b border-border-light mb-6">
       {tabs.map((tab) => (
-        <button
+        <motion.button
           key={tab.id}
           onClick={() => onChange(tab.id)}
-          className={`relative px-4 py-2.5 text-sm font-medium transition-colors cursor-pointer ${
+          className={`relative px-4 py-2.5 text-[13px] font-medium transition-colors cursor-pointer rounded-t-lg ${
             activeTab === tab.id
-              ? "text-brand"
-              : "text-text-secondary hover:text-foreground"
+              ? "text-foreground"
+              : "text-text-secondary hover:text-foreground hover:bg-surface/30"
           }`}
+          whileHover={{ y: -1 }}
+          whileTap={{ y: 0 }}
         >
           <span className="relative z-10 flex items-center gap-2">
             {tab.label}
             {tab.count !== undefined && (
-              <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-semibold ${
-                activeTab === tab.id
-                  ? "bg-brand/10 text-brand"
-                  : "bg-surface text-text-secondary"
-              }`}>
+              <motion.span
+                className={`inline-flex items-center justify-center min-w-[22px] h-5 px-1.5 rounded-full text-[11px] font-semibold transition-colors ${
+                  activeTab === tab.id
+                    ? "bg-foreground text-white"
+                    : "bg-surface text-text-secondary"
+                }`}
+                initial={false}
+                animate={{ scale: activeTab === tab.id ? 1.05 : 1 }}
+              >
                 {tab.count}
-              </span>
+              </motion.span>
             )}
           </span>
           {activeTab === tab.id && (
             <motion.div
               layoutId="tab-active-indicator"
-              className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand rounded-full"
+              className="absolute bottom-0 left-0 right-0 h-1 bg-foreground rounded-t-full"
               transition={{ type: "spring", duration: 0.35, bounce: 0.15 }}
             />
           )}
-        </button>
+        </motion.button>
       ))}
     </div>
   );

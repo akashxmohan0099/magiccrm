@@ -41,11 +41,11 @@ export function ContractTemplates() {
           {templates.map((template) => (
             <div
               key={template.id}
-              className="bg-card-bg rounded-xl border border-border-warm p-4 hover:border-brand/30 transition-colors"
+              className="bg-card-bg rounded-xl border border-border-light p-4 hover:border-brand/30 transition-colors"
             >
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-lg bg-brand-light flex items-center justify-center flex-shrink-0">
-                  <FileText className="w-5 h-5 text-brand" />
+                <div className="w-10 h-10 rounded-lg bg-surface flex items-center justify-center flex-shrink-0">
+                  <FileText className="w-5 h-5 text-foreground" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <h3 className="text-sm font-medium text-foreground truncate">

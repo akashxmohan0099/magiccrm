@@ -44,7 +44,7 @@ export function AutomationList({ rules, onEdit }: AutomationListProps) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: index * 0.05 }}
-          className="bg-card-bg border border-border-warm rounded-xl p-4 flex items-center justify-between gap-4 hover:border-brand/30 transition-colors"
+          className="bg-card-bg border border-border-light rounded-xl p-4 flex items-center justify-between gap-4 hover:border-brand/30 transition-colors"
         >
           <button
             onClick={() => onEdit(rule)}
@@ -67,7 +67,7 @@ export function AutomationList({ rules, onEdit }: AutomationListProps) {
                 toggleRule(rule.id);
               }}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${
-                rule.enabled ? "bg-brand" : "bg-border-warm"
+                rule.enabled ? "bg-brand" : "bg-border-light"
               }`}
               title={rule.enabled ? "Disable" : "Enable"}
             >

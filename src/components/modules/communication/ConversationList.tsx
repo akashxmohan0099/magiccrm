@@ -66,7 +66,7 @@ export function ConversationList({ conversations, selectedId, onSelect }: Conver
             key={convo.id}
             onClick={() => onSelect(convo.id)}
             className={`w-full text-left px-4 py-3 border-b border-border-light transition-colors cursor-pointer ${
-              isSelected ? "bg-brand-light" : "hover:bg-surface"
+              isSelected ? "bg-surface" : "hover:bg-surface"
             }`}
           >
             <div className="flex items-start gap-3">

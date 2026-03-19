@@ -107,7 +107,7 @@ export function DataManagement() {
   return (
     <div className="max-w-2xl space-y-6">
       {/* Export section */}
-      <div className="bg-card-bg border border-border-warm rounded-xl p-6">
+      <div className="bg-card-bg border border-border-light rounded-xl p-6">
         <h2 className="text-lg font-semibold text-foreground tracking-tight mb-2">
           Export Data
         </h2>
@@ -121,7 +121,7 @@ export function DataManagement() {
       </div>
 
       {/* Import section */}
-      <div className="bg-card-bg border border-border-warm rounded-xl p-6">
+      <div className="bg-card-bg border border-border-light rounded-xl p-6">
         <h2 className="text-lg font-semibold text-foreground tracking-tight mb-2">
           Import Data
         </h2>

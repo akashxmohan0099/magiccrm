@@ -50,10 +50,10 @@ export function GeneralSettings() {
   };
 
   const inputClass =
-    "w-full px-3 py-2 bg-card-bg border border-border-warm rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand";
+    "w-full px-3 py-2 bg-card-bg border border-border-light rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20 focus:border-foreground";
 
   return (
-    <div className="bg-card-bg border border-border-warm rounded-xl p-6 max-w-2xl">
+    <div className="bg-card-bg border border-border-light rounded-xl p-6 max-w-2xl">
       <h2 className="text-lg font-semibold text-foreground tracking-tight mb-4">
         Business Information
       </h2>
@@ -96,13 +96,13 @@ export function GeneralSettings() {
         </FormField>
       </div>
 
-      <div className="flex items-center gap-3 pt-4 border-t border-border-warm mt-4">
+      <div className="flex items-center gap-3 pt-4 border-t border-border-light mt-4">
         <Button onClick={handleSave}>
           <Save className="w-4 h-4 mr-1.5" />
           Save Changes
         </Button>
         {saved && (
-          <span className="text-sm text-brand font-medium">Saved!</span>
+          <span className="text-sm text-foreground font-medium">Saved!</span>
         )}
       </div>
     </div>

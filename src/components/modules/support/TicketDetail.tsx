@@ -69,7 +69,7 @@ export function TicketDetail({ open, onClose, ticketId }: TicketDetailProps) {
       <SlideOver open={open} onClose={onClose} title={ticket.subject}>
         <div className="flex flex-col h-full">
           {/* Ticket info */}
-          <div className="space-y-3 pb-4 border-b border-border-warm">
+          <div className="space-y-3 pb-4 border-b border-border-light">
             <div className="flex items-center gap-2 flex-wrap">
               <StatusBadge status={ticket.priority} />
               <StatusBadge status={ticket.status} />
@@ -150,7 +150,7 @@ export function TicketDetail({ open, onClose, ticketId }: TicketDetailProps) {
           </div>
 
           {/* Reply input */}
-          <div className="pt-3 border-t border-border-warm">
+          <div className="pt-3 border-t border-border-light">
             <div className="flex items-end gap-2">
               <textarea
                 value={replyText}
@@ -158,7 +158,7 @@ export function TicketDetail({ open, onClose, ticketId }: TicketDetailProps) {
                 onKeyDown={handleKeyDown}
                 placeholder="Type your reply..."
                 rows={2}
-                className="flex-1 px-3 py-2 bg-card-bg border border-border-warm rounded-lg text-sm text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
+                className="flex-1 px-3 py-2 bg-card-bg border border-border-light rounded-lg text-sm text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
               />
               <Button
                 onClick={handleSendReply}
@@ -172,7 +172,7 @@ export function TicketDetail({ open, onClose, ticketId }: TicketDetailProps) {
 
           {/* Satisfaction widget - gated */}
           <FeatureSection moduleId="support" featureId="satisfaction-ratings">
-            <div className="pt-4 mt-4 border-t border-border-warm">
+            <div className="pt-4 mt-4 border-t border-border-light">
               <SatisfactionWidget ticketId={ticket.id} />
             </div>
           </FeatureSection>

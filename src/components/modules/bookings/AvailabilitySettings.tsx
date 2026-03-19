@@ -36,7 +36,7 @@ export function AvailabilitySettings() {
   });
 
   return (
-    <div className="mt-8 bg-card-bg rounded-xl border border-border-warm p-5">
+    <div className="mt-8 bg-card-bg rounded-xl border border-border-light p-5">
       <h3 className="text-sm font-semibold text-foreground mb-1">Availability Settings</h3>
       <p className="text-xs text-text-secondary mb-5">
         Set your weekly availability to let clients know when you are open for bookings.
@@ -53,7 +53,7 @@ export function AvailabilitySettings() {
               type="button"
               onClick={() => updateSlot(slot.day, "enabled", !slot.enabled)}
               className={`relative w-9 h-5 rounded-full transition-colors cursor-pointer ${
-                slot.enabled ? "bg-brand" : "bg-surface border border-border-warm"
+                slot.enabled ? "bg-foreground" : "bg-surface border border-border-light"
               }`}
             >
               <span
@@ -78,7 +78,7 @@ export function AvailabilitySettings() {
               value={slot.startTime}
               onChange={(e) => updateSlot(slot.day, "startTime", e.target.value)}
               disabled={!slot.enabled}
-              className="px-2 py-1 rounded-md border border-border-warm bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 disabled:opacity-40"
+              className="px-2 py-1 rounded-md border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-foreground/40 disabled:opacity-40"
             />
             <span className="text-xs text-text-secondary">to</span>
             <input
@@ -86,7 +86,7 @@ export function AvailabilitySettings() {
               value={slot.endTime}
               onChange={(e) => updateSlot(slot.day, "endTime", e.target.value)}
               disabled={!slot.enabled}
-              className="px-2 py-1 rounded-md border border-border-warm bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 disabled:opacity-40"
+              className="px-2 py-1 rounded-md border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-foreground/40 disabled:opacity-40"
             />
           </div>
         ))}
@@ -97,7 +97,7 @@ export function AvailabilitySettings() {
           Save Availability
         </Button>
         {saved && (
-          <span className="text-xs text-brand font-medium">Saved!</span>
+          <span className="text-xs text-foreground font-medium">Saved!</span>
         )}
       </div>
     </div>

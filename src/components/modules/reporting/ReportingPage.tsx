@@ -27,9 +27,9 @@ interface StatCardProps {
 
 function StatCard({ label, value, icon }: StatCardProps) {
   return (
-    <div className="bg-card-bg border border-border-warm rounded-xl p-5">
+    <div className="bg-card-bg border border-border-light rounded-xl p-5">
       <div className="flex items-center gap-3 mb-2">
-        <div className="p-2 rounded-lg bg-brand-light text-brand">{icon}</div>
+        <div className="p-2 rounded-lg bg-surface text-foreground">{icon}</div>
         <span className="text-sm text-text-secondary">{label}</span>
       </div>
       <p className="text-2xl font-bold text-foreground tracking-tight">

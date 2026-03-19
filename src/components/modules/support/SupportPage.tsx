@@ -124,7 +124,7 @@ export function SupportPage() {
               onAction={handleNewTicket}
             />
           ) : (
-            <div className="bg-card-bg rounded-xl border border-border-warm overflow-hidden">
+            <div className="bg-card-bg rounded-xl border border-border-light overflow-hidden">
               <DataTable
                 columns={columns}
                 data={filtered}

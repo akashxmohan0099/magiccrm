@@ -43,53 +43,77 @@ export function DataTable<T>({ columns, data, onRowClick, keyExtractor }: DataTa
   };
 
   return (
-    <div className="overflow-x-auto rounded-xl bg-card-bg shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-      <table className="w-full">
-        <thead>
-          <tr className="border-b border-border-light">
-            {columns.map((col) => (
-              <th
-                key={col.key}
-                className={`text-left text-xs font-semibold text-text-secondary uppercase tracking-wider px-4 py-3 ${
-                  col.sortable ? "cursor-pointer select-none hover:text-foreground transition-colors" : ""
-                }`}
-                onClick={() => col.sortable && handleSort(col.key)}
-              >
-                <div className="flex items-center gap-1.5">
-                  {col.label}
-                  {col.sortable && sortKey === col.key && (
-                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
-                      {sortDir === "asc" ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                    </motion.div>
-                  )}
-                </div>
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {sorted.map((item, index) => (
-            <motion.tr
-              key={keyExtractor(item)}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: index * 0.02, duration: 0.2 }}
-              onClick={() => onRowClick?.(item)}
-              className={`border-t border-border-light transition-colors ${
-                onRowClick ? "cursor-pointer hover:bg-surface/60" : ""
-              }`}
-            >
+    <div className="rounded-xl border border-border-light overflow-hidden bg-card-bg">
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead className="bg-surface/50">
+            <tr className="border-b border-border-light">
               {columns.map((col) => (
-                <td key={col.key} className="px-4 py-3.5 text-sm text-foreground">
-                  {col.render
-                    ? col.render(item)
-                    : String((item as Record<string, unknown>)[col.key] ?? "")}
-                </td>
+                <th
+                  key={col.key}
+                  className={`text-left text-[12px] font-semibold text-text-secondary uppercase tracking-wider px-4 py-3 ${
+                    col.sortable ? "cursor-pointer select-none hover:text-foreground hover:bg-surface transition-colors" : ""
+                  }`}
+                  onClick={() => col.sortable && handleSort(col.key)}
+                >
+                  <div className="flex items-center gap-1.5 w-full">
+                    <span>{col.label}</span>
+                    {col.sortable && (
+                      <div className="ml-auto">
+                        {sortKey === col.key ? (
+                          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
+                            {sortDir === "asc" ? (
+                              <ChevronUp className="w-3.5 h-3.5" />
+                            ) : (
+                              <ChevronDown className="w-3.5 h-3.5" />
+                            )}
+                          </motion.div>
+                        ) : (
+                          <div className="w-3.5 h-3.5 opacity-0 group-hover:opacity-30" />
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </th>
               ))}
-            </motion.tr>
-          ))}
-        </tbody>
-      </table>
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.length === 0 ? (
+              <tr>
+                <td colSpan={columns.length} className="px-4 py-12 text-center">
+                  <p className="text-[13px] text-text-tertiary">No results found</p>
+                </td>
+              </tr>
+            ) : (
+              sorted.map((item, index) => (
+                <motion.tr
+                  key={keyExtractor(item)}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: index * 0.02, duration: 0.2 }}
+                  onClick={() => onRowClick?.(item)}
+                  className={`border-t border-border-light transition-all ${
+                    index % 2 === 1 ? "bg-foreground/[0.01]" : ""
+                  } ${
+                    onRowClick
+                      ? "cursor-pointer hover:bg-surface/50 hover:shadow-sm"
+                      : ""
+                  }`}
+                >
+                  {columns.map((col) => (
+                    <td key={col.key} className="px-4 py-3.5 text-[13px] text-foreground">
+                      {col.render
+                        ? col.render(item)
+                        : String((item as Record<string, unknown>)[col.key] ?? "")}
+                    </td>
+                  ))}
+                </motion.tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

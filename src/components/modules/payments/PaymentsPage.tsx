@@ -87,9 +87,9 @@ export function PaymentsPage() {
 
       {/* Revenue card */}
       <div className="mb-6">
-        <div className="inline-flex items-center gap-4 bg-card-bg border border-border-warm rounded-xl px-6 py-4">
-          <div className="p-2.5 bg-brand-light rounded-lg">
-            <DollarSign className="w-6 h-6 text-brand" />
+        <div className="inline-flex items-center gap-4 bg-card-bg border border-border-light rounded-xl px-6 py-4">
+          <div className="p-2.5 bg-surface rounded-lg">
+            <DollarSign className="w-6 h-6 text-emerald-600" />
           </div>
           <div>
             <p className="text-sm text-text-secondary">Total Revenue</p>
@@ -109,7 +109,7 @@ export function PaymentsPage() {
           onAction={() => setFormOpen(true)}
         />
       ) : (
-        <div className="bg-card-bg rounded-xl border border-border-warm overflow-hidden">
+        <div className="bg-card-bg rounded-xl border border-border-light overflow-hidden">
           <DataTable<Payment>
             columns={columns}
             data={payments}

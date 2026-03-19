@@ -55,7 +55,7 @@ export function KanbanBoard<T>({
           transition={{ delay: colIdx * 0.05 }}
           className={`flex-shrink-0 w-72 rounded-xl p-3 transition-all duration-200 ${
             dragOverCol === col.id
-              ? "bg-brand-light/50 ring-2 ring-brand/20 scale-[1.01]"
+              ? "bg-surface/80 ring-2 ring-foreground/10 scale-[1.01]"
               : "bg-surface/70"
           }`}
           onDragOver={(e) => { e.preventDefault(); setDragOverCol(col.id); }}

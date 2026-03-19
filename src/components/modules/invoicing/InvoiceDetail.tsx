@@ -114,7 +114,7 @@ export function InvoiceDetail({ open, onClose, invoiceId, onEdit }: InvoiceDetai
           )}
 
           {/* Actions */}
-          <div className="flex items-center gap-2 pt-4 border-t border-border-warm">
+          <div className="flex items-center gap-2 pt-4 border-t border-border-light">
             {invoice.status !== "paid" && (
               <Button variant="primary" size="sm" onClick={handleMarkPaid}>
                 <CheckCircle className="w-4 h-4" /> Mark as Paid

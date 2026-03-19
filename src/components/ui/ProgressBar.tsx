@@ -8,23 +8,26 @@ interface ProgressBarProps {
 }
 
 export function ProgressBar({ current, total }: ProgressBarProps) {
-  const percentage = Math.round((current / total) * 100);
-
   return (
     <div className="w-full">
-      <div className="flex justify-between items-center mb-2.5">
-        <span className="text-[13px] font-medium text-text-secondary">
+      <div className="flex justify-between items-center mb-2">
+        <span className="text-[12px] font-medium text-text-secondary">
           Step {current} of {total}
         </span>
-        <span className="text-[13px] font-semibold text-brand">{percentage}%</span>
       </div>
-      <div className="w-full h-1.5 bg-border-light rounded-full overflow-hidden">
-        <motion.div
-          className="h-full bg-gradient-to-r from-[#FFE072] to-[#D4A017] rounded-full"
-          initial={{ width: 0 }}
-          animate={{ width: `${percentage}%` }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
-        />
+      <div className="flex gap-1.5">
+        {Array.from({ length: total }, (_, i) => (
+          <div key={i} className="flex-1 h-1 rounded-full overflow-hidden bg-border-light">
+            {i < current && (
+              <motion.div
+                className="h-full bg-foreground rounded-full"
+                initial={{ width: 0 }}
+                animate={{ width: "100%" }}
+                transition={{ duration: 0.3, ease: "easeOut", delay: i * 0.05 }}
+              />
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );

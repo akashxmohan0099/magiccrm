@@ -75,9 +75,9 @@ export function GoalTracking() {
   if (!mounted) return null;
 
   return (
-    <div className="bg-card-bg border border-border-warm rounded-xl p-6">
+    <div className="bg-card-bg border border-border-light rounded-xl p-6">
       <div className="flex items-center gap-2 mb-4">
-        <Target className="w-5 h-5 text-brand" />
+        <Target className="w-5 h-5 text-foreground" />
         <h2 className="text-lg font-semibold text-foreground tracking-tight">
           Goal Tracking
         </h2>
@@ -103,14 +103,14 @@ export function GoalTracking() {
               </div>
               <div className="w-full h-2 bg-border-light rounded-full overflow-hidden mb-1.5">
                 <motion.div
-                  className="h-full bg-gradient-to-r from-[#FFE072] to-[#F2A000] rounded-full"
+                  className="h-full bg-foreground rounded-full"
                   initial={{ width: 0 }}
                   animate={{ width: `${pct}%` }}
                   transition={{ duration: 0.5, ease: "easeOut" }}
                 />
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-brand font-medium">{pct}%</span>
+                <span className="text-xs text-foreground font-medium">{pct}%</span>
                 <label className="text-xs text-text-secondary ml-auto">
                   Target:
                 </label>
@@ -120,7 +120,7 @@ export function GoalTracking() {
                   onChange={(e) =>
                     updateTarget(goal.id, Math.max(0, Number(e.target.value)))
                   }
-                  className="w-24 px-2 py-1 bg-surface border border-border-warm rounded text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-brand/20"
+                  className="w-24 px-2 py-1 bg-surface border border-border-light rounded text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
                   min={0}
                 />
               </div>

@@ -73,9 +73,9 @@ export function CommunicationPage() {
           onAction={() => setNewConvoOpen(true)}
         />
       ) : (
-        <div className="flex gap-0 bg-card-bg rounded-xl border border-border-warm overflow-hidden mt-4" style={{ height: "calc(100vh - 320px)", minHeight: "500px" }}>
+        <div className="flex gap-0 bg-card-bg rounded-xl border border-border-light overflow-hidden mt-4" style={{ height: "calc(100vh - 320px)", minHeight: "500px" }}>
           {/* Left panel: Conversation list */}
-          <div className="w-80 shrink-0 border-r border-border-warm overflow-y-auto">
+          <div className="w-80 shrink-0 border-r border-border-light overflow-y-auto">
             <ConversationList
               conversations={filtered}
               selectedId={selectedId}

@@ -145,7 +145,7 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
             type="text"
             value={form.title}
             onChange={(e) => set("title", e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-border-warm bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
+            className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
             placeholder="Booking title"
           />
         </FormField>
@@ -171,7 +171,7 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
               type="time"
               value={form.startTime}
               onChange={(e) => set("startTime", e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-border-warm bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
+              className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
             />
           </FormField>
 
@@ -180,7 +180,7 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
               type="time"
               value={form.endTime}
               onChange={(e) => set("endTime", e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-border-warm bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
+              className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
             />
           </FormField>
         </div>
@@ -217,7 +217,7 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
           />
         </FormField>
 
-        <div className="flex justify-between pt-4 border-t border-border-warm">
+        <div className="flex justify-between pt-4 border-t border-border-light">
           <div>
             {booking && (
               <Button variant="secondary" size="sm" type="button" onClick={handleDelete}>

@@ -48,7 +48,7 @@ function ChannelButton({
       className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
         selected
           ? "bg-brand text-white"
-          : "bg-surface text-text-secondary border border-border-light hover:text-foreground hover:border-border-warm"
+          : "bg-surface text-text-secondary border border-border-light hover:text-foreground hover:border-border-light"
       }`}
     >
       <Icon className="w-3.5 h-3.5" />

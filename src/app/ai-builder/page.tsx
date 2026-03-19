@@ -68,7 +68,7 @@ export default function AIBuilderPage() {
             </Link>
             <div>
               <h1 className="text-2xl font-bold text-foreground flex items-center gap-2 tracking-tight">
-                <Wand2 className="w-6 h-6 text-brand" />
+                <Wand2 className="w-6 h-6 text-foreground" />
                 AI Builder
               </h1>
               <p className="text-sm text-text-secondary">
@@ -76,18 +76,18 @@ export default function AIBuilderPage() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 px-4 py-2 bg-card-bg rounded-xl border border-border-warm">
-            <Coins className="w-4 h-4 text-brand" />
+          <div className="flex items-center gap-2 px-4 py-2 bg-card-bg rounded-xl border border-border-light">
+            <Coins className="w-4 h-4 text-foreground" />
             <span className="font-semibold text-foreground">{credits}</span>
             <span className="text-sm text-text-secondary">credits</span>
           </div>
         </div>
 
         {/* Input area */}
-        <div className="bg-card-bg rounded-2xl border border-border-warm p-6 mb-8">
+        <div className="bg-card-bg rounded-2xl border border-border-light p-6 mb-8">
           <div className="flex items-start gap-3">
-            <div className="p-2 bg-brand-light rounded-lg mt-1">
-              <Sparkles className="w-5 h-5 text-brand" />
+            <div className="p-2 bg-surface rounded-lg mt-1">
+              <Sparkles className="w-5 h-5 text-foreground" />
             </div>
             <div className="flex-1">
               <textarea
@@ -137,9 +137,9 @@ export default function AIBuilderPage() {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-brand-light border border-border-warm rounded-xl p-4 mb-6 flex items-center gap-3"
+            className="bg-surface border border-border-light rounded-xl p-4 mb-6 flex items-center gap-3"
           >
-            <AlertCircle className="w-5 h-5 text-brand flex-shrink-0" />
+            <AlertCircle className="w-5 h-5 text-foreground flex-shrink-0" />
             <div className="flex-1">
               <p className="text-sm font-medium text-foreground">
                 {credits === 0 ? "Out of credits!" : `Only ${credits} credits left`}
@@ -170,10 +170,10 @@ export default function AIBuilderPage() {
                 <button
                   key={i}
                   onClick={() => setPrompt(suggestion)}
-                  className="p-4 bg-card-bg rounded-xl border border-border-warm text-left hover:border-brand hover:bg-brand-light transition-all cursor-pointer"
+                  className="p-4 bg-card-bg rounded-xl border border-border-light text-left hover:border-foreground/20 hover:bg-surface transition-all cursor-pointer"
                 >
                   <div className="flex items-start gap-2">
-                    <Star className="w-4 h-4 text-brand mt-0.5 flex-shrink-0" />
+                    <Star className="w-4 h-4 text-foreground mt-0.5 flex-shrink-0" />
                     <p className="text-sm text-foreground">{suggestion}</p>
                   </div>
                 </button>
@@ -189,20 +189,20 @@ export default function AIBuilderPage() {
               key={req.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-card-bg rounded-xl border border-border-warm p-5 mb-4"
+              className="bg-card-bg rounded-xl border border-border-light p-5 mb-4"
             >
               <div className="flex items-start gap-3">
                 <div
                   className={`p-2 rounded-lg ${
                     req.status === "complete"
-                      ? "bg-brand-light"
+                      ? "bg-surface"
                       : req.status === "error"
                       ? "bg-[#FFBDB1]/20"
-                      : "bg-brand-light"
+                      : "bg-surface"
                   }`}
                 >
                   {req.status === "complete" ? (
-                    <Check className="w-4 h-4 text-brand" />
+                    <Check className="w-4 h-4 text-foreground" />
                   ) : req.status === "error" ? (
                     <AlertCircle className="w-4 h-4 text-[#CB2D2D]" />
                   ) : (
@@ -210,7 +210,7 @@ export default function AIBuilderPage() {
                       animate={{ rotate: 360 }}
                       transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
                     >
-                      <Sparkles className="w-4 h-4 text-brand" />
+                      <Sparkles className="w-4 h-4 text-foreground" />
                     </motion.div>
                   )}
                 </div>
@@ -227,10 +227,10 @@ export default function AIBuilderPage() {
                     <span
                       className={`text-xs font-medium px-2 py-0.5 rounded-full ${
                         req.status === "complete"
-                          ? "bg-brand-light text-brand"
+                          ? "bg-surface text-foreground"
                           : req.status === "error"
                           ? "bg-[#FFBDB1]/20 text-[#CB2D2D]"
-                          : "bg-brand-light text-brand"
+                          : "bg-surface text-foreground"
                       }`}
                     >
                       {req.status}

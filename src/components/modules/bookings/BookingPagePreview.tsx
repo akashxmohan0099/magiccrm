@@ -20,7 +20,7 @@ export function BookingPagePreview() {
   };
 
   return (
-    <div className="mt-8 bg-card-bg rounded-xl border border-border-warm p-5">
+    <div className="mt-8 bg-card-bg rounded-xl border border-border-light p-5">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-sm font-semibold text-foreground">Booking Page Preview</h3>
@@ -46,8 +46,8 @@ export function BookingPagePreview() {
       {/* Mock Booking Page Card */}
       <div className="border border-border-light rounded-xl bg-surface p-6 max-w-md mx-auto">
         <div className="text-center mb-5">
-          <div className="w-12 h-12 rounded-full bg-brand-light flex items-center justify-center mx-auto mb-3">
-            <ExternalLink className="w-5 h-5 text-brand" />
+          <div className="w-12 h-12 rounded-full bg-surface flex items-center justify-center mx-auto mb-3">
+            <ExternalLink className="w-5 h-5 text-foreground" />
           </div>
           <h4 className="text-base font-semibold text-foreground">Your Business Name</h4>
           <p className="text-xs text-text-secondary mt-1">
@@ -67,8 +67,8 @@ export function BookingPagePreview() {
                 onClick={() => setSelectedSlot(slot === selectedSlot ? null : slot)}
                 className={`px-2 py-2 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
                   selectedSlot === slot
-                    ? "bg-brand text-white border-brand"
-                    : "bg-card-bg border-border-light text-foreground hover:border-brand"
+                    ? "bg-foreground text-white border-foreground"
+                    : "bg-card-bg border-border-light text-foreground hover:border-foreground"
                 }`}
               >
                 {slot}
@@ -79,7 +79,7 @@ export function BookingPagePreview() {
 
         <button
           disabled={!selectedSlot}
-          className="w-full py-2.5 rounded-lg bg-brand text-white text-sm font-medium disabled:opacity-40 transition-opacity cursor-pointer"
+          className="w-full py-2.5 rounded-lg bg-foreground text-white text-sm font-medium disabled:opacity-40 transition-opacity cursor-pointer"
         >
           Book Appointment
         </button>
