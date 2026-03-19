@@ -35,6 +35,7 @@ export function JobForm({ open, onClose, job }: JobFormProps) {
   const [stage, setStage] = useState<JobStage>("not-started");
   const [dueDate, setDueDate] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -69,7 +70,10 @@ export function JobForm({ open, onClose, job }: JobFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
     if (!validate()) return;
+
+    setSaving(true);
 
     const data = {
       title: title.trim(),
@@ -86,6 +90,7 @@ export function JobForm({ open, onClose, job }: JobFormProps) {
     }
 
     onClose();
+    setSaving(false);
   };
 
   return (
@@ -141,7 +146,7 @@ export function JobForm({ open, onClose, job }: JobFormProps) {
           <Button variant="ghost" type="button" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit">
+          <Button type="submit" loading={saving}>
             {job ? "Save Changes" : "Create Job"}
           </Button>
         </div>

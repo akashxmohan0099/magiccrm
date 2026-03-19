@@ -36,6 +36,7 @@ export function InvoiceForm({ open, onClose, invoice }: InvoiceFormProps) {
   const [notes, setNotes] = useState("");
   const [status, setStatus] = useState<InvoiceStatus>("draft");
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -63,6 +64,9 @@ export function InvoiceForm({ open, onClose, invoice }: InvoiceFormProps) {
   const total = lineItems.reduce((sum, li) => sum + li.quantity * li.unitPrice, 0);
 
   const handleSubmit = () => {
+    if (saving) return;
+    setSaving(true);
+
     const now = new Date().toISOString();
 
     if (invoice) {
@@ -85,6 +89,7 @@ export function InvoiceForm({ open, onClose, invoice }: InvoiceFormProps) {
     }
 
     onClose();
+    setSaving(false);
   };
 
   return (
@@ -128,7 +133,7 @@ export function InvoiceForm({ open, onClose, invoice }: InvoiceFormProps) {
           </div>
           <div className="flex gap-2">
             <Button variant="ghost" onClick={onClose}>Cancel</Button>
-            <Button onClick={handleSubmit}>
+            <Button loading={saving} onClick={handleSubmit}>
               {invoice ? "Update Invoice" : "Create Invoice"}
             </Button>
           </div>

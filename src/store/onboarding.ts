@@ -143,6 +143,14 @@ export const useOnboardingStore = create<OnboardingStore>()(
     }),
     {
       name: "magic-crm-onboarding",
+      version: 2,
+      migrate: (persisted: any, version: number) => {
+        if (version < 2) {
+          // Reset step to 0 on schema change to avoid broken state
+          return { ...persisted, step: 0, selectedIndustry: persisted.selectedIndustry || "", isBuilding: false, buildComplete: false };
+        }
+        return persisted;
+      },
     }
   )
 );

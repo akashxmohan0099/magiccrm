@@ -49,6 +49,7 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
   const { clients } = useClientsStore();
   const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
 
   const clientOptions = useMemo(
     () => [
@@ -101,7 +102,10 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
     if (!validate()) return;
+
+    setSaving(true);
 
     const data = {
       title: form.title.trim(),
@@ -121,6 +125,7 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
     }
 
     onClose();
+    setSaving(false);
   };
 
   const handleDelete = () => {
@@ -162,6 +167,7 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
           <DateField
             value={form.date}
             onChange={(e) => set("date", e.target.value)}
+            allowPast={false}
           />
         </FormField>
 
@@ -229,7 +235,7 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
             <Button variant="secondary" size="sm" onClick={onClose} type="button">
               Cancel
             </Button>
-            <Button variant="primary" size="sm" type="submit">
+            <Button variant="primary" size="sm" type="submit" loading={saving}>
               {booking ? "Save Changes" : "Create Booking"}
             </Button>
           </div>

@@ -11,6 +11,10 @@ import {
   Trash2,
 } from "lucide-react";
 import { useClientsStore } from "@/store/clients";
+import { useLeadsStore } from "@/store/leads";
+import { useJobsStore } from "@/store/jobs";
+import { useInvoicesStore } from "@/store/invoices";
+import { useBookingsStore } from "@/store/bookings";
 import { SlideOver } from "@/components/ui/SlideOver";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Button } from "@/components/ui/Button";
@@ -29,10 +33,20 @@ interface ClientDetailProps {
 
 export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
   const { getClient, deleteClient } = useClientsStore();
+  const { leads } = useLeadsStore();
+  const { jobs } = useJobsStore();
+  const { invoices } = useInvoicesStore();
+  const { bookings } = useBookingsStore();
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   const client = clientId ? getClient(clientId) : undefined;
+
+  const linkedLeads = clientId ? leads.filter((l) => l.clientId === clientId).length : 0;
+  const linkedJobs = clientId ? jobs.filter((j) => j.clientId === clientId).length : 0;
+  const linkedInvoices = clientId ? invoices.filter((i) => i.clientId === clientId).length : 0;
+  const linkedBookings = clientId ? bookings.filter((b) => b.clientId === clientId).length : 0;
+  const hasLinkedRecords = linkedLeads + linkedJobs + linkedInvoices + linkedBookings > 0;
 
   if (!client) {
     return (
@@ -192,7 +206,11 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
         onClose={() => setDeleteOpen(false)}
         onConfirm={handleDelete}
         title="Delete Client"
-        message={`Are you sure you want to delete "${client.name}"? This action cannot be undone.`}
+        message={
+          hasLinkedRecords
+            ? `This client has ${linkedLeads} lead${linkedLeads !== 1 ? "s" : ""}, ${linkedJobs} job${linkedJobs !== 1 ? "s" : ""}, ${linkedInvoices} invoice${linkedInvoices !== 1 ? "s" : ""}, and ${linkedBookings} booking${linkedBookings !== 1 ? "s" : ""} linked. These will become unlinked. Are you sure you want to delete "${client.name}"?`
+            : `Are you sure you want to delete "${client.name}"? This action cannot be undone.`
+        }
       />
     </>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, useId } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 
@@ -13,6 +13,7 @@ interface SlideOverProps {
 }
 
 export function SlideOver({ open, onClose, title, children, wide }: SlideOverProps) {
+  const titleId = useId();
   useEffect(() => {
     if (open) {
       document.body.style.overflow = "hidden";
@@ -45,12 +46,15 @@ export function SlideOver({ open, onClose, title, children, wide }: SlideOverPro
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: "100%", opacity: 0 }}
             transition={{ type: "spring", damping: 28, stiffness: 280, mass: 0.8 }}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
             className={`fixed right-0 top-0 h-full bg-card-bg border-l border-border-light z-50 flex flex-col shadow-2xl shadow-black/8 ${
               wide ? "w-full max-w-2xl" : "w-full max-w-lg"
             }`}
           >
             <div className="flex items-center justify-between px-6 py-4 border-b border-border-light">
-              <h2 className="text-lg font-semibold text-foreground tracking-tight">{title}</h2>
+              <h2 id={titleId} className="text-lg font-semibold text-foreground tracking-tight">{title}</h2>
               <motion.button
                 whileHover={{ scale: 1.1, rotate: 90 }}
                 whileTap={{ scale: 0.9 }}

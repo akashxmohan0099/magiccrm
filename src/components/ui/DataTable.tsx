@@ -51,6 +51,7 @@ export function DataTable<T>({ columns, data, onRowClick, keyExtractor }: DataTa
               {columns.map((col) => (
                 <th
                   key={col.key}
+                  scope="col"
                   className={`text-left text-[12px] font-semibold text-text-secondary uppercase tracking-wider px-4 py-3 ${
                     col.sortable ? "cursor-pointer select-none hover:text-foreground hover:bg-surface transition-colors" : ""
                   }`}
@@ -93,11 +94,18 @@ export function DataTable<T>({ columns, data, onRowClick, keyExtractor }: DataTa
                   animate={{ opacity: 1 }}
                   transition={{ delay: index * 0.02, duration: 0.2 }}
                   onClick={() => onRowClick?.(item)}
+                  tabIndex={onRowClick ? 0 : undefined}
+                  onKeyDown={onRowClick ? (e: React.KeyboardEvent) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      onRowClick(item);
+                    }
+                  } : undefined}
                   className={`border-t border-border-light transition-all ${
                     index % 2 === 1 ? "bg-foreground/[0.01]" : ""
                   } ${
                     onRowClick
-                      ? "cursor-pointer hover:bg-surface/50 hover:shadow-sm"
+                      ? "cursor-pointer hover:bg-surface/50 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-foreground/20"
                       : ""
                   }`}
                 >

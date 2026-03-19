@@ -51,7 +51,7 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero */}
-      <section className="max-w-4xl mx-auto px-6 pt-20 pb-24 text-center relative overflow-hidden">
+      <section className="max-w-4xl mx-auto px-4 sm:px-6 pt-12 sm:pt-20 pb-16 sm:pb-24 text-center relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-surface/50 to-background pointer-events-none" />
         <div className="absolute inset-0 bg-radial-gradient pointer-events-none opacity-30" style={{backgroundImage: 'radial-gradient(circle at 50% 50%, rgba(var(--color-brand), 0.1) 0%, transparent 70%)'}} />
         <motion.div
@@ -60,12 +60,12 @@ export default function LandingPage() {
           transition={{ duration: 0.5 }}
           className="relative z-10"
         >
-          <h1 className="text-[3.25rem] sm:text-[3.75rem] font-bold text-foreground mb-6 leading-[1.08]">
+          <h1 className="text-[2rem] sm:text-[3.25rem] md:text-[3.75rem] font-bold text-foreground mb-6 leading-[1.08]">
             The CRM that fits<br />
             <span className="text-text-secondary">your business, not the other way around</span>
           </h1>
 
-          <p className="text-[17px] text-text-secondary mb-10 max-w-lg mx-auto leading-relaxed">
+          <p className="text-[15px] sm:text-[17px] text-text-secondary mb-8 sm:mb-10 max-w-lg mx-auto leading-relaxed">
             Tell us what you do. We assemble a custom CRM with only the modules you need. No bloat, no week-long setup, no per-seat pricing.
           </p>
 
@@ -93,8 +93,8 @@ export default function LandingPage() {
       </section>
 
       {/* Industry tags */}
-      <section className="pb-20">
-        <div className="max-w-4xl mx-auto px-6">
+      <section className="pb-12 sm:pb-20">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6">
           <p className="text-center text-[13px] text-text-tertiary mb-4 font-medium">
             Built for
           </p>
@@ -112,10 +112,10 @@ export default function LandingPage() {
       </section>
 
       {/* How it works */}
-      <section className="py-20 bg-foreground text-white">
-        <div className="max-w-5xl mx-auto px-6">
-          <div className="text-center mb-14">
-            <h2 className="text-[2.25rem] font-bold leading-tight mb-3">
+      <section className="py-12 sm:py-20 bg-foreground text-white">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-10 sm:mb-14">
+            <h2 className="text-[1.75rem] sm:text-[2.25rem] font-bold leading-tight mb-3">
               Three steps. Your CRM.
             </h2>
             <p className="text-white/50 text-[15px]">
@@ -161,10 +161,10 @@ export default function LandingPage() {
       </section>
 
       {/* Modules */}
-      <section className="py-20">
-        <div className="max-w-5xl mx-auto px-6">
-          <div className="text-center mb-12">
-            <h2 className="text-[2.25rem] font-bold text-foreground leading-tight mb-3">
+      <section className="py-12 sm:py-20">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-8 sm:mb-12">
+            <h2 className="text-[1.75rem] sm:text-[2.25rem] font-bold text-foreground leading-tight mb-3">
               12 modules. Pick what you need.
             </h2>
             <p className="text-text-secondary text-[15px] max-w-md mx-auto">
@@ -194,11 +194,11 @@ export default function LandingPage() {
       </section>
 
       {/* Why not the others */}
-      <section className="py-20 bg-surface">
-        <div className="max-w-5xl mx-auto px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
+      <section className="py-12 sm:py-20 bg-surface">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-start">
             <div>
-              <h2 className="text-[2.25rem] font-bold text-foreground leading-tight mb-4">
+              <h2 className="text-[1.75rem] sm:text-[2.25rem] font-bold text-foreground leading-tight mb-4">
                 Why not just use<br />HubSpot or Monday?
               </h2>
               <p className="text-text-secondary text-[15px] leading-relaxed mb-8">
@@ -293,9 +293,9 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing */}
-      <section className="py-20">
-        <div className="max-w-md mx-auto px-6 text-center">
-          <h2 className="text-[2.25rem] font-bold text-foreground mb-3 leading-tight">
+      <section className="py-12 sm:py-20">
+        <div className="max-w-md mx-auto px-4 sm:px-6 text-center">
+          <h2 className="text-[1.75rem] sm:text-[2.25rem] font-bold text-foreground mb-3 leading-tight">
             One plan. Everything included.
           </h2>
           <p className="text-text-secondary mb-10 text-[15px]">
@@ -335,9 +335,9 @@ export default function LandingPage() {
       </section>
 
       {/* Final CTA */}
-      <section className="py-16 bg-foreground">
-        <div className="max-w-3xl mx-auto px-6 text-center">
-          <h2 className="text-[2rem] font-bold text-white mb-4 leading-tight">
+      <section className="py-12 sm:py-16 bg-foreground">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
+          <h2 className="text-[1.5rem] sm:text-[2rem] font-bold text-white mb-4 leading-tight">
             Stop paying for features you don&apos;t use.
           </h2>
           <p className="text-white/50 mb-8 text-[15px]">

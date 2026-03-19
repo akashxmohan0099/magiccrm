@@ -47,6 +47,7 @@ export function ClientForm({ open, onClose, client }: ClientFormProps) {
   const { addClient, updateClient } = useClientsStore();
   const [form, setForm] = useState(getInitialState(client));
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -77,7 +78,10 @@ export function ClientForm({ open, onClose, client }: ClientFormProps) {
   };
 
   const handleSubmit = () => {
+    if (saving) return;
     if (!validate()) return;
+
+    setSaving(true);
 
     const tags = form.tags
       .split(",")
@@ -102,6 +106,7 @@ export function ClientForm({ open, onClose, client }: ClientFormProps) {
       addClient(data);
     }
     onClose();
+    setSaving(false);
   };
 
   const inputClass =
@@ -202,7 +207,7 @@ export function ClientForm({ open, onClose, client }: ClientFormProps) {
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit}>
+          <Button loading={saving} onClick={handleSubmit}>
             {client ? "Save Changes" : "Add Client"}
           </Button>
         </div>

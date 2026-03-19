@@ -39,6 +39,7 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
   const { addLead, updateLead } = useLeadsStore();
   const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -72,7 +73,10 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
     if (!validate()) return;
+
+    setSaving(true);
 
     const data = {
       name: form.name.trim(),
@@ -92,6 +96,7 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
     }
 
     onClose();
+    setSaving(false);
   };
 
   const set = (key: string, value: string) =>
@@ -187,7 +192,7 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
           <Button variant="secondary" size="sm" onClick={onClose} type="button">
             Cancel
           </Button>
-          <Button variant="primary" size="sm" type="submit">
+          <Button variant="primary" size="sm" type="submit" loading={saving}>
             {lead ? "Save Changes" : "Add Lead"}
           </Button>
         </div>
