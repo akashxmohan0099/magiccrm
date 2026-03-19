@@ -16,6 +16,7 @@ import { useHydration } from "@/hooks/useHydration";
 import { ToastContainer } from "@/components/ui/Toast";
 import { DashboardSkeleton } from "@/components/ui/Skeleton";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import { CommandPalette } from "@/components/ui/CommandPalette";
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Users, Calendar, Receipt, Inbox, FolderKanban,
@@ -114,12 +115,17 @@ function DashboardShell({ children }: { children: ReactNode }) {
               <input
                 type="text"
                 placeholder="Search contacts, invoices, projects..."
+                readOnly
+                onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
                 onFocus={() => setSearchFocused(true)}
                 onBlur={() => setSearchFocused(false)}
-                className="w-full pl-10 pr-12 py-2.5 bg-surface border border-border-light rounded-[10px] text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/15 focus:border-primary/30 transition-all"
+                className="w-full pl-10 pr-12 py-2.5 bg-surface border border-border-light rounded-[10px] text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/15 focus:border-primary/30 transition-all cursor-pointer"
               />
               {!searchFocused && (
-                <kbd className="absolute right-2.5 top-1/2 -translate-y-1/2 hidden sm:inline-flex items-center gap-0.5 px-2 py-1 rounded-lg bg-surface border border-border-light text-[11px] font-medium text-text-tertiary hover:bg-foreground/5 transition-colors cursor-pointer">
+                <kbd
+                  onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 hidden sm:inline-flex items-center gap-0.5 px-2 py-1 rounded-lg bg-surface border border-border-light text-[11px] font-medium text-text-tertiary hover:bg-foreground/5 transition-colors cursor-pointer"
+                >
                   <Command className="w-3 h-3" />K
                 </kbd>
               )}
@@ -143,6 +149,8 @@ function DashboardShell({ children }: { children: ReactNode }) {
           <div className="p-4 lg:p-8">{children}</div>
         </ErrorBoundary>
       </main>
+
+      <CommandPalette />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
   Mail,
   Phone,
@@ -9,6 +10,9 @@ import {
   Calendar,
   Pencil,
   Trash2,
+  Receipt,
+  FolderKanban,
+  Plus,
 } from "lucide-react";
 import { useClientsStore } from "@/store/clients";
 import { useLeadsStore } from "@/store/leads";
@@ -20,6 +24,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { FeatureSection } from "@/components/modules/FeatureSection";
+import { LinkedRecords } from "@/components/modules/LinkedRecords";
 import { ClientForm } from "./ClientForm";
 import { ClientTags } from "./ClientTags";
 import { SegmentationFilters } from "./SegmentationFilters";
@@ -171,6 +176,45 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
               </p>
             </div>
           )}
+
+          {/* Linked Records */}
+          <LinkedRecords clientId={client.id} onNavigate={onClose} />
+
+          {/* Quick Actions */}
+          <div className="bg-surface rounded-lg p-4 border border-border-light">
+            <h4 className="text-sm font-medium text-foreground mb-3">
+              Quick Actions
+            </h4>
+            <div className="space-y-2">
+              <Link
+                href="/dashboard/invoicing"
+                onClick={onClose}
+                className="flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-[13px] text-foreground hover:bg-white border border-transparent hover:border-border-light transition-all group"
+              >
+                <Receipt className="w-4 h-4 text-text-secondary group-hover:text-primary transition-colors" />
+                <span>Create Invoice for {client.name}</span>
+                <Plus className="w-3.5 h-3.5 text-text-secondary ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+              </Link>
+              <Link
+                href="/dashboard/bookings"
+                onClick={onClose}
+                className="flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-[13px] text-foreground hover:bg-white border border-transparent hover:border-border-light transition-all group"
+              >
+                <Calendar className="w-4 h-4 text-text-secondary group-hover:text-primary transition-colors" />
+                <span>Book Appointment</span>
+                <Plus className="w-3.5 h-3.5 text-text-secondary ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+              </Link>
+              <Link
+                href="/dashboard/jobs"
+                onClick={onClose}
+                className="flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-[13px] text-foreground hover:bg-white border border-transparent hover:border-border-light transition-all group"
+              >
+                <FolderKanban className="w-4 h-4 text-text-secondary group-hover:text-primary transition-colors" />
+                <span>Create Job</span>
+                <Plus className="w-3.5 h-3.5 text-text-secondary ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+              </Link>
+            </div>
+          </div>
 
           {/* Tags - Feature Gated */}
           <FeatureSection moduleId="client-database" featureId="client-tags">
