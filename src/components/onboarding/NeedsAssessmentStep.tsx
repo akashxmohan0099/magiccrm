@@ -181,7 +181,7 @@ export function NeedsAssessmentStep() {
                 return (
                   <div key={q.key} className="flex items-center gap-3">
                     <div className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 ${
-                      isOn ? "bg-foreground" : "bg-border-light"
+                      isOn ? "bg-primary" : "bg-border-light"
                     }`}>
                       {isOn && <Check className="w-2.5 h-2.5 text-white" />}
                     </div>
@@ -239,7 +239,7 @@ export function NeedsAssessmentStep() {
           </div>
           <div className="w-full h-1 bg-border-light rounded-full overflow-hidden">
             <motion.div
-              className="h-full bg-foreground rounded-full"
+              className="h-full bg-primary rounded-full"
               initial={{ width: "90%" }}
               animate={{ width: "100%" }}
             />
@@ -268,8 +268,8 @@ export function NeedsAssessmentStep() {
               onClick={() => setTeamSize(option)}
               className={`relative px-5 py-4 rounded-xl text-[14px] font-semibold transition-all cursor-pointer ${
                 teamSize === option
-                  ? "bg-foreground text-white shadow-lg shadow-foreground/10"
-                  : "bg-card-bg text-foreground border border-border-light hover:border-foreground/20"
+                  ? "bg-primary text-white shadow-lg shadow-primary/10"
+                  : "bg-card-bg text-foreground border border-border-light hover:border-primary/20"
               }`}
             >
               {option}
@@ -277,7 +277,7 @@ export function NeedsAssessmentStep() {
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-foreground rounded-full flex items-center justify-center border-2 border-background"
+                  className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-primary rounded-full flex items-center justify-center border-2 border-background"
                 >
                   <Check className="w-3 h-3 text-white" />
                 </motion.div>
@@ -294,7 +294,7 @@ export function NeedsAssessmentStep() {
                 key={q.key}
                 className={`text-[11px] px-2.5 py-1 rounded-full font-medium ${
                   needs[q.key]
-                    ? "bg-foreground text-white"
+                    ? "bg-primary text-white"
                     : "bg-background text-text-tertiary"
                 }`}
               >
@@ -340,7 +340,7 @@ export function NeedsAssessmentStep() {
         </div>
         <div className="w-full h-1 bg-border-light rounded-full overflow-hidden">
           <motion.div
-            className="h-full bg-foreground rounded-full"
+            className="h-full bg-primary rounded-full"
             animate={{ width: `${progress}%` }}
             transition={{ duration: 0.3, ease: "easeOut" }}
           />
@@ -352,9 +352,9 @@ export function NeedsAssessmentStep() {
               onClick={() => { setDirection(i > quizIndex ? 1 : -1); setQuizIndex(i); }}
               className={`transition-all cursor-pointer rounded-full ${
                 i === quizIndex
-                  ? "w-6 h-1.5 bg-foreground"
+                  ? "w-6 h-1.5 bg-primary"
                   : needs[q.key]
-                  ? "w-1.5 h-1.5 bg-foreground/40"
+                  ? "w-1.5 h-1.5 bg-primary/40"
                   : i < quizIndex
                   ? "w-1.5 h-1.5 bg-border-light"
                   : "w-1.5 h-1.5 bg-border-light"
@@ -410,8 +410,8 @@ export function NeedsAssessmentStep() {
               onClick={() => handleAnswer(currentQ.key, true)}
               className={`flex-1 py-4 px-6 rounded-xl text-[15px] font-semibold transition-all cursor-pointer min-h-[52px] ${
                 currentValue === true
-                  ? "bg-foreground text-white shadow-lg shadow-foreground/15 border-2 border-foreground"
-                  : "bg-card-bg text-text-secondary border-2 border-border-light hover:border-foreground/20 hover:shadow-sm"
+                  ? "bg-primary text-white shadow-lg shadow-primary/15 border-2 border-primary"
+                  : "bg-card-bg text-text-secondary border-2 border-border-light hover:border-primary/20 hover:shadow-sm"
               }`}
             >
               Yes

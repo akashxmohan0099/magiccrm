@@ -92,8 +92,8 @@ export function IndustryStep() {
                   onClick={() => handleSelectIndustry(config.id)}
                   className={`relative text-left px-5 py-4 rounded-xl transition-all duration-200 cursor-pointer w-full ${
                     selectedIndustry === config.id
-                      ? "bg-foreground text-white shadow-lg shadow-foreground/10"
-                      : "bg-card-bg border border-border-light hover:border-foreground/20 hover:shadow-sm"
+                      ? "bg-primary text-white shadow-lg shadow-primary/10"
+                      : "bg-card-bg border border-border-light hover:border-primary/20 hover:shadow-sm"
                   }`}
                 >
                   <div className="flex items-start gap-3">
@@ -175,8 +175,8 @@ export function IndustryStep() {
                   onClick={() => handleSelectPersona(persona.id)}
                   className={`relative w-full text-left px-5 py-4 rounded-xl transition-all duration-200 cursor-pointer flex items-center gap-4 ${
                     selectedPersona === persona.id
-                      ? "bg-foreground text-white shadow-lg shadow-foreground/10"
-                      : "bg-card-bg border border-border-light hover:border-foreground/20 hover:shadow-sm"
+                      ? "bg-primary text-white shadow-lg shadow-primary/10"
+                      : "bg-card-bg border border-border-light hover:border-primary/20 hover:shadow-sm"
                   }`}
                 >
                   <div className="flex-1 min-w-0">
@@ -197,7 +197,7 @@ export function IndustryStep() {
                       animate={{ scale: 1 }}
                       className="w-6 h-6 bg-white rounded-full flex items-center justify-center flex-shrink-0"
                     >
-                      <Check className="w-3.5 h-3.5 text-foreground" />
+                      <Check className="w-3.5 h-3.5 text-primary" />
                     </motion.div>
                   )}
                 </motion.button>

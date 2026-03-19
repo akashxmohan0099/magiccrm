@@ -22,7 +22,7 @@ export function WelcomeStep() {
         transition={{ delay: 0.1, type: "spring", stiffness: 200, damping: 20 }}
         className="mb-10"
       >
-        <div className="w-12 h-12 bg-foreground rounded-2xl flex items-center justify-center mx-auto shadow-sm">
+        <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center mx-auto shadow-sm">
           <div className="w-5 h-5 bg-white rounded-md" />
         </div>
       </motion.div>

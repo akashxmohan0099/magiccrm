@@ -35,7 +35,7 @@ export default function LandingPage() {
       {/* Nav */}
       <nav className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-foreground rounded-lg flex items-center justify-center">
+          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
             <div className="w-3.5 h-3.5 bg-white rounded-sm" />
           </div>
           <span className="font-bold text-foreground text-[15px] tracking-tight">Magic CRM</span>
@@ -112,13 +112,13 @@ export default function LandingPage() {
       </section>
 
       {/* How it works */}
-      <section className="py-12 sm:py-20 bg-foreground text-white">
+      <section className="py-12 sm:py-20 bg-surface">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-10 sm:mb-14">
-            <h2 className="text-[1.75rem] sm:text-[2.25rem] font-bold leading-tight mb-3">
+            <h2 className="text-[1.75rem] sm:text-[2.25rem] font-bold text-foreground leading-tight mb-3">
               Three steps. Your CRM.
             </h2>
-            <p className="text-white/50 text-[15px]">
+            <p className="text-text-secondary text-[15px]">
               No consultants. No migration headaches. No training videos.
             </p>
           </div>
@@ -147,11 +147,11 @@ export default function LandingPage() {
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
               >
-                <div className="w-12 h-12 bg-white/10 border border-white/20 rounded-full flex items-center justify-center mb-4">
+                <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center mb-4">
                   <span className="text-white font-bold text-lg">{item.num.replace(/\D/g, '')}</span>
                 </div>
-                <h3 className="font-semibold text-white text-[17px] mb-2">{item.title}</h3>
-                <p className="text-[14px] text-white/50 leading-relaxed">
+                <h3 className="font-semibold text-foreground text-[17px] mb-2">{item.title}</h3>
+                <p className="text-[14px] text-text-secondary leading-relaxed">
                   {item.description}
                 </p>
               </motion.div>
@@ -219,7 +219,7 @@ export default function LandingPage() {
                     transition={{ delay: i * 0.08 }}
                     className="flex items-start gap-3"
                   >
-                    <div className="w-5 h-5 bg-foreground rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                       <Check className="w-3 h-3 text-white" />
                     </div>
                     <div>
@@ -237,7 +237,7 @@ export default function LandingPage() {
                 <div className="absolute -top-2 -left-2 text-5xl text-foreground/5">&ldquo;</div>
                 <div className="flex items-center gap-1 mb-3">
                   {[1,2,3,4,5].map((s) => (
-                    <Star key={s} className="w-4 h-4 fill-foreground text-foreground" />
+                    <Star key={s} className="w-4 h-4 fill-primary text-primary" />
                   ))}
                 </div>
                 <p className="text-[14px] text-foreground leading-relaxed mb-4">
@@ -257,7 +257,7 @@ export default function LandingPage() {
                 <div className="absolute -top-2 -left-2 text-5xl text-foreground/5">&ldquo;</div>
                 <div className="flex items-center gap-1 mb-3">
                   {[1,2,3,4,5].map((s) => (
-                    <Star key={s} className="w-4 h-4 fill-foreground text-foreground" />
+                    <Star key={s} className="w-4 h-4 fill-primary text-primary" />
                   ))}
                 </div>
                 <p className="text-[14px] text-foreground leading-relaxed mb-4">
@@ -317,7 +317,7 @@ export default function LandingPage() {
                 "Priority email support",
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-3">
-                  <Check className="w-4 h-4 text-foreground flex-shrink-0" />
+                  <Check className="w-4 h-4 text-primary flex-shrink-0" />
                   <span className="text-[14px] text-foreground">{item}</span>
                 </div>
               ))}
@@ -335,7 +335,7 @@ export default function LandingPage() {
       </section>
 
       {/* Final CTA */}
-      <section className="py-12 sm:py-16 bg-foreground">
+      <section className="py-12 sm:py-16 bg-primary">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
           <h2 className="text-[1.5rem] sm:text-[2rem] font-bold text-white mb-4 leading-tight">
             Stop paying for features you don&apos;t use.
@@ -344,7 +344,7 @@ export default function LandingPage() {
             Build a CRM that actually fits your business in under 2 minutes.
           </p>
           <Link href="/onboarding">
-            <Button size="lg" className="px-10 bg-white text-foreground hover:bg-white/90 shadow-none hover:shadow-none">
+            <Button size="lg" className="px-10 bg-white text-primary hover:bg-white/90 shadow-none hover:shadow-none">
               Build my CRM <ArrowRight className="w-5 h-5" />
             </Button>
           </Link>
@@ -355,7 +355,7 @@ export default function LandingPage() {
       <footer className="border-t border-border-light py-8">
         <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-foreground rounded-md flex items-center justify-center">
+            <div className="w-6 h-6 bg-primary rounded-md flex items-center justify-center">
               <div className="w-2.5 h-2.5 bg-white rounded-sm" />
             </div>
             <span className="font-semibold text-foreground text-[13px]">Magic CRM</span>

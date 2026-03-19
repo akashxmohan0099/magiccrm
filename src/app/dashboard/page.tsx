@@ -127,7 +127,7 @@ export default function DashboardPage() {
             <div className="flex items-center gap-2">
               <div className="w-20 h-1 bg-border-light rounded-full overflow-hidden">
                 <motion.div
-                  className="h-full bg-foreground rounded-full"
+                  className="h-full bg-primary rounded-full"
                   initial={{ width: 0 }}
                   animate={{ width: `${(completedChecklist / checklist.length) * 100}%` }}
                   transition={{ duration: 0.5, ease: "easeOut" }}
@@ -151,7 +151,7 @@ export default function DashboardPage() {
                 }`}
               >
                 <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-                  item.done ? "bg-foreground border-foreground" : "border-border-light"
+                  item.done ? "bg-primary border-primary" : "border-border-light"
                 }`}>
                   {item.done && <Check className="w-3 h-3 text-white" />}
                 </div>
@@ -280,7 +280,7 @@ export default function DashboardPage() {
                   transition={{ delay: idx * 0.03 }}
                   className="flex items-center gap-3 px-5 py-3 text-sm"
                 >
-                  <div className="w-1.5 h-1.5 rounded-full bg-foreground flex-shrink-0" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
                   <span className="text-foreground flex-1 text-[13px]">{entry.description}</span>
                   <span className="text-[11px] text-text-tertiary whitespace-nowrap tabular-nums">
                     {new Date(entry.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}

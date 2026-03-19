@@ -208,7 +208,7 @@ export function FeatureCustomizationStep() {
         </div>
         <div className="w-full h-1 bg-border-light rounded-full overflow-hidden">
           <motion.div
-            className="h-full bg-foreground rounded-full"
+            className="h-full bg-primary rounded-full"
             animate={{ width: `${progress}%` }}
             transition={{ duration: 0.3, ease: "easeOut" }}
           />
@@ -221,9 +221,9 @@ export function FeatureCustomizationStep() {
               onClick={() => { setDirection(i > moduleIndex ? 1 : -1); setModuleIndex(i); }}
               className={`transition-all cursor-pointer rounded-full ${
                 i === moduleIndex
-                  ? "w-6 h-1.5 bg-foreground"
+                  ? "w-6 h-1.5 bg-primary"
                   : i < moduleIndex
-                  ? "w-1.5 h-1.5 bg-foreground/40"
+                  ? "w-1.5 h-1.5 bg-primary/40"
                   : "w-1.5 h-1.5 bg-border-light"
               }`}
             />
@@ -273,8 +273,8 @@ export function FeatureCustomizationStep() {
                   onClick={() => toggleSelection(currentBlock.id, sf.id)}
                   className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all cursor-pointer text-left ${
                     isOn
-                      ? "bg-foreground text-white shadow-sm"
-                      : "bg-card-bg border border-border-light hover:border-foreground/20"
+                      ? "bg-primary text-white shadow-sm"
+                      : "bg-card-bg border border-border-light hover:border-primary/20"
                   }`}
                 >
                   <div className={`w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 transition-all ${
