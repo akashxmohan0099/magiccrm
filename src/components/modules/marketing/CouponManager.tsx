@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Tag } from "lucide-react";
 import { useMarketingStore } from "@/store/marketing";
 import { Coupon } from "@/types/models";
 import { DataTable, Column } from "@/components/ui/DataTable";
@@ -140,7 +140,7 @@ export function CouponManager() {
 
         {coupons.length === 0 ? (
           <EmptyState
-            icon="tag"
+            icon={<Tag className="w-10 h-10" />}
             title="No coupons yet"
             description="Create coupon codes to offer discounts to your clients."
             actionLabel="Add Coupon"

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus, List, CalendarDays } from "lucide-react";
+import { Plus, List, CalendarDays, Calendar } from "lucide-react";
 import { useBookingsStore } from "@/store/bookings";
 import { useClientsStore } from "@/store/clients";
 import { Booking } from "@/types/models";
@@ -137,7 +137,7 @@ export function BookingsPage() {
 
       {bookings.length === 0 ? (
         <EmptyState
-          icon="calendar"
+          icon={<Calendar className="w-10 h-10" />}
           title="No bookings yet"
           description="Schedule your first booking to get started."
           actionLabel="New Booking"

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus } from "lucide-react";
+import { Plus, MessageSquare } from "lucide-react";
 import { useCommunicationStore } from "@/store/communication";
 import { Channel, Conversation } from "@/types/models";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -66,7 +66,7 @@ export function CommunicationPage() {
 
       {conversations.length === 0 ? (
         <EmptyState
-          icon="message-square"
+          icon={<MessageSquare className="w-10 h-10" />}
           title="No conversations yet"
           description="Start a conversation with a client to get going."
           actionLabel="New Conversation"

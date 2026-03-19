@@ -43,7 +43,7 @@ export function LeadInbox() {
 
         {sorted.length === 0 ? (
           <EmptyState
-            icon="inbox"
+            icon={<Inbox className="w-10 h-10" />}
             title="Inbox is empty"
             description="New leads will appear here as they come in."
           />

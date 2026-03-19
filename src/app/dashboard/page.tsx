@@ -43,7 +43,8 @@ export default function DashboardPage() {
   const businessContext = useOnboardingStore((s) => s.businessContext);
   const featureSelections = useOnboardingStore((s) => s.featureSelections);
   const enabledModules = useEnabledModules();
-  const recentActivity = useActivityStore((s) => s.entries.slice(0, 5));
+  const allEntries = useActivityStore((s) => s.entries);
+  const recentActivity = allEntries.slice(0, 5);
   const [checklist, setChecklist] = useState(CHECKLIST);
 
   const getTimeGreeting = () => {
@@ -91,7 +92,7 @@ export default function DashboardPage() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 + i * 0.06 }}
-            className="bg-card-bg rounded-xl p-4 border border-border-light overflow-hidden"
+            className="relative bg-card-bg rounded-xl p-4 border border-border-light overflow-hidden"
           >
             <div className="absolute inset-0 opacity-5">
               <svg className="w-full h-full" viewBox="0 0 100 40" preserveAspectRatio="none">

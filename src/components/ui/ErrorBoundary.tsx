@@ -17,7 +17,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError(): ErrorBoundaryState {
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    // Let Next.js handle its own navigation errors (notFound, redirect)
+    if ((error as any).digest?.startsWith("NEXT_")) {
+      throw error;
+    }
     return { hasError: true };
   }
 
@@ -38,7 +42,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             <div className="flex items-center justify-center gap-3">
               <button
                 onClick={() => this.setState({ hasError: false })}
-                className="inline-flex items-center justify-center font-semibold rounded-xl px-5 py-2.5 text-[13px] bg-foreground text-white hover:bg-foreground/90 shadow-sm transition-all duration-200 cursor-pointer active:scale-[0.96]"
+                className="inline-flex items-center justify-center font-medium rounded-[10px] px-5 py-2.5 text-[14px] bg-primary text-white hover:bg-primary-hover shadow-[0_1px_2px_rgba(0,0,0,0.05)] transition-all duration-200 cursor-pointer active:scale-[0.97]"
               >
                 Try again
               </button>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus, List, Columns3 } from "lucide-react";
+import { Plus, List, Columns3, Users } from "lucide-react";
 import { useLeadsStore } from "@/store/leads";
 import { Lead } from "@/types/models";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -113,7 +113,7 @@ export function LeadsPage() {
 
       {leads.length === 0 ? (
         <EmptyState
-          icon="users"
+          icon={<Users className="w-10 h-10" />}
           title="No leads yet"
           description="Start adding leads to track your sales pipeline."
           actionLabel="Add Lead"

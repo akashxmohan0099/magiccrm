@@ -76,7 +76,7 @@ export function ReviewCollection() {
 
         {reviewRequests.length === 0 ? (
           <EmptyState
-            icon="star"
+            icon={<Star className="w-10 h-10" />}
             title="No review requests"
             description="Request reviews from your clients to build social proof."
             actionLabel="Request Review"

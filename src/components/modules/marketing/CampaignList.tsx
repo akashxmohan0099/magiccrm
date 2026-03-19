@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { Megaphone } from "lucide-react";
 import { useMarketingStore } from "@/store/marketing";
 import { Campaign } from "@/types/models";
 import { DataTable, Column } from "@/components/ui/DataTable";
@@ -57,7 +58,7 @@ export function CampaignList({ onEdit }: CampaignListProps) {
   if (campaigns.length === 0) {
     return (
       <EmptyState
-        icon="megaphone"
+        icon={<Megaphone className="w-10 h-10" />}
         title="No campaigns yet"
         description="Create your first marketing campaign to reach your audience."
       />
