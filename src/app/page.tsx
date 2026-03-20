@@ -154,7 +154,7 @@ export default function LandingPage() {
           </h1>
 
           <p className="text-[15px] sm:text-[17px] text-text-secondary mb-8 sm:mb-10 max-w-xl mx-auto leading-relaxed">
-            23 modules. 205 toggleable features. One flat price. Tell us what you do and we&apos;ll assemble a CRM with only what you need.
+            23 modules. 207 toggleable features. One flat price. Tell us what you do and we&apos;ll assemble a CRM with only what you need.
           </p>
 
           <div className="flex flex-col items-center gap-4">
@@ -176,7 +176,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
               { num: "23", label: "Modules" },
-              { num: "205", label: "Toggleable features" },
+              { num: "207", label: "Toggleable features" },
               { num: "43", label: "Personas supported" },
               { num: "$49", label: "Flat monthly" },
             ].map((stat, i) => (
@@ -478,7 +478,7 @@ export default function LandingPage() {
                 Need a waitlist for your salon? Toggle it on. Want deposit protection for no-shows? One switch. Don&apos;t need Google Calendar sync? Leave it off.
               </p>
               <p className="text-[14px] font-semibold text-foreground">
-                205 toggleable features across 23 modules — you pick exactly what shows up.
+                207 toggleable features across 23 modules — you pick exactly what shows up.
               </p>
             </div>
 
@@ -674,7 +674,7 @@ export default function LandingPage() {
                 {[
                   { title: "No per-seat pricing", desc: "Your whole team gets access. Add people without doing math." },
                   { title: "Only your features", desc: "No hidden tabs, no locked modules, no 'upgrade to unlock' walls." },
-                  { title: "205 features, all toggleable", desc: "Every feature is a switch. Flip it on when you need it, off when you don't." },
+                  { title: "207 features, all toggleable", desc: "Every feature is a switch. Flip it on when you need it, off when you don't." },
                   { title: "9 add-ons, one click each", desc: "Need a client portal next month? Click install. Need SOAP notes? Click install." },
                   { title: "Industry-native vocabulary", desc: "A plumber sees Jobs and Quotes. A physio sees Patients and Treatment Plans." },
                 ].map((item, i) => (
@@ -764,7 +764,7 @@ export default function LandingPage() {
             <div className="space-y-3 mb-8">
               {[
                 "23 modules — pick what you need",
-                "205 toggleable features included",
+                "207 toggleable features included",
                 "9 add-ons — install anytime",
                 "Unlimited team members",
                 "AI Builder — 25 credits",
