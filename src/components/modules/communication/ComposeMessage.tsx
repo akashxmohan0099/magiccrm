@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Send, MessageSquarePlus } from "lucide-react";
+import { Send, MessageSquarePlus, Code } from "lucide-react";
 import { useCommunicationStore } from "@/store/communication";
 import { FeatureSection } from "@/components/modules/FeatureSection";
 
@@ -14,9 +14,14 @@ export function ComposeMessage({ conversationId }: ComposeMessageProps) {
   const [content, setContent] = useState("");
   const [showCanned, setShowCanned] = useState(false);
   const [scheduledAt, setScheduledAt] = useState("");
+  const [showVars, setShowVars] = useState(false);
 
   const insertCanned = (text: string) => {
     setContent((prev) => (prev ? prev + "\n" + text : text));
+  };
+
+  const insertVariable = (v: string) => {
+    setContent((prev) => prev + v);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -78,6 +83,21 @@ export function ComposeMessage({ conversationId }: ComposeMessageProps) {
           </FeatureSection>
           <FeatureSection moduleId="communication" featureId="scheduled-send" featureLabel="Scheduled Send">
             <input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} className="px-2 py-1.5 bg-surface border border-border-light rounded-lg text-[12px] text-text-secondary" title="Schedule send" />
+          </FeatureSection>
+          <FeatureSection moduleId="communication" featureId="template-variables" featureLabel="Template Variables">
+            <div className="relative">
+              <button type="button" onClick={() => setShowVars(!showVars)} className="p-2 text-text-secondary hover:text-foreground rounded-lg hover:bg-surface cursor-pointer" title="Insert variable">
+                <Code className="w-4 h-4" />
+              </button>
+              {showVars && (
+                <div className="absolute bottom-full mb-1 right-0 w-48 bg-card-bg border border-border-light rounded-xl shadow-lg p-2 z-10">
+                  <p className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider px-2 py-1">Variables</p>
+                  {["{name}", "{email}", "{date}", "{service}", "{amount}"].map((v) => (
+                    <button key={v} type="button" onClick={() => { insertVariable(v); setShowVars(false); }} className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-surface text-[12px] font-mono text-foreground cursor-pointer">{v}</button>
+                  ))}
+                </div>
+              )}
+            </div>
           </FeatureSection>
           <button
             type="submit"

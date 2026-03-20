@@ -178,6 +178,20 @@ export function BookingsPage() {
 
       <AvailabilitySettings />
 
+      <FeatureSection moduleId="bookings-calendar" featureId="waitlist" featureLabel="Waitlist">
+        <div className="mt-4 bg-card-bg rounded-xl border border-border-light p-5">
+          <h3 className="text-[13px] font-semibold text-text-tertiary uppercase tracking-wider mb-3">Waitlist</h3>
+          <p className="text-[13px] text-text-tertiary text-center py-4">No one on the waitlist. When slots are full, clients can join the waitlist and get notified when a spot opens.</p>
+        </div>
+      </FeatureSection>
+
+      <FeatureSection moduleId="bookings-calendar" featureId="team-calendar" featureLabel="Team Calendar">
+        <div className="mt-4 p-4 bg-surface/50 rounded-xl border border-border-light">
+          <p className="text-[13px] font-medium text-foreground">Team Calendar View</p>
+          <p className="text-[11px] text-text-tertiary">See all team members' schedules side by side. Filter by team member from the calendar header.</p>
+        </div>
+      </FeatureSection>
+
       <FeatureSection moduleId="bookings-calendar" featureId="booking-page">
         <BookingPagePreview />
       </FeatureSection>

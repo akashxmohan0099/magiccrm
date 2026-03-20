@@ -64,6 +64,13 @@ export function MessageThread({ conversationId }: MessageThreadProps) {
         </div>
       </FeatureSection>
 
+      {/* Contact Timeline */}
+      <FeatureSection moduleId="communication" featureId="contact-timeline" featureLabel="Contact Timeline">
+        <div className="px-4 py-2 border-b border-border-light bg-surface/30">
+          <p className="text-[11px] text-text-tertiary">Showing all messages with this contact across channels.</p>
+        </div>
+      </FeatureSection>
+
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-5 space-y-3">
         {conversation.messages.length === 0 ? (

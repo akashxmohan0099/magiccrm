@@ -64,6 +64,8 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
   const [depositAmount, setDepositAmount] = useState("");
   const [reminderHours, setReminderHours] = useState("24");
   const [noShow, setNoShow] = useState(false);
+  const [maxAttendees, setMaxAttendees] = useState("");
+  const [resource, setResource] = useState("");
 
   const clientOptions = useMemo(
     () => [
@@ -269,6 +271,27 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
             <input type="checkbox" checked={noShow} onChange={(e) => setNoShow(e.target.checked)} className="rounded" />
             <span className="text-[13px] text-foreground">Mark as no-show</span>
           </label>
+        </FeatureSection>
+
+        <FeatureSection moduleId="bookings-calendar" featureId="group-class-booking" featureLabel="Group Booking">
+          <div>
+            <label className="block text-[13px] font-medium text-foreground mb-1.5">Max Attendees</label>
+            <input type="number" value={maxAttendees} onChange={(e) => setMaxAttendees(e.target.value)} placeholder="e.g. 10" className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40" />
+            <p className="text-[11px] text-text-tertiary mt-1">Leave empty for 1-on-1 appointments.</p>
+          </div>
+        </FeatureSection>
+
+        <FeatureSection moduleId="bookings-calendar" featureId="resource-room-assignment" featureLabel="Room / Resource">
+          <div>
+            <label className="block text-[13px] font-medium text-foreground mb-1.5">Room / Resource</label>
+            <input type="text" value={resource} onChange={(e) => setResource(e.target.value)} placeholder="e.g. Room 1, Chair 3" className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40" />
+          </div>
+        </FeatureSection>
+
+        <FeatureSection moduleId="bookings-calendar" featureId="booking-confirmation-flow" featureLabel="Booking Confirmation">
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl">
+            <p className="text-[12px] text-blue-800">New bookings will land as "Pending" and need manual confirmation.</p>
+          </div>
         </FeatureSection>
 
         <FormField label="Status">

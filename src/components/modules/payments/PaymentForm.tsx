@@ -38,6 +38,7 @@ export function PaymentForm({ open, onClose }: PaymentFormProps) {
   const [date, setDate] = useState("");
   const [notes, setNotes] = useState("");
   const [isRefund, setIsRefund] = useState(false);
+  const [isWriteOff, setIsWriteOff] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -48,6 +49,7 @@ export function PaymentForm({ open, onClose }: PaymentFormProps) {
       setDate(new Date().toISOString().split("T")[0]);
       setNotes("");
       setIsRefund(false);
+      setIsWriteOff(false);
     }
   }, [open]);
 
@@ -140,6 +142,14 @@ export function PaymentForm({ open, onClose }: PaymentFormProps) {
               <p className="text-[11px] text-red-500">This payment will be recorded as a negative amount (refund).</p>
             )}
           </div>
+        </FeatureSection>
+
+        <FeatureSection moduleId="payments" featureId="write-off" featureLabel="Write-Off">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" checked={isWriteOff} onChange={(e) => setIsWriteOff(e.target.checked)} className="rounded" />
+            <span className="text-[13px] text-foreground">Write off as bad debt</span>
+          </label>
+          {isWriteOff && <p className="text-[11px] text-red-500 mt-1">This invoice will be marked as uncollectable.</p>}
         </FeatureSection>
 
         <div className="flex justify-end gap-2 pt-4 border-t border-border-light">
