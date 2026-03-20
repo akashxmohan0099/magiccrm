@@ -15,6 +15,7 @@ import { DateField } from "@/components/ui/DateField";
 import { TextArea } from "@/components/ui/TextArea";
 import { Button } from "@/components/ui/Button";
 import { LineItemEditor } from "@/components/ui/LineItemEditor";
+import { TravelCalculator } from "@/components/ui/TravelCalculator";
 import { MilestoneEditor } from "./MilestoneEditor";
 import { FeatureSection } from "@/components/modules/FeatureSection";
 
@@ -231,6 +232,26 @@ export function InvoiceForm({ open, onClose, invoice }: InvoiceFormProps) {
         <FormField label="Line Items">
           <LineItemEditor items={lineItems} onChange={setLineItems} />
         </FormField>
+
+        <FeatureSection moduleId="quotes-invoicing" featureId="travel-costs" featureLabel="Travel Costs">
+          <div className="bg-surface/50 rounded-xl border border-border-light p-4">
+            <h4 className="text-[13px] font-semibold text-foreground mb-3">Travel Cost Calculator</h4>
+            <TravelCalculator
+              showCost={true}
+              onResult={(result) => {
+                if (result.cost > 0) {
+                  const travelItem: LineItem = {
+                    id: generateId(),
+                    description: `Travel (${result.durationRounded} min${result.distanceKm > 0 ? `, ${result.distanceKm} km` : ""})`,
+                    quantity: 1,
+                    unitPrice: result.cost,
+                  };
+                  setLineItems((prev: LineItem[]) => [...prev.filter((li: LineItem) => !li.description.startsWith("Travel (")), travelItem]);
+                }
+              }}
+            />
+          </div>
+        </FeatureSection>
 
         <FeatureSection moduleId="quotes-invoicing" featureId="auto-tax" featureLabel="Auto Tax">
           <div className="flex items-center justify-between px-4 py-3 bg-surface/50 rounded-xl border border-border-light">

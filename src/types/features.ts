@@ -141,6 +141,7 @@ export const FEATURE_BLOCKS: FeatureBlock[] = [
       { id: "resource-room-assignment", label: "Room / Resource Assignment", description: "Assign bookings to specific rooms, chairs, or equipment", defaultOn: false },
       { id: "block-time-off", label: "Block Time Off", description: "Block holidays, personal time, or breaks on the calendar", defaultOn: true },
       { id: "booking-confirmation-flow", label: "Booking Confirmation", description: "New bookings land as pending until manually or auto-confirmed", defaultOn: false },
+      { id: "travel-time", label: "Travel Time", description: "Calculate and block travel time before on-site appointments", defaultOn: false },
     ],
   },
   {
@@ -169,6 +170,7 @@ export const FEATURE_BLOCKS: FeatureBlock[] = [
       { id: "quote-expiry", label: "Quote Expiry Date", description: "Quotes auto-expire if not accepted by the deadline", defaultOn: false },
       { id: "invoice-status-workflow", label: "Invoice Status Workflow", description: "Track Draft → Sent → Viewed → Paid → Overdue automatically", defaultOn: true },
       { id: "client-invoice-portal", label: "Client Invoice Page", description: "Clients view, approve, and download invoices from a branded page", defaultOn: false },
+      { id: "travel-costs", label: "Travel Costs", description: "Calculate travel time and cost based on distance, add as a line item", defaultOn: false },
     ],
   },
   {

@@ -13,6 +13,8 @@ import { DateField } from "@/components/ui/DateField";
 import { TextArea } from "@/components/ui/TextArea";
 import { Button } from "@/components/ui/Button";
 import { LineItemEditor } from "@/components/ui/LineItemEditor";
+import { TravelCalculator } from "@/components/ui/TravelCalculator";
+import { FeatureSection } from "@/components/modules/FeatureSection";
 
 interface QuoteFormProps {
   open: boolean;
@@ -95,6 +97,26 @@ export function QuoteForm({ open, onClose, quote }: QuoteFormProps) {
         <FormField label="Line Items">
           <LineItemEditor items={lineItems} onChange={setLineItems} />
         </FormField>
+
+        <FeatureSection moduleId="quotes-invoicing" featureId="travel-costs" featureLabel="Travel Costs">
+          <div className="bg-surface/50 rounded-xl border border-border-light p-4">
+            <h4 className="text-[13px] font-semibold text-foreground mb-3">Travel Cost Calculator</h4>
+            <TravelCalculator
+              showCost={true}
+              onResult={(result) => {
+                if (result.cost > 0) {
+                  const travelItem: LineItem = {
+                    id: generateId(),
+                    description: `Travel (${result.durationRounded} min${result.distanceKm > 0 ? `, ${result.distanceKm} km` : ""})`,
+                    quantity: 1,
+                    unitPrice: result.cost,
+                  };
+                  setLineItems((prev) => [...prev.filter((li) => !li.description.startsWith("Travel (")), travelItem]);
+                }
+              }}
+            />
+          </div>
+        </FeatureSection>
 
         <FormField label="Notes">
           <TextArea

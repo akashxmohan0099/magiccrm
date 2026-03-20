@@ -15,6 +15,7 @@ import { TextArea } from "@/components/ui/TextArea";
 import { Button } from "@/components/ui/Button";
 import { ServicePicker } from "./ServicePicker";
 import { FeatureSection } from "@/components/modules/FeatureSection";
+import { TravelCalculator } from "@/components/ui/TravelCalculator";
 
 interface BookingFormProps {
   open: boolean;
@@ -61,6 +62,7 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [requireDeposit, setRequireDeposit] = useState(false);
+  const [travelMinutes, setTravelMinutes] = useState("");
   const [depositAmount, setDepositAmount] = useState("");
   const [reminderHours, setReminderHours] = useState("24");
   const [noShow, setNoShow] = useState(false);
@@ -285,6 +287,25 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
           <div>
             <label className="block text-[13px] font-medium text-foreground mb-1.5">Room / Resource</label>
             <input type="text" value={resource} onChange={(e) => setResource(e.target.value)} placeholder="e.g. Room 1, Chair 3" className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40" />
+          </div>
+        </FeatureSection>
+
+        <FeatureSection moduleId="bookings-calendar" featureId="travel-time" featureLabel="Travel Time">
+          <div className="bg-surface/50 rounded-xl border border-border-light p-4">
+            <h4 className="text-[13px] font-semibold text-foreground mb-3">Travel Time</h4>
+            <TravelCalculator
+              showCost={false}
+              onResult={(result) => {
+                setTravelMinutes(String(result.durationRounded));
+              }}
+            />
+            {travelMinutes && parseInt(travelMinutes) > 0 && (
+              <div className="mt-2 px-3 py-2 bg-primary/5 border border-primary/20 rounded-lg">
+                <p className="text-[12px] text-foreground">
+                  <span className="font-semibold">{travelMinutes} min</span> travel time will be blocked before this appointment.
+                </p>
+              </div>
+            )}
           </div>
         </FeatureSection>
 

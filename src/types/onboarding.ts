@@ -742,6 +742,7 @@ export const FEATURE_CATEGORIES: FeatureCategory[] = [
       { id: "resource-room-assignment", label: "Room / Resource Assignment", description: "Assign bookings to specific rooms, chairs, or equipment", selected: false },
       { id: "block-time-off", label: "Block Time Off", description: "Block holidays, personal time, or breaks on the calendar", selected: true },
       { id: "booking-confirmation-flow", label: "Booking Confirmation", description: "New bookings land as pending until manually or auto-confirmed", selected: false },
+      { id: "travel-time", label: "Travel Time", description: "Calculate and block travel time for on-site jobs", selected: false },
     ],
   },
   {
@@ -766,6 +767,7 @@ export const FEATURE_CATEGORIES: FeatureCategory[] = [
       { id: "quote-expiry", label: "Quote Expiry Date", description: "Quotes auto-expire if not accepted by the deadline", selected: false },
       { id: "invoice-status-workflow", label: "Invoice Status Workflow", description: "Track Draft → Sent → Viewed → Paid → Overdue automatically", selected: true },
       { id: "client-invoice-portal", label: "Client Invoice Page", description: "Clients view, approve, and download invoices from a branded page", selected: false },
+      { id: "travel-costs", label: "Travel Costs", description: "Calculate travel distance and cost, add to quote", selected: false },
     ],
   },
   {
