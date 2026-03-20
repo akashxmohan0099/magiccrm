@@ -152,7 +152,7 @@ export function SupportPage() {
       )}
 
       {activeTab === "knowledge-base" && (
-        <FeatureSection moduleId="support" featureId="knowledge-base">
+        <FeatureSection moduleId="support" featureId="knowledge-base" featureLabel="Knowledge Base">
           <KnowledgeBase />
         </FeatureSection>
       )}

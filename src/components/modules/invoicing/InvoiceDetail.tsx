@@ -5,6 +5,7 @@ import { Pencil, Trash2, CheckCircle } from "lucide-react";
 import { useInvoicesStore } from "@/store/invoices";
 import { useClientsStore } from "@/store/clients";
 import { Invoice } from "@/types/models";
+import { useVocabulary } from "@/hooks/useVocabulary";
 import { SlideOver } from "@/components/ui/SlideOver";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Button } from "@/components/ui/Button";
@@ -20,14 +21,15 @@ interface InvoiceDetailProps {
 export function InvoiceDetail({ open, onClose, invoiceId, onEdit }: InvoiceDetailProps) {
   const { invoices, updateInvoice, deleteInvoice } = useInvoicesStore();
   const { clients } = useClientsStore();
+  const vocab = useVocabulary();
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const invoice = invoices.find((inv) => inv.id === invoiceId);
 
   if (!invoice) {
     return (
-      <SlideOver open={open} onClose={onClose} title="Invoice">
-        <p className="text-sm text-text-secondary">Invoice not found.</p>
+      <SlideOver open={open} onClose={onClose} title={vocab.invoice}>
+        <p className="text-sm text-text-secondary">{vocab.invoice} not found.</p>
       </SlideOver>
     );
   }
@@ -46,12 +48,12 @@ export function InvoiceDetail({ open, onClose, invoiceId, onEdit }: InvoiceDetai
 
   return (
     <>
-      <SlideOver open={open} onClose={onClose} title={`Invoice ${invoice.number}`}>
+      <SlideOver open={open} onClose={onClose} title={`${vocab.invoice} ${invoice.number}`}>
         <div className="space-y-6">
           {/* Header info */}
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-text-secondary">Client</p>
+              <p className="text-sm text-text-secondary">{vocab.client}</p>
               <p className="text-foreground font-medium">{client?.name ?? "\u2014"}</p>
             </div>
             <StatusBadge status={invoice.status} />
@@ -136,8 +138,8 @@ export function InvoiceDetail({ open, onClose, invoiceId, onEdit }: InvoiceDetai
         open={confirmDelete}
         onClose={() => setConfirmDelete(false)}
         onConfirm={handleDelete}
-        title="Delete Invoice"
-        message={`Are you sure you want to delete invoice ${invoice.number}? This action cannot be undone.`}
+        title={`Delete ${vocab.invoice}`}
+        message={`Are you sure you want to delete ${vocab.invoice.toLowerCase()} ${invoice.number}? This action cannot be undone.`}
       />
     </>
   );

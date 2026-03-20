@@ -4,7 +4,6 @@ import { useMemo } from "react";
 import { DollarSign, TrendingUp } from "lucide-react";
 import { usePaymentsStore } from "@/store/payments";
 import { useClientsStore } from "@/store/clients";
-import { FeatureSection } from "@/components/modules/FeatureSection";
 
 export function RevenueLog() {
   const { payments } = usePaymentsStore();
@@ -40,7 +39,6 @@ export function RevenueLog() {
     method.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
   return (
-    <FeatureSection moduleId="payments" featureId="revenue-log">
       <div className="mt-6">
         <div className="flex items-center gap-2 mb-4">
           <TrendingUp className="w-4 h-4 text-foreground" />
@@ -102,6 +100,5 @@ export function RevenueLog() {
           </div>
         )}
       </div>
-    </FeatureSection>
   );
 }

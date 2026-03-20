@@ -93,9 +93,7 @@ export function ReportingPage() {
       </div>
 
       <div className="space-y-8">
-        <FeatureSection moduleId="reporting" featureId="activity-feed">
-          <ActivityFeed />
-        </FeatureSection>
+        <ActivityFeed />
 
         <FeatureSection moduleId="reporting" featureId="export-reports">
           <ExportReports />

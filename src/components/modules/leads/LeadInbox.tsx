@@ -3,7 +3,6 @@
 import { useMemo } from "react";
 import { Inbox, Clock, Tag } from "lucide-react";
 import { useLeadsStore } from "@/store/leads";
-import { FeatureSection } from "@/components/modules/FeatureSection";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 
@@ -35,7 +34,6 @@ export function LeadInbox() {
   );
 
   return (
-    <FeatureSection moduleId="leads-pipeline" featureId="lead-inbox">
       <div>
         <h3 className="text-lg font-semibold text-foreground tracking-tight mb-4">
           Lead Inbox
@@ -82,6 +80,5 @@ export function LeadInbox() {
           </div>
         )}
       </div>
-    </FeatureSection>
   );
 }

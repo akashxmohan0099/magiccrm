@@ -3,11 +3,14 @@
 import { useState, useEffect } from "react";
 import { useClientsStore } from "@/store/clients";
 import { Client } from "@/types/models";
+import { useVocabulary } from "@/hooks/useVocabulary";
+import { useIndustryConfig } from "@/hooks/useIndustryConfig";
 import { SlideOver } from "@/components/ui/SlideOver";
 import { FormField } from "@/components/ui/FormField";
 import { SelectField } from "@/components/ui/SelectField";
 import { TextArea } from "@/components/ui/TextArea";
 import { Button } from "@/components/ui/Button";
+import { CustomFieldsSection } from "./CustomFieldsSection";
 
 interface ClientFormProps {
   open: boolean;
@@ -40,11 +43,15 @@ function getInitialState(client?: Client) {
     source: client?.source ?? "",
     status: client?.status ?? "prospect",
     tags: client?.tags?.join(", ") ?? "",
+    customData: (client as any)?.customData ?? {} as Record<string, unknown>,
   };
 }
 
 export function ClientForm({ open, onClose, client }: ClientFormProps) {
   const { addClient, updateClient } = useClientsStore();
+  const vocab = useVocabulary();
+  const config = useIndustryConfig();
+  const customFieldDefs = config.customFields.clients ?? [];
   const [form, setForm] = useState(getInitialState(client));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -98,6 +105,7 @@ export function ClientForm({ open, onClose, client }: ClientFormProps) {
       source: (form.source || undefined) as Client["source"],
       status: form.status as Client["status"],
       tags,
+      customData: form.customData,
     };
 
     if (client) {
@@ -116,7 +124,7 @@ export function ClientForm({ open, onClose, client }: ClientFormProps) {
     <SlideOver
       open={open}
       onClose={onClose}
-      title={client ? "Edit Client" : "New Client"}
+      title={client ? `Edit ${vocab.client}` : `New ${vocab.client}`}
     >
       <div className="space-y-1">
         <FormField label="Name" required error={errors.name}>
@@ -203,12 +211,20 @@ export function ClientForm({ open, onClose, client }: ClientFormProps) {
           />
         </FormField>
 
+        {customFieldDefs.length > 0 && (
+          <CustomFieldsSection
+            fields={customFieldDefs}
+            values={form.customData}
+            onChange={(customData) => setForm((prev) => ({ ...prev, customData }))}
+          />
+        )}
+
         <div className="flex justify-end gap-2 pt-4 border-t border-border-light">
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
           <Button loading={saving} onClick={handleSubmit}>
-            {client ? "Save Changes" : "Add Client"}
+            {client ? "Save Changes" : vocab.addClient}
           </Button>
         </div>
       </div>

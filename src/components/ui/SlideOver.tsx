@@ -1,6 +1,7 @@
 "use client";
 
-import { ReactNode, useEffect, useId } from "react";
+import { ReactNode, useEffect, useId, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 
@@ -14,6 +15,12 @@ interface SlideOverProps {
 
 export function SlideOver({ open, onClose, title, children, wide }: SlideOverProps) {
   const titleId = useId();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     if (open) {
       document.body.style.overflow = "hidden";
@@ -29,16 +36,16 @@ export function SlideOver({ open, onClose, title, children, wide }: SlideOverPro
     return () => document.removeEventListener("keydown", handleEsc);
   }, [open, onClose]);
 
-  return (
+  const content = (
     <AnimatePresence>
       {open && (
-        <>
+        <div className="fixed inset-0 z-[60]">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black/20 backdrop-blur-overlay z-40"
+            className="absolute inset-0 bg-black/20 backdrop-blur-overlay"
             onClick={onClose}
           />
           <motion.div
@@ -49,7 +56,7 @@ export function SlideOver({ open, onClose, title, children, wide }: SlideOverPro
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
-            className={`fixed right-0 top-0 h-full bg-card-bg border-l border-border-light z-50 flex flex-col shadow-2xl shadow-black/8 ${
+            className={`absolute right-0 top-0 h-full bg-card-bg border-l border-border-light flex flex-col shadow-2xl shadow-black/8 ${
               wide ? "w-full max-w-2xl" : "w-full max-w-lg"
             }`}
           >
@@ -66,8 +73,12 @@ export function SlideOver({ open, onClose, title, children, wide }: SlideOverPro
             </div>
             <div className="flex-1 overflow-y-auto p-6">{children}</div>
           </motion.div>
-        </>
+        </div>
       )}
     </AnimatePresence>
   );
+
+  if (!mounted) return null;
+
+  return createPortal(content, document.body);
 }

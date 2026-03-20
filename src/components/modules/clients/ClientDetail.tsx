@@ -19,6 +19,8 @@ import { useLeadsStore } from "@/store/leads";
 import { useJobsStore } from "@/store/jobs";
 import { useInvoicesStore } from "@/store/invoices";
 import { useBookingsStore } from "@/store/bookings";
+import { useVocabulary } from "@/hooks/useVocabulary";
+import { useIndustryConfig } from "@/hooks/useIndustryConfig";
 import { SlideOver } from "@/components/ui/SlideOver";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Button } from "@/components/ui/Button";
@@ -29,6 +31,7 @@ import { ClientForm } from "./ClientForm";
 import { ClientTags } from "./ClientTags";
 import { SegmentationFilters } from "./SegmentationFilters";
 import { FollowUpSection } from "./FollowUpSection";
+import { RelationshipsSection } from "./RelationshipsSection";
 
 interface ClientDetailProps {
   open: boolean;
@@ -37,11 +40,14 @@ interface ClientDetailProps {
 }
 
 export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
-  const { getClient, deleteClient } = useClientsStore();
+  const { getClient, deleteClient, updateClient } = useClientsStore();
   const { leads } = useLeadsStore();
   const { jobs } = useJobsStore();
   const { invoices } = useInvoicesStore();
   const { bookings } = useBookingsStore();
+  const vocab = useVocabulary();
+  const config = useIndustryConfig();
+  const customFieldDefs = config.customFields.clients ?? [];
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
@@ -55,8 +61,8 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
 
   if (!client) {
     return (
-      <SlideOver open={open} onClose={onClose} title="Client Details">
-        <p className="text-text-secondary text-sm">Client not found.</p>
+      <SlideOver open={open} onClose={onClose} title={`${vocab.client} Details`}>
+        <p className="text-text-secondary text-sm">{vocab.client} not found.</p>
       </SlideOver>
     );
   }
@@ -83,7 +89,7 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
 
   return (
     <>
-      <SlideOver open={open} onClose={onClose} title="Client Details">
+      <SlideOver open={open} onClose={onClose} title={`${vocab.client} Details`}>
         <div className="space-y-6">
           {/* Header */}
           <div className="flex items-start justify-between">
@@ -216,6 +222,55 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
             </div>
           </div>
 
+          {/* Custom Fields */}
+          {customFieldDefs.length > 0 && (() => {
+            const customData = (client as any).customData ?? {};
+            const hasData = customFieldDefs.some((f) => {
+              const v = customData[f.id];
+              return v !== undefined && v !== "" && v !== false;
+            });
+            if (!hasData) return null;
+            // Group by group property
+            const groups: Record<string, typeof customFieldDefs> = {};
+            for (const f of customFieldDefs) {
+              const g = f.group ?? "Details";
+              if (!groups[g]) groups[g] = [];
+              groups[g].push(f);
+            }
+            return (
+              <div className="bg-surface rounded-lg p-4 border border-border-light">
+                {Object.entries(groups).map(([groupLabel, fields]) => (
+                  <div key={groupLabel} className="mb-3 last:mb-0">
+                    <h4 className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-2">{groupLabel}</h4>
+                    <div className="space-y-1.5">
+                      {fields.map((f) => {
+                        const val = customData[f.id];
+                        if (val === undefined || val === "" || val === false) return null;
+                        return (
+                          <div key={f.id} className="flex items-start gap-3 py-1">
+                            <div>
+                              <p className="text-xs text-text-secondary">{f.label}</p>
+                              <p className="text-sm text-foreground">{f.type === "toggle" ? "Yes" : String(val)}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+
+          {/* Relationships */}
+          {config.relationships.length > 0 && (
+            <RelationshipsSection
+              clientId={client.id}
+              relationships={(client as any).relationships ?? []}
+              onUpdate={(relationships) => updateClient(client.id, { relationships } as any)}
+            />
+          )}
+
           {/* Tags - Feature Gated */}
           <FeatureSection moduleId="client-database" featureId="client-tags">
             <ClientTags clientId={client.id} />
@@ -249,10 +304,10 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
         open={deleteOpen}
         onClose={() => setDeleteOpen(false)}
         onConfirm={handleDelete}
-        title="Delete Client"
+        title={`Delete ${vocab.client}`}
         message={
           hasLinkedRecords
-            ? `This client has ${linkedLeads} lead${linkedLeads !== 1 ? "s" : ""}, ${linkedJobs} job${linkedJobs !== 1 ? "s" : ""}, ${linkedInvoices} invoice${linkedInvoices !== 1 ? "s" : ""}, and ${linkedBookings} booking${linkedBookings !== 1 ? "s" : ""} linked. These will become unlinked. Are you sure you want to delete "${client.name}"?`
+            ? `This ${vocab.client.toLowerCase()} has ${linkedLeads} ${vocab.leads.toLowerCase()}, ${linkedJobs} ${vocab.jobs.toLowerCase()}, ${linkedInvoices} ${vocab.invoices.toLowerCase()}, and ${linkedBookings} ${vocab.bookings.toLowerCase()} linked. These will become unlinked. Are you sure you want to delete "${client.name}"?`
             : `Are you sure you want to delete "${client.name}"? This action cannot be undone.`
         }
       />

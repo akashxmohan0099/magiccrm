@@ -27,6 +27,8 @@ import {
 } from "lucide-react";
 import { useClientsStore } from "@/store/clients";
 import { useEnabledModules } from "@/hooks/useFeature";
+import { useVocabulary } from "@/hooks/useVocabulary";
+import { getModuleDisplayName } from "@/lib/module-registry";
 import type { ModuleDefinition } from "@/lib/module-registry";
 
 // ── Icon map for module icons ─────────────────────────────────
@@ -64,6 +66,7 @@ export function CommandPalette() {
   const listRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const enabledModules = useEnabledModules();
+  const vocab = useVocabulary();
   const clients = useClientsStore((s) => s.clients);
 
   // ── Open / Close ──────────────────────────────────────────
@@ -131,7 +134,7 @@ export function CommandPalette() {
     enabledModules.forEach((mod: ModuleDefinition) => {
       items.push({
         id: `nav-${mod.slug}`,
-        label: mod.name,
+        label: getModuleDisplayName(mod, vocab),
         category: "Navigation",
         icon: ICON_MAP[mod.icon] || LayoutDashboard,
         onSelect: () => router.push(`/dashboard/${mod.slug}`),
@@ -159,7 +162,7 @@ export function CommandPalette() {
     if (moduleSlugs.has("clients")) {
       items.push({
         id: "action-add-client",
-        label: "Add Client",
+        label: vocab.addClient,
         category: "Actions",
         icon: Plus,
         onSelect: () => router.push("/dashboard/clients?action=add"),
@@ -170,7 +173,7 @@ export function CommandPalette() {
     if (moduleSlugs.has("invoicing")) {
       items.push({
         id: "action-create-invoice",
-        label: "Create Invoice",
+        label: vocab.addInvoice,
         category: "Actions",
         icon: Plus,
         onSelect: () => router.push("/dashboard/invoicing?action=add"),
@@ -181,7 +184,7 @@ export function CommandPalette() {
     if (moduleSlugs.has("bookings")) {
       items.push({
         id: "action-new-booking",
-        label: "New Booking",
+        label: vocab.addBooking,
         category: "Actions",
         icon: Plus,
         onSelect: () => router.push("/dashboard/bookings?action=add"),
@@ -192,7 +195,7 @@ export function CommandPalette() {
     if (moduleSlugs.has("leads")) {
       items.push({
         id: "action-add-lead",
-        label: "Add Lead",
+        label: vocab.addLead,
         category: "Actions",
         icon: Plus,
         onSelect: () => router.push("/dashboard/leads?action=add"),
@@ -313,7 +316,7 @@ export function CommandPalette() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="fixed inset-0 bg-black/20 backdrop-blur-overlay z-50"
+            className="fixed inset-0 bg-black/50 backdrop-blur-overlay z-[80]"
             onClick={closePalette}
           />
 
@@ -323,7 +326,7 @@ export function CommandPalette() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: -10 }}
             transition={{ type: "spring", damping: 30, stiffness: 400 }}
-            className="fixed inset-0 z-50 flex items-start justify-center pt-[min(20vh,140px)] px-4"
+            className="fixed inset-0 z-[80] flex items-start justify-center pt-[min(20vh,140px)] px-4"
             onClick={(e) => e.target === e.currentTarget && closePalette()}
           >
             <div

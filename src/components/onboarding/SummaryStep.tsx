@@ -29,6 +29,8 @@ const BLOCK_META: Record<string, { name: string; icon: string }> = {
   "documents": { name: "Documents", icon: "FileText" },
   "automations": { name: "Automations", icon: "Zap" },
   "reporting": { name: "Reporting", icon: "BarChart3" },
+  "products": { name: "Products & Services", icon: "Package" },
+  "team": { name: "Team", icon: "UsersRound" },
 };
 
 export function SummaryStep() {

@@ -3,7 +3,8 @@
 import { useMemo } from "react";
 import { UserCheck, DollarSign, Mail } from "lucide-react";
 import { useLeadsStore } from "@/store/leads";
-import { Lead, LeadStage } from "@/types/models";
+import { Lead } from "@/types/models";
+import { useIndustryConfig } from "@/hooks/useIndustryConfig";
 import { KanbanBoard, KanbanColumn } from "@/components/ui/KanbanBoard";
 import { Button } from "@/components/ui/Button";
 
@@ -11,32 +12,29 @@ interface PipelineBoardProps {
   leads?: Lead[];
 }
 
-const stageConfig: { id: LeadStage; label: string; color: string }[] = [
-  { id: "new", label: "New", color: "bg-blue-500" },
-  { id: "contacted", label: "Contacted", color: "bg-yellow-500" },
-  { id: "qualified", label: "Qualified", color: "bg-purple-500" },
-  { id: "proposal", label: "Proposal", color: "bg-orange-500" },
-  { id: "won", label: "Won", color: "bg-green-500" },
-  { id: "lost", label: "Lost", color: "bg-red-500" },
-];
-
 export function PipelineBoard({ leads: externalLeads }: PipelineBoardProps) {
   const store = useLeadsStore();
+  const config = useIndustryConfig();
   const leads = externalLeads ?? store.leads;
 
-  const columns: KanbanColumn<Lead>[] = useMemo(
-    () =>
-      stageConfig.map((stage) => ({
-        id: stage.id,
-        label: stage.label,
-        color: stage.color,
-        items: leads.filter((l) => l.stage === stage.id),
-      })),
-    [leads]
-  );
+  const columns: KanbanColumn<Lead>[] = useMemo(() => {
+    const stageIds = new Set(config.leadStages.map((s) => s.id));
+    const fallbackStageId = config.leadStages.find((s) => !s.isClosed)?.id ?? config.leadStages[0]?.id;
+
+    return config.leadStages.map((stage) => ({
+      id: stage.id,
+      label: stage.label,
+      color: stage.color,
+      items: leads.filter((l) => {
+        if (l.stage === stage.id) return true;
+        if (!stageIds.has(l.stage) && stage.id === fallbackStageId) return true;
+        return false;
+      }),
+    }));
+  }, [leads, config.leadStages]);
 
   const handleMove = (leadId: string, toStage: string) => {
-    store.moveLead(leadId, toStage as LeadStage);
+    store.moveLead(leadId, toStage as string);
   };
 
   const handleConvert = (leadId: string) => {

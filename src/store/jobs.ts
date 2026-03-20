@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { Job, JobStage, Task, TimeEntry, FileAttachment } from "@/types/models";
+import { Job, Task, TimeEntry, FileAttachment } from "@/types/models";
 import { generateId } from "@/lib/id";
 import { logActivity } from "@/lib/activity-logger";
 import { toast } from "@/components/ui/Toast";
@@ -10,7 +10,7 @@ interface JobsStore {
   addJob: (data: Omit<Job, "id" | "tasks" | "timeEntries" | "files" | "createdAt" | "updatedAt">) => Job;
   updateJob: (id: string, data: Partial<Job>) => void;
   deleteJob: (id: string) => void;
-  moveJob: (id: string, stage: JobStage) => void;
+  moveJob: (id: string, stage: string) => void;
   addTask: (jobId: string, title: string) => void;
   toggleTask: (jobId: string, taskId: string) => void;
   deleteTask: (jobId: string, taskId: string) => void;

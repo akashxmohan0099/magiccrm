@@ -115,18 +115,11 @@ export const useOnboardingStore = create<OnboardingStore>()(
 
       applySmartDefaults: () => {
         const config = get().getIndustryConfig();
-        if (!config || !config.smartDefaults) return;
+        if (!config) return;
         const persona = get().getPersonaConfig();
-        // Merge: industry defaults + persona overrides
-        const mergedNeeds = {
-          ...config.smartDefaults,
-          ...(persona?.smartDefaultOverrides || {}),
-        };
+        // Only set team size — needs stay blank for the user to answer fresh
         const teamSize = persona?.suggestedTeamSize || config.suggestedTeamSize || get().teamSize;
-        set((s) => ({
-          needs: { ...s.needs, ...mergedNeeds },
-          teamSize,
-        }));
+        set({ teamSize });
       },
 
       setTeamSize: (size) => set({ teamSize: size }),
@@ -164,16 +157,26 @@ export const useOnboardingStore = create<OnboardingStore>()(
     }),
     {
       name: "magic-crm-onboarding",
-      version: 3,
+      version: 5,
       migrate: (persisted: any, version: number) => {
-        if (version < 3) {
+        if (version < 5) {
+          // v5: merged yes/no quiz + feature customization into single feature selection step.
+          // Reset to start to avoid broken step references.
           return {
             ...persisted,
             step: 0,
-            selectedIndustry: persisted.selectedIndustry || "",
-            selectedPersona: persisted.selectedPersona || "",
-            isBuilding: false,
-            buildComplete: false,
+            featureSelections: {},
+            needs: {
+              manageCustomers: false,
+              receiveInquiries: false,
+              communicateClients: false,
+              acceptBookings: false,
+              sendInvoices: false,
+              manageProjects: false,
+              runMarketing: false,
+              handleSupport: false,
+              manageDocuments: false,
+            },
           };
         }
         return persisted;

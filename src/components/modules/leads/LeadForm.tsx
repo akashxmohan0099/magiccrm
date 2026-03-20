@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useLeadsStore } from "@/store/leads";
-import { Lead, LeadStage } from "@/types/models";
+import { Lead } from "@/types/models";
+import { useVocabulary } from "@/hooks/useVocabulary";
+import { useIndustryConfig } from "@/hooks/useIndustryConfig";
 import { SlideOver } from "@/components/ui/SlideOver";
 import { FormField } from "@/components/ui/FormField";
 import { SelectField } from "@/components/ui/SelectField";
@@ -15,28 +17,24 @@ interface LeadFormProps {
   lead?: Lead;
 }
 
-const stageOptions = [
-  { value: "new", label: "New" },
-  { value: "contacted", label: "Contacted" },
-  { value: "qualified", label: "Qualified" },
-  { value: "proposal", label: "Proposal" },
-  { value: "won", label: "Won" },
-  { value: "lost", label: "Lost" },
-];
-
-const emptyForm = {
-  name: "",
-  email: "",
-  phone: "",
-  company: "",
-  source: "",
-  stage: "new" as LeadStage,
-  value: "",
-  notes: "",
-};
-
 export function LeadForm({ open, onClose, lead }: LeadFormProps) {
   const { addLead, updateLead } = useLeadsStore();
+  const vocab = useVocabulary();
+  const config = useIndustryConfig();
+  const stageOptions = config.leadStages.map((s) => ({ value: s.id, label: s.label }));
+  const defaultStage = config.leadStages.find((s) => !s.isClosed)?.id ?? config.leadStages[0]?.id ?? "new";
+
+  const emptyForm = {
+    name: "",
+    email: "",
+    phone: "",
+    company: "",
+    source: "",
+    stage: defaultStage,
+    value: "",
+    notes: "",
+  };
+
   const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -106,7 +104,7 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
     <SlideOver
       open={open}
       onClose={onClose}
-      title={lead ? "Edit Lead" : "Add Lead"}
+      title={lead ? `Edit ${vocab.lead}` : vocab.addLead}
     >
       <form onSubmit={handleSubmit} className="space-y-5">
         <FormField label="Name" required error={errors.name}>
@@ -193,7 +191,7 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
             Cancel
           </Button>
           <Button variant="primary" size="sm" type="submit" loading={saving}>
-            {lead ? "Save Changes" : "Add Lead"}
+            {lead ? "Save Changes" : vocab.addLead}
           </Button>
         </div>
       </form>

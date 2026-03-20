@@ -72,6 +72,23 @@ export const useClientsStore = create<ClientsStore>()(
       getClientsByStatus: (status) =>
         get().clients.filter((c) => c.status === status),
     }),
-    { name: "magic-crm-clients" }
+    {
+      name: "magic-crm-clients",
+      version: 2,
+      migrate: (persisted: any, version: number) => {
+        if (version < 2) {
+          // Add customData and relationships to existing clients
+          return {
+            ...persisted,
+            clients: (persisted.clients ?? []).map((c: any) => ({
+              ...c,
+              customData: c.customData ?? {},
+              relationships: c.relationships ?? [],
+            })),
+          };
+        }
+        return persisted;
+      },
+    }
   )
 );

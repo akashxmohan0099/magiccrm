@@ -4,36 +4,35 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useOnboardingStore } from "@/store/onboarding";
-import { FEATURE_CATEGORIES } from "@/types/onboarding";
 
 const BUILD_STEPS = [
-  "Analyzing your business needs",
-  "Assembling custom modules",
-  "Configuring workflows",
-  "Setting up your dashboard",
-  "Connecting integrations",
-  "Applying your preferences",
-  "Running final checks",
-  "Almost there",
+  "Reading your preferences",
+  "Setting up your workspace",
+  "Configuring modules",
+  "Applying industry settings",
+  "Building your dashboard",
+  "Final touches",
 ];
 
 export function BuildingScreen() {
   const [currentStep, setCurrentStep] = useState(0);
   const [progress, setProgress] = useState(0);
   const router = useRouter();
-  const { needs, businessContext, getIndustryConfig } = useOnboardingStore();
+  const { businessContext, getIndustryConfig, featureSelections } = useOnboardingStore();
 
   const config = getIndustryConfig();
-  const activeCategories = FEATURE_CATEGORIES.filter((cat) => needs[cat.id]);
+  const moduleCount = Object.values(featureSelections).filter(
+    (features) => features.some((f) => f.selected)
+  ).length;
 
   useEffect(() => {
-    const stepDuration = 12000 / BUILD_STEPS.length;
+    const stepDuration = 10000 / BUILD_STEPS.length;
     const progressInterval = setInterval(() => {
       setProgress((p) => {
         if (p >= 100) { clearInterval(progressInterval); return 100; }
-        return p + 1;
+        return p + 0.8;
       });
-    }, 120);
+    }, 80);
 
     const stepInterval = setInterval(() => {
       setCurrentStep((s) => {
@@ -44,7 +43,7 @@ export function BuildingScreen() {
 
     const finishTimer = setTimeout(() => {
       router.push("/dashboard");
-    }, 13000);
+    }, 11000);
 
     return () => {
       clearInterval(progressInterval);
@@ -53,74 +52,61 @@ export function BuildingScreen() {
     };
   }, [router]);
 
+  const businessName = businessContext.businessName;
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
-      <div className="max-w-md mx-auto text-center px-6">
-        {/* Minimal animated indicator */}
+      <div className="max-w-lg mx-auto text-center px-6">
+        {/* Animated logo */}
         <motion.div
-          className="w-16 h-16 mx-auto mb-10 relative"
+          className="w-16 h-16 mx-auto mb-12 relative"
           animate={{ rotate: 360 }}
-          transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+          transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
         >
-          <div className="w-full h-full bg-foreground rounded-2xl flex items-center justify-center">
+          <div className="w-full h-full bg-primary rounded-2xl flex items-center justify-center">
             <motion.div
-              animate={{ scale: [1, 1.15, 1] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-              className="w-6 h-6 bg-white rounded-md"
+              animate={{ scale: [1, 1.1, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="w-7 h-7 bg-foreground rounded-lg"
             />
           </div>
         </motion.div>
 
-        <h2 className="text-[24px] font-bold text-foreground mb-2 tracking-tight">
-          Building {businessContext.businessName ? `${businessContext.businessName}'s` : "your"} CRM
+        <h2 className="text-[32px] font-bold text-foreground mb-3 tracking-tight">
+          {businessName
+            ? `Building ${businessName}'s CRM`
+            : "Building your CRM"}
         </h2>
-        <p className="text-text-secondary text-[15px] mb-8">
-          Assembling {activeCategories.length} modules
-          {config ? ` for ${config.label.toLowerCase()}` : ""}
+        <p className="text-text-secondary text-[16px] mb-3 leading-relaxed">
+          Assembling {moduleCount} module{moduleCount !== 1 ? "s" : ""}
+          {config && config.id !== "generic" ? `, customized for ${config.label.toLowerCase()}` : ""}.
+        </p>
+        <p className="text-text-tertiary text-[14px] mb-12">
+          This will only take a moment.
         </p>
 
         {/* Progress bar */}
-        <div className="w-full h-1.5 bg-border-light rounded-full overflow-hidden mb-4">
-          <motion.div
-            className="h-full bg-foreground rounded-full"
-            animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.3 }}
-          />
-        </div>
-
-        {/* Step text */}
-        <AnimatePresence mode="wait">
-          <motion.p
-            key={currentStep}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            className="text-[13px] text-text-secondary font-medium"
-          >
-            {BUILD_STEPS[currentStep]}
-          </motion.p>
-        </AnimatePresence>
-
-        {/* Module chips */}
-        <div className="flex flex-wrap justify-center gap-2 mt-8">
-          {activeCategories.map((cat, i) => (
+        <div className="max-w-xs mx-auto">
+          <div className="w-full h-1.5 bg-border-light rounded-full overflow-hidden mb-4">
             <motion.div
-              key={cat.id}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{
-                opacity: progress > (i / activeCategories.length) * 100 ? 1 : 0.3,
-                scale: 1,
-              }}
-              transition={{ delay: i * 0.15 }}
-              className={`px-3 py-1.5 rounded-full text-[11px] font-medium transition-colors ${
-                progress > (i / activeCategories.length) * 100
-                  ? "bg-foreground text-white"
-                  : "bg-surface text-text-tertiary"
-              }`}
+              className="h-full bg-primary rounded-full"
+              animate={{ width: `${Math.min(progress, 100)}%` }}
+              transition={{ duration: 0.3 }}
+            />
+          </div>
+
+          {/* Step text */}
+          <AnimatePresence mode="wait">
+            <motion.p
+              key={currentStep}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              className="text-[13px] text-text-tertiary font-medium"
             >
-              {cat.name}
-            </motion.div>
-          ))}
+              {BUILD_STEPS[currentStep]}
+            </motion.p>
+          </AnimatePresence>
         </div>
       </div>
     </div>

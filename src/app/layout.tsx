@@ -1,5 +1,12 @@
 import type { Metadata } from "next";
+import { Urbanist } from "next/font/google";
 import "./globals.css";
+
+const urbanist = Urbanist({
+  subsets: ["latin"],
+  variable: "--font-urbanist",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Magic CRM - Your Custom CRM, Built in Minutes",
@@ -13,7 +20,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={urbanist.variable}>
       <body className="antialiased">
         {children}
       </body>

@@ -5,6 +5,7 @@ import { Pencil, Trash2, ArrowRightCircle } from "lucide-react";
 import { useInvoicesStore } from "@/store/invoices";
 import { useClientsStore } from "@/store/clients";
 import { Quote } from "@/types/models";
+import { useVocabulary } from "@/hooks/useVocabulary";
 import { SlideOver } from "@/components/ui/SlideOver";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Button } from "@/components/ui/Button";
@@ -20,14 +21,15 @@ interface QuoteDetailProps {
 export function QuoteDetail({ open, onClose, quoteId, onEdit }: QuoteDetailProps) {
   const { quotes, deleteQuote, convertQuoteToInvoice } = useInvoicesStore();
   const { clients } = useClientsStore();
+  const vocab = useVocabulary();
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const quote = quotes.find((q) => q.id === quoteId);
 
   if (!quote) {
     return (
-      <SlideOver open={open} onClose={onClose} title="Quote">
-        <p className="text-sm text-text-secondary">Quote not found.</p>
+      <SlideOver open={open} onClose={onClose} title={vocab.quote}>
+        <p className="text-sm text-text-secondary">{vocab.quote} not found.</p>
       </SlideOver>
     );
   }
@@ -47,12 +49,12 @@ export function QuoteDetail({ open, onClose, quoteId, onEdit }: QuoteDetailProps
 
   return (
     <>
-      <SlideOver open={open} onClose={onClose} title={`Quote ${quote.number}`}>
+      <SlideOver open={open} onClose={onClose} title={`${vocab.quote} ${quote.number}`}>
         <div className="space-y-6">
           {/* Header info */}
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-text-secondary">Client</p>
+              <p className="text-sm text-text-secondary">{vocab.client}</p>
               <p className="text-foreground font-medium">{client?.name ?? "\u2014"}</p>
             </div>
             <StatusBadge status={quote.status} />
@@ -117,7 +119,7 @@ export function QuoteDetail({ open, onClose, quoteId, onEdit }: QuoteDetailProps
           {/* Actions */}
           <div className="flex items-center gap-2 pt-4 border-t border-border-light">
             <Button variant="primary" size="sm" onClick={handleConvert}>
-              <ArrowRightCircle className="w-4 h-4" /> Convert to Invoice
+              <ArrowRightCircle className="w-4 h-4" /> Convert to {vocab.invoice}
             </Button>
             {onEdit && (
               <Button variant="secondary" size="sm" onClick={() => onEdit(quote)}>
@@ -135,8 +137,8 @@ export function QuoteDetail({ open, onClose, quoteId, onEdit }: QuoteDetailProps
         open={confirmDelete}
         onClose={() => setConfirmDelete(false)}
         onConfirm={handleDelete}
-        title="Delete Quote"
-        message={`Are you sure you want to delete quote ${quote.number}? This action cannot be undone.`}
+        title={`Delete ${vocab.quote}`}
+        message={`Are you sure you want to delete ${vocab.quote.toLowerCase()} ${quote.number}? This action cannot be undone.`}
       />
     </>
   );

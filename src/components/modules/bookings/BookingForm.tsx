@@ -5,12 +5,15 @@ import { AlertTriangle } from "lucide-react";
 import { useBookingsStore } from "@/store/bookings";
 import { useClientsStore } from "@/store/clients";
 import { Booking, BookingStatus } from "@/types/models";
+import { useVocabulary } from "@/hooks/useVocabulary";
+import { useIndustryConfig } from "@/hooks/useIndustryConfig";
 import { SlideOver } from "@/components/ui/SlideOver";
 import { FormField } from "@/components/ui/FormField";
 import { SelectField } from "@/components/ui/SelectField";
 import { DateField } from "@/components/ui/DateField";
 import { TextArea } from "@/components/ui/TextArea";
 import { Button } from "@/components/ui/Button";
+import { ServicePicker } from "./ServicePicker";
 
 interface BookingFormProps {
   open: boolean;
@@ -47,7 +50,13 @@ const emptyForm = {
 export function BookingForm({ open, onClose, booking, defaultDate }: BookingFormProps) {
   const { addBooking, updateBooking, deleteBooking, hasConflict } = useBookingsStore();
   const { clients } = useClientsStore();
+  const vocab = useVocabulary();
+  const config = useIndustryConfig();
+  const isServiceMenu = config.bookingMode.defaultMode === "service-menu";
+  const isRecurringLesson = config.bookingMode.defaultMode === "recurring-lesson";
+  const isDateExclusive = config.bookingMode.defaultMode === "date-exclusive";
   const [form, setForm] = useState(emptyForm);
+  const [selectedService, setSelectedService] = useState<{ id: string; name: string; duration: number; price: number } | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
 
@@ -76,9 +85,11 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
         setForm({
           ...emptyForm,
           date: defaultDate ?? "",
+          recurring: isRecurringLesson ? "weekly" : "none",
         });
       }
       setErrors({});
+      setSelectedService(null);
     }
   }, [open, booking, defaultDate]);
 
@@ -91,10 +102,12 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
     const errs: Record<string, string> = {};
     if (!form.title.trim()) errs.title = "Title is required";
     if (!form.date) errs.date = "Date is required";
-    if (!form.startTime) errs.startTime = "Start time is required";
-    if (!form.endTime) errs.endTime = "End time is required";
-    if (form.startTime && form.endTime && form.startTime >= form.endTime) {
-      errs.endTime = "End time must be after start time";
+    if (!isDateExclusive) {
+      if (!form.startTime) errs.startTime = "Start time is required";
+      if (!form.endTime) errs.endTime = "End time is required";
+      if (form.startTime && form.endTime && form.startTime >= form.endTime) {
+        errs.endTime = "End time must be after start time";
+      }
     }
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -107,21 +120,28 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
 
     setSaving(true);
 
-    const data = {
+    const data: Record<string, unknown> = {
       title: form.title.trim(),
       clientId: form.clientId || undefined,
       date: form.date,
-      startTime: form.startTime,
-      endTime: form.endTime,
+      startTime: isDateExclusive ? "00:00" : form.startTime,
+      endTime: isDateExclusive ? "23:59" : form.endTime,
       status: form.status,
       notes: form.notes.trim(),
       recurring: form.recurring === "none" ? undefined : (form.recurring as Booking["recurring"]),
     };
 
+    if (selectedService) {
+      data.serviceId = selectedService.id;
+      data.serviceName = selectedService.name;
+      data.price = selectedService.price;
+      data.duration = selectedService.duration;
+    }
+
     if (booking) {
-      updateBooking(booking.id, data);
+      updateBooking(booking.id, data as Partial<Booking>);
     } else {
-      addBooking(data as Omit<Booking, "id" | "createdAt" | "updatedAt">);
+      addBooking(data as unknown as Omit<Booking, "id" | "createdAt" | "updatedAt">);
     }
 
     onClose();
@@ -142,20 +162,40 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
     <SlideOver
       open={open}
       onClose={onClose}
-      title={booking ? "Edit Booking" : "New Booking"}
+      title={booking ? `Edit ${vocab.booking}` : vocab.addBooking}
     >
       <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Service Picker for service-menu mode */}
+        {(isServiceMenu || isRecurringLesson) && !booking && config.bookingMode.defaultServices && config.bookingMode.defaultServices.length > 0 && (
+          <ServicePicker
+            services={config.bookingMode.defaultServices}
+            onSelect={(service) => {
+              const startMinutes = parseInt(form.startTime.split(":")[0]) * 60 + parseInt(form.startTime.split(":")[1]);
+              const endMinutes = startMinutes + service.duration;
+              const endHours = String(Math.floor(endMinutes / 60)).padStart(2, "0");
+              const endMins = String(endMinutes % 60).padStart(2, "0");
+              setForm((f) => ({
+                ...f,
+                title: service.name,
+                endTime: `${endHours}:${endMins}`,
+              }));
+              // Store service metadata for the booking record
+              setSelectedService(service);
+            }}
+          />
+        )}
+
         <FormField label="Title" required error={errors.title}>
           <input
             type="text"
             value={form.title}
             onChange={(e) => set("title", e.target.value)}
             className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
-            placeholder="Booking title"
+            placeholder={`${vocab.booking} title`}
           />
         </FormField>
 
-        <FormField label="Client">
+        <FormField label={vocab.client}>
           <SelectField
             options={clientOptions}
             value={form.clientId}
@@ -171,25 +211,31 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
           />
         </FormField>
 
-        <div className="grid grid-cols-2 gap-4">
-          <FormField label="Start Time" required error={errors.startTime}>
-            <input
-              type="time"
-              value={form.startTime}
-              onChange={(e) => set("startTime", e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
-            />
-          </FormField>
+        {!isDateExclusive && (
+          <div className="grid grid-cols-2 gap-4">
+            <FormField label="Start Time" required error={errors.startTime}>
+              <input
+                type="time"
+                value={form.startTime}
+                onChange={(e) => set("startTime", e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
+              />
+            </FormField>
 
-          <FormField label="End Time" required error={errors.endTime}>
-            <input
-              type="time"
-              value={form.endTime}
-              onChange={(e) => set("endTime", e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
-            />
-          </FormField>
-        </div>
+            <FormField label="End Time" required error={errors.endTime}>
+              <input
+                type="time"
+                value={form.endTime}
+                onChange={(e) => set("endTime", e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
+              />
+            </FormField>
+          </div>
+        )}
+
+        {isDateExclusive && (
+          <p className="text-xs text-text-tertiary">This is a full-day {vocab.booking.toLowerCase()}. No specific time required.</p>
+        )}
 
         {conflictDetected && (
           <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
@@ -236,7 +282,7 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
               Cancel
             </Button>
             <Button variant="primary" size="sm" type="submit" loading={saving}>
-              {booking ? "Save Changes" : "Create Booking"}
+              {booking ? "Save Changes" : `Create ${vocab.booking}`}
             </Button>
           </div>
         </div>

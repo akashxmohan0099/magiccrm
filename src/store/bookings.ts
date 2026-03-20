@@ -79,6 +79,24 @@ export const useBookingsStore = create<BookingsStore>()(
         );
       },
     }),
-    { name: "magic-crm-bookings" }
+    {
+      name: "magic-crm-bookings",
+      version: 2,
+      migrate: (persisted: any, version: number) => {
+        if (version < 2) {
+          return {
+            ...persisted,
+            bookings: (persisted.bookings ?? []).map((b: any) => ({
+              ...b,
+              serviceId: b.serviceId,
+              serviceName: b.serviceName,
+              price: b.price,
+              duration: b.duration,
+            })),
+          };
+        }
+        return persisted;
+      },
+    }
   )
 );

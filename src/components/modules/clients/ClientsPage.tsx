@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { Users } from "lucide-react";
 import { useClientsStore } from "@/store/clients";
 import { Client } from "@/types/models";
+import { useVocabulary } from "@/hooks/useVocabulary";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { DataTable, Column } from "@/components/ui/DataTable";
@@ -15,6 +16,7 @@ import { ClientDetail } from "./ClientDetail";
 
 export function ClientsPage() {
   const { clients } = useClientsStore();
+  const vocab = useVocabulary();
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
   const [detailClientId, setDetailClientId] = useState<string | null>(null);
@@ -63,27 +65,29 @@ export function ClientsPage() {
   return (
     <div>
       <PageHeader
-        title="Clients"
-        description="Manage your client database"
+        title={vocab.clients}
+        description={`Manage your ${vocab.client.toLowerCase()} database`}
         actions={
           <div className="flex items-center gap-3">
             <SearchInput
               value={search}
               onChange={setSearch}
-              placeholder="Search clients..."
+              placeholder={`Search ${vocab.clients.toLowerCase()}...`}
             />
-            <Button onClick={() => setFormOpen(true)}>Add Client</Button>
+            <Button onClick={() => setFormOpen(true)}>{vocab.addClient}</Button>
           </div>
         }
       />
 
       {clients.length === 0 ? (
         <EmptyState
-          icon={<Users className="w-12 h-12" />}
-          title="No clients yet"
-          description="Add your first client to start building your database."
-          actionLabel="Add Client"
-          onAction={() => setFormOpen(true)}
+          icon={<Users className="w-10 h-10" />}
+          title={`No ${vocab.clients.toLowerCase()} yet`}
+          description={`Get started by importing your existing contacts or adding your first ${vocab.client.toLowerCase()}.`}
+          setupSteps={[
+            { label: `Add your first ${vocab.client.toLowerCase()}`, description: "Enter their details manually", action: () => setFormOpen(true) },
+            { label: "Import from CSV or Excel", description: "Bulk upload your existing contacts", action: () => {} },
+          ]}
         />
       ) : filtered.length === 0 ? (
         <div className="text-center py-12">

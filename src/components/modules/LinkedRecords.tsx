@@ -14,6 +14,7 @@ import { useLeadsStore } from "@/store/leads";
 import { useJobsStore } from "@/store/jobs";
 import { useInvoicesStore } from "@/store/invoices";
 import { useBookingsStore } from "@/store/bookings";
+import { useVocabulary } from "@/hooks/useVocabulary";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 
 interface LinkedRecordsProps {
@@ -84,6 +85,7 @@ export function LinkedRecords({ clientId, onNavigate }: LinkedRecordsProps) {
   const { jobs } = useJobsStore();
   const { invoices } = useInvoicesStore();
   const { bookings } = useBookingsStore();
+  const vocab = useVocabulary();
 
   const clientLeads = leads.filter((l) => l.clientId === clientId);
   const clientJobs = jobs.filter((j) => j.clientId === clientId);
@@ -105,7 +107,7 @@ export function LinkedRecords({ clientId, onNavigate }: LinkedRecordsProps) {
       </h4>
       <div className="space-y-3">
         <RecordSection
-          label="Leads"
+          label={vocab.leads}
           icon={Inbox}
           items={clientLeads}
           href="/dashboard/leads"
@@ -121,7 +123,7 @@ export function LinkedRecords({ clientId, onNavigate }: LinkedRecordsProps) {
         />
 
         <RecordSection
-          label="Jobs"
+          label={vocab.jobs}
           icon={FolderKanban}
           items={clientJobs}
           href="/dashboard/jobs"
@@ -137,7 +139,7 @@ export function LinkedRecords({ clientId, onNavigate }: LinkedRecordsProps) {
         />
 
         <RecordSection
-          label="Invoices"
+          label={vocab.invoices}
           icon={Receipt}
           items={clientInvoices}
           href="/dashboard/invoicing"
@@ -165,7 +167,7 @@ export function LinkedRecords({ clientId, onNavigate }: LinkedRecordsProps) {
         />
 
         <RecordSection
-          label="Bookings"
+          label={vocab.bookings}
           icon={Calendar}
           items={clientBookings}
           href="/dashboard/bookings"

@@ -1,23 +1,25 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus, List, Columns3, Users } from "lucide-react";
+import { Plus, List, Columns3, Users, FileInput } from "lucide-react";
 import { useLeadsStore } from "@/store/leads";
 import { Lead } from "@/types/models";
+import { useVocabulary } from "@/hooks/useVocabulary";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { DataTable, Column } from "@/components/ui/DataTable";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Button } from "@/components/ui/Button";
-import { FeatureSection } from "@/components/modules/FeatureSection";
 import { LeadForm } from "./LeadForm";
 import { PipelineBoard } from "./PipelineBoard";
+import { WebFormPreview } from "./WebFormPreview";
 
-type ViewMode = "list" | "pipeline";
+type ViewMode = "list" | "pipeline" | "form";
 
 export function LeadsPage() {
   const { leads } = useLeadsStore();
+  const vocab = useVocabulary();
   const [view, setView] = useState<ViewMode>("list");
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
@@ -71,12 +73,12 @@ export function LeadsPage() {
   return (
     <div>
       <PageHeader
-        title="Leads & Pipeline"
-        description="Track prospects from first contact to closed deal."
+        title={`${vocab.leads} & Pipeline`}
+        description={`Track ${vocab.leads.toLowerCase()} from first contact to closed deal.`}
         actions={
           <Button variant="primary" size="sm" onClick={handleAdd}>
             <Plus className="w-4 h-4 mr-1.5" />
-            Add Lead
+            {vocab.addLead}
           </Button>
         }
       />
@@ -85,7 +87,7 @@ export function LeadsPage() {
         <SearchInput
           value={search}
           onChange={setSearch}
-          placeholder="Search leads..."
+          placeholder={`Search ${vocab.leads.toLowerCase()}...`}
         />
         <div className="flex items-center bg-surface rounded-lg p-1 border border-border-light">
           <button
@@ -108,17 +110,33 @@ export function LeadsPage() {
           >
             <Columns3 className="w-4 h-4" />
           </button>
+          <button
+            onClick={() => setView("form")}
+            className={`p-1.5 rounded-md transition-colors cursor-pointer ${
+              view === "form"
+                ? "bg-card-bg text-foreground shadow-sm"
+                : "text-text-secondary hover:text-foreground"
+            }`}
+            title="Web capture form"
+          >
+            <FileInput className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
       {leads.length === 0 ? (
         <EmptyState
           icon={<Users className="w-10 h-10" />}
-          title="No leads yet"
-          description="Start adding leads to track your sales pipeline."
-          actionLabel="Add Lead"
-          onAction={handleAdd}
+          title={`No ${vocab.leads.toLowerCase()} yet`}
+          description={`Capture ${vocab.leads.toLowerCase()} from your website, social media, or add them manually.`}
+          setupSteps={[
+            { label: `Add your first ${vocab.lead.toLowerCase()}`, description: "Enter their details manually", action: handleAdd },
+            { label: "Set up a web capture form", description: "Embed a form on your website or share a link", action: () => setView("form") },
+            { label: "Import from CSV or Excel", description: "Bulk upload your existing leads", action: () => {} },
+          ]}
         />
+      ) : view === "form" ? (
+        <WebFormPreview />
       ) : view === "list" ? (
         <div className="bg-card-bg rounded-xl border border-border-light overflow-hidden">
           <DataTable<Lead>
@@ -129,9 +147,7 @@ export function LeadsPage() {
           />
         </div>
       ) : (
-        <FeatureSection moduleId="leads-pipeline" featureId="pipeline-stages">
-          <PipelineBoard leads={filtered} />
-        </FeatureSection>
+        <PipelineBoard leads={filtered} />
       )}
 
       <LeadForm

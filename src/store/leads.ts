@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { Lead, LeadStage } from "@/types/models";
+import { Lead } from "@/types/models";
+type LeadStage = string;
 import { generateId } from "@/lib/id";
 import { logActivity } from "@/lib/activity-logger";
 import { toast } from "@/components/ui/Toast";

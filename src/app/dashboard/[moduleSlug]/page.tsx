@@ -18,6 +18,17 @@ import { DocumentsPage } from "@/components/modules/documents/DocumentsPage";
 import { PaymentsPage } from "@/components/modules/payments/PaymentsPage";
 import { AutomationsPage } from "@/components/modules/automations/AutomationsPage";
 import { ReportingPage } from "@/components/modules/reporting/ReportingPage";
+import { ProductsPage } from "@/components/modules/products/ProductsPage";
+import { TeamPage } from "@/components/modules/team/TeamPage";
+import { SOAPNotesPage } from "@/components/modules/soap-notes/SOAPNotesPage";
+import { IntakeFormsPage } from "@/components/modules/intake-forms/IntakeFormsPage";
+import { MembershipsPage } from "@/components/modules/memberships/MembershipsPage";
+import { BeforeAfterPage } from "@/components/modules/before-after/BeforeAfterPage";
+import { WinBackPage } from "@/components/modules/win-back/WinBackPage";
+import { AIInsightsPage } from "@/components/modules/ai-insights/AIInsightsPage";
+import { LoyaltyPage } from "@/components/modules/loyalty/LoyaltyPage";
+import { StorefrontPage } from "@/components/modules/storefront/StorefrontPage";
+import { ClientPortalPage } from "@/components/modules/client-portal/ClientPortalPage";
 
 const MODULE_COMPONENTS: Record<string, React.ComponentType> = {
   "client-database": ClientsPage,
@@ -32,6 +43,17 @@ const MODULE_COMPONENTS: Record<string, React.ComponentType> = {
   "payments": PaymentsPage,
   "automations": AutomationsPage,
   "reporting": ReportingPage,
+  "products": ProductsPage,
+  "team": TeamPage,
+  "soap-notes": SOAPNotesPage,
+  "intake-forms": IntakeFormsPage,
+  "memberships": MembershipsPage,
+  "before-after": BeforeAfterPage,
+  "win-back": WinBackPage,
+  "ai-insights": AIInsightsPage,
+  "loyalty": LoyaltyPage,
+  "storefront": StorefrontPage,
+  "client-portal": ClientPortalPage,
 };
 
 export default function ModulePage({ params }: { params: Promise<{ moduleSlug: string }> }) {

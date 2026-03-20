@@ -5,6 +5,7 @@ import { Pencil, Trash2, CalendarDays, User } from "lucide-react";
 import { useJobsStore } from "@/store/jobs";
 import { useClientsStore } from "@/store/clients";
 import { Job } from "@/types/models";
+import { useVocabulary } from "@/hooks/useVocabulary";
 import { SlideOver } from "@/components/ui/SlideOver";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Button } from "@/components/ui/Button";
@@ -26,6 +27,7 @@ type Tab = "tasks" | "time" | "files";
 export function JobDetail({ open, onClose, jobId, onEdit }: JobDetailProps) {
   const { jobs, deleteJob } = useJobsStore();
   const { clients } = useClientsStore();
+  const vocab = useVocabulary();
   const [activeTab, setActiveTab] = useState<Tab>("tasks");
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -130,9 +132,7 @@ export function JobDetail({ open, onClose, jobId, onEdit }: JobDetailProps) {
           {/* Tab content */}
           <div>
             {activeTab === "tasks" && (
-              <FeatureSection moduleId="jobs-projects" featureId="task-lists">
                 <TaskList jobId={job.id} />
-              </FeatureSection>
             )}
             {activeTab === "time" && (
               <FeatureSection moduleId="jobs-projects" featureId="time-tracking">
@@ -152,7 +152,7 @@ export function JobDetail({ open, onClose, jobId, onEdit }: JobDetailProps) {
         open={confirmDelete}
         onClose={() => setConfirmDelete(false)}
         onConfirm={handleDelete}
-        title="Delete Job"
+        title={`Delete ${vocab.job}`}
         message={`Are you sure you want to delete "${job.title}"? This action cannot be undone.`}
         confirmLabel="Delete"
         variant="danger"

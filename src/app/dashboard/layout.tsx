@@ -1,18 +1,24 @@
 "use client";
 
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useMemo } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, Users, Calendar, Receipt, Inbox,
   FolderKanban, Megaphone, Headphones, FileText,
-  MessageCircle, CreditCard, Zap, BarChart3,
-  Wand2, Settings, Bell, Search, Command, Menu, X,
+  MessageCircle, CreditCard, Zap, BarChart3, Package,
+  Wand2, Settings, Bell, Search, Command, Menu, X, Sparkles,
+  Crown, Camera, FileInput, ClipboardList, Gift, UserCheck,
+  Store, Globe, Lightbulb, Puzzle, UsersRound,
 } from "lucide-react";
 import { useOnboardingStore } from "@/store/onboarding";
-import { useEnabledModules } from "@/hooks/useFeature";
+import { useBuilderStore } from "@/store/builder";
+import { useEnabledModules, useEnabledAddons } from "@/hooks/useFeature";
 import { useHydration } from "@/hooks/useHydration";
+import { useVocabulary } from "@/hooks/useVocabulary";
+import { getModuleDisplayName, getModuleBySlug, GROUP_LABELS } from "@/lib/module-registry";
+import { ModuleConfigurator } from "@/components/ui/ModuleConfigurator";
 import { ToastContainer } from "@/components/ui/Toast";
 import { DashboardSkeleton } from "@/components/ui/Skeleton";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
@@ -21,7 +27,9 @@ import { CommandPalette } from "@/components/ui/CommandPalette";
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Users, Calendar, Receipt, Inbox, FolderKanban,
   Megaphone, Headphones, FileText, MessageCircle,
-  CreditCard, Zap, BarChart3,
+  CreditCard, Zap, BarChart3, Package, Wand2,
+  Crown, Camera, FileInput, ClipboardList, Gift, UserCheck,
+  Store, Globe, Lightbulb, Puzzle, UsersRound,
 };
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
@@ -43,17 +51,74 @@ function DashboardShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const businessContext = useOnboardingStore((s) => s.businessContext);
   const enabledModules = useEnabledModules();
+  const enabledAddons = useEnabledAddons();
+  const vocab = useVocabulary();
+  const builderCredits = useBuilderStore((s) => s.credits);
+  const allCustomFeatures = useBuilderStore((s) => s.customFeatures);
+  const customFeatures = useMemo(() => allCustomFeatures.filter((f) => f.status === "ready"), [allCustomFeatures]);
   const [searchFocused, setSearchFocused] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const navItems = [
-    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    ...enabledModules.map((mod) => ({
-      href: `/dashboard/${mod.slug}`,
-      label: mod.name,
-      icon: ICON_MAP[mod.icon] || LayoutDashboard,
-    })),
-    { href: "/dashboard/settings", label: "Settings", icon: Settings },
+  // Group enabled modules by their group
+  const groupedModules = enabledModules.reduce<Record<string, typeof enabledModules>>((acc, mod) => {
+    const group = mod.group;
+    if (!acc[group]) acc[group] = [];
+    acc[group].push(mod);
+    return acc;
+  }, {});
+
+  // Build nav groups
+  const moduleGroups = ["people", "operations", "growth", "system"]
+    .filter((g) => groupedModules[g]?.length)
+    .map((g) => ({
+      label: GROUP_LABELS[g],
+      items: groupedModules[g].map((mod) => ({
+        href: `/dashboard/${mod.slug}`,
+        label: getModuleDisplayName(mod, vocab),
+        icon: ICON_MAP[mod.icon] || LayoutDashboard,
+      })),
+    }));
+
+  // Enabled add-ons show up in their own section
+  const addonItems = enabledAddons.map((mod) => ({
+    href: `/dashboard/${mod.slug}`,
+    label: getModuleDisplayName(mod, vocab),
+    icon: ICON_MAP[mod.icon] || Puzzle,
+  }));
+
+  const browseAddonsItem = {
+    href: "/dashboard/addons",
+    label: "Browse Add-ons",
+    icon: Puzzle,
+  };
+
+  // Custom features built by the user show up as nav items too
+  const customItems = customFeatures.map((f) => ({
+    href: `/dashboard/custom/${f.slug}`,
+    label: f.name,
+    icon: Sparkles,
+  }));
+
+  const buildYourOwnItem = {
+    href: "/dashboard/builder",
+    label: "Build Your Own",
+    icon: Wand2,
+    badge: String(builderCredits),
+  };
+
+  const navGroups = [
+    { label: "", items: [{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }] },
+    ...moduleGroups,
+    // Add-ons section
+    {
+      label: "Add-ons",
+      items: [...addonItems, browseAddonsItem],
+    },
+    // Custom features + Build Your Own
+    ...(customItems.length > 0
+      ? [{ label: "Custom", items: [...customItems, buildYourOwnItem] }]
+      : [{ label: "", items: [buildYourOwnItem] }]),
+    { label: "", items: [{ href: "/dashboard/settings", label: "Settings", icon: Settings }], isBottom: true },
   ];
 
   return (
@@ -62,7 +127,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
       <aside className="hidden lg:flex w-[240px] bg-card-bg border-r border-border-light flex-col fixed h-full z-20">
         <SidebarContent
           businessName={businessContext.businessName}
-          navItems={navItems}
+          navGroups={navGroups}
           pathname={pathname}
           onNavClick={() => {}}
         />
@@ -89,7 +154,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
             >
               <SidebarContent
                 businessName={businessContext.businessName}
-                navItems={navItems}
+                navGroups={navGroups}
                 pathname={pathname}
                 onNavClick={() => setSidebarOpen(false)}
               />
@@ -132,6 +197,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
             </div>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+            <NavBarConfigurator pathname={pathname} vocab={vocab} />
             <button className="relative p-2 text-text-secondary hover:text-foreground rounded-lg hover:bg-surface cursor-pointer transition-colors">
               <Bell className="w-[17px] h-[17px]" />
               <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full" />
@@ -159,91 +225,137 @@ interface NavItem {
   href: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
+  badge?: string;
+}
+
+interface NavGroup {
+  label: string;
+  items: NavItem[];
+  isBottom?: boolean;
 }
 
 function SidebarContent({
   businessName,
-  navItems,
+  navGroups,
   pathname,
   onNavClick,
 }: {
   businessName: string;
-  navItems: NavItem[];
+  navGroups: NavGroup[];
   pathname: string;
   onNavClick: () => void;
 }) {
+  const mainGroups = navGroups.filter((g) => !g.isBottom);
+  const bottomGroups = navGroups.filter((g) => g.isBottom);
+
   return (
     <>
       {/* Logo */}
       <div className="px-5 py-4 border-b border-border-light">
         <Link href="/dashboard" className="flex items-center gap-2.5 group" onClick={onNavClick}>
-          <div className="w-7 h-7 bg-primary rounded-[8px] flex items-center justify-center shadow-[0_1px_3px_rgba(91,91,214,0.2)]">
-            <div className="w-3 h-3 bg-white rounded-[3px]" />
+          <div className="w-7 h-7 bg-primary rounded-xl flex items-center justify-center">
+            <div className="w-3 h-3 bg-foreground rounded-[3px]" />
           </div>
-          <div>
-            <h1 className="font-bold text-foreground text-[13px] tracking-tight leading-tight">
-              {businessName || "Magic CRM"}
-            </h1>
-          </div>
+          <h1 className="font-bold text-foreground text-[13px] tracking-tight leading-tight">
+            {businessName || "Magic CRM"}
+          </h1>
         </Link>
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
-        {navItems.map((item) => {
-          const isActive =
-            item.href === "/dashboard"
-              ? pathname === "/dashboard"
-              : pathname.startsWith(item.href);
-          const isSettings = item.href === "/dashboard/settings";
-          return (
-            <div key={item.href}>
-              {isSettings && (
-                <div className="my-2 border-t border-border-light" />
-              )}
-              <Link
-                href={item.href}
-                onClick={onNavClick}
-                className={`relative w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-all duration-150 group ${
-                  isActive
-                    ? "text-foreground"
-                    : "text-text-secondary hover:text-foreground"
-                }`}
-              >
-                {isActive && (
-                  <motion.div
-                    layoutId="sidebar-active"
-                    className="absolute inset-0 bg-surface rounded-lg"
-                    transition={{ type: "spring", duration: 0.35, bounce: 0.15 }}
-                  />
-                )}
-                {isActive && (
-                  <motion.div
-                    className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-primary rounded-r-full"
-                    layoutId="sidebar-indicator"
-                    transition={{ type: "spring", duration: 0.35, bounce: 0.15 }}
-                  />
-                )}
-                <item.icon className={`w-[15px] h-[15px] relative z-10 flex-shrink-0 transition-all ${isActive ? "" : "group-hover:scale-110"}`} />
-                <span className="relative z-10 truncate">{item.label}</span>
-              </Link>
+      {/* Nav groups */}
+      <nav className="flex-1 px-3 py-2 overflow-y-auto">
+        {mainGroups.map((group, gi) => (
+          <div key={gi} className={gi > 0 ? "mt-5" : ""}>
+            {group.label && (
+              <p className="px-3 mb-1.5 text-[11px] font-semibold text-text-tertiary uppercase tracking-wider">
+                {group.label}
+              </p>
+            )}
+            <div className="space-y-0.5">
+              {group.items.map((item) => {
+                const isActive =
+                  item.href === "/dashboard"
+                    ? pathname === "/dashboard"
+                    : pathname.startsWith(item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={onNavClick}
+                    className={`relative w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-medium transition-all duration-150 group ${
+                      isActive
+                        ? "text-foreground"
+                        : "text-text-secondary hover:text-foreground"
+                    }`}
+                  >
+                    {isActive && (
+                      <motion.div
+                        layoutId="sidebar-active"
+                        className="absolute inset-0 bg-primary-muted rounded-xl"
+                        transition={{ type: "spring", duration: 0.35, bounce: 0.15 }}
+                      />
+                    )}
+                    {isActive && (
+                      <motion.div
+                        className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 bg-primary rounded-r-full"
+                        layoutId="sidebar-indicator"
+                        transition={{ type: "spring", duration: 0.35, bounce: 0.15 }}
+                      />
+                    )}
+                    <item.icon className="w-[15px] h-[15px] relative z-10 flex-shrink-0" />
+                    <span className="relative z-10 truncate">{item.label}</span>
+                  </Link>
+                );
+              })}
             </div>
-          );
-        })}
+          </div>
+        ))}
       </nav>
 
-      {/* AI Builder */}
-      <div className="px-3 py-3 border-t border-border-light">
-        <Link href="/ai-builder" onClick={onNavClick}>
-          <div className="px-4 py-3 bg-primary rounded-xl text-white cursor-pointer hover:bg-primary-hover transition-colors shadow-[0_1px_3px_rgba(91,91,214,0.2)]">
-            <div className="flex items-center gap-2 mb-0.5">
-              <Wand2 className="w-3.5 h-3.5" />
-              <span className="text-[13px] font-semibold">AI Builder</span>
-            </div>
-            <p className="text-[11px] text-white/50">25 credits remaining</p>
-          </div>
-        </Link>
+      {/* Bottom: Settings + Create Your Own */}
+      <div className="px-3 py-3 border-t border-border-light space-y-0.5">
+        {bottomGroups.map((group) =>
+          group.items.map((item) => {
+            const isActive = pathname.startsWith(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={onNavClick}
+                className={`relative w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-medium transition-all duration-150 ${
+                  isActive ? "text-foreground bg-surface" : "text-text-secondary hover:text-foreground"
+                }`}
+              >
+                <item.icon className="w-[15px] h-[15px] flex-shrink-0" />
+                <span className="truncate">{item.label}</span>
+                {item.badge && (
+                  <span className="ml-auto text-[10px] font-semibold bg-primary text-foreground px-1.5 py-0.5 rounded-full leading-none">
+                    {item.badge}
+                  </span>
+                )}
+              </Link>
+            );
+          })
+        )}
       </div>
     </>
   );
+}
+
+/** Renders the Customize button in the nav bar — auto-detects which module page you're on */
+function NavBarConfigurator({ pathname, vocab }: { pathname: string; vocab: Parameters<typeof getModuleDisplayName>[1] }) {
+  // Extract slug from /dashboard/[slug] or /dashboard/[slug]/...
+  const match = pathname.match(/^\/dashboard\/([a-z0-9-]+)/);
+  if (!match) return null;
+
+  const slug = match[1];
+  // Skip non-module pages
+  if (["settings", "builder", "addons"].includes(slug)) return null;
+
+  const mod = getModuleBySlug(slug);
+  if (!mod) return null;
+
+  const displayName = getModuleDisplayName(mod, vocab);
+
+  return <ModuleConfigurator moduleId={mod.id} moduleName={displayName} />;
 }

@@ -5,6 +5,7 @@ import { Plus, List, CalendarDays, Calendar } from "lucide-react";
 import { useBookingsStore } from "@/store/bookings";
 import { useClientsStore } from "@/store/clients";
 import { Booking } from "@/types/models";
+import { useVocabulary } from "@/hooks/useVocabulary";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SearchInput } from "@/components/ui/SearchInput";
@@ -22,6 +23,7 @@ type ViewMode = "list" | "calendar";
 export function BookingsPage() {
   const { bookings, deleteBooking } = useBookingsStore();
   const { clients } = useClientsStore();
+  const vocab = useVocabulary();
   const [view, setView] = useState<ViewMode>("calendar");
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
@@ -95,12 +97,12 @@ export function BookingsPage() {
   return (
     <div>
       <PageHeader
-        title="Bookings & Calendar"
-        description="Schedule appointments and manage your calendar."
+        title={`${vocab.bookings} & Calendar`}
+        description={`Schedule ${vocab.bookings.toLowerCase()} and manage your calendar.`}
         actions={
           <Button variant="primary" size="sm" onClick={handleAdd}>
             <Plus className="w-4 h-4 mr-1.5" />
-            New Booking
+            {vocab.addBooking}
           </Button>
         }
       />
@@ -109,7 +111,7 @@ export function BookingsPage() {
         <SearchInput
           value={search}
           onChange={setSearch}
-          placeholder="Search bookings..."
+          placeholder={`Search ${vocab.bookings.toLowerCase()}...`}
         />
         <div className="flex items-center bg-surface rounded-lg p-1 border border-border-light">
           <button
@@ -138,10 +140,14 @@ export function BookingsPage() {
       {bookings.length === 0 ? (
         <EmptyState
           icon={<Calendar className="w-10 h-10" />}
-          title="No bookings yet"
-          description="Schedule your first booking to get started."
-          actionLabel="New Booking"
-          onAction={handleAdd}
+          title={`No ${vocab.bookings.toLowerCase()} yet`}
+          description={`Set up your scheduling first, then start taking ${vocab.bookings.toLowerCase()}.`}
+          setupSteps={[
+            { label: "Add your services", description: "What you offer, pricing, and duration", action: () => {} },
+            { label: "Set your availability", description: "Working hours and days off", action: () => {} },
+            { label: "Share your booking page", description: "Get a link clients can book from", action: () => {} },
+            { label: `Create your first ${vocab.booking.toLowerCase()}`, description: "Or wait for clients to book you", action: handleAdd },
+          ]}
         />
       ) : view === "list" ? (
         <div className="bg-card-bg rounded-xl border border-border-light overflow-hidden">
@@ -160,9 +166,7 @@ export function BookingsPage() {
         />
       )}
 
-      <FeatureSection moduleId="bookings-calendar" featureId="availability">
-        <AvailabilitySettings />
-      </FeatureSection>
+      <AvailabilitySettings />
 
       <FeatureSection moduleId="bookings-calendar" featureId="booking-page">
         <BookingPagePreview />

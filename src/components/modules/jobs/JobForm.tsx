@@ -3,7 +3,9 @@
 import { useState, useEffect } from "react";
 import { useJobsStore } from "@/store/jobs";
 import { useClientsStore } from "@/store/clients";
-import { Job, JobStage } from "@/types/models";
+import { Job } from "@/types/models";
+import { useVocabulary } from "@/hooks/useVocabulary";
+import { useIndustryConfig } from "@/hooks/useIndustryConfig";
 import { SlideOver } from "@/components/ui/SlideOver";
 import { FormField } from "@/components/ui/FormField";
 import { SelectField } from "@/components/ui/SelectField";
@@ -17,22 +19,18 @@ interface JobFormProps {
   job?: Job;
 }
 
-const STAGE_OPTIONS: { value: JobStage; label: string }[] = [
-  { value: "not-started", label: "Not Started" },
-  { value: "in-progress", label: "In Progress" },
-  { value: "review", label: "Review" },
-  { value: "completed", label: "Completed" },
-  { value: "cancelled", label: "Cancelled" },
-];
-
 export function JobForm({ open, onClose, job }: JobFormProps) {
   const { addJob, updateJob } = useJobsStore();
   const { clients } = useClientsStore();
+  const vocab = useVocabulary();
+  const config = useIndustryConfig();
+  const stageOptions = config.jobStages.map((s) => ({ value: s.id, label: s.label }));
+  const defaultStage = config.jobStages.find((s) => !s.isClosed)?.id ?? config.jobStages[0]?.id ?? "not-started";
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [clientId, setClientId] = useState("");
-  const [stage, setStage] = useState<JobStage>("not-started");
+  const [stage, setStage] = useState(defaultStage);
   const [dueDate, setDueDate] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -49,7 +47,7 @@ export function JobForm({ open, onClose, job }: JobFormProps) {
         setTitle("");
         setDescription("");
         setClientId("");
-        setStage("not-started");
+        setStage(defaultStage);
         setDueDate("");
       }
       setErrors({});
@@ -97,7 +95,7 @@ export function JobForm({ open, onClose, job }: JobFormProps) {
     <SlideOver
       open={open}
       onClose={onClose}
-      title={job ? "Edit Job" : "New Job"}
+      title={job ? `Edit ${vocab.job}` : vocab.addJob}
     >
       <form onSubmit={handleSubmit} className="space-y-1">
         <FormField label="Title" required error={errors.title}>
@@ -130,8 +128,8 @@ export function JobForm({ open, onClose, job }: JobFormProps) {
         <FormField label="Stage">
           <SelectField
             value={stage}
-            onChange={(e) => setStage(e.target.value as JobStage)}
-            options={STAGE_OPTIONS}
+            onChange={(e) => setStage(e.target.value)}
+            options={stageOptions}
           />
         </FormField>
 
@@ -147,7 +145,7 @@ export function JobForm({ open, onClose, job }: JobFormProps) {
             Cancel
           </Button>
           <Button type="submit" loading={saving}>
-            {job ? "Save Changes" : "Create Job"}
+            {job ? "Save Changes" : `Create ${vocab.job}`}
           </Button>
         </div>
       </form>

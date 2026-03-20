@@ -5,6 +5,7 @@ import { Plus, FileText, Receipt } from "lucide-react";
 import { useInvoicesStore } from "@/store/invoices";
 import { useClientsStore } from "@/store/clients";
 import { Invoice, Quote } from "@/types/models";
+import { useVocabulary } from "@/hooks/useVocabulary";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Tabs } from "@/components/ui/Tabs";
@@ -16,14 +17,14 @@ import { InvoiceDetail } from "./InvoiceDetail";
 import { QuoteForm } from "./QuoteForm";
 import { QuoteDetail } from "./QuoteDetail";
 
-const TABS = [
-  { id: "invoices", label: "Invoices" },
-  { id: "quotes", label: "Quotes" },
-];
-
 export function InvoicingPage() {
   const { invoices, quotes } = useInvoicesStore();
   const { clients } = useClientsStore();
+  const vocab = useVocabulary();
+  const TABS = [
+    { id: "invoices", label: vocab.invoices },
+    { id: "quotes", label: vocab.quotes },
+  ];
   const [activeTab, setActiveTab] = useState("invoices");
   const [invoiceFormOpen, setInvoiceFormOpen] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | undefined>(undefined);
@@ -122,15 +123,15 @@ export function InvoicingPage() {
   return (
     <div>
       <PageHeader
-        title="Quotes & Invoicing"
-        description="Create and manage quotes and invoices for your clients."
+        title={`${vocab.quotes} & ${vocab.invoices}`}
+        description={`Create and manage ${vocab.quotes.toLowerCase()} and ${vocab.invoices.toLowerCase()} for your ${vocab.clients.toLowerCase()}.`}
         actions={
           <div className="flex items-center gap-2">
             <Button variant="secondary" size="sm" onClick={handleNewQuote}>
-              <FileText className="w-4 h-4" /> New Quote
+              <FileText className="w-4 h-4" /> New {vocab.quote}
             </Button>
             <Button variant="primary" size="sm" onClick={handleNewInvoice}>
-              <Plus className="w-4 h-4" /> New Invoice
+              <Plus className="w-4 h-4" /> {vocab.addInvoice}
             </Button>
           </div>
         }
@@ -143,10 +144,14 @@ export function InvoicingPage() {
           {invoices.length === 0 ? (
             <EmptyState
               icon={<Receipt className="w-10 h-10" />}
-              title="No invoices yet"
-              description="Create your first invoice to start billing clients."
-              actionLabel="New Invoice"
-              onAction={handleNewInvoice}
+              title={`No ${vocab.invoices.toLowerCase()} yet`}
+              description={`Set up your billing, then start sending ${vocab.invoices.toLowerCase()}.`}
+              setupSteps={[
+                { label: "Add your business details", description: "Name, address, and tax info for invoices", action: () => {} },
+                { label: "Choose a template", description: "Pick or customize your invoice layout", action: () => {} },
+                { label: "Add payment method", description: "Connect Stripe, PayPal, or bank transfer", action: () => {} },
+                { label: `Create your first ${vocab.invoice.toLowerCase()}`, action: handleNewInvoice },
+              ]}
             />
           ) : (
             <div className="bg-card-bg rounded-xl border border-border-light overflow-hidden">
@@ -166,9 +171,9 @@ export function InvoicingPage() {
           {quotes.length === 0 ? (
             <EmptyState
               icon={<FileText className="w-10 h-10" />}
-              title="No quotes yet"
-              description="Create a quote to send a pricing proposal to a client."
-              actionLabel="New Quote"
+              title={`No ${vocab.quotes.toLowerCase()} yet`}
+              description={`Create a ${vocab.quote.toLowerCase()} to send a pricing proposal to a ${vocab.client.toLowerCase()}.`}
+              actionLabel={`New ${vocab.quote}`}
               onAction={handleNewQuote}
             />
           ) : (

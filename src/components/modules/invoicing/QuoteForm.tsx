@@ -5,6 +5,7 @@ import { useInvoicesStore } from "@/store/invoices";
 import { useClientsStore } from "@/store/clients";
 import { Quote, LineItem } from "@/types/models";
 import { generateId } from "@/lib/id";
+import { useVocabulary } from "@/hooks/useVocabulary";
 import { SlideOver } from "@/components/ui/SlideOver";
 import { FormField } from "@/components/ui/FormField";
 import { SelectField } from "@/components/ui/SelectField";
@@ -22,6 +23,7 @@ interface QuoteFormProps {
 export function QuoteForm({ open, onClose, quote }: QuoteFormProps) {
   const { addQuote, updateQuote } = useInvoicesStore();
   const { clients } = useClientsStore();
+  const vocab = useVocabulary();
 
   const [clientId, setClientId] = useState("");
   const [validUntil, setValidUntil] = useState("");
@@ -76,9 +78,9 @@ export function QuoteForm({ open, onClose, quote }: QuoteFormProps) {
   };
 
   return (
-    <SlideOver open={open} onClose={onClose} title={quote ? "Edit Quote" : "New Quote"}>
+    <SlideOver open={open} onClose={onClose} title={quote ? `Edit ${vocab.quote}` : `New ${vocab.quote}`}>
       <div className="space-y-1">
-        <FormField label="Client">
+        <FormField label={vocab.client}>
           <SelectField
             options={clientOptions}
             value={clientId}
@@ -109,7 +111,7 @@ export function QuoteForm({ open, onClose, quote }: QuoteFormProps) {
           <div className="flex gap-2">
             <Button variant="ghost" onClick={onClose}>Cancel</Button>
             <Button onClick={handleSubmit}>
-              {quote ? "Update Quote" : "Create Quote"}
+              {quote ? `Update ${vocab.quote}` : `Create ${vocab.quote}`}
             </Button>
           </div>
         </div>

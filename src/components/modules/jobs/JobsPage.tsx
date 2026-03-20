@@ -4,7 +4,9 @@ import { useState, useMemo } from "react";
 import { Briefcase, Plus, LayoutList, Kanban } from "lucide-react";
 import { useJobsStore } from "@/store/jobs";
 import { useClientsStore } from "@/store/clients";
-import { Job, JobStage } from "@/types/models";
+import { Job } from "@/types/models";
+import { useVocabulary } from "@/hooks/useVocabulary";
+import { useIndustryConfig } from "@/hooks/useIndustryConfig";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SearchInput } from "@/components/ui/SearchInput";
@@ -15,19 +17,13 @@ import { KanbanBoard, KanbanColumn } from "@/components/ui/KanbanBoard";
 import { JobForm } from "./JobForm";
 import { JobDetail } from "./JobDetail";
 
-const STAGE_COLUMNS: { id: JobStage; label: string; color: string }[] = [
-  { id: "not-started", label: "Not Started", color: "bg-gray-400" },
-  { id: "in-progress", label: "In Progress", color: "bg-yellow-400" },
-  { id: "review", label: "Review", color: "bg-purple-400" },
-  { id: "completed", label: "Completed", color: "bg-green-400" },
-  { id: "cancelled", label: "Cancelled", color: "bg-red-400" },
-];
-
 type ViewMode = "list" | "board";
 
 export function JobsPage() {
   const { jobs, moveJob } = useJobsStore();
   const { clients } = useClientsStore();
+  const vocab = useVocabulary();
+  const config = useIndustryConfig();
   const [view, setView] = useState<ViewMode>("list");
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
@@ -95,11 +91,20 @@ export function JobsPage() {
     },
   ];
 
-  const kanbanColumns: KanbanColumn<Job>[] = STAGE_COLUMNS.map((col) => ({
+  // Stage fallback: if a job's stage doesn't exist in config, bucket into first non-closed stage
+  const stageIds = new Set(config.jobStages.map((s) => s.id));
+  const fallbackStageId = config.jobStages.find((s) => !s.isClosed)?.id ?? config.jobStages[0]?.id;
+
+  const kanbanColumns: KanbanColumn<Job>[] = config.jobStages.map((col) => ({
     id: col.id,
     label: col.label,
     color: col.color,
-    items: filtered.filter((j) => j.stage === col.id),
+    items: filtered.filter((j) => {
+      if (j.stage === col.id) return true;
+      // Orphaned stage → show in fallback column
+      if (!stageIds.has(j.stage) && col.id === fallbackStageId) return true;
+      return false;
+    }),
   }));
 
   const handleNewJob = () => {
@@ -120,12 +125,12 @@ export function JobsPage() {
   return (
     <div>
       <PageHeader
-        title="Jobs & Projects"
-        description="Track your jobs, tasks, and project progress"
+        title={`${vocab.jobs} & Projects`}
+        description={`Track your ${vocab.jobs.toLowerCase()}, tasks, and project progress`}
         actions={
           <Button onClick={handleNewJob}>
             <Plus className="w-4 h-4" />
-            New Job
+            {vocab.addJob}
           </Button>
         }
       />
@@ -135,7 +140,7 @@ export function JobsPage() {
           <SearchInput
             value={search}
             onChange={setSearch}
-            placeholder="Search jobs..."
+            placeholder={`Search ${vocab.jobs.toLowerCase()}...`}
           />
         </div>
         <div className="flex items-center bg-surface rounded-lg border border-border-light p-0.5">
@@ -165,9 +170,9 @@ export function JobsPage() {
       {filtered.length === 0 ? (
         <EmptyState
           icon={<Briefcase className="w-10 h-10" />}
-          title="No jobs yet"
-          description="Create your first job or project to start tracking work, tasks, and time."
-          actionLabel="New Job"
+          title={`No ${vocab.jobs.toLowerCase()} yet`}
+          description={`Create your first ${vocab.job.toLowerCase()} to start tracking work, tasks, and time.`}
+          actionLabel={vocab.addJob}
           onAction={handleNewJob}
         />
       ) : view === "list" ? (
@@ -183,7 +188,7 @@ export function JobsPage() {
         <KanbanBoard
           columns={kanbanColumns}
           keyExtractor={(j) => j.id}
-          onMove={(itemId, toCol) => moveJob(itemId, toCol as JobStage)}
+          onMove={(itemId, toCol) => moveJob(itemId, toCol as string)}
           renderCard={(job) => (
             <div
               onClick={() => setDetailJobId(job.id)}

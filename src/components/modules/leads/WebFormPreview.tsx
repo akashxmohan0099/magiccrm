@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Code, Globe, Check } from "lucide-react";
-import { FeatureSection } from "@/components/modules/FeatureSection";
 import { Button } from "@/components/ui/Button";
 
 export function WebFormPreview() {
@@ -17,7 +16,6 @@ export function WebFormPreview() {
   };
 
   return (
-    <FeatureSection moduleId="leads-pipeline" featureId="web-forms">
       <div>
         <h3 className="text-lg font-semibold text-foreground tracking-tight mb-4">
           Web Form
@@ -85,6 +83,5 @@ export function WebFormPreview() {
           </div>
         </div>
       </div>
-    </FeatureSection>
   );
 }

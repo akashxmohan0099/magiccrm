@@ -121,6 +121,24 @@ export const useInvoicesStore = create<InvoicesStore>()(
         return invoice;
       },
     }),
-    { name: "magic-crm-invoices" }
+    {
+      name: "magic-crm-invoices",
+      version: 2,
+      migrate: (persisted: any, version: number) => {
+        if (version < 2) {
+          return {
+            ...persisted,
+            invoices: (persisted.invoices ?? []).map((inv: any) => ({
+              ...inv,
+              paymentSchedule: inv.paymentSchedule,
+              depositPercent: inv.depositPercent,
+              depositPaid: inv.depositPaid,
+              milestones: inv.milestones,
+            })),
+          };
+        }
+        return persisted;
+      },
+    }
   )
 );

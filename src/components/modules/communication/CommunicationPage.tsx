@@ -68,9 +68,12 @@ export function CommunicationPage() {
         <EmptyState
           icon={<MessageSquare className="w-10 h-10" />}
           title="No conversations yet"
-          description="Start a conversation with a client to get going."
-          actionLabel="New Conversation"
-          onAction={() => setNewConvoOpen(true)}
+          description="Connect your channels first, then start messaging your clients from here."
+          setupSteps={[
+            { label: "Connect your email", description: "Sync your inbox to send and receive", action: () => {} },
+            { label: "Link social accounts", description: "Instagram, WhatsApp, Messenger", action: () => {} },
+            { label: "Send your first message", description: "Start a conversation with a client", action: () => setNewConvoOpen(true) },
+          ]}
         />
       ) : (
         <div className="flex gap-0 bg-card-bg rounded-xl border border-border-light overflow-hidden mt-4" style={{ height: "calc(100vh - 320px)", minHeight: "500px" }}>
