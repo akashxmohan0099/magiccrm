@@ -16,6 +16,7 @@ import { TextArea } from "@/components/ui/TextArea";
 import { Button } from "@/components/ui/Button";
 import { LineItemEditor } from "@/components/ui/LineItemEditor";
 import { MilestoneEditor } from "./MilestoneEditor";
+import { FeatureSection } from "@/components/modules/FeatureSection";
 
 interface InvoiceFormProps {
   open: boolean;
@@ -46,6 +47,8 @@ export function InvoiceForm({ open, onClose, invoice }: InvoiceFormProps) {
   const [depositPercent, setDepositPercent] = useState(50);
   const [milestones, setMilestones] = useState<{ id: string; label: string; percent: number; status: string }[]>([]);
   const [saving, setSaving] = useState(false);
+  const [applyTax, setApplyTax] = useState(false);
+  const [taxRate, setTaxRate] = useState("10");
 
   useEffect(() => {
     if (open) {
@@ -194,6 +197,24 @@ export function InvoiceForm({ open, onClose, invoice }: InvoiceFormProps) {
         <FormField label="Line Items">
           <LineItemEditor items={lineItems} onChange={setLineItems} />
         </FormField>
+
+        <FeatureSection moduleId="quotes-invoicing" featureId="auto-tax" featureLabel="Auto Tax">
+          <div className="flex items-center justify-between px-4 py-3 bg-surface/50 rounded-xl border border-border-light">
+            <div className="flex items-center gap-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={applyTax} onChange={(e) => setApplyTax(e.target.checked)} className="rounded" />
+                <span className="text-[13px] font-medium text-foreground">Apply GST/VAT</span>
+              </label>
+              {applyTax && (
+                <input type="number" step="0.1" value={taxRate} onChange={(e) => setTaxRate(e.target.value)} className="w-16 px-2 py-1 bg-card-bg border border-border-light rounded-lg text-[13px] text-foreground text-center" />
+              )}
+              {applyTax && <span className="text-[12px] text-text-tertiary">%</span>}
+            </div>
+            {applyTax && (
+              <span className="text-[14px] font-semibold text-foreground">${(total * (parseFloat(taxRate) || 0) / 100).toFixed(2)}</span>
+            )}
+          </div>
+        </FeatureSection>
 
         <FormField label="Notes">
           <TextArea

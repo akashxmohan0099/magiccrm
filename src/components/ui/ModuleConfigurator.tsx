@@ -2,9 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { X, Check, SlidersHorizontal, Puzzle } from "lucide-react";
+import { X, Check, SlidersHorizontal, Puzzle, ArrowRight } from "lucide-react";
 import { FEATURE_BLOCKS, ADDON_FEATURE_BLOCKS } from "@/types/features";
 import { useOnboardingStore } from "@/store/onboarding";
+import { useAddonsStore } from "@/store/addons";
+import { useEnabledModules } from "@/hooks/useFeature";
+import { getFeatureOverrides } from "@/lib/feature-dedup";
 
 interface ModuleConfiguratorProps {
   moduleId: string;
@@ -46,12 +49,31 @@ export function ModuleConfigurator({ moduleId, moduleName }: ModuleConfiguratorP
     setFeatureSelectionsForModule(moduleId, updated);
   };
 
+  // Feature dedup: check which features should be deferred to another module
+  const enabledModules = useEnabledModules();
+  const enabledAddons = useAddonsStore((s) => s.enabledAddons);
+  const overrides = getFeatureOverrides(
+    enabledModules.map((m) => m.id),
+    enabledAddons
+  );
+
+  const isOverridden = (featureId: string): string | null => {
+    const key = `${moduleId}:${featureId}`;
+    return overrides[key]?.reason ?? null;
+  };
+
+  const getManagedBy = (featureId: string): string | null => {
+    const key = `${moduleId}:${featureId}`;
+    return overrides[key]?.managedBy ?? null;
+  };
+
   const hasSubFeatures = (block && block.subFeatures.length > 0) || addonSubs.length > 0;
   if (!hasSubFeatures) return null;
 
   const allSubs = block ? block.subFeatures : [];
-  const enabledCount = [...allSubs, ...addonSubs].filter((s) => isFeatureEnabled(s.id)).length;
-  const totalCount = allSubs.length + addonSubs.length;
+  const activeSubs = [...allSubs, ...addonSubs].filter((s) => !isOverridden(s.id));
+  const enabledCount = activeSubs.filter((s) => isFeatureEnabled(s.id)).length;
+  const totalCount = activeSubs.length;
 
   const panel = open && mounted ? createPortal(
     <div className="fixed inset-0 z-[100]">
@@ -108,6 +130,24 @@ export function ModuleConfigurator({ moduleId, moduleName }: ModuleConfiguratorP
               </p>
               <div className="space-y-2">
                 {allSubs.map((feature) => {
+                  const overrideReason = isOverridden(feature.id);
+                  const managedBy = getManagedBy(feature.id);
+
+                  // Feature is managed by another module — show as deferred
+                  if (overrideReason) {
+                    return (
+                      <div key={feature.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-surface/30 border border-border-light/50 opacity-60">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[13px] font-medium text-text-secondary">{feature.label}</p>
+                          <p className="text-[10px] text-text-tertiary flex items-center gap-1">
+                            <ArrowRight className="w-3 h-3" /> {overrideReason}
+                          </p>
+                        </div>
+                        <span className="text-[10px] text-text-tertiary font-medium flex-shrink-0">{managedBy}</span>
+                      </div>
+                    );
+                  }
+
                   const enabled = isFeatureEnabled(feature.id);
                   return (
                     <label
@@ -146,6 +186,23 @@ export function ModuleConfigurator({ moduleId, moduleName }: ModuleConfiguratorP
               </div>
               <div className="space-y-2">
                 {addonSubs.map((feature) => {
+                  const overrideReason = isOverridden(feature.id);
+                  const managedBy = getManagedBy(feature.id);
+
+                  if (overrideReason) {
+                    return (
+                      <div key={feature.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-surface/30 border border-border-light/50 opacity-60">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[13px] font-medium text-text-secondary">{feature.label}</p>
+                          <p className="text-[10px] text-text-tertiary flex items-center gap-1">
+                            <ArrowRight className="w-3 h-3" /> {overrideReason}
+                          </p>
+                        </div>
+                        <span className="text-[10px] text-text-tertiary font-medium flex-shrink-0">{managedBy}</span>
+                      </div>
+                    );
+                  }
+
                   const enabled = isFeatureEnabled(feature.id);
                   return (
                     <label

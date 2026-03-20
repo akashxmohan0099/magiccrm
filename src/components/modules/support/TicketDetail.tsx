@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useMemo, useRef, useEffect } from "react";
-import { Pencil, X, Send, User, CalendarDays } from "lucide-react";
+import Link from "next/link";
+import { Pencil, X, Send, User, CalendarDays, FolderKanban } from "lucide-react";
 import { useSupportStore } from "@/store/support";
 import { SupportTicket } from "@/types/models";
 import { SlideOver } from "@/components/ui/SlideOver";
@@ -33,6 +34,7 @@ export function TicketDetail({ open, onClose, ticketId }: TicketDetailProps) {
   const [replyText, setReplyText] = useState("");
   const [editOpen, setEditOpen] = useState(false);
   const [confirmClose, setConfirmClose] = useState(false);
+  const [internalNote, setInternalNote] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const ticket = useMemo(
@@ -107,6 +109,13 @@ export function TicketDetail({ open, onClose, ticketId }: TicketDetailProps) {
                   Close Ticket
                 </Button>
               )}
+              <FeatureSection moduleId="support" featureId="ticket-to-job" featureLabel="Ticket → Job">
+                <Link href="/dashboard/jobs">
+                  <button className="text-[12px] font-medium text-primary hover:underline cursor-pointer flex items-center gap-1">
+                    <FolderKanban className="w-3 h-3" /> Convert to Job
+                  </button>
+                </Link>
+              </FeatureSection>
             </div>
           </div>
 
@@ -169,6 +178,20 @@ export function TicketDetail({ open, onClose, ticketId }: TicketDetailProps) {
               </Button>
             </div>
           </div>
+
+          {/* Internal Notes - gated */}
+          <FeatureSection moduleId="support" featureId="internal-ticket-notes" featureLabel="Internal Notes">
+            <div className="mt-4 p-4 bg-surface/50 rounded-xl border border-border-light">
+              <h4 className="text-[13px] font-semibold text-text-tertiary uppercase tracking-wider mb-2">Internal Notes</h4>
+              <textarea
+                value={internalNote}
+                onChange={(e) => setInternalNote(e.target.value)}
+                placeholder="Private notes (only visible to your team)..."
+                rows={3}
+                className="w-full px-3 py-2 bg-card-bg border border-border-light rounded-lg text-[13px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+              />
+            </div>
+          </FeatureSection>
 
           {/* Satisfaction widget - gated */}
           <FeatureSection moduleId="support" featureId="satisfaction-ratings">

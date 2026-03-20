@@ -72,7 +72,6 @@ export function ProductsPage() {
           description="Add your products and services to start building your catalog."
           setupSteps={[
             { label: "Add your first product or service", description: "Name, price, and category", action: () => setFormOpen(true) },
-            { label: "Import from a spreadsheet", description: "Bulk upload your catalog", action: () => {} },
           ]}
         />
       ) : (

@@ -12,6 +12,7 @@ import { SelectField } from "@/components/ui/SelectField";
 import { TextArea } from "@/components/ui/TextArea";
 import { DateField } from "@/components/ui/DateField";
 import { Button } from "@/components/ui/Button";
+import { FeatureSection } from "@/components/modules/FeatureSection";
 
 interface JobFormProps {
   open: boolean;
@@ -32,6 +33,7 @@ export function JobForm({ open, onClose, job }: JobFormProps) {
   const [clientId, setClientId] = useState("");
   const [stage, setStage] = useState(defaultStage);
   const [dueDate, setDueDate] = useState("");
+  const [priority, setPriority] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
 
@@ -43,12 +45,14 @@ export function JobForm({ open, onClose, job }: JobFormProps) {
         setClientId(job.clientId || "");
         setStage(job.stage);
         setDueDate(job.dueDate || "");
+        setPriority((job as any).priority ?? "");
       } else {
         setTitle("");
         setDescription("");
         setClientId("");
         setStage(defaultStage);
         setDueDate("");
+        setPriority("");
       }
       setErrors({});
     }
@@ -79,7 +83,8 @@ export function JobForm({ open, onClose, job }: JobFormProps) {
       clientId: clientId || undefined,
       stage,
       dueDate: dueDate || undefined,
-    };
+      priority: priority || undefined,
+    } as any;
 
     if (job) {
       updateJob(job.id, data);
@@ -139,6 +144,19 @@ export function JobForm({ open, onClose, job }: JobFormProps) {
             onChange={(e) => setDueDate(e.target.value)}
           />
         </FormField>
+
+        <FeatureSection moduleId="jobs-projects" featureId="job-priority">
+          <div>
+            <label className="block text-[13px] font-medium text-foreground mb-1.5">Priority</label>
+            <select value={priority} onChange={(e) => setPriority(e.target.value)} className="w-full px-3 py-2 bg-card-bg border border-border-light rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand">
+              <option value="">Not set</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+              <option value="urgent">Urgent</option>
+            </select>
+          </div>
+        </FeatureSection>
 
         <div className="flex justify-end gap-2 pt-4">
           <Button variant="ghost" type="button" onClick={onClose}>

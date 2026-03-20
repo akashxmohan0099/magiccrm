@@ -3,13 +3,14 @@
 import { useState, useMemo } from "react";
 import { Plus, X, CheckSquare, Square } from "lucide-react";
 import { useJobsStore } from "@/store/jobs";
+import { FeatureSection } from "@/components/modules/FeatureSection";
 
 interface TaskListProps {
   jobId: string;
 }
 
 export function TaskList({ jobId }: TaskListProps) {
-  const { jobs, addTask, toggleTask, deleteTask } = useJobsStore();
+  const { jobs, addTask, updateTask, toggleTask, deleteTask } = useJobsStore();
   const [newTask, setNewTask] = useState("");
 
   const job = useMemo(() => jobs.find((j) => j.id === jobId), [jobs, jobId]);
@@ -78,6 +79,15 @@ export function TaskList({ jobId }: TaskListProps) {
             >
               {task.title}
             </span>
+            <FeatureSection moduleId="jobs-projects" featureId="task-delegation" featureLabel="Task Delegation">
+              <input
+                type="text"
+                value={task.assignee || ""}
+                onChange={(e) => updateTask(jobId, task.id, { assignee: e.target.value })}
+                placeholder="Assign to..."
+                className="text-[11px] px-2 py-0.5 bg-surface border border-border-light rounded text-text-secondary w-24"
+              />
+            </FeatureSection>
             <button
               onClick={() => deleteTask(jobId, task.id)}
               className="opacity-0 group-hover:opacity-100 p-0.5 text-text-secondary hover:text-red-500 cursor-pointer transition-opacity"

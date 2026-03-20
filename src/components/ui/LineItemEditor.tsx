@@ -25,7 +25,7 @@ export function LineItemEditor({ items, onChange }: LineItemEditorProps) {
     );
   };
 
-  const total = items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+  const total = items.reduce((sum, item) => sum + item.quantity * item.unitPrice - (item.discount || 0), 0);
 
   return (
     <div>
@@ -53,8 +53,19 @@ export function LineItemEditor({ items, onChange }: LineItemEditorProps) {
               min={0}
               step={0.01}
             />
+            <div className="w-20">
+              <input
+                type="number"
+                step="0.01"
+                value={item.discount || ""}
+                onChange={(e) => updateItem(item.id, "discount", parseFloat(e.target.value) || 0)}
+                placeholder="Disc"
+                className="w-full px-3 py-2 bg-card-bg border border-border-light rounded-lg text-sm text-right focus:outline-none focus:ring-2 focus:ring-brand/20"
+                min={0}
+              />
+            </div>
             <span className="w-24 text-sm text-right font-medium text-foreground">
-              ${(item.quantity * item.unitPrice).toFixed(2)}
+              ${(item.quantity * item.unitPrice - (item.discount || 0)).toFixed(2)}
             </span>
             <button
               onClick={() => removeItem(item.id)}

@@ -70,8 +70,6 @@ export function CommunicationPage() {
           title="No conversations yet"
           description="Connect your channels first, then start messaging your clients from here."
           setupSteps={[
-            { label: "Connect your email", description: "Sync your inbox to send and receive", action: () => {} },
-            { label: "Link social accounts", description: "Instagram, WhatsApp, Messenger", action: () => {} },
             { label: "Send your first message", description: "Start a conversation with a client", action: () => setNewConvoOpen(true) },
           ]}
         />

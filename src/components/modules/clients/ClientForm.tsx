@@ -10,6 +10,7 @@ import { FormField } from "@/components/ui/FormField";
 import { SelectField } from "@/components/ui/SelectField";
 import { TextArea } from "@/components/ui/TextArea";
 import { Button } from "@/components/ui/Button";
+import { FeatureSection } from "@/components/modules/FeatureSection";
 import { CustomFieldsSection } from "./CustomFieldsSection";
 
 interface ClientFormProps {
@@ -33,6 +34,7 @@ const STATUS_OPTIONS = [
 ];
 
 function getInitialState(client?: Client) {
+  const customData = (client as any)?.customData ?? {} as Record<string, unknown>;
   return {
     name: client?.name ?? "",
     email: client?.email ?? "",
@@ -43,7 +45,9 @@ function getInitialState(client?: Client) {
     source: client?.source ?? "",
     status: client?.status ?? "prospect",
     tags: client?.tags?.join(", ") ?? "",
-    customData: (client as any)?.customData ?? {} as Record<string, unknown>,
+    birthday: (customData.birthday as string) ?? "",
+    lifecycleStage: (customData.lifecycleStage as string) ?? "",
+    customData,
   };
 }
 
@@ -105,7 +109,7 @@ export function ClientForm({ open, onClose, client }: ClientFormProps) {
       source: (form.source || undefined) as Client["source"],
       status: form.status as Client["status"],
       tags,
-      customData: form.customData,
+      customData: { ...form.customData, birthday: form.birthday || undefined, lifecycleStage: form.lifecycleStage || undefined },
     };
 
     if (client) {
@@ -157,6 +161,13 @@ export function ClientForm({ open, onClose, client }: ClientFormProps) {
           />
         </FormField>
 
+        <FeatureSection moduleId="client-database" featureId="birthday-reminders">
+          <div>
+            <label className="block text-[13px] font-medium text-foreground mb-1.5">Birthday</label>
+            <input type="date" value={form.birthday} onChange={(e) => update("birthday", e.target.value)} className={inputClass} />
+          </div>
+        </FeatureSection>
+
         <FormField label="Company">
           <input
             type="text"
@@ -177,21 +188,25 @@ export function ClientForm({ open, onClose, client }: ClientFormProps) {
           />
         </FormField>
 
-        <FormField label="Notes">
-          <TextArea
-            value={form.notes}
-            onChange={(e) => update("notes", e.target.value)}
-            placeholder="Any additional notes..."
-          />
-        </FormField>
+        <FeatureSection moduleId="client-database" featureId="client-notes">
+          <FormField label="Notes">
+            <TextArea
+              value={form.notes}
+              onChange={(e) => update("notes", e.target.value)}
+              placeholder="Any additional notes..."
+            />
+          </FormField>
+        </FeatureSection>
 
-        <FormField label="Source">
-          <SelectField
-            options={SOURCE_OPTIONS}
-            value={form.source}
-            onChange={(e) => update("source", e.target.value)}
-          />
-        </FormField>
+        <FeatureSection moduleId="client-database" featureId="client-source-tracking">
+          <FormField label="Source">
+            <SelectField
+              options={SOURCE_OPTIONS}
+              value={form.source}
+              onChange={(e) => update("source", e.target.value)}
+            />
+          </FormField>
+        </FeatureSection>
 
         <FormField label="Status">
           <SelectField
@@ -200,6 +215,20 @@ export function ClientForm({ open, onClose, client }: ClientFormProps) {
             onChange={(e) => update("status", e.target.value)}
           />
         </FormField>
+
+        <FeatureSection moduleId="client-database" featureId="client-lifecycle-stages">
+          <div>
+            <label className="block text-[13px] font-medium text-foreground mb-1.5">Lifecycle Stage</label>
+            <select value={form.lifecycleStage} onChange={(e) => update("lifecycleStage", e.target.value)} className={inputClass}>
+              <option value="">Not set</option>
+              <option value="prospect">Prospect</option>
+              <option value="active">Active</option>
+              <option value="vip">VIP</option>
+              <option value="at-risk">At Risk</option>
+              <option value="churned">Churned</option>
+            </select>
+          </div>
+        </FeatureSection>
 
         <FormField label="Tags">
           <input

@@ -34,6 +34,9 @@ export const useLoyaltyStore = create<LoyaltyStore>()(
         set((s) => ({ transactions: [...s.transactions, tx] }));
         if (data.type === "earned") {
           logActivity("create", "loyalty", `${data.clientName} earned ${data.points} points`);
+          toast(`${data.clientName} earned ${data.points} points`);
+        } else if (data.type === "redeemed") {
+          toast(`${data.clientName} redeemed ${data.points} points`);
         }
       },
       getClientPoints: (clientId) => {

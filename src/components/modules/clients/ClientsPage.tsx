@@ -86,7 +86,6 @@ export function ClientsPage() {
           description={`Get started by importing your existing contacts or adding your first ${vocab.client.toLowerCase()}.`}
           setupSteps={[
             { label: `Add your first ${vocab.client.toLowerCase()}`, description: "Enter their details manually", action: () => setFormOpen(true) },
-            { label: "Import from CSV or Excel", description: "Bulk upload your existing contacts", action: () => {} },
           ]}
         />
       ) : filtered.length === 0 ? (

@@ -12,6 +12,7 @@ interface JobsStore {
   deleteJob: (id: string) => void;
   moveJob: (id: string, stage: string) => void;
   addTask: (jobId: string, title: string) => void;
+  updateTask: (jobId: string, taskId: string, data: Partial<Task>) => void;
   toggleTask: (jobId: string, taskId: string) => void;
   deleteTask: (jobId: string, taskId: string) => void;
   addTimeEntry: (jobId: string, entry: Omit<TimeEntry, "id">) => void;
@@ -71,6 +72,22 @@ export const useJobsStore = create<JobsStore>()(
         set((s) => ({
           jobs: s.jobs.map((j) =>
             j.id === jobId ? { ...j, tasks: [...j.tasks, task], updatedAt: new Date().toISOString() } : j
+          ),
+        }));
+      },
+
+      updateTask: (jobId, taskId, data) => {
+        set((s) => ({
+          jobs: s.jobs.map((j) =>
+            j.id === jobId
+              ? {
+                  ...j,
+                  tasks: j.tasks.map((t) =>
+                    t.id === taskId ? { ...t, ...data } : t
+                  ),
+                  updatedAt: new Date().toISOString(),
+                }
+              : j
           ),
         }));
       },

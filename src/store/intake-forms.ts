@@ -43,6 +43,7 @@ export const useIntakeFormsStore = create<IntakeFormsStore>()(
           forms: s.forms.map((f) => f.id === data.formId ? { ...f, submissionCount: f.submissionCount + 1 } : f),
         }));
         logActivity("create", "intake-forms", `New submission for "${data.formName}" from ${data.clientName}`);
+        toast(`Submission received for "${data.formName}"`);
         return sub;
       },
       getSubmissionsByForm: (formId) => get().submissions.filter((s) => s.formId === formId),

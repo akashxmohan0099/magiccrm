@@ -125,8 +125,8 @@ export function JobsPage() {
   return (
     <div>
       <PageHeader
-        title={`${vocab.jobs} & Projects`}
-        description={`Track your ${vocab.jobs.toLowerCase()}, tasks, and project progress`}
+        title={vocab.jobs}
+        description={`Track your ${vocab.jobs.toLowerCase()}, tasks, and progress`}
         actions={
           <Button onClick={handleNewJob}>
             <Plus className="w-4 h-4" />

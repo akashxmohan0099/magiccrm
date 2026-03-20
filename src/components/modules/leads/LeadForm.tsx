@@ -10,6 +10,7 @@ import { FormField } from "@/components/ui/FormField";
 import { SelectField } from "@/components/ui/SelectField";
 import { TextArea } from "@/components/ui/TextArea";
 import { Button } from "@/components/ui/Button";
+import { FeatureSection } from "@/components/modules/FeatureSection";
 
 interface LeadFormProps {
   open: boolean;
@@ -33,6 +34,7 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
     stage: defaultStage,
     value: "",
     notes: "",
+    lostReason: "",
   };
 
   const [form, setForm] = useState(emptyForm);
@@ -51,6 +53,7 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
           stage: lead.stage,
           value: lead.value != null ? String(lead.value) : "",
           notes: lead.notes,
+          lostReason: (lead as any).lostReason ?? "",
         });
       } else {
         setForm(emptyForm);
@@ -85,7 +88,8 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
       stage: form.stage,
       value: form.value ? Number(form.value) : undefined,
       notes: form.notes.trim(),
-    };
+      lostReason: form.stage === "lost" ? form.lostReason.trim() : undefined,
+    } as any;
 
     if (lead) {
       updateLead(lead.id, data);
@@ -147,15 +151,17 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
           />
         </FormField>
 
-        <FormField label="Source">
-          <input
-            type="text"
-            value={form.source}
-            onChange={(e) => set("source", e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
-            placeholder="e.g. Referral, Website, Social"
-          />
-        </FormField>
+        <FeatureSection moduleId="leads-pipeline" featureId="lead-source-tracking" featureLabel="Source Tracking">
+          <FormField label="Source">
+            <input
+              type="text"
+              value={form.source}
+              onChange={(e) => set("source", e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
+              placeholder="e.g. Referral, Website, Social"
+            />
+          </FormField>
+        </FeatureSection>
 
         <FormField label="Stage">
           <SelectField
@@ -164,6 +170,21 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
             onChange={(e) => set("stage", e.target.value)}
           />
         </FormField>
+
+        {form.stage === "lost" && (
+          <FeatureSection moduleId="leads-pipeline" featureId="lead-lost-reason">
+            <div>
+              <label className="block text-[13px] font-medium text-foreground mb-1.5">Lost Reason</label>
+              <textarea
+                value={form.lostReason}
+                onChange={(e) => set("lostReason", e.target.value)}
+                placeholder="Why was this lead lost?"
+                rows={2}
+                className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 resize-none"
+              />
+            </div>
+          </FeatureSection>
+        )}
 
         <FormField label="Value">
           <input
@@ -177,14 +198,16 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
           />
         </FormField>
 
-        <FormField label="Notes">
-          <TextArea
-            value={form.notes}
-            onChange={(e) => set("notes", e.target.value)}
-            placeholder="Any additional notes..."
-            rows={3}
-          />
-        </FormField>
+        <FeatureSection moduleId="leads-pipeline" featureId="lead-notes-log" featureLabel="Notes & Activity Log">
+          <FormField label="Notes">
+            <TextArea
+              value={form.notes}
+              onChange={(e) => set("notes", e.target.value)}
+              placeholder="Any additional notes..."
+              rows={3}
+            />
+          </FormField>
+        </FeatureSection>
 
         <div className="flex justify-end gap-3 pt-4 border-t border-border-light">
           <Button variant="secondary" size="sm" onClick={onClose} type="button">

@@ -14,6 +14,7 @@ import { DateField } from "@/components/ui/DateField";
 import { TextArea } from "@/components/ui/TextArea";
 import { Button } from "@/components/ui/Button";
 import { ServicePicker } from "./ServicePicker";
+import { FeatureSection } from "@/components/modules/FeatureSection";
 
 interface BookingFormProps {
   open: boolean;
@@ -59,6 +60,10 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
   const [selectedService, setSelectedService] = useState<{ id: string; name: string; duration: number; price: number } | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [requireDeposit, setRequireDeposit] = useState(false);
+  const [depositAmount, setDepositAmount] = useState("");
+  const [reminderHours, setReminderHours] = useState("24");
+  const [noShow, setNoShow] = useState(false);
 
   const clientOptions = useMemo(
     () => [
@@ -244,6 +249,28 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
           </div>
         )}
 
+        <FeatureSection moduleId="bookings-calendar" featureId="booking-deposits" featureLabel="Booking Deposits">
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={requireDeposit} onChange={(e) => setRequireDeposit(e.target.checked)} className="rounded" />
+              <span className="text-[13px] text-foreground">Require deposit</span>
+            </label>
+            {requireDeposit && (
+              <div>
+                <label className="block text-[13px] font-medium text-foreground mb-1.5">Deposit Amount ($)</label>
+                <input type="number" step="0.01" value={depositAmount} onChange={(e) => setDepositAmount(e.target.value)} placeholder="0.00" className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40" />
+              </div>
+            )}
+          </div>
+        </FeatureSection>
+
+        <FeatureSection moduleId="bookings-calendar" featureId="no-show-fees" featureLabel="No-Show Protection">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" checked={noShow} onChange={(e) => setNoShow(e.target.checked)} className="rounded" />
+            <span className="text-[13px] text-foreground">Mark as no-show</span>
+          </label>
+        </FeatureSection>
+
         <FormField label="Status">
           <SelectField
             options={statusOptions}
@@ -268,6 +295,19 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
             rows={3}
           />
         </FormField>
+
+        <FeatureSection moduleId="bookings-calendar" featureId="booking-reminders" featureLabel="Automated Reminders">
+          <div>
+            <label className="block text-[13px] font-medium text-foreground mb-1.5">Send reminder</label>
+            <select value={reminderHours} onChange={(e) => setReminderHours(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40">
+              <option value="0">No reminder</option>
+              <option value="1">1 hour before</option>
+              <option value="2">2 hours before</option>
+              <option value="24">24 hours before</option>
+              <option value="48">48 hours before</option>
+            </select>
+          </div>
+        </FeatureSection>
 
         <div className="flex justify-between pt-4 border-t border-border-light">
           <div>

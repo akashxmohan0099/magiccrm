@@ -123,7 +123,7 @@ export function InvoicingPage() {
   return (
     <div>
       <PageHeader
-        title={`${vocab.quotes} & ${vocab.invoices}`}
+        title="Billing"
         description={`Create and manage ${vocab.quotes.toLowerCase()} and ${vocab.invoices.toLowerCase()} for your ${vocab.clients.toLowerCase()}.`}
         actions={
           <div className="flex items-center gap-2">
@@ -147,10 +147,7 @@ export function InvoicingPage() {
               title={`No ${vocab.invoices.toLowerCase()} yet`}
               description={`Set up your billing, then start sending ${vocab.invoices.toLowerCase()}.`}
               setupSteps={[
-                { label: "Add your business details", description: "Name, address, and tax info for invoices", action: () => {} },
-                { label: "Choose a template", description: "Pick or customize your invoice layout", action: () => {} },
-                { label: "Add payment method", description: "Connect Stripe, PayPal, or bank transfer", action: () => {} },
-                { label: `Create your first ${vocab.invoice.toLowerCase()}`, action: handleNewInvoice },
+                { label: `Create your first ${vocab.invoice.toLowerCase()}`, description: "Add line items, set payment terms, and send", action: handleNewInvoice },
               ]}
             />
           ) : (

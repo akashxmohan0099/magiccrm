@@ -39,6 +39,7 @@ export const useWinBackStore = create<WinBackStore>()(
       addLapsedClient: (data) => {
         const entry: LapsedClient = { ...data, id: generateId(), detectedAt: new Date().toISOString() };
         set((s) => ({ lapsedClients: [...s.lapsedClients, entry] }));
+        toast(`Lapsed client "${data.clientName}" detected`, "info");
       },
       updateLapsedStatus: (id, status) => {
         set((s) => ({ lapsedClients: s.lapsedClients.map((c) => c.id === id ? { ...c, status } : c) }));

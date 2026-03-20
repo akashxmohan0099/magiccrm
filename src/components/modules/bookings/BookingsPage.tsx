@@ -29,6 +29,8 @@ export function BookingsPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingBooking, setEditingBooking] = useState<Booking | undefined>(undefined);
   const [defaultDate, setDefaultDate] = useState<string | undefined>(undefined);
+  const [defaultStartTime, setDefaultStartTime] = useState<string | undefined>(undefined);
+  const [defaultEndTime, setDefaultEndTime] = useState<string | undefined>(undefined);
 
   const clientMap = useMemo(() => {
     const map: Record<string, string> = {};
@@ -91,13 +93,23 @@ export function BookingsPage() {
   const handleDateSelect = (date: string) => {
     setEditingBooking(undefined);
     setDefaultDate(date);
+    setDefaultStartTime(undefined);
+    setDefaultEndTime(undefined);
+    setFormOpen(true);
+  };
+
+  const handleTimeSelect = (date: string, startTime: string, endTime: string) => {
+    setEditingBooking(undefined);
+    setDefaultDate(date);
+    setDefaultStartTime(startTime);
+    setDefaultEndTime(endTime);
     setFormOpen(true);
   };
 
   return (
     <div>
       <PageHeader
-        title={`${vocab.bookings} & Calendar`}
+        title="Scheduling"
         description={`Schedule ${vocab.bookings.toLowerCase()} and manage your calendar.`}
         actions={
           <Button variant="primary" size="sm" onClick={handleAdd}>
@@ -143,9 +155,6 @@ export function BookingsPage() {
           title={`No ${vocab.bookings.toLowerCase()} yet`}
           description={`Set up your scheduling first, then start taking ${vocab.bookings.toLowerCase()}.`}
           setupSteps={[
-            { label: "Add your services", description: "What you offer, pricing, and duration", action: () => {} },
-            { label: "Set your availability", description: "Working hours and days off", action: () => {} },
-            { label: "Share your booking page", description: "Get a link clients can book from", action: () => {} },
             { label: `Create your first ${vocab.booking.toLowerCase()}`, description: "Or wait for clients to book you", action: handleAdd },
           ]}
         />
@@ -163,6 +172,7 @@ export function BookingsPage() {
           bookings={filtered}
           onDateSelect={handleDateSelect}
           onBookingClick={handleRowClick}
+          onTimeSelect={handleTimeSelect}
         />
       )}
 

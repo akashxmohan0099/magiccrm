@@ -68,7 +68,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
   }, {});
 
   // Build nav groups
-  const moduleGroups = ["people", "operations", "growth", "system"]
+  const moduleGroups = ["business", "grow", "system"]
     .filter((g) => groupedModules[g]?.length)
     .map((g) => ({
       label: GROUP_LABELS[g],

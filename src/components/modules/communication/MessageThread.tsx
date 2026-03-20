@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { MessageSquare } from "lucide-react";
 import { useCommunicationStore } from "@/store/communication";
+import { FeatureSection } from "@/components/modules/FeatureSection";
 import { ComposeMessage } from "./ComposeMessage";
 
 interface MessageThreadProps {
@@ -22,6 +23,7 @@ function formatTimestamp(timestamp: string): string {
 export function MessageThread({ conversationId }: MessageThreadProps) {
   const { conversations } = useCommunicationStore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [assignee, setAssignee] = useState("");
 
   const conversation = useMemo(
     () => conversations.find((c) => c.id === conversationId),
@@ -50,6 +52,17 @@ export function MessageThread({ conversationId }: MessageThreadProps) {
           <p className="text-xs text-text-secondary">{conversation.subject}</p>
         )}
       </div>
+
+      {/* Conversation Assignment */}
+      <FeatureSection moduleId="communication" featureId="conversation-assignment" featureLabel="Conversation Assignment">
+        <div className="px-4 py-2 border-b border-border-light flex items-center gap-2">
+          <span className="text-[11px] text-text-tertiary">Assigned to:</span>
+          <select value={assignee} onChange={(e) => setAssignee(e.target.value)} className="text-[12px] px-2 py-1 bg-surface border border-border-light rounded-lg text-foreground">
+            <option value="">Unassigned</option>
+            <option value="me">Me</option>
+          </select>
+        </div>
+      </FeatureSection>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-5 space-y-3">

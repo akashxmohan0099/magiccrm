@@ -73,7 +73,7 @@ export function LeadsPage() {
   return (
     <div>
       <PageHeader
-        title={`${vocab.leads} & Pipeline`}
+        title={vocab.leads}
         description={`Track ${vocab.leads.toLowerCase()} from first contact to closed deal.`}
         actions={
           <Button variant="primary" size="sm" onClick={handleAdd}>
@@ -132,7 +132,6 @@ export function LeadsPage() {
           setupSteps={[
             { label: `Add your first ${vocab.lead.toLowerCase()}`, description: "Enter their details manually", action: handleAdd },
             { label: "Set up a web capture form", description: "Embed a form on your website or share a link", action: () => setView("form") },
-            { label: "Import from CSV or Excel", description: "Bulk upload your existing leads", action: () => {} },
           ]}
         />
       ) : view === "form" ? (

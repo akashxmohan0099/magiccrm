@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useBookingsStore } from "@/store/bookings";
 import { AvailabilitySlot } from "@/types/models";
 import { Button } from "@/components/ui/Button";
+import { FeatureSection } from "@/components/modules/FeatureSection";
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -11,6 +12,7 @@ export function AvailabilitySettings() {
   const { availability, setAvailability } = useBookingsStore();
   const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
   const [saved, setSaved] = useState(false);
+  const [bufferMinutes, setBufferMinutes] = useState("0");
 
   useEffect(() => {
     setSlots(availability.map((s) => ({ ...s })));
@@ -91,6 +93,19 @@ export function AvailabilitySettings() {
           </div>
         ))}
       </div>
+
+      <FeatureSection moduleId="bookings-calendar" featureId="buffer-time" featureLabel="Buffer Time">
+        <div className="mt-4">
+          <label className="block text-[13px] font-medium text-foreground mb-1.5">Buffer between appointments</label>
+          <select value={bufferMinutes} onChange={(e) => setBufferMinutes(e.target.value)} className="px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-foreground/40">
+            <option value="0">No buffer</option>
+            <option value="5">5 minutes</option>
+            <option value="10">10 minutes</option>
+            <option value="15">15 minutes</option>
+            <option value="30">30 minutes</option>
+          </select>
+        </div>
+      </FeatureSection>
 
       <div className="flex items-center gap-3 mt-5">
         <Button variant="primary" size="sm" onClick={handleSave}>

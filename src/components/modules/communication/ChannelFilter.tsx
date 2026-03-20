@@ -21,9 +21,9 @@ const channels: ChannelOption[] = [
   { value: "email", label: "Email", icon: Mail, featureId: "email" },
   { value: "sms", label: "SMS", icon: MessageSquare, featureId: "sms" },
   { value: "instagram", label: "Instagram", icon: Instagram, featureId: "instagram-dms" },
-  { value: "facebook", label: "Facebook", icon: Facebook, featureId: "facebook-dms" },
+  { value: "facebook", label: "Facebook", icon: Facebook, featureId: "facebook-messenger" },
   { value: "whatsapp", label: "WhatsApp", icon: MessageCircle, featureId: "whatsapp" },
-  { value: "linkedin", label: "LinkedIn", icon: Linkedin, featureId: "linkedin-dms" },
+  { value: "linkedin", label: "LinkedIn", icon: Linkedin, featureId: "linkedin" },
 ];
 
 function ChannelButton({

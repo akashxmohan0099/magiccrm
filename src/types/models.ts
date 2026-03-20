@@ -90,6 +90,7 @@ export interface LineItem {
   description: string;
   quantity: number;
   unitPrice: number;
+  discount?: number;
 }
 
 export type InvoiceStatus = "draft" | "sent" | "paid" | "overdue" | "cancelled";
@@ -149,6 +150,7 @@ export interface Payment {
 // ── Bookings & Calendar ───────────────────────────────────
 
 export type BookingStatus = "confirmed" | "pending" | "cancelled" | "completed";
+export type BookingType = "appointment" | "break" | "unavailable";
 
 export interface Booking {
   id: string;
@@ -158,6 +160,7 @@ export interface Booking {
   startTime: string;
   endTime: string;
   status: BookingStatus;
+  bookingType?: BookingType;
   notes: string;
   recurring?: "weekly" | "biweekly" | "monthly";
   serviceId?: string;

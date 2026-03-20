@@ -7,6 +7,7 @@ import { SlideOver } from "@/components/ui/SlideOver";
 import { FormField } from "@/components/ui/FormField";
 import { SelectField } from "@/components/ui/SelectField";
 import { Button } from "@/components/ui/Button";
+import { FeatureSection } from "@/components/modules/FeatureSection";
 
 interface TicketFormProps {
   open: boolean;
@@ -36,6 +37,7 @@ export function TicketForm({ open, onClose, ticket }: TicketFormProps) {
   const [clientName, setClientName] = useState("");
   const [priority, setPriority] = useState<TicketPriority>("medium");
   const [status, setStatus] = useState<TicketStatus>("open");
+  const [category, setCategory] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -45,11 +47,13 @@ export function TicketForm({ open, onClose, ticket }: TicketFormProps) {
         setClientName(ticket.clientName);
         setPriority(ticket.priority);
         setStatus(ticket.status);
+        setCategory((ticket as any).category ?? "");
       } else {
         setSubject("");
         setClientName("");
         setPriority("medium");
         setStatus("open");
+        setCategory("");
       }
       setErrors({});
     }
@@ -72,7 +76,8 @@ export function TicketForm({ open, onClose, ticket }: TicketFormProps) {
       clientName: clientName.trim(),
       priority,
       status,
-    };
+      category: category || undefined,
+    } as any;
 
     if (ticket) {
       updateTicket(ticket.id, data);
@@ -125,6 +130,23 @@ export function TicketForm({ open, onClose, ticket }: TicketFormProps) {
             options={STATUS_OPTIONS}
           />
         </FormField>
+
+        <FeatureSection moduleId="support" featureId="ticket-categories">
+          <FormField label="Category">
+            <SelectField
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              options={[
+                { value: "", label: "Select category..." },
+                { value: "general", label: "General" },
+                { value: "billing", label: "Billing" },
+                { value: "technical", label: "Technical" },
+                { value: "scheduling", label: "Scheduling" },
+                { value: "other", label: "Other" },
+              ]}
+            />
+          </FormField>
+        </FeatureSection>
 
         <div className="flex justify-end gap-2 pt-4">
           <Button variant="ghost" type="button" onClick={onClose}>

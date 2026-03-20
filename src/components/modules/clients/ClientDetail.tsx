@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import {
   Mail,
@@ -15,6 +15,7 @@ import {
   Plus,
 } from "lucide-react";
 import { useClientsStore } from "@/store/clients";
+import { useActivityStore } from "@/store/activity";
 import { useLeadsStore } from "@/store/leads";
 import { useJobsStore } from "@/store/jobs";
 import { useInvoicesStore } from "@/store/invoices";
@@ -45,6 +46,7 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
   const { jobs } = useJobsStore();
   const { invoices } = useInvoicesStore();
   const { bookings } = useBookingsStore();
+  const { entries: activityEntries } = useActivityStore();
   const vocab = useVocabulary();
   const config = useIndustryConfig();
   const customFieldDefs = config.customFields.clients ?? [];
@@ -52,6 +54,15 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   const client = clientId ? getClient(clientId) : undefined;
+
+  const clientActivities = useMemo(() => {
+    if (!client) return [];
+    return activityEntries.filter(
+      (entry) =>
+        entry.entityId === client.id ||
+        entry.description.toLowerCase().includes(client.name.toLowerCase())
+    );
+  }, [activityEntries, client]);
 
   const linkedLeads = clientId ? leads.filter((l) => l.clientId === clientId).length : 0;
   const linkedJobs = clientId ? jobs.filter((j) => j.clientId === clientId).length : 0;
@@ -290,6 +301,28 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
             featureId="follow-up-reminders"
           >
             <FollowUpSection clientId={client.id} />
+          </FeatureSection>
+
+          {/* Activity Timeline - Feature Gated */}
+          <FeatureSection moduleId="client-database" featureId="activity-timeline" featureLabel="Activity Timeline">
+            <div className="mt-6">
+              <h4 className="text-[13px] font-semibold text-text-tertiary uppercase tracking-wider mb-3">Activity Timeline</h4>
+              {clientActivities.length === 0 ? (
+                <p className="text-[13px] text-text-tertiary">No activity recorded yet.</p>
+              ) : (
+                <div className="space-y-2">
+                  {clientActivities.map((entry) => (
+                    <div key={entry.id} className="flex items-start gap-3 py-1.5">
+                      <div className="w-1.5 h-1.5 bg-primary rounded-full mt-2 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] text-foreground">{entry.description}</p>
+                        <p className="text-[11px] text-text-tertiary">{new Date(entry.timestamp).toLocaleString()}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </FeatureSection>
         </div>
       </SlideOver>
