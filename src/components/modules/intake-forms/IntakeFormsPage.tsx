@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { DataTable, Column } from "@/components/ui/DataTable";
 import { Button } from "@/components/ui/Button";
 import { IntakeFormForm } from "./IntakeFormForm";
+import { FeatureSection } from "@/components/modules/FeatureSection";
 
 export function IntakeFormsPage() {
   const { forms } = useIntakeFormsStore();
@@ -44,6 +45,55 @@ export function IntakeFormsPage() {
           <DataTable<IntakeForm> columns={columns} data={forms} keyExtractor={(f) => f.id} />
         </div>
       )}
+      <FeatureSection moduleId="intake-forms" featureId="conditional-fields" featureLabel="Conditional Fields">
+        <div className="mt-4 p-4 bg-surface/50 rounded-xl border border-border-light">
+          <p className="text-[13px] font-medium text-foreground">Conditional Logic</p>
+          <p className="text-[11px] text-text-tertiary">Show or hide form fields based on previous answers. Configure logic in the form builder.</p>
+        </div>
+      </FeatureSection>
+
+      <FeatureSection moduleId="intake-forms" featureId="form-notifications" featureLabel="Submission Notifications">
+        <div className="mt-4 p-4 bg-surface/50 rounded-xl border border-border-light">
+          <p className="text-[13px] font-medium text-foreground">Submission Notifications are active</p>
+          <p className="text-[11px] text-text-tertiary">You'll be notified instantly when someone submits a form.</p>
+        </div>
+      </FeatureSection>
+
+      <FeatureSection moduleId="intake-forms" featureId="form-response-table" featureLabel="Response Viewer">
+        <div className="mt-4 bg-card-bg rounded-xl border border-border-light p-5">
+          <h3 className="text-[13px] font-semibold text-text-tertiary uppercase tracking-wider mb-3">Submissions</h3>
+          <p className="text-[13px] text-text-tertiary text-center py-4">Form submissions will appear here in a spreadsheet-style view.</p>
+        </div>
+      </FeatureSection>
+
+      <FeatureSection moduleId="intake-forms" featureId="file-upload-field" featureLabel="File Upload Field">
+        <div className="mt-4 p-4 bg-surface/50 rounded-xl border border-border-light">
+          <p className="text-[13px] font-medium text-foreground">File Uploads</p>
+          <p className="text-[11px] text-text-tertiary">Add file upload fields to your forms so respondents can attach photos, documents, or files.</p>
+        </div>
+      </FeatureSection>
+
+      <FeatureSection moduleId="intake-forms" featureId="auto-send-before-booking" featureLabel="Auto-Send Before Booking">
+        <div className="mt-4 p-4 bg-surface/50 rounded-xl border border-border-light">
+          <p className="text-[13px] font-medium text-foreground">Pre-Booking Auto-Send</p>
+          <p className="text-[11px] text-text-tertiary">Forms are automatically emailed to clients before their appointment.</p>
+        </div>
+      </FeatureSection>
+
+      <FeatureSection moduleId="intake-forms" featureId="consent-signature" featureLabel="Consent / E-Signature">
+        <div className="mt-4 p-4 bg-surface/50 rounded-xl border border-border-light">
+          <p className="text-[13px] font-medium text-foreground">E-Signature Fields</p>
+          <p className="text-[11px] text-text-tertiary">Add signature capture fields to consent forms and waivers.</p>
+        </div>
+      </FeatureSection>
+
+      <FeatureSection moduleId="intake-forms" featureId="pre-fill-profile" featureLabel="Pre-Fill from Profile">
+        <div className="mt-4 p-4 bg-surface/50 rounded-xl border border-border-light">
+          <p className="text-[13px] font-medium text-foreground">Auto Pre-Fill is active</p>
+          <p className="text-[11px] text-text-tertiary">Name, email, and phone are auto-populated from the client's existing record.</p>
+        </div>
+      </FeatureSection>
+
       <IntakeFormForm open={formOpen} onClose={() => setFormOpen(false)} />
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { Pencil, Trash2, CheckCircle } from "lucide-react";
 import { useInvoicesStore } from "@/store/invoices";
 import { useClientsStore } from "@/store/clients";
@@ -52,6 +52,21 @@ export function InvoiceDetail({ open, onClose, invoiceId, onEdit }: InvoiceDetai
     <>
       <SlideOver open={open} onClose={onClose} title={`${vocab.invoice} ${invoice.number}`}>
         <div className="space-y-6">
+          <FeatureSection moduleId="quotes-invoicing" featureId="invoice-status-workflow" featureLabel="Status Workflow">
+            <div className="flex items-center gap-1 mb-4">
+              {["draft", "sent", "viewed", "paid"].map((s, i) => (
+                <React.Fragment key={s}>
+                  <div className={`px-2 py-1 rounded text-[10px] font-medium capitalize ${
+                    s === invoice.status ? "bg-foreground text-white" :
+                    ["draft","sent","viewed","paid"].indexOf(s) < ["draft","sent","viewed","paid"].indexOf(invoice.status) ? "bg-primary/20 text-foreground" :
+                    "bg-surface text-text-tertiary"
+                  }`}>{s}</div>
+                  {i < 3 && <div className="w-4 h-px bg-border-light" />}
+                </React.Fragment>
+              ))}
+            </div>
+          </FeatureSection>
+
           {/* Header info */}
           <div className="flex items-center justify-between">
             <div>
@@ -137,6 +152,34 @@ export function InvoiceDetail({ open, onClose, invoiceId, onEdit }: InvoiceDetai
               </div>
             </FeatureSection>
           </div>
+
+          <FeatureSection moduleId="quotes-invoicing" featureId="partial-payments" featureLabel="Partial Payments">
+            <div className="mt-3 flex items-center gap-2">
+              <button className="text-[12px] font-medium text-primary hover:underline cursor-pointer">Record Partial Payment</button>
+              <span className="text-[11px] text-text-tertiary">Accept a deposit or split payment</span>
+            </div>
+          </FeatureSection>
+
+          <FeatureSection moduleId="quotes-invoicing" featureId="payment-links" featureLabel="Payment Links">
+            <div className="mt-3 bg-surface rounded-lg px-3 py-2 flex items-center justify-between">
+              <span className="text-[12px] font-mono text-text-secondary truncate">pay.magic/inv/...</span>
+              <button className="text-[11px] text-primary font-medium cursor-pointer hover:underline ml-2 flex-shrink-0">Copy Link</button>
+            </div>
+          </FeatureSection>
+
+          <FeatureSection moduleId="quotes-invoicing" featureId="overdue-escalation" featureLabel="Overdue Escalation">
+            <div className="mt-3 p-3 bg-surface/50 rounded-lg">
+              <p className="text-[12px] text-text-secondary">Escalation: <span className="font-medium text-foreground">Reminder → Warning → Final Notice</span></p>
+              <p className="text-[10px] text-text-tertiary mt-0.5">Auto-escalates overdue invoices through severity levels.</p>
+            </div>
+          </FeatureSection>
+
+          <FeatureSection moduleId="quotes-invoicing" featureId="client-invoice-portal" featureLabel="Client Invoice Page">
+            <div className="mt-3 bg-surface rounded-lg px-3 py-2 flex items-center justify-between">
+              <span className="text-[12px] text-text-secondary">Client can view this invoice at a branded page</span>
+              <button className="text-[11px] text-primary font-medium cursor-pointer hover:underline">Preview</button>
+            </div>
+          </FeatureSection>
 
           {/* Notes */}
           {invoice.notes && (

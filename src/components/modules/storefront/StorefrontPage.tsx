@@ -79,6 +79,13 @@ export function StorefrontPage() {
           </div>
         </FeatureSection>
 
+        <FeatureSection moduleId="storefront" featureId="reviews-display" featureLabel="Reviews Display">
+          <div className="bg-card-bg rounded-xl border border-border-light p-6 space-y-4">
+            <h3 className="text-[15px] font-semibold text-foreground">Client Reviews</h3>
+            <p className="text-[13px] text-text-tertiary">Client reviews will be displayed on your public storefront. Reviews are collected through the Marketing module.</p>
+          </div>
+        </FeatureSection>
+
         {!config.enabled && (
           <div className="bg-surface rounded-xl border border-border-light p-8 text-center">
             <Store className="w-10 h-10 text-text-tertiary mx-auto mb-3" />

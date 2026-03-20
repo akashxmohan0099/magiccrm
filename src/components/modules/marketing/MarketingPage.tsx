@@ -81,6 +81,55 @@ export function MarketingPage() {
               <p className="text-[11px] text-text-tertiary">Opted-out contacts will be automatically excluded from campaigns.</p>
             </div>
           </FeatureSection>
+
+          <FeatureSection moduleId="marketing" featureId="email-sequences" featureLabel="Email Sequences">
+            <div className="mt-4 bg-card-bg rounded-xl border border-border-light p-5">
+              <h3 className="text-[13px] font-semibold text-text-tertiary uppercase tracking-wider mb-3">Email Sequences</h3>
+              <p className="text-[13px] text-text-tertiary text-center py-4">Create multi-step drip campaigns that trigger automatically.</p>
+              <div className="flex justify-center">
+                <button className="px-4 py-2 bg-foreground text-white rounded-lg text-[12px] font-medium cursor-pointer hover:opacity-90">New Sequence</button>
+              </div>
+            </div>
+          </FeatureSection>
+
+          <FeatureSection moduleId="marketing" featureId="social-scheduling" featureLabel="Social Media Scheduling">
+            <div className="mt-4 bg-card-bg rounded-xl border border-border-light p-5">
+              <h3 className="text-[13px] font-semibold text-text-tertiary uppercase tracking-wider mb-3">Social Scheduler</h3>
+              <p className="text-[13px] text-text-tertiary text-center py-4">Schedule and publish posts to Instagram, Facebook, and more.</p>
+            </div>
+          </FeatureSection>
+
+          <FeatureSection moduleId="marketing" featureId="ab-subject-lines" featureLabel="A/B Subject Lines">
+            <div className="mt-4 p-4 bg-surface/50 rounded-xl border border-border-light">
+              <p className="text-[13px] font-medium text-foreground">A/B Testing</p>
+              <p className="text-[11px] text-text-tertiary">Test two subject lines on a small group. The winner is auto-sent to the rest.</p>
+            </div>
+          </FeatureSection>
+
+          <FeatureSection moduleId="marketing" featureId="referral-program" featureLabel="Referral Program">
+            <div className="mt-4 bg-card-bg rounded-xl border border-border-light p-5">
+              <h3 className="text-[13px] font-semibold text-text-tertiary uppercase tracking-wider mb-3">Referral Program</h3>
+              <p className="text-[13px] text-text-tertiary mb-3">Clients share a unique link. When someone books, both get a reward.</p>
+              <div className="bg-surface rounded-lg px-3 py-2 flex items-center justify-between">
+                <span className="text-[12px] font-mono text-text-secondary">yourbusiness.magic/refer/...</span>
+                <button className="text-[11px] text-primary font-medium cursor-pointer hover:underline">Copy</button>
+              </div>
+            </div>
+          </FeatureSection>
+
+          <FeatureSection moduleId="marketing" featureId="bounce-tracking" featureLabel="Bounce Tracking">
+            <div className="mt-4 p-4 bg-surface/50 rounded-xl border border-border-light">
+              <p className="text-[13px] font-medium text-foreground">Bounce & Complaint Tracking</p>
+              <p className="text-[11px] text-text-tertiary">Hard bounces and spam complaints are tracked. Bad addresses are auto-suppressed from future campaigns.</p>
+            </div>
+          </FeatureSection>
+
+          <FeatureSection moduleId="marketing" featureId="send-time-optimization" featureLabel="Smart Send Time">
+            <div className="mt-4 p-4 bg-surface/50 rounded-xl border border-border-light">
+              <p className="text-[13px] font-medium text-foreground">Smart Send Time</p>
+              <p className="text-[11px] text-text-tertiary">Auto-picks the best time to send based on each client's past open behaviour.</p>
+            </div>
+          </FeatureSection>
         </>
       )}
 

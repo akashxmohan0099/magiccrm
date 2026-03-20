@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { DataTable, Column } from "@/components/ui/DataTable";
 import { Button } from "@/components/ui/Button";
 import { BeforeAfterForm } from "./BeforeAfterForm";
+import { FeatureSection } from "@/components/modules/FeatureSection";
 
 export function BeforeAfterPage() {
   const { records } = useBeforeAfterStore();
@@ -42,6 +43,27 @@ export function BeforeAfterPage() {
           <DataTable<BeforeAfterRecord> columns={columns} data={records} keyExtractor={(r) => r.id} />
         </div>
       )}
+      <FeatureSection moduleId="before-after" featureId="client-consent-toggle" featureLabel="Client Consent">
+        <div className="mt-4 p-4 bg-surface/50 rounded-xl border border-border-light">
+          <p className="text-[13px] font-medium text-foreground">Client Consent Tracking</p>
+          <p className="text-[11px] text-text-tertiary">Mark whether clients have approved public use of their before/after photos.</p>
+        </div>
+      </FeatureSection>
+
+      <FeatureSection moduleId="before-after" featureId="share-to-storefront" featureLabel="Share to Storefront">
+        <div className="mt-4 p-4 bg-surface/50 rounded-xl border border-border-light">
+          <p className="text-[13px] font-medium text-foreground">Publish to Storefront</p>
+          <p className="text-[11px] text-text-tertiary">One-click publish approved before/after photos to your public storefront page.</p>
+        </div>
+      </FeatureSection>
+
+      <FeatureSection moduleId="before-after" featureId="side-by-side-view" featureLabel="Side-by-Side View">
+        <div className="mt-4 p-4 bg-surface/50 rounded-xl border border-border-light">
+          <p className="text-[13px] font-medium text-foreground">Side-by-Side Comparison</p>
+          <p className="text-[11px] text-text-tertiary">View before and after photos in a split or slider comparison view.</p>
+        </div>
+      </FeatureSection>
+
       <BeforeAfterForm open={formOpen} onClose={() => setFormOpen(false)} />
     </div>
   );

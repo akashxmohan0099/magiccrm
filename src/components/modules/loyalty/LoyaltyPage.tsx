@@ -129,6 +129,13 @@ export function LoyaltyPage() {
           )}
         </div>
       )}
+      <FeatureSection moduleId="loyalty" featureId="auto-notify-reward" featureLabel="Auto-Notify on Reward">
+        <div className="mt-4 p-4 bg-surface/50 rounded-xl border border-border-light">
+          <p className="text-[13px] font-medium text-foreground">Reward Notifications are active</p>
+          <p className="text-[11px] text-text-tertiary">Clients are automatically notified when they have enough points to redeem a reward.</p>
+        </div>
+      </FeatureSection>
+
       <ReferralCodeForm open={formOpen} onClose={() => setFormOpen(false)} />
     </div>
   );

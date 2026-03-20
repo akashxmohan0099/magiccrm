@@ -69,6 +69,20 @@ export function MembershipsPage() {
         </div>
       </FeatureSection>
 
+      <FeatureSection moduleId="memberships" featureId="expiry-alerts" featureLabel="Expiry Alerts">
+        <div className="mt-4 p-4 bg-surface/50 rounded-xl border border-border-light">
+          <p className="text-[13px] font-medium text-foreground">Expiry Alerts are active</p>
+          <p className="text-[11px] text-text-tertiary">Members and you will be notified before a plan or session pack expires.</p>
+        </div>
+      </FeatureSection>
+
+      <FeatureSection moduleId="memberships" featureId="upgrade-downgrade" featureLabel="Upgrade / Downgrade">
+        <div className="mt-4 p-4 bg-surface/50 rounded-xl border border-border-light">
+          <p className="text-[13px] font-medium text-foreground">Plan Changes</p>
+          <p className="text-[11px] text-text-tertiary">Members can upgrade or downgrade their plan. Prorated credits are automatically calculated.</p>
+        </div>
+      </FeatureSection>
+
       <MembershipPlanForm open={formOpen} onClose={() => setFormOpen(false)} />
     </div>
   );

@@ -64,6 +64,27 @@ export function ClientPortalPage() {
           </div>
         </div>
 
+        <FeatureSection moduleId="client-portal" featureId="self-service-rebooking" featureLabel="Self-Service Rebooking">
+          <div className="mt-4 p-4 bg-surface/50 rounded-xl border border-border-light">
+            <p className="text-[13px] font-medium text-foreground">Self-Service Rebooking is active</p>
+            <p className="text-[11px] text-text-tertiary">Clients can reschedule or cancel appointments from their portal without contacting you.</p>
+          </div>
+        </FeatureSection>
+
+        <FeatureSection moduleId="client-portal" featureId="pay-from-portal" featureLabel="Pay from Portal">
+          <div className="mt-4 p-4 bg-surface/50 rounded-xl border border-border-light">
+            <p className="text-[13px] font-medium text-foreground">Invoice Payments via Portal</p>
+            <p className="text-[11px] text-text-tertiary">Clients can view outstanding invoices and pay directly from their portal.</p>
+          </div>
+        </FeatureSection>
+
+        <FeatureSection moduleId="client-portal" featureId="portal-messaging" featureLabel="Secure Messaging">
+          <div className="mt-4 p-4 bg-surface/50 rounded-xl border border-border-light">
+            <p className="text-[13px] font-medium text-foreground">Portal Messaging is active</p>
+            <p className="text-[11px] text-text-tertiary">Clients can send you messages through their portal. Messages appear in your unified inbox.</p>
+          </div>
+        </FeatureSection>
+
         <FeatureSection moduleId="client-portal" featureId="portal-branding" featureLabel="Portal Branding">
           <div className="bg-card-bg rounded-xl border border-border-light p-6 space-y-4">
             <h3 className="text-[15px] font-semibold text-foreground">Branding</h3>

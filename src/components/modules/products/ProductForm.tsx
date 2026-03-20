@@ -21,6 +21,7 @@ export function ProductForm({ open, onClose }: ProductFormProps) {
   const [quantity, setQuantity] = useState("");
   const [variants, setVariants] = useState<{ name: string; price: string }[]>([]);
   const [costPrice, setCostPrice] = useState("");
+  const [addons, setAddons] = useState("");
 
   const addVariant = () => setVariants((prev) => [...prev, { name: "", price: "" }]);
   const updateVariant = (index: number, field: "name" | "price", value: string) => {
@@ -44,7 +45,7 @@ export function ProductForm({ open, onClose }: ProductFormProps) {
       quantity: quantity ? parseInt(quantity) : undefined,
     });
     setName(""); setDescription(""); setPrice(""); setCategory(""); setSku(""); setQuantity("");
-    setVariants([]); setCostPrice("");
+    setVariants([]); setCostPrice(""); setAddons("");
     onClose();
   };
 
@@ -124,6 +125,19 @@ export function ProductForm({ open, onClose }: ProductFormProps) {
                 ))}
                 <button type="button" onClick={addVariant} className="text-[12px] text-primary hover:underline cursor-pointer">+ Add variant</button>
               </div>
+            </div>
+          </FeatureSection>
+          <FeatureSection moduleId="products" featureId="service-addons" featureLabel="Service Add-Ons">
+            <div>
+              <label className="block text-[13px] font-medium text-foreground mb-1.5">Add-Ons</label>
+              <input type="text" value={addons} onChange={(e) => setAddons(e.target.value)} placeholder="e.g. Deep conditioning, Express upgrade" className={inputClass} />
+              <p className="text-[10px] text-text-tertiary mt-1">Comma-separated. Optional extras clients can add.</p>
+            </div>
+          </FeatureSection>
+          <FeatureSection moduleId="products" featureId="bundle-builder" featureLabel="Bundle Builder">
+            <div>
+              <label className="block text-[13px] font-medium text-foreground mb-1.5">Bundle Items</label>
+              <p className="text-[11px] text-text-tertiary">Combine multiple products or services into a discounted package. Create the individual items first, then bundle them here.</p>
             </div>
           </FeatureSection>
           <div>
