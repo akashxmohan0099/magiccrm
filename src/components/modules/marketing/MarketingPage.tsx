@@ -20,6 +20,7 @@ const tabs = [
 ];
 
 export function MarketingPage() {
+  const { campaigns } = useMarketingStore();
   const [activeTab, setActiveTab] = useState("campaigns");
   const [formOpen, setFormOpen] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | undefined>(
@@ -54,7 +55,33 @@ export function MarketingPage() {
       <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
 
       {activeTab === "campaigns" && (
-        <CampaignList onEdit={handleEdit} />
+        <>
+          <CampaignList onEdit={handleEdit} />
+
+          <FeatureSection moduleId="marketing" featureId="campaign-analytics" featureLabel="Campaign Performance">
+            <div className="mt-4 grid grid-cols-3 gap-3">
+              <div className="bg-card-bg rounded-xl border border-border-light p-4 text-center">
+                <p className="text-[20px] font-bold text-foreground">{campaigns.filter(c => c.status === "sent" || c.status === "active").length}</p>
+                <p className="text-[11px] text-text-tertiary">Campaigns Sent</p>
+              </div>
+              <div className="bg-card-bg rounded-xl border border-border-light p-4 text-center">
+                <p className="text-[20px] font-bold text-foreground">{campaigns.length}</p>
+                <p className="text-[11px] text-text-tertiary">Total Campaigns</p>
+              </div>
+              <div className="bg-card-bg rounded-xl border border-border-light p-4 text-center">
+                <p className="text-[20px] font-bold text-foreground">{campaigns.filter(c => c.status === "draft").length}</p>
+                <p className="text-[11px] text-text-tertiary">Drafts</p>
+              </div>
+            </div>
+          </FeatureSection>
+
+          <FeatureSection moduleId="marketing" featureId="unsubscribe-management" featureLabel="Unsubscribe Management">
+            <div className="mt-4 p-4 bg-surface/50 rounded-xl border border-border-light">
+              <p className="text-[13px] font-medium text-foreground">Unsubscribe management is active</p>
+              <p className="text-[11px] text-text-tertiary">Opted-out contacts will be automatically excluded from campaigns.</p>
+            </div>
+          </FeatureSection>
+        </>
       )}
 
       {activeTab === "reviews" && (

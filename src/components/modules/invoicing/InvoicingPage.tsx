@@ -16,14 +16,18 @@ import { InvoiceForm } from "./InvoiceForm";
 import { InvoiceDetail } from "./InvoiceDetail";
 import { QuoteForm } from "./QuoteForm";
 import { QuoteDetail } from "./QuoteDetail";
+import { FeatureSection } from "@/components/modules/FeatureSection";
+import { useFeature } from "@/hooks/useFeature";
 
 export function InvoicingPage() {
   const { invoices, quotes } = useInvoicesStore();
   const { clients } = useClientsStore();
   const vocab = useVocabulary();
+  const creditNotesEnabled = useFeature("quotes-invoicing", "credit-notes");
   const TABS = [
     { id: "invoices", label: vocab.invoices },
     { id: "quotes", label: vocab.quotes },
+    ...(creditNotesEnabled ? [{ id: "credit-notes", label: "Credit Notes" }] : []),
   ];
   const [activeTab, setActiveTab] = useState("invoices");
   const [invoiceFormOpen, setInvoiceFormOpen] = useState(false);
@@ -184,6 +188,18 @@ export function InvoicingPage() {
             </div>
           )}
         </>
+      )}
+
+      {activeTab === "credit-notes" && (
+        <FeatureSection moduleId="quotes-invoicing" featureId="credit-notes" featureLabel="Credit Notes">
+          <EmptyState
+            icon={<Receipt className="w-10 h-10" />}
+            title="No credit notes yet"
+            description="Issue credit notes for returns, errors, or goodwill adjustments."
+            actionLabel="New Credit Note"
+            onAction={() => {}}
+          />
+        </FeatureSection>
       )}
 
       <InvoiceForm

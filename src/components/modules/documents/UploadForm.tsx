@@ -8,6 +8,7 @@ import { SlideOver } from "@/components/ui/SlideOver";
 import { FormField } from "@/components/ui/FormField";
 import { SelectField } from "@/components/ui/SelectField";
 import { Button } from "@/components/ui/Button";
+import { FeatureSection } from "@/components/modules/FeatureSection";
 
 interface UploadFormProps {
   open: boolean;
@@ -42,12 +43,16 @@ export function UploadForm({ open, onClose, defaultIsTemplate = false }: UploadF
   const { clients } = useClientsStore();
   const [form, setForm] = useState(getInitialState(defaultIsTemplate));
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [tags, setTags] = useState("");
+  const [expiryDate, setExpiryDate] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
       setForm(getInitialState(defaultIsTemplate));
       setErrors({});
+      setTags("");
+      setExpiryDate("");
     }
   }, [open, defaultIsTemplate]);
 
@@ -173,6 +178,32 @@ export function UploadForm({ open, onClose, defaultIsTemplate = false }: UploadF
             onChange={(e) => update("clientId", e.target.value)}
           />
         </FormField>
+
+        <FeatureSection moduleId="documents" featureId="document-tags" featureLabel="Document Tags">
+          <div>
+            <label className="block text-[13px] font-medium text-foreground mb-1.5">Tags</label>
+            <input
+              type="text"
+              value={tags}
+              onChange={(e) => setTags(e.target.value)}
+              placeholder="e.g. contract, signed, 2026"
+              className={inputClass}
+            />
+            <p className="text-[10px] text-text-tertiary mt-1">Separate with commas</p>
+          </div>
+        </FeatureSection>
+
+        <FeatureSection moduleId="documents" featureId="expiry-tracking" featureLabel="Expiry Tracking">
+          <div>
+            <label className="block text-[13px] font-medium text-foreground mb-1.5">Expiry Date</label>
+            <input
+              type="date"
+              value={expiryDate}
+              onChange={(e) => setExpiryDate(e.target.value)}
+              className={inputClass}
+            />
+          </div>
+        </FeatureSection>
 
         {/* Checkboxes */}
         <div className="flex items-center gap-6 py-2">

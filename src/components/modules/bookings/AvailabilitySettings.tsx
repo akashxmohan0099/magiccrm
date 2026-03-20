@@ -13,6 +13,7 @@ export function AvailabilitySettings() {
   const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
   const [saved, setSaved] = useState(false);
   const [bufferMinutes, setBufferMinutes] = useState("0");
+  const [cancelNotice, setCancelNotice] = useState("0");
 
   useEffect(() => {
     setSlots(availability.map((s) => ({ ...s })));
@@ -104,6 +105,21 @@ export function AvailabilitySettings() {
             <option value="15">15 minutes</option>
             <option value="30">30 minutes</option>
           </select>
+        </div>
+      </FeatureSection>
+
+      <FeatureSection moduleId="bookings-calendar" featureId="cancellation-policy" featureLabel="Cancellation Policy">
+        <div className="mt-4">
+          <label className="block text-[13px] font-medium text-foreground mb-1.5">Minimum notice for cancellation</label>
+          <select value={cancelNotice} onChange={(e) => setCancelNotice(e.target.value)} className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px]">
+            <option value="0">No restriction</option>
+            <option value="2">2 hours</option>
+            <option value="4">4 hours</option>
+            <option value="12">12 hours</option>
+            <option value="24">24 hours</option>
+            <option value="48">48 hours</option>
+          </select>
+          <p className="text-[11px] text-text-tertiary mt-1">Clients who cancel after this window will be flagged.</p>
         </div>
       </FeatureSection>
 

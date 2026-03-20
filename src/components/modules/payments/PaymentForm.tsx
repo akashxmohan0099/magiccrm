@@ -12,6 +12,7 @@ import { SelectField } from "@/components/ui/SelectField";
 import { DateField } from "@/components/ui/DateField";
 import { TextArea } from "@/components/ui/TextArea";
 import { Button } from "@/components/ui/Button";
+import { FeatureSection } from "@/components/modules/FeatureSection";
 
 interface PaymentFormProps {
   open: boolean;
@@ -36,6 +37,7 @@ export function PaymentForm({ open, onClose }: PaymentFormProps) {
   const [method, setMethod] = useState<PaymentMethod>("cash");
   const [date, setDate] = useState("");
   const [notes, setNotes] = useState("");
+  const [isRefund, setIsRefund] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -45,6 +47,7 @@ export function PaymentForm({ open, onClose }: PaymentFormProps) {
       setMethod("cash");
       setDate(new Date().toISOString().split("T")[0]);
       setNotes("");
+      setIsRefund(false);
     }
   }, [open]);
 
@@ -126,6 +129,18 @@ export function PaymentForm({ open, onClose }: PaymentFormProps) {
             placeholder="Payment notes..."
           />
         </FormField>
+
+        <FeatureSection moduleId="payments" featureId="refund-tracking" featureLabel="Refund Tracking">
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={isRefund} onChange={(e) => setIsRefund(e.target.checked)} className="rounded" />
+              <span className="text-[13px] text-foreground">This is a refund</span>
+            </label>
+            {isRefund && (
+              <p className="text-[11px] text-red-500">This payment will be recorded as a negative amount (refund).</p>
+            )}
+          </div>
+        </FeatureSection>
 
         <div className="flex justify-end gap-2 pt-4 border-t border-border-light">
           <Button variant="ghost" onClick={onClose}>Cancel</Button>

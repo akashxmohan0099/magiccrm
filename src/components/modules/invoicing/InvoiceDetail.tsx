@@ -10,6 +10,7 @@ import { SlideOver } from "@/components/ui/SlideOver";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { FeatureSection } from "@/components/modules/FeatureSection";
 
 interface InvoiceDetailProps {
   open: boolean;
@@ -23,6 +24,7 @@ export function InvoiceDetail({ open, onClose, invoiceId, onEdit }: InvoiceDetai
   const { clients } = useClientsStore();
   const vocab = useVocabulary();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [tipAmount, setTipAmount] = useState(0);
 
   const invoice = invoices.find((inv) => inv.id === invoiceId);
 
@@ -105,6 +107,35 @@ export function InvoiceDetail({ open, onClose, invoiceId, onEdit }: InvoiceDetai
             <div className="flex justify-end mt-3">
               <div className="text-lg font-semibold text-foreground">Total: ${total.toFixed(2)}</div>
             </div>
+
+            <FeatureSection moduleId="quotes-invoicing" featureId="tipping" featureLabel="Tipping">
+              <div className="flex items-center justify-between px-4 py-2 bg-surface/30 rounded-lg">
+                <span className="text-[13px] text-text-secondary">Tip</span>
+                <div className="flex items-center gap-2">
+                  {["$5", "$10", "$20"].map((t) => (
+                    <button
+                      key={t}
+                      onClick={() => setTipAmount(parseFloat(t.replace("$", "")))}
+                      className={`px-2 py-1 rounded text-[12px] cursor-pointer ${
+                        tipAmount === parseFloat(t.replace("$", ""))
+                          ? "bg-primary/20 text-foreground font-medium"
+                          : "bg-surface text-text-secondary hover:bg-surface/80"
+                      }`}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={tipAmount || ""}
+                    onChange={(e) => setTipAmount(parseFloat(e.target.value) || 0)}
+                    placeholder="Custom"
+                    className="w-16 px-2 py-1 bg-surface border border-border-light rounded text-[12px] text-center"
+                  />
+                </div>
+              </div>
+            </FeatureSection>
           </div>
 
           {/* Notes */}

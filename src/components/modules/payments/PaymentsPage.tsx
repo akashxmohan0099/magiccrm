@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { DataTable, Column } from "@/components/ui/DataTable";
 import { Button } from "@/components/ui/Button";
+import { FeatureSection } from "@/components/modules/FeatureSection";
 import { PaymentForm } from "./PaymentForm";
 
 export function PaymentsPage() {
@@ -19,6 +20,17 @@ export function PaymentsPage() {
   const [formOpen, setFormOpen] = useState(false);
 
   const totalRevenue = getTotalRevenue();
+
+  const outstandingInvoices = invoices.filter(
+    (inv) => inv.status === "sent" || inv.status === "overdue"
+  );
+  const outstandingCount = outstandingInvoices.length;
+  const outstandingTotal = outstandingInvoices.reduce(
+    (sum, inv) =>
+      sum +
+      inv.lineItems.reduce((s, li) => s + li.quantity * li.unitPrice, 0),
+    0
+  );
 
   const getClientName = (clientId?: string) => {
     if (!clientId) return "\u2014";
@@ -99,6 +111,14 @@ export function PaymentsPage() {
           </div>
         </div>
       </div>
+
+      <FeatureSection moduleId="payments" featureId="outstanding-balance-report" featureLabel="Outstanding Balances">
+        <div className="bg-card-bg rounded-xl border border-border-light p-4 mb-4">
+          <h3 className="text-[13px] font-semibold text-text-tertiary uppercase tracking-wider mb-2">Outstanding</h3>
+          <p className="text-[24px] font-bold text-foreground">${outstandingTotal.toLocaleString()}</p>
+          <p className="text-[12px] text-text-tertiary">{outstandingCount} unpaid invoice{outstandingCount !== 1 ? "s" : ""}</p>
+        </div>
+      </FeatureSection>
 
       {payments.length === 0 ? (
         <EmptyState

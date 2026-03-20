@@ -46,6 +46,8 @@ export function InvoiceForm({ open, onClose, invoice }: InvoiceFormProps) {
   const [paymentSchedule, setPaymentSchedule] = useState<InvoiceMode>(config.invoiceMode.defaultMode);
   const [depositPercent, setDepositPercent] = useState(50);
   const [milestones, setMilestones] = useState<{ id: string; label: string; percent: number; status: string }[]>([]);
+  const [invoiceNumber, setInvoiceNumber] = useState("");
+  const [recurring, setRecurring] = useState("");
   const [saving, setSaving] = useState(false);
   const [applyTax, setApplyTax] = useState(false);
   const [taxRate, setTaxRate] = useState("10");
@@ -61,6 +63,8 @@ export function InvoiceForm({ open, onClose, invoice }: InvoiceFormProps) {
         setPaymentSchedule(((invoice as any).paymentSchedule as InvoiceMode) ?? config.invoiceMode.defaultMode);
         setDepositPercent((invoice as any).depositPercent ?? 50);
         setMilestones((invoice as any).milestones ?? []);
+        setInvoiceNumber(invoice.number ?? "");
+        setRecurring((invoice as any).recurring ?? "");
       } else {
         setClientId("");
         setDueDate("");
@@ -70,6 +74,8 @@ export function InvoiceForm({ open, onClose, invoice }: InvoiceFormProps) {
         setPaymentSchedule(config.invoiceMode.defaultMode);
         setDepositPercent(50);
         setMilestones([]);
+        setInvoiceNumber("");
+        setRecurring("");
       }
     }
   }, [open, invoice, config.invoiceMode.defaultMode]);
@@ -134,6 +140,18 @@ export function InvoiceForm({ open, onClose, invoice }: InvoiceFormProps) {
   return (
     <SlideOver open={open} onClose={onClose} title={invoice ? `Edit ${vocab.invoice}` : vocab.addInvoice}>
       <div className="space-y-1">
+        <FeatureSection moduleId="quotes-invoicing" featureId="invoice-numbering" featureLabel="Custom Invoice Numbers">
+          <FormField label="Invoice Number">
+            <input
+              type="text"
+              value={invoiceNumber}
+              onChange={(e) => setInvoiceNumber(e.target.value)}
+              placeholder="e.g. INV-2026-001"
+              className="w-full px-3 py-2 bg-card-bg border border-border-light rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
+            />
+          </FormField>
+        </FeatureSection>
+
         <FormField label={vocab.client}>
           <SelectField
             options={clientOptions}
@@ -193,6 +211,22 @@ export function InvoiceForm({ open, onClose, invoice }: InvoiceFormProps) {
             <MilestoneEditor milestones={milestones} onChange={setMilestones} />
           </FormField>
         )}
+
+        <FeatureSection moduleId="quotes-invoicing" featureId="recurring-invoices" featureLabel="Recurring Invoices">
+          <FormField label="Recurring Schedule">
+            <SelectField
+              value={recurring}
+              onChange={(e) => setRecurring(e.target.value)}
+              options={[
+                { value: "", label: "One-time (not recurring)" },
+                { value: "weekly", label: "Weekly" },
+                { value: "fortnightly", label: "Fortnightly" },
+                { value: "monthly", label: "Monthly" },
+                { value: "quarterly", label: "Quarterly" },
+              ]}
+            />
+          </FormField>
+        </FeatureSection>
 
         <FormField label="Line Items">
           <LineItemEditor items={lineItems} onChange={setLineItems} />

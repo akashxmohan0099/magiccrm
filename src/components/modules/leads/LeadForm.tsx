@@ -40,6 +40,7 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
   const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [leadScore, setLeadScore] = useState("");
 
   useEffect(() => {
     if (open) {
@@ -55,8 +56,10 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
           notes: lead.notes,
           lostReason: (lead as any).lostReason ?? "",
         });
+        setLeadScore((lead as any).score ?? "");
       } else {
         setForm(emptyForm);
+        setLeadScore("");
       }
       setErrors({});
     }
@@ -197,6 +200,21 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
             step="0.01"
           />
         </FormField>
+
+        <FeatureSection moduleId="leads-pipeline" featureId="lead-scoring" featureLabel="Lead Scoring">
+          <FormField label="Lead Score">
+            <div className="flex gap-2">
+              {["cold", "warm", "hot"].map((score) => (
+                <button key={score} type="button" onClick={() => setLeadScore(score)}
+                  className={`px-3 py-1.5 rounded-lg text-[12px] font-medium cursor-pointer capitalize ${
+                    leadScore === score
+                      ? score === "hot" ? "bg-red-100 text-red-700" : score === "warm" ? "bg-yellow-100 text-yellow-700" : "bg-blue-100 text-blue-700"
+                      : "bg-surface text-text-secondary hover:bg-surface/80"
+                  }`}>{score}</button>
+              ))}
+            </div>
+          </FormField>
+        </FeatureSection>
 
         <FeatureSection moduleId="leads-pipeline" featureId="lead-notes-log" featureLabel="Notes & Activity Log">
           <FormField label="Notes">
