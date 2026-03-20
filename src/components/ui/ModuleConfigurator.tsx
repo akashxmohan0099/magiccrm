@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { X, Check, SlidersHorizontal, Puzzle, ArrowRight } from "lucide-react";
+import { X, Check, SlidersHorizontal, Puzzle, ArrowRight, Search, Link2, Copy } from "lucide-react";
 import { FEATURE_BLOCKS, ADDON_FEATURE_BLOCKS } from "@/types/features";
 import { useOnboardingStore } from "@/store/onboarding";
 import { useAddonsStore } from "@/store/addons";
 import { useEnabledModules } from "@/hooks/useFeature";
-import { getFeatureOverrides } from "@/lib/feature-dedup";
+import { getFeatureOverrides, getRelatedFeatures, RelatedFeature } from "@/lib/feature-dedup";
+import { toast } from "@/components/ui/Toast";
 
 interface ModuleConfiguratorProps {
   moduleId: string;
@@ -67,8 +68,20 @@ export function ModuleConfigurator({ moduleId, moduleName }: ModuleConfiguratorP
     return overrides[key]?.managedBy ?? null;
   };
 
+  // Related features from other modules
+  const relatedFeatures = getRelatedFeatures(moduleId, enabledModules.map((m) => m.id));
+  const [mirroredIds, setMirroredIds] = useState<Set<string>>(new Set());
+
+  const mirrorFeature = (related: RelatedFeature) => {
+    if (related.canMirror) {
+      setMirroredIds((prev) => new Set(prev).add(related.featureId));
+      toast(`"${related.featureLabel}" is now accessible from ${moduleName} too`);
+    }
+  };
+
   const hasSubFeatures = (block && block.subFeatures.length > 0) || addonSubs.length > 0;
-  if (!hasSubFeatures) return null;
+  const hasRelated = relatedFeatures.length > 0;
+  if (!hasSubFeatures && !hasRelated) return null;
 
   const allSubs = block ? block.subFeatures : [];
   const activeSubs = [...allSubs, ...addonSubs].filter((s) => !isOverridden(s.id));
@@ -224,6 +237,69 @@ export function ModuleConfigurator({ moduleId, moduleName }: ModuleConfiguratorP
                         <div className="w-[18px] h-[18px] bg-white rounded-full shadow-sm" />
                       </div>
                     </label>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Related features from other modules */}
+          {relatedFeatures.length > 0 && (
+            <div className="mt-2 pt-4 border-t border-border-light">
+              <div className="flex items-center gap-2 mb-3">
+                <Search className="w-3.5 h-3.5 text-text-tertiary" />
+                <p className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider">
+                  Features you might look for
+                </p>
+              </div>
+              <div className="space-y-2">
+                {relatedFeatures.map((related) => {
+                  const isMirrored = mirroredIds.has(related.featureId);
+
+                  return (
+                    <div
+                      key={`${related.livesIn}:${related.featureId}`}
+                      className={`px-3 py-2.5 rounded-xl border transition-all ${
+                        isMirrored
+                          ? "bg-primary/5 border-primary/20"
+                          : "bg-surface/30 border-border-light/50"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[13px] font-medium text-foreground">{related.featureLabel}</p>
+                          <p className="text-[11px] text-text-tertiary">{related.description}</p>
+                          <p className="text-[10px] text-text-tertiary mt-1 flex items-center gap-1">
+                            <ArrowRight className="w-3 h-3" />
+                            Lives in <span className="font-medium text-text-secondary">{related.livesInLabel}</span>
+                          </p>
+                        </div>
+                      </div>
+                      {!isMirrored && (
+                        <div className="flex gap-2 mt-2">
+                          {related.canMirror && (
+                            <button
+                              onClick={() => mirrorFeature(related)}
+                              className="flex items-center gap-1 px-2.5 py-1 bg-card-bg border border-border-light rounded-lg text-[11px] font-medium text-foreground hover:border-primary/30 cursor-pointer transition-colors"
+                            >
+                              <Copy className="w-3 h-3" /> Show here too
+                            </button>
+                          )}
+                          <button
+                            onClick={() => toast(`Open ${related.livesInLabel} and enable "${related.featureLabel}" from there`, "info")}
+                            className="flex items-center gap-1 px-2.5 py-1 bg-card-bg border border-border-light rounded-lg text-[11px] font-medium text-text-secondary hover:text-foreground cursor-pointer transition-colors"
+                          >
+                            <Link2 className="w-3 h-3" /> Go to {related.livesInLabel}
+                          </button>
+                        </div>
+                      )}
+                      {isMirrored && (
+                        <div className="mt-2 flex items-center gap-1.5">
+                          <Check className="w-3 h-3 text-primary" />
+                          <span className="text-[11px] text-primary font-medium">Connected — visible in both {moduleName} and {related.livesInLabel}</span>
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </div>

@@ -159,3 +159,73 @@ export function getFeatureOverrides(
 
   return result;
 }
+
+// ── "Features you might look for" ──
+// When viewing Module X, show features from OTHER modules that users might expect here.
+
+export interface RelatedFeature {
+  featureId: string;
+  featureLabel: string;
+  description: string;
+  livesIn: string;          // module ID where the feature actually lives
+  livesInLabel: string;     // display name of that module
+  canMirror: boolean;       // true = can be shown in both places (connected)
+}
+
+const RELATED_FEATURES_MAP: Record<string, RelatedFeature[]> = {
+  "communication": [
+    { featureId: "follow-up-reminders", featureLabel: "Follow-Up Reminders", description: "Automatic reminders to follow up with contacts", livesIn: "client-database", livesInLabel: "Clients", canMirror: true },
+    { featureId: "auto-response", featureLabel: "Instant Auto-Response", description: "Auto-reply when someone submits an inquiry", livesIn: "leads-pipeline", livesInLabel: "Leads", canMirror: false },
+    { featureId: "satisfaction-survey-trigger", featureLabel: "Post-Resolution Survey", description: "Send satisfaction survey after ticket resolved", livesIn: "support", livesInLabel: "Support", canMirror: false },
+    { featureId: "post-appointment-followup", featureLabel: "Post-Appointment Follow-Up", description: "Auto-send thank you or feedback request after visit", livesIn: "bookings-calendar", livesInLabel: "Scheduling", canMirror: false },
+  ],
+  "client-database": [
+    { featureId: "lead-to-client", featureLabel: "Lead → Client Conversion", description: "One-click convert leads to client records", livesIn: "leads-pipeline", livesInLabel: "Leads", canMirror: false },
+    { featureId: "bulk-messaging", featureLabel: "Bulk Messaging", description: "Send a message to a filtered group of clients", livesIn: "communication", livesInLabel: "Messages", canMirror: true },
+    { featureId: "conversation-assignment", featureLabel: "Conversation Assignment", description: "Assign client conversations to team members", livesIn: "communication", livesInLabel: "Messages", canMirror: false },
+  ],
+  "leads-pipeline": [
+    { featureId: "canned-responses", featureLabel: "Canned Responses", description: "Pre-written reply templates for quick responses", livesIn: "communication", livesInLabel: "Messages", canMirror: true },
+    { featureId: "follow-up-reminders", featureLabel: "Follow-Up Reminders", description: "Automatic reminders to follow up", livesIn: "client-database", livesInLabel: "Clients", canMirror: true },
+  ],
+  "bookings-calendar": [
+    { featureId: "partial-payments", featureLabel: "Partial Payments / Deposits", description: "Accept deposit payments at time of booking", livesIn: "quotes-invoicing", livesInLabel: "Billing", canMirror: true },
+    { featureId: "satisfaction-ratings", featureLabel: "Satisfaction Ratings", description: "Collect client satisfaction scores after visit", livesIn: "support", livesInLabel: "Support", canMirror: false },
+  ],
+  "quotes-invoicing": [
+    { featureId: "job-to-invoice", featureLabel: "Job → Invoice", description: "Generate invoice from a completed job", livesIn: "jobs-projects", livesInLabel: "Projects", canMirror: false },
+    { featureId: "payment-method-tracking", featureLabel: "Payment Method Tracking", description: "Track how each payment was made", livesIn: "payments", livesInLabel: "Payments", canMirror: true },
+  ],
+  "jobs-projects": [
+    { featureId: "auto-attach-to-job", featureLabel: "Auto-Attach Documents", description: "Documents auto-link to their related job", livesIn: "documents", livesInLabel: "Documents", canMirror: true },
+    { featureId: "e-signatures", featureLabel: "E-Signatures", description: "Get job scope signed digitally", livesIn: "documents", livesInLabel: "Documents", canMirror: false },
+  ],
+  "support": [
+    { featureId: "after-hours-reply", featureLabel: "After-Hours Auto-Reply", description: "Auto-respond outside business hours", livesIn: "communication", livesInLabel: "Messages", canMirror: true },
+    { featureId: "canned-responses", featureLabel: "Canned Responses", description: "Pre-written reply templates", livesIn: "communication", livesInLabel: "Messages", canMirror: true },
+  ],
+  "marketing": [
+    { featureId: "client-tags", featureLabel: "Tags & Categories", description: "Segment clients for targeted campaigns", livesIn: "client-database", livesInLabel: "Clients", canMirror: true },
+    { featureId: "review-collection", featureLabel: "Review Collection", description: "Request and manage client reviews", livesIn: "marketing", livesInLabel: "Marketing", canMirror: false },
+  ],
+  "documents": [
+    { featureId: "file-attachments", featureLabel: "Job File Attachments", description: "Files attached to jobs appear in Documents", livesIn: "jobs-projects", livesInLabel: "Projects", canMirror: true },
+  ],
+  "payments": [
+    { featureId: "late-reminders", featureLabel: "Late Payment Reminders", description: "Automated nudges for overdue invoices", livesIn: "quotes-invoicing", livesInLabel: "Billing", canMirror: true },
+  ],
+};
+
+/**
+ * Get features that users might expect in this module but live elsewhere.
+ * Only returns features where the "source" module is also enabled.
+ */
+export function getRelatedFeatures(
+  moduleId: string,
+  enabledModuleIds: string[]
+): RelatedFeature[] {
+  const related = RELATED_FEATURES_MAP[moduleId];
+  if (!related) return [];
+  const moduleSet = new Set(enabledModuleIds);
+  return related.filter((r) => moduleSet.has(r.livesIn));
+}
