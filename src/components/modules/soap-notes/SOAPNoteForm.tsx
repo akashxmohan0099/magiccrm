@@ -4,6 +4,7 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import { useSOAPNotesStore } from "@/store/soap-notes";
 import { Button } from "@/components/ui/Button";
+import { FeatureSection } from "@/components/modules/FeatureSection";
 
 interface SOAPNoteFormProps { open: boolean; onClose: () => void; }
 
@@ -12,10 +13,33 @@ export function SOAPNoteForm({ open, onClose }: SOAPNoteFormProps) {
   const [clientName, setClientName] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [practitioner, setPractitioner] = useState("");
+  const [template, setTemplate] = useState("");
   const [subjective, setSubjective] = useState("");
   const [objective, setObjective] = useState("");
   const [assessment, setAssessment] = useState("");
   const [plan, setPlan] = useState("");
+
+  const applyTemplate = (value: string) => {
+    setTemplate(value);
+    if (value === "initial") {
+      setSubjective("Patient presents for initial assessment. Chief complaint: ");
+      setObjective("Vitals within normal limits. Physical examination: ");
+      setAssessment("Initial evaluation. Working diagnosis: ");
+      setPlan("1. Diagnostic workup\n2. Treatment plan to be determined\n3. Follow-up in 2 weeks");
+    } else if (value === "followup") {
+      setSubjective("Patient returns for follow-up visit. Reports: ");
+      setObjective("Compared to previous visit: ");
+      setAssessment("Progress since last visit: ");
+      setPlan("1. Continue current treatment\n2. Next follow-up: ");
+    } else if (value === "discharge") {
+      setSubjective("Patient reports readiness for discharge. Current symptoms: ");
+      setObjective("Final assessment findings: ");
+      setAssessment("Treatment goals met. Discharge criteria satisfied.");
+      setPlan("1. Home care instructions provided\n2. Medications reviewed\n3. Follow-up appointment scheduled");
+    } else {
+      setSubjective(""); setObjective(""); setAssessment(""); setPlan("");
+    }
+  };
 
   if (!open) return null;
 
@@ -38,6 +62,17 @@ export function SOAPNoteForm({ open, onClose }: SOAPNoteFormProps) {
           <button onClick={onClose} className="p-1.5 text-text-secondary hover:text-foreground rounded-lg hover:bg-surface cursor-pointer"><X className="w-4 h-4" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <FeatureSection moduleId="soap-notes" featureId="note-templates" featureLabel="Note Templates">
+            <div className="mb-4">
+              <label className="block text-[13px] font-medium text-foreground mb-1.5">Template</label>
+              <select value={template} onChange={(e) => applyTemplate(e.target.value)} className={inputClass}>
+                <option value="">Blank note</option>
+                <option value="initial">Initial Assessment</option>
+                <option value="followup">Follow-Up Visit</option>
+                <option value="discharge">Discharge Summary</option>
+              </select>
+            </div>
+          </FeatureSection>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-[13px] font-medium text-foreground mb-1.5">Patient *</label>

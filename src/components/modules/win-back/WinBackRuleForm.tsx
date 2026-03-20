@@ -4,6 +4,7 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import { useWinBackStore } from "@/store/win-back";
 import { Button } from "@/components/ui/Button";
+import { FeatureSection } from "@/components/modules/FeatureSection";
 
 interface WinBackRuleFormProps { open: boolean; onClose: () => void; }
 
@@ -13,6 +14,7 @@ export function WinBackRuleForm({ open, onClose }: WinBackRuleFormProps) {
   const [days, setDays] = useState("60");
   const [channel, setChannel] = useState<"email" | "sms">("email");
   const [template, setTemplate] = useState("Hi {name}, we haven't seen you in a while! We'd love to have you back. Book your next visit here: {booking_link}");
+  const [discountCode, setDiscountCode] = useState("");
 
   if (!open) return null;
 
@@ -57,6 +59,13 @@ export function WinBackRuleForm({ open, onClose }: WinBackRuleFormProps) {
             <textarea value={template} onChange={(e) => setTemplate(e.target.value)} rows={4} className={`${inputClass} resize-none`} />
             <p className="text-[11px] text-text-tertiary mt-1">Use {"{name}"} for client name, {"{booking_link}"} for booking page</p>
           </div>
+          <FeatureSection moduleId="win-back" featureId="winback-offer" featureLabel="Win-Back Offer">
+            <div>
+              <label className="block text-[13px] font-medium text-foreground mb-1.5">Attach Discount</label>
+              <input type="text" value={discountCode} onChange={(e) => setDiscountCode(e.target.value)} placeholder="e.g. COMEBACK10" className={inputClass} />
+              <p className="text-[11px] text-text-tertiary mt-1">Include a discount code in the re-engagement message.</p>
+            </div>
+          </FeatureSection>
           <div className="pt-2"><Button type="submit" className="w-full">Create Rule</Button></div>
         </form>
       </div>

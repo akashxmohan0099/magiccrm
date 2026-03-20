@@ -7,6 +7,7 @@ import { useClientsStore } from "@/store/clients";
 import { Job } from "@/types/models";
 import { useVocabulary } from "@/hooks/useVocabulary";
 import { useIndustryConfig } from "@/hooks/useIndustryConfig";
+import { FeatureSection } from "@/components/modules/FeatureSection";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SearchInput } from "@/components/ui/SearchInput";
@@ -166,6 +167,21 @@ export function JobsPage() {
           </button>
         </div>
       </div>
+
+      <FeatureSection moduleId="jobs-projects" featureId="custom-job-stages" featureLabel="Custom Job Stages">
+        <div className="mb-4 p-4 bg-card-bg rounded-xl border border-border-light">
+          <h4 className="text-[13px] font-semibold text-text-tertiary uppercase tracking-wider mb-2">Workflow Stages</h4>
+          <div className="flex flex-wrap gap-2">
+            {config.jobStages.map((stage) => (
+              <div key={stage.id} className="flex items-center gap-1.5 px-3 py-1.5 bg-surface rounded-lg border border-border-light">
+                <div className={`w-2.5 h-2.5 rounded-full ${stage.color}`} />
+                <span className="text-[12px] font-medium text-foreground">{stage.label}</span>
+              </div>
+            ))}
+          </div>
+          <p className="text-[10px] text-text-tertiary mt-2">Stage customization coming soon. Currently using industry defaults.</p>
+        </div>
+      </FeatureSection>
 
       {filtered.length === 0 ? (
         <EmptyState

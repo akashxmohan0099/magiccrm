@@ -13,6 +13,7 @@ import {
   Receipt,
   FolderKanban,
   Plus,
+  AlertTriangle,
 } from "lucide-react";
 import { useClientsStore } from "@/store/clients";
 import { useActivityStore } from "@/store/activity";
@@ -102,6 +103,14 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
     <>
       <SlideOver open={open} onClose={onClose} title={`${vocab.client} Details`}>
         <div className="space-y-6">
+          {/* Auto-Inactive Flag */}
+          <FeatureSection moduleId="client-database" featureId="auto-inactive-flag" featureLabel="Auto-Inactive Flag">
+            <div className="mb-4 px-4 py-3 bg-yellow-50 border border-yellow-200 rounded-xl flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-yellow-600 flex-shrink-0" />
+              <p className="text-[12px] text-yellow-800">This client has been inactive. Consider reaching out.</p>
+            </div>
+          </FeatureSection>
+
           {/* Header */}
           <div className="flex items-start justify-between">
             <div>
@@ -181,6 +190,14 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
               </div>
             )}
           </div>
+
+          {/* Client Credit Balance */}
+          <FeatureSection moduleId="client-database" featureId="client-credit-balance" featureLabel="Client Credits">
+            <div className="flex items-center justify-between px-4 py-3 bg-surface/50 rounded-xl mb-3">
+              <span className="text-[13px] text-text-secondary">Credit Balance</span>
+              <span className="text-[15px] font-bold text-foreground">$0.00</span>
+            </div>
+          </FeatureSection>
 
           {/* Notes */}
           {client.notes && (

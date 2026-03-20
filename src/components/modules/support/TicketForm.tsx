@@ -38,6 +38,7 @@ export function TicketForm({ open, onClose, ticket }: TicketFormProps) {
   const [priority, setPriority] = useState<TicketPriority>("medium");
   const [status, setStatus] = useState<TicketStatus>("open");
   const [category, setCategory] = useState("");
+  const [assignedTo, setAssignedTo] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -130,6 +131,15 @@ export function TicketForm({ open, onClose, ticket }: TicketFormProps) {
             options={STATUS_OPTIONS}
           />
         </FormField>
+
+        <FeatureSection moduleId="support" featureId="assign-requests" featureLabel="Assign Requests">
+          <FormField label="Assign to">
+            <SelectField value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)} options={[
+              { value: "", label: "Unassigned" },
+              { value: "me", label: "Me" },
+            ]} />
+          </FormField>
+        </FeatureSection>
 
         <FeatureSection moduleId="support" featureId="ticket-categories">
           <FormField label="Category">

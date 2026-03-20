@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect } from "react";
 import Link from "next/link";
-import { Pencil, X, Send, User, CalendarDays, FolderKanban } from "lucide-react";
+import { Pencil, X, Send, User, CalendarDays, FolderKanban, Clock, Star } from "lucide-react";
 import { useSupportStore } from "@/store/support";
 import { SupportTicket } from "@/types/models";
 import { SlideOver } from "@/components/ui/SlideOver";
@@ -87,6 +87,14 @@ export function TicketDetail({ open, onClose, ticketId }: TicketDetailProps) {
                 <span>{new Date(ticket.createdAt).toLocaleDateString()}</span>
               </div>
             </div>
+
+            {/* SLA Timer */}
+            <FeatureSection moduleId="support" featureId="sla-timers" featureLabel="SLA Timers">
+              <div className="flex items-center gap-2 px-4 py-2 bg-surface/50 rounded-lg mb-3">
+                <Clock className="w-3.5 h-3.5 text-text-tertiary" />
+                <span className="text-[12px] text-text-secondary">Response target: <span className="font-medium text-foreground">4 hours</span></span>
+              </div>
+            </FeatureSection>
 
             {/* Actions */}
             <div className="flex items-center gap-2">
@@ -191,6 +199,15 @@ export function TicketDetail({ open, onClose, ticketId }: TicketDetailProps) {
                 className="w-full px-3 py-2 bg-card-bg border border-border-light rounded-lg text-[13px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
               />
             </div>
+          </FeatureSection>
+
+          {/* Post-Resolution Survey */}
+          <FeatureSection moduleId="support" featureId="satisfaction-survey-trigger" featureLabel="Post-Resolution Survey">
+            {(ticket.status === "resolved" || ticket.status === "closed") && (
+              <button className="text-[12px] font-medium text-primary hover:underline cursor-pointer flex items-center gap-1 mt-2">
+                <Star className="w-3 h-3" /> Send satisfaction survey
+              </button>
+            )}
           </FeatureSection>
 
           {/* Satisfaction widget - gated */}

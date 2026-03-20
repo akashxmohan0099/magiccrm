@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { Code, Globe, Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { FeatureSection } from "@/components/modules/FeatureSection";
 
 export function WebFormPreview() {
   const [copied, setCopied] = useState(false);
+  const [autoReply, setAutoReply] = useState("");
 
   const handleCopyEmbed = () => {
     const embedSnippet = `<iframe src="https://your-crm.com/forms/lead-capture" width="100%" height="500" frameborder="0"></iframe>`;
@@ -82,6 +84,14 @@ export function WebFormPreview() {
             </Button>
           </div>
         </div>
+
+        <FeatureSection moduleId="leads-pipeline" featureId="auto-response" featureLabel="Auto-Response">
+          <div className="mt-4 bg-card-bg rounded-xl border border-border-light p-4">
+            <h4 className="text-[13px] font-semibold text-foreground mb-2">Auto-Response Message</h4>
+            <textarea value={autoReply} onChange={(e) => setAutoReply(e.target.value)} placeholder="Thanks for reaching out! We'll get back to you within 24 hours." rows={3} className="w-full px-3 py-2 bg-surface border border-border-light rounded-lg text-[13px] text-foreground placeholder:text-text-tertiary focus:outline-none resize-none" />
+            <p className="text-[11px] text-text-tertiary mt-1">Sent automatically when someone submits the form.</p>
+          </div>
+        </FeatureSection>
       </div>
   );
 }

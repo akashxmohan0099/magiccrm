@@ -1,9 +1,10 @@
 "use client";
 
-import { Store, ExternalLink } from "lucide-react";
+import { Store, ExternalLink, Plus } from "lucide-react";
 import { useStorefrontStore } from "@/store/storefront";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/Button";
+import { FeatureSection } from "@/components/modules/FeatureSection";
 
 export function StorefrontPage() {
   const { config, updateConfig } = useStorefrontStore();
@@ -63,6 +64,20 @@ export function StorefrontPage() {
             <span className="text-[14px] text-foreground">Show duration on services</span>
           </label>
         </div>
+
+        <FeatureSection moduleId="storefront" featureId="photo-gallery" featureLabel="Photo Gallery">
+          <div className="bg-card-bg rounded-xl border border-border-light p-6 space-y-4">
+            <h3 className="text-[15px] font-semibold text-foreground">Photo Gallery</h3>
+            <div className="grid grid-cols-3 gap-2">
+              {[1,2,3].map((i) => (
+                <div key={i} className="aspect-square bg-surface rounded-lg border-2 border-dashed border-border-light flex items-center justify-center cursor-pointer hover:border-foreground/20 transition-colors">
+                  <Plus className="w-5 h-5 text-text-tertiary" />
+                </div>
+              ))}
+            </div>
+            <p className="text-[11px] text-text-tertiary">Upload photos to showcase your work on your public storefront.</p>
+          </div>
+        </FeatureSection>
 
         {!config.enabled && (
           <div className="bg-surface rounded-xl border border-border-light p-8 text-center">

@@ -41,6 +41,7 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [leadScore, setLeadScore] = useState("");
+  const [assignedTo, setAssignedTo] = useState("");
 
   useEffect(() => {
     if (open) {
@@ -163,6 +164,15 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
               className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
               placeholder="e.g. Referral, Website, Social"
             />
+          </FormField>
+        </FeatureSection>
+
+        <FeatureSection moduleId="leads-pipeline" featureId="auto-assign-leads" featureLabel="Auto-Assign">
+          <FormField label="Assign to">
+            <SelectField value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)} options={[
+              { value: "", label: "Unassigned" },
+              { value: "me", label: "Me" },
+            ]} />
           </FormField>
         </FeatureSection>
 

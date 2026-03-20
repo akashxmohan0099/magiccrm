@@ -175,6 +175,18 @@ export function JobDetail({ open, onClose, jobId, onEdit }: JobDetailProps) {
             )}
           </div>
 
+          {/* Profitability Summary */}
+          <FeatureSection moduleId="jobs-projects" featureId="profitability-summary" featureLabel="Profitability">
+            <div className="mt-4 p-4 bg-card-bg rounded-xl border border-border-light">
+              <h4 className="text-[13px] font-semibold text-text-tertiary uppercase tracking-wider mb-3">Profitability</h4>
+              <div className="space-y-2">
+                <div className="flex justify-between text-[13px]"><span className="text-text-secondary">Revenue</span><span className="text-foreground font-medium">$0.00</span></div>
+                <div className="flex justify-between text-[13px]"><span className="text-text-secondary">Expenses</span><span className="text-red-500 font-medium">-${expenses.reduce((s, e) => s + e.amount, 0).toFixed(2)}</span></div>
+                <div className="flex justify-between text-[13px] border-t border-border-light pt-2"><span className="font-semibold text-foreground">Profit</span><span className="font-bold text-foreground">-${expenses.reduce((s, e) => s + e.amount, 0).toFixed(2)}</span></div>
+              </div>
+            </div>
+          </FeatureSection>
+
           {/* Expense Tracking */}
           <FeatureSection moduleId="jobs-projects" featureId="expense-tracking" featureLabel="Expense Tracking">
             <div>

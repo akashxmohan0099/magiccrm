@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { DataTable, Column } from "@/components/ui/DataTable";
 import { Button } from "@/components/ui/Button";
 import { PortalAccessForm } from "./PortalAccessForm";
+import { FeatureSection } from "@/components/modules/FeatureSection";
 
 export function ClientPortalPage() {
   const { config, updateConfig, accessList, revokeAccess, toggleAccess } = useClientPortalStore();
@@ -62,6 +63,20 @@ export function ClientPortalPage() {
             ))}
           </div>
         </div>
+
+        <FeatureSection moduleId="client-portal" featureId="portal-branding" featureLabel="Portal Branding">
+          <div className="bg-card-bg rounded-xl border border-border-light p-6 space-y-4">
+            <h3 className="text-[15px] font-semibold text-foreground">Branding</h3>
+            <div>
+              <label className="block text-[13px] font-medium text-foreground mb-1.5">Welcome Message</label>
+              <textarea value={config.welcomeMessage} onChange={(e) => updateConfig({ welcomeMessage: e.target.value })} rows={2} placeholder="Welcome to your portal..." className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" />
+            </div>
+            <div>
+              <label className="block text-[13px] font-medium text-foreground mb-1.5">Accent Colour</label>
+              <input type="color" value={config.accentColor} onChange={(e) => updateConfig({ accentColor: e.target.value })} className="w-10 h-10 rounded-lg cursor-pointer border border-border-light" />
+            </div>
+          </div>
+        </FeatureSection>
 
         {accessList.length > 0 && (
           <div className="bg-card-bg rounded-xl border border-border-light overflow-hidden">

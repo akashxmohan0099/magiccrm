@@ -5,6 +5,8 @@ import { Plus, List, Columns3, Users, FileInput } from "lucide-react";
 import { useLeadsStore } from "@/store/leads";
 import { Lead } from "@/types/models";
 import { useVocabulary } from "@/hooks/useVocabulary";
+import { useIndustryConfig } from "@/hooks/useIndustryConfig";
+import { FeatureSection } from "@/components/modules/FeatureSection";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SearchInput } from "@/components/ui/SearchInput";
@@ -20,6 +22,7 @@ type ViewMode = "list" | "pipeline" | "form";
 export function LeadsPage() {
   const { leads } = useLeadsStore();
   const vocab = useVocabulary();
+  const { leadStages } = useIndustryConfig();
   const [view, setView] = useState<ViewMode>("list");
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
@@ -123,6 +126,21 @@ export function LeadsPage() {
           </button>
         </div>
       </div>
+
+      <FeatureSection moduleId="leads-pipeline" featureId="custom-pipeline-stages" featureLabel="Custom Pipeline Stages">
+        <div className="mb-4 p-4 bg-card-bg rounded-xl border border-border-light">
+          <h4 className="text-[13px] font-semibold text-text-tertiary uppercase tracking-wider mb-2">Pipeline Stages</h4>
+          <div className="flex flex-wrap gap-2">
+            {leadStages.map((stage) => (
+              <div key={stage.id} className="flex items-center gap-1.5 px-3 py-1.5 bg-surface rounded-lg border border-border-light">
+                <div className={`w-2.5 h-2.5 rounded-full ${stage.color}`} />
+                <span className="text-[12px] font-medium text-foreground">{stage.label}</span>
+              </div>
+            ))}
+          </div>
+          <p className="text-[10px] text-text-tertiary mt-2">Stage customization coming soon. Currently using industry defaults.</p>
+        </div>
+      </FeatureSection>
 
       {leads.length === 0 ? (
         <EmptyState
