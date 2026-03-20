@@ -1,7 +1,6 @@
 "use client";
 
 import { ReactNode } from "react";
-import { Lock } from "lucide-react";
 import { useFeature } from "@/hooks/useFeature";
 
 interface FeatureSectionProps {
@@ -9,25 +8,24 @@ interface FeatureSectionProps {
   featureId: string;
   children: ReactNode;
   featureLabel?: string;
+  /** If true, show a minimal "not enabled" message instead of hiding completely. Use for tab-level content only. */
+  showDisabledState?: boolean;
 }
 
-export function FeatureSection({ moduleId, featureId, children, featureLabel }: FeatureSectionProps) {
+export function FeatureSection({ moduleId, featureId, children, featureLabel, showDisabledState }: FeatureSectionProps) {
   const enabled = useFeature(moduleId, featureId);
 
   if (!enabled) {
-    return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <div className="w-12 h-12 bg-surface rounded-xl flex items-center justify-center mb-4 text-text-tertiary">
-          <Lock className="w-5 h-5" />
+    if (showDisabledState) {
+      return (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <p className="text-[14px] text-text-tertiary">
+            {featureLabel || "This feature"} is available — enable it from <span className="font-medium text-text-secondary">Customize</span> in the top bar.
+          </p>
         </div>
-        <h3 className="text-[15px] font-semibold text-foreground mb-1">
-          {featureLabel || "This feature"} is not enabled
-        </h3>
-        <p className="text-[13px] text-text-secondary max-w-xs">
-          Enable it from the <span className="font-medium">Customize</span> button in the top bar to start using it.
-        </p>
-      </div>
-    );
+      );
+    }
+    return null;
   }
 
   return <>{children}</>;

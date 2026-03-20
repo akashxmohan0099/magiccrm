@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus, MessageSquare, Bell } from "lucide-react";
+import { Plus, MessageSquare, Bell, Mail, MessageCircle, Instagram, Phone, Linkedin, Check } from "lucide-react";
 import { useCommunicationStore } from "@/store/communication";
 import { Channel, Conversation } from "@/types/models";
+import { useFeature } from "@/hooks/useFeature";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SearchInput } from "@/components/ui/SearchInput";
@@ -22,6 +23,32 @@ export function CommunicationPage() {
   const [newConvoOpen, setNewConvoOpen] = useState(false);
   const [afterHoursOn, setAfterHoursOn] = useState(false);
   const [afterHoursMsg, setAfterHoursMsg] = useState("");
+  const [connectedChannels, setConnectedChannels] = useState<Set<string>>(new Set());
+
+  // Check which channels the user has enabled
+  const emailEnabled = useFeature("communication", "email");
+  const smsEnabled = useFeature("communication", "sms");
+  const instagramEnabled = useFeature("communication", "instagram-dms");
+  const facebookEnabled = useFeature("communication", "facebook-messenger");
+  const whatsappEnabled = useFeature("communication", "whatsapp");
+  const linkedinEnabled = useFeature("communication", "linkedin");
+
+  const channelSetupList = [
+    { id: "email", label: "Email", icon: Mail, enabled: emailEnabled, description: "Connect your inbox to send and receive emails" },
+    { id: "sms", label: "SMS", icon: MessageCircle, enabled: smsEnabled, description: "Connect your phone number for text messaging" },
+    { id: "instagram", label: "Instagram", icon: Instagram, enabled: instagramEnabled, description: "Link your Instagram business account" },
+    { id: "facebook", label: "Facebook", icon: MessageCircle, enabled: facebookEnabled, description: "Connect Facebook Messenger" },
+    { id: "whatsapp", label: "WhatsApp", icon: Phone, enabled: whatsappEnabled, description: "Link your WhatsApp Business number" },
+    { id: "linkedin", label: "LinkedIn", icon: Linkedin, enabled: linkedinEnabled, description: "Connect your LinkedIn profile" },
+  ].filter((ch) => ch.enabled);
+
+  const toggleConnect = (id: string) => {
+    setConnectedChannels((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
 
   const filtered = useMemo(() => {
     let result = conversations;
@@ -66,6 +93,37 @@ export function CommunicationPage() {
       </div>
 
       <ChannelFilter selectedChannel={channelFilter} onChange={setChannelFilter} />
+
+      {/* Channel setup actions */}
+      {channelSetupList.length > 0 && channelSetupList.some((ch) => !connectedChannels.has(ch.id)) && (
+        <div className="mb-4 bg-card-bg rounded-xl border border-border-light p-4">
+          <h4 className="text-[13px] font-semibold text-text-tertiary uppercase tracking-wider mb-3">Connect Your Channels</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {channelSetupList.map((ch) => {
+              const isConnected = connectedChannels.has(ch.id);
+              return (
+                <button
+                  key={ch.id}
+                  onClick={() => toggleConnect(ch.id)}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all cursor-pointer text-left ${
+                    isConnected ? "bg-primary/5 border-primary/20" : "bg-surface/30 border-border-light hover:border-foreground/15"
+                  }`}
+                >
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isConnected ? "bg-primary/10" : "bg-surface"}`}>
+                    {isConnected ? <Check className="w-4 h-4 text-primary" /> : <ch.icon className="w-4 h-4 text-text-secondary" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-[13px] font-medium ${isConnected ? "text-primary" : "text-foreground"}`}>
+                      {isConnected ? `${ch.label} connected` : `Connect ${ch.label}`}
+                    </p>
+                    {!isConnected && <p className="text-[11px] text-text-tertiary">{ch.description}</p>}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <FeatureSection moduleId="communication" featureId="after-hours-reply" featureLabel="After-Hours Auto-Reply">
         <div className="mb-4 p-4 bg-card-bg rounded-xl border border-border-light">
