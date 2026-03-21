@@ -179,7 +179,7 @@ export function TeamPage() {
       <FeatureSection moduleId="team" featureId="shift-scheduling" featureLabel="Shift Scheduling">
         <div className="mt-4 bg-card-bg rounded-xl border border-border-light p-5">
           <h3 className="text-[13px] font-semibold text-text-tertiary uppercase tracking-wider mb-3">Shift Planner</h3>
-          <div className="grid grid-cols-7 gap-1 mb-2">
+          <div className="grid grid-cols-4 sm:grid-cols-7 gap-1 mb-2">
             {["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((d) => (
               <div key={d} className="text-center text-[10px] font-medium text-text-tertiary py-1">{d}</div>
             ))}

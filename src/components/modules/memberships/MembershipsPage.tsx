@@ -34,7 +34,7 @@ export function MembershipsPage() {
         actions={<Button variant="primary" size="sm" onClick={() => setFormOpen(true)}><Plus className="w-4 h-4" /> New Plan</Button>}
       />
       <FeatureSection moduleId="memberships" featureId="membership-revenue-report" featureLabel="Membership Revenue">
-        <div className="mb-4 grid grid-cols-3 gap-3">
+        <div className="mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="bg-card-bg rounded-xl border border-border-light p-4 text-center">
             <p className="text-[20px] font-bold text-foreground">{memberships.filter(m => m.status === "active").length}</p>
             <p className="text-[11px] text-text-tertiary">Active Members</p>

@@ -35,7 +35,7 @@ export function WinBackPage() {
         actions={<Button variant="primary" size="sm" onClick={() => setFormOpen(true)}><Plus className="w-4 h-4" /> New Rule</Button>}
       />
       <FeatureSection moduleId="win-back" featureId="winback-performance-report" featureLabel="Performance Report">
-        <div className="mb-4 grid grid-cols-3 gap-3">
+        <div className="mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="bg-card-bg rounded-xl border border-border-light p-4 text-center">
             <p className="text-[20px] font-bold text-foreground">{lapsedClients.filter(c => c.status === "detected").length}</p>
             <p className="text-[11px] text-text-tertiary">Detected</p>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus, MessageSquare, Bell, Mail, MessageCircle, Instagram, Phone, Linkedin, ChevronRight } from "lucide-react";
+import { Plus, MessageSquare, Bell, Mail, MessageCircle, Instagram, Phone, Linkedin, ChevronRight, X } from "lucide-react";
 import { useCommunicationStore } from "@/store/communication";
 import { Channel, Conversation } from "@/types/models";
 import { useFeature } from "@/hooks/useFeature";
@@ -24,6 +24,7 @@ export function CommunicationPage() {
   const [afterHoursOn, setAfterHoursOn] = useState(false);
   const [afterHoursMsg, setAfterHoursMsg] = useState("");
   const [connectedChannels, setConnectedChannels] = useState<Set<string>>(new Set());
+  const [setupChannelId, setSetupChannelId] = useState<string | null>(null);
 
   // Check which channels the user has enabled
   const emailEnabled = useFeature("communication", "email");
@@ -34,20 +35,19 @@ export function CommunicationPage() {
   const linkedinEnabled = useFeature("communication", "linkedin");
 
   const channelSetupList = [
-    { id: "email", label: "Email", icon: Mail, enabled: emailEnabled, description: "Connect your inbox to send and receive emails" },
-    { id: "sms", label: "SMS", icon: MessageCircle, enabled: smsEnabled, description: "Connect your phone number for text messaging" },
-    { id: "instagram", label: "Instagram", icon: Instagram, enabled: instagramEnabled, description: "Link your Instagram business account" },
-    { id: "facebook", label: "Facebook", icon: MessageCircle, enabled: facebookEnabled, description: "Connect Facebook Messenger" },
-    { id: "whatsapp", label: "WhatsApp", icon: Phone, enabled: whatsappEnabled, description: "Link your WhatsApp Business number" },
-    { id: "linkedin", label: "LinkedIn", icon: Linkedin, enabled: linkedinEnabled, description: "Connect your LinkedIn profile" },
+    { id: "email", label: "Email", icon: Mail, enabled: emailEnabled, description: "Connect your inbox to send and receive emails", placeholder: "you@yourbusiness.com", fieldLabel: "Email address" },
+    { id: "sms", label: "SMS", icon: MessageCircle, enabled: smsEnabled, description: "Connect your phone number for text messaging", placeholder: "+61 400 000 000", fieldLabel: "Phone number" },
+    { id: "instagram", label: "Instagram", icon: Instagram, enabled: instagramEnabled, description: "Link your Instagram business account", placeholder: "@yourbusiness", fieldLabel: "Instagram handle" },
+    { id: "facebook", label: "Facebook", icon: MessageCircle, enabled: facebookEnabled, description: "Connect Facebook Messenger", placeholder: "Your Facebook Page name", fieldLabel: "Facebook Page" },
+    { id: "whatsapp", label: "WhatsApp", icon: Phone, enabled: whatsappEnabled, description: "Link your WhatsApp Business number", placeholder: "+61 400 000 000", fieldLabel: "WhatsApp number" },
+    { id: "linkedin", label: "LinkedIn", icon: Linkedin, enabled: linkedinEnabled, description: "Connect your LinkedIn profile", placeholder: "linkedin.com/in/yourname", fieldLabel: "LinkedIn URL" },
   ].filter((ch) => ch.enabled);
 
-  const toggleConnect = (id: string) => {
-    setConnectedChannels((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
+  const setupChannel = channelSetupList.find((ch) => ch.id === setupChannelId);
+
+  const completeSetup = (id: string) => {
+    setConnectedChannels((prev) => new Set(prev).add(id));
+    setSetupChannelId(null);
   };
 
   const filtered = useMemo(() => {
@@ -94,15 +94,15 @@ export function CommunicationPage() {
 
       <ChannelFilter selectedChannel={channelFilter} onChange={setChannelFilter} />
 
-      {/* Channel setup actions — uses same pattern as EmptyState setupSteps */}
+      {/* Channel setup actions */}
       {channelSetupList.length > 0 && channelSetupList.some((ch) => !connectedChannels.has(ch.id)) && (
-        <div className="w-full max-w-sm mx-auto mb-6 space-y-2">
+        <div className="w-full max-w-md space-y-2 mt-4 mb-6">
           {channelSetupList.map((ch) => {
             const isConnected = connectedChannels.has(ch.id);
             return (
               <button
                 key={ch.id}
-                onClick={() => toggleConnect(ch.id)}
+                onClick={() => !isConnected && setSetupChannelId(ch.id)}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-left transition-all cursor-pointer ${
                   isConnected
                     ? "bg-surface/50 opacity-50"
@@ -130,6 +130,72 @@ export function CommunicationPage() {
               </button>
             );
           })}
+        </div>
+      )}
+
+      {/* Channel setup slide-over */}
+      {setupChannel && (
+        <div className="fixed inset-0 z-50 flex items-start justify-end">
+          <div className="fixed inset-0 bg-black/40" onClick={() => setSetupChannelId(null)} />
+          <div className="relative w-full max-w-md h-full bg-card-bg border-l border-border-light overflow-y-auto">
+            <div className="sticky top-0 bg-card-bg border-b border-border-light px-6 py-4 flex items-center justify-between z-10">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 bg-surface rounded-xl flex items-center justify-center">
+                  <setupChannel.icon className="w-5 h-5 text-text-secondary" />
+                </div>
+                <div>
+                  <h2 className="text-[16px] font-bold text-foreground">Connect {setupChannel.label}</h2>
+                  <p className="text-[12px] text-text-tertiary">{setupChannel.description}</p>
+                </div>
+              </div>
+              <button onClick={() => setSetupChannelId(null)} className="p-1.5 text-text-secondary hover:text-foreground rounded-lg hover:bg-surface cursor-pointer">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-6 space-y-6">
+              <div>
+                <label className="block text-[13px] font-medium text-foreground mb-1.5">{setupChannel.fieldLabel}</label>
+                <input
+                  type="text"
+                  placeholder={setupChannel.placeholder}
+                  className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
+                />
+              </div>
+
+              {setupChannel.id === "email" && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-[13px] font-medium text-foreground mb-1.5">Display name</label>
+                    <input type="text" placeholder="Your Business Name" className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                  </div>
+                  <div>
+                    <label className="block text-[13px] font-medium text-foreground mb-1.5">Signature</label>
+                    <textarea placeholder="Best regards,&#10;Your Business Name" rows={3} className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" />
+                  </div>
+                </div>
+              )}
+
+              {(setupChannel.id === "instagram" || setupChannel.id === "facebook" || setupChannel.id === "linkedin") && (
+                <div className="p-4 bg-surface/50 rounded-xl border border-border-light">
+                  <p className="text-[13px] text-text-secondary mb-2">To connect {setupChannel.label}, you&apos;ll need to:</p>
+                  <ol className="space-y-1.5 text-[12px] text-text-tertiary list-decimal list-inside">
+                    <li>Enter your {setupChannel.fieldLabel.toLowerCase()} above</li>
+                    <li>Authorize Magic CRM to access your account</li>
+                    <li>Messages will sync automatically</li>
+                  </ol>
+                </div>
+              )}
+
+              <div className="pt-2">
+                <button
+                  onClick={() => completeSetup(setupChannel.id)}
+                  className="w-full px-6 py-3 bg-foreground text-white rounded-xl text-[14px] font-semibold cursor-pointer hover:opacity-90 transition-opacity"
+                >
+                  Connect {setupChannel.label}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

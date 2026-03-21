@@ -68,7 +68,7 @@ export function StorefrontPage() {
         <FeatureSection moduleId="storefront" featureId="photo-gallery" featureLabel="Photo Gallery">
           <div className="bg-card-bg rounded-xl border border-border-light p-6 space-y-4">
             <h3 className="text-[15px] font-semibold text-foreground">Photo Gallery</h3>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {[1,2,3].map((i) => (
                 <div key={i} className="aspect-square bg-surface rounded-lg border-2 border-dashed border-border-light flex items-center justify-center cursor-pointer hover:border-foreground/20 transition-colors">
                   <Plus className="w-5 h-5 text-text-tertiary" />

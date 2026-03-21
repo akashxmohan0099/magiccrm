@@ -30,6 +30,15 @@ export function SOAPNotesPage() {
         description="SOAP notes and treatment records for your patients."
         actions={<Button variant="primary" size="sm" onClick={() => setFormOpen(true)}><Plus className="w-4 h-4" /> New Note</Button>}
       />
+      <FeatureSection moduleId="soap-notes" featureId="practitioner-filter" featureLabel="Practitioner Filter">
+        <div className="mb-4 flex items-center gap-2">
+          <span className="text-[12px] text-text-tertiary">Filter by:</span>
+          <select value={practFilter} onChange={(e) => setPractFilter(e.target.value)} className="px-3 py-1.5 bg-surface border border-border-light rounded-lg text-[13px] text-foreground">
+            <option value="">All practitioners</option>
+          </select>
+        </div>
+      </FeatureSection>
+
       {notes.length === 0 ? (
         <EmptyState
           icon={<ClipboardList className="w-10 h-10" />}
@@ -46,15 +55,6 @@ export function SOAPNotesPage() {
         <div className="mt-4 p-4 bg-surface/50 rounded-xl border border-border-light">
           <p className="text-[13px] font-medium text-foreground">Auto-Link is active</p>
           <p className="text-[11px] text-text-tertiary">Treatment notes automatically attach to the related appointment.</p>
-        </div>
-      </FeatureSection>
-
-      <FeatureSection moduleId="soap-notes" featureId="practitioner-filter" featureLabel="Practitioner Filter">
-        <div className="mb-4 flex items-center gap-2">
-          <span className="text-[12px] text-text-tertiary">Filter by:</span>
-          <select value={practFilter} onChange={(e) => setPractFilter(e.target.value)} className="px-3 py-1.5 bg-surface border border-border-light rounded-lg text-[13px] text-foreground">
-            <option value="">All practitioners</option>
-          </select>
         </div>
       </FeatureSection>
 

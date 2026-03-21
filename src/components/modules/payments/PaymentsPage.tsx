@@ -139,21 +139,21 @@ export function PaymentsPage() {
       )}
 
       <FeatureSection moduleId="payments" featureId="payment-receipts" featureLabel="Auto Receipts">
-        <div className="mb-4 p-4 bg-surface/50 rounded-xl border border-border-light">
+        <div className="mt-4 p-4 bg-surface/50 rounded-xl border border-border-light">
           <p className="text-[13px] font-medium text-foreground">Auto receipts are active</p>
           <p className="text-[11px] text-text-tertiary">A receipt is automatically generated and ready to send when a payment is recorded.</p>
         </div>
       </FeatureSection>
 
       <FeatureSection moduleId="payments" featureId="payment-plans" featureLabel="Payment Plans">
-        <div className="mb-4 p-4 bg-surface/50 rounded-xl border border-border-light">
+        <div className="mt-4 p-4 bg-surface/50 rounded-xl border border-border-light">
           <p className="text-[13px] font-medium text-foreground">Payment Plans</p>
           <p className="text-[11px] text-text-tertiary">Split large invoices into scheduled installments. Configure from the invoice detail view.</p>
         </div>
       </FeatureSection>
 
       <FeatureSection moduleId="payments" featureId="aging-report" featureLabel="Aging Report">
-        <div className="mb-4 grid grid-cols-4 gap-3">
+        <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             { label: "Current", days: "0-30", color: "text-emerald-600" },
             { label: "Overdue", days: "31-60", color: "text-yellow-600" },

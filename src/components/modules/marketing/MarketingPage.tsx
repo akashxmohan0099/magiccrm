@@ -59,7 +59,7 @@ export function MarketingPage() {
           <CampaignList onEdit={handleEdit} />
 
           <FeatureSection moduleId="marketing" featureId="campaign-analytics" featureLabel="Campaign Performance">
-            <div className="mt-4 grid grid-cols-3 gap-3">
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="bg-card-bg rounded-xl border border-border-light p-4 text-center">
                 <p className="text-[20px] font-bold text-foreground">{campaigns.filter(c => c.status === "sent" || c.status === "active").length}</p>
                 <p className="text-[11px] text-text-tertiary">Campaigns Sent</p>
