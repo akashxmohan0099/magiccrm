@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Users, Inbox, MessageCircle, Calendar, Receipt, FolderKanban,
@@ -34,46 +34,41 @@ const PICK_TICK_MS = 600;
 const PICK_TOTAL = 22; // full cycle
 
 export function ModulePickerDemo() {
-  const [tick, setTick] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [enabledSet, setEnabledSet] = useState<Set<string>>(() => new Set(MODULES.map((m) => m.name)));
+  const autoIdx = useRef(0);
 
+  // Auto-play: toggle one module every tick
   useEffect(() => {
     if (paused) return;
-    const interval = setInterval(() => setTick((t) => (t + 1) % PICK_TOTAL), PICK_TICK_MS);
+    const interval = setInterval(() => {
+      const name = MODULE_SEQUENCE[autoIdx.current % MODULE_SEQUENCE.length];
+      setEnabledSet((prev) => {
+        const next = new Set(prev);
+        if (next.has(name)) next.delete(name); else next.add(name);
+        return next;
+      });
+      autoIdx.current++;
+    }, PICK_TICK_MS);
     return () => clearInterval(interval);
   }, [paused]);
 
-  // Track manually toggled modules (when user interacts)
-  const [manualToggles, setManualToggles] = useState<Record<string, boolean>>({});
-
-  // Modules toggle off one by one, then back on (auto-play)
-  const autoDisabled = useMemo(() => {
-    const disabled = new Set<string>();
-    MODULE_SEQUENCE.forEach((name, i) => {
-      const offTick = 2 + i * 2;
-      const onTick = 12 + i * 2;
-      if (tick >= offTick && tick < onTick) disabled.add(name);
-    });
-    return disabled;
-  }, [tick]);
-
-  // When paused, use manual toggles; when auto-playing, use auto state
-  const disabledModules = useMemo(() => {
-    if (paused && Object.keys(manualToggles).length > 0) {
-      const disabled = new Set<string>();
-      MODULES.forEach((m) => { if (manualToggles[m.name] === false) disabled.add(m.name); });
-      return disabled;
-    }
-    return autoDisabled;
-  }, [paused, manualToggles, autoDisabled]);
-
   const toggleModule = (name: string) => {
     setPaused(true);
-    const currentlyDisabled = disabledModules.has(name);
-    setManualToggles((prev) => ({ ...prev, [name]: currentlyDisabled }));
+    setEnabledSet((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name); else next.add(name);
+      return next;
+    });
   };
 
-  const activeCount = MODULES.length - disabledModules.size;
+  const disabledModules = useMemo(() => {
+    const disabled = new Set<string>();
+    MODULES.forEach((m) => { if (!enabledSet.has(m.name)) disabled.add(m.name); });
+    return disabled;
+  }, [enabledSet]);
+
+  const activeCount = enabledSet.size;
 
   return (
     <section className="py-12 sm:py-20">
@@ -204,37 +199,33 @@ const CUSTOMIZE_TOTAL = 24;
 const CUSTOMIZE_TICK_MS = 550;
 
 export function FeatureCustomizeDemo() {
-  const [tick, setTick] = useState(0);
   const [paused, setPaused] = useState(false);
   const [activeModule, setActiveModule] = useState("Scheduling");
   const [featureStates, setFeatureStates] = useState<Record<string, boolean>>({});
-
-  useEffect(() => {
-    if (paused) return;
-    const interval = setInterval(() => setTick((t) => (t + 1) % CUSTOMIZE_TOTAL), CUSTOMIZE_TICK_MS);
-    return () => clearInterval(interval);
-  }, [paused]);
+  const autoFeatureIdx = useRef(0);
 
   // Initialize feature states when module changes
   useEffect(() => {
     const demo = MODULE_DEMOS[activeModule];
     if (!demo) return;
     const initial: Record<string, boolean> = {};
-    demo.features.forEach((f, i) => { initial[f] = i < 2; }); // first 2 on by default
+    demo.features.forEach((f, i) => { initial[f] = i < 2; });
     setFeatureStates(initial);
+    autoFeatureIdx.current = 0;
   }, [activeModule]);
 
-  // Auto-toggle features during auto-play
+  // Auto-play: toggle one feature at a time from current state
   useEffect(() => {
     if (paused) return;
     const demo = MODULE_DEMOS[activeModule];
     if (!demo) return;
-    const featureIdx = Math.floor(tick / 4) % demo.features.length;
-    const feature = demo.features[featureIdx];
-    if (feature && tick % 4 === 0) {
+    const interval = setInterval(() => {
+      const feature = demo.features[autoFeatureIdx.current % demo.features.length];
       setFeatureStates((prev) => ({ ...prev, [feature]: !prev[feature] }));
-    }
-  }, [tick, paused, activeModule]);
+      autoFeatureIdx.current++;
+    }, 2200);
+    return () => clearInterval(interval);
+  }, [paused, activeModule]);
 
   const toggleFeature = (name: string) => {
     setPaused(true);
