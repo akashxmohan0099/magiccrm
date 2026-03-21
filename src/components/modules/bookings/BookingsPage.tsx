@@ -149,41 +149,7 @@ export function BookingsPage() {
         </div>
       </div>
 
-      {/* Contextual setup tasks */}
-      {bookings.length === 0 && (
-        <div className="mb-4 bg-card-bg rounded-xl border border-border-light p-4">
-          <h4 className="text-[13px] font-semibold text-text-tertiary uppercase tracking-wider mb-3">Get Started</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-surface/30 border border-border-light">
-              <div className="w-8 h-8 bg-surface rounded-lg flex items-center justify-center flex-shrink-0">
-                <ListPlus className="w-4 h-4 text-text-secondary" />
-              </div>
-              <div>
-                <p className="text-[13px] font-medium text-foreground">Add your services</p>
-                <p className="text-[11px] text-text-tertiary">What you offer, pricing, duration</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-surface/30 border border-border-light">
-              <div className="w-8 h-8 bg-surface rounded-lg flex items-center justify-center flex-shrink-0">
-                <Clock className="w-4 h-4 text-text-secondary" />
-              </div>
-              <div>
-                <p className="text-[13px] font-medium text-foreground">Set availability</p>
-                <p className="text-[11px] text-text-tertiary">Working hours and days off</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-surface/30 border border-border-light">
-              <div className="w-8 h-8 bg-surface rounded-lg flex items-center justify-center flex-shrink-0">
-                <Globe className="w-4 h-4 text-text-secondary" />
-              </div>
-              <div>
-                <p className="text-[13px] font-medium text-foreground">Share booking page</p>
-                <p className="text-[11px] text-text-tertiary">Get a link clients can book from</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Contextual setup — removed, uses EmptyState setupSteps pattern below */}
 
       {bookings.length === 0 ? (
         <EmptyState

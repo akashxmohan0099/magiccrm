@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus, MessageSquare, Bell, Mail, MessageCircle, Instagram, Phone, Linkedin, Check } from "lucide-react";
+import { Plus, MessageSquare, Bell, Mail, MessageCircle, Instagram, Phone, Linkedin, ChevronRight } from "lucide-react";
 import { useCommunicationStore } from "@/store/communication";
 import { Channel, Conversation } from "@/types/models";
 import { useFeature } from "@/hooks/useFeature";
@@ -94,34 +94,42 @@ export function CommunicationPage() {
 
       <ChannelFilter selectedChannel={channelFilter} onChange={setChannelFilter} />
 
-      {/* Channel setup actions */}
+      {/* Channel setup actions — uses same pattern as EmptyState setupSteps */}
       {channelSetupList.length > 0 && channelSetupList.some((ch) => !connectedChannels.has(ch.id)) && (
-        <div className="mb-4 bg-card-bg rounded-xl border border-border-light p-4">
-          <h4 className="text-[13px] font-semibold text-text-tertiary uppercase tracking-wider mb-3">Connect Your Channels</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {channelSetupList.map((ch) => {
-              const isConnected = connectedChannels.has(ch.id);
-              return (
-                <button
-                  key={ch.id}
-                  onClick={() => toggleConnect(ch.id)}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all cursor-pointer text-left ${
-                    isConnected ? "bg-primary/5 border-primary/20" : "bg-surface/30 border-border-light hover:border-foreground/15"
-                  }`}
-                >
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isConnected ? "bg-primary/10" : "bg-surface"}`}>
-                    {isConnected ? <Check className="w-4 h-4 text-primary" /> : <ch.icon className="w-4 h-4 text-text-secondary" />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-[13px] font-medium ${isConnected ? "text-primary" : "text-foreground"}`}>
-                      {isConnected ? `${ch.label} connected` : `Connect ${ch.label}`}
-                    </p>
-                    {!isConnected && <p className="text-[11px] text-text-tertiary">{ch.description}</p>}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+        <div className="w-full max-w-sm mx-auto mb-6 space-y-2">
+          {channelSetupList.map((ch) => {
+            const isConnected = connectedChannels.has(ch.id);
+            return (
+              <button
+                key={ch.id}
+                onClick={() => toggleConnect(ch.id)}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-left transition-all cursor-pointer ${
+                  isConnected
+                    ? "bg-surface/50 opacity-50"
+                    : "bg-card-bg border border-border-light hover:border-foreground/15"
+                }`}
+              >
+                <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
+                  isConnected ? "bg-primary" : "border-2 border-primary"
+                }`}>
+                  {isConnected && (
+                    <svg className="w-3 h-3 text-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={`text-[14px] font-medium ${isConnected ? "text-text-tertiary line-through" : "text-foreground"}`}>
+                    {isConnected ? `${ch.label} connected` : `Connect ${ch.label}`}
+                  </p>
+                  {!isConnected && ch.description && (
+                    <p className="text-[12px] text-text-tertiary mt-0.5">{ch.description}</p>
+                  )}
+                </div>
+                {!isConnected && <ChevronRight className="w-4 h-4 text-text-tertiary flex-shrink-0" />}
+              </button>
+            );
+          })}
         </div>
       )}
 
