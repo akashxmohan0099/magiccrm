@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowRight, Check, Users, Receipt, Calendar, MessageCircle,
@@ -124,14 +124,54 @@ export default function LandingPage() {
   const [attachmentToggles, setAttachmentToggles] = useState<Record<string, boolean>>(
     Object.fromEntries(ATTACHMENT_EXAMPLE.attachments.map((a) => [a.name, a.on]))
   );
-  const [expandedModule, setExpandedModule] = useState<string | null>(null);
+  const [expandedModule, setExpandedModule] = useState<string | null>(CORE_MODULES[0].name);
   const [selectedAddon, setSelectedAddon] = useState<number>(0);
+  const [moduleAutoCycle, setModuleAutoCycle] = useState(true);
+  const [moduleProgress, setModuleProgress] = useState(0);
+  const moduleTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const toggleAttachment = (name: string) => {
     setAttachmentToggles((prev) => ({ ...prev, [name]: !prev[name] }));
   };
 
   const enabledAttachmentCount = Object.values(attachmentToggles).filter(Boolean).length;
+
+  // Auto-cycle through modules
+  useEffect(() => {
+    if (!moduleAutoCycle) return;
+    setModuleProgress(0);
+
+    const progressInterval = setInterval(() => {
+      setModuleProgress((p) => Math.min(p + 2, 100));
+    }, 80);
+
+    moduleTimerRef.current = setTimeout(() => {
+      setExpandedModule((prev) => {
+        const idx = CORE_MODULES.findIndex((m) => m.name === prev);
+        return CORE_MODULES[(idx + 1) % CORE_MODULES.length].name;
+      });
+    }, 4000);
+
+    return () => {
+      clearInterval(progressInterval);
+      if (moduleTimerRef.current) clearTimeout(moduleTimerRef.current);
+    };
+  }, [expandedModule, moduleAutoCycle]);
+
+  const selectModule = useCallback((name: string) => {
+    setModuleAutoCycle(false);
+    setExpandedModule(name);
+  }, []);
+
+  // Auto-toggle demo for attachment showcase
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const names = ATTACHMENT_EXAMPLE.attachments.map((a) => a.name);
+      const randomName = names[Math.floor(Math.random() * names.length)];
+      setAttachmentToggles((prev) => ({ ...prev, [randomName]: !prev[randomName] }));
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -245,10 +285,10 @@ export default function LandingPage() {
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.12 }}
                 onClick={() => setActivePersona(i)}
-                className={`bg-white rounded-2xl border overflow-hidden cursor-pointer transition-all duration-200 ${
+                className={`bg-white rounded-2xl border overflow-hidden cursor-pointer transition-all duration-300 ${
                   activePersona === i
-                    ? "border-foreground/20 shadow-lg scale-[1.02]"
-                    : "border-border-light hover:border-foreground/10 hover:shadow-md"
+                    ? "border-foreground/20 shadow-xl scale-[1.03] -translate-y-1"
+                    : "border-border-light hover:border-foreground/10 hover:shadow-lg hover:-translate-y-1"
                 }`}
               >
                 <div className="px-4 py-3 border-b border-border-light flex items-center gap-2.5" style={{ borderTop: `2px solid ${persona.accent}` }}>
@@ -311,22 +351,31 @@ export default function LandingPage() {
             </p>
           </div>
 
-          {/* Interactive module selector */}
+          {/* Interactive module selector with auto-cycle */}
           <div className="flex flex-wrap justify-center gap-2 mb-8">
-            {CORE_MODULES.map((mod, i) => (
-              <button
-                key={mod.name}
-                onClick={() => setExpandedModule(expandedModule === mod.name ? null : mod.name)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium transition-all cursor-pointer ${
-                  expandedModule === mod.name
-                    ? "bg-foreground text-white shadow-sm"
-                    : "bg-white text-text-secondary hover:text-foreground border border-border-light hover:border-foreground/15"
-                }`}
-              >
-                <mod.icon className="w-3.5 h-3.5" />
-                {mod.name}
-              </button>
-            ))}
+            {CORE_MODULES.map((mod) => {
+              const isActive = expandedModule === mod.name;
+              return (
+                <button
+                  key={mod.name}
+                  onClick={() => selectModule(mod.name)}
+                  className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium transition-all cursor-pointer overflow-hidden ${
+                    isActive
+                      ? "bg-foreground text-white shadow-sm"
+                      : "bg-white text-text-secondary hover:text-foreground border border-border-light hover:border-foreground/15 hover:shadow-sm hover:-translate-y-0.5"
+                  }`}
+                >
+                  {isActive && moduleAutoCycle && (
+                    <motion.div
+                      className="absolute bottom-0 left-0 h-[2px] bg-white/40"
+                      style={{ width: `${moduleProgress}%` }}
+                    />
+                  )}
+                  <mod.icon className="w-3.5 h-3.5" />
+                  {mod.name}
+                </button>
+              );
+            })}
           </div>
 
           {/* Selected module detail */}
@@ -372,8 +421,7 @@ export default function LandingPage() {
             })()}
           </AnimatePresence>
 
-          {!expandedModule && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 mt-4" style={{ display: expandedModule ? "none" : undefined }}>
             {/* Bookings preview */}
             <motion.div initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="bg-card-bg rounded-2xl border border-border-light overflow-hidden">
               <div className="px-5 py-3.5 border-b border-border-light flex items-center justify-between">
@@ -525,8 +573,6 @@ export default function LandingPage() {
             </motion.div>
           </div>
 
-          )}
-          {!expandedModule && <p className="text-center text-[13px] text-text-tertiary mt-4">Click any module above to explore its features</p>}
         </div>
       </section>
 
