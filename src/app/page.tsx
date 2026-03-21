@@ -586,7 +586,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          {/* Interactive module selector with auto-cycle */}
+          {/* Interactive module selector */}
           <div className="flex flex-wrap justify-center gap-2 mb-8">
             {CORE_MODULES.map((mod) => {
               const isActive = expandedModule === mod.name;
@@ -613,7 +613,8 @@ export default function LandingPage() {
             })}
           </div>
 
-          {/* Full-width app mockup — module page + customize panel */}
+          {/* Full-width app mockup */}
+          <div onMouseEnter={() => setModuleAutoCycle(false)} onMouseLeave={() => setModuleAutoCycle(true)}>
           <AnimatePresence mode="wait">
             {expandedModule && (() => {
               const mod = CORE_MODULES.find(m => m.name === expandedModule);
@@ -723,6 +724,7 @@ export default function LandingPage() {
               );
             })()}
           </AnimatePresence>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 mt-4" style={{ display: "none" }}>
             {/* Bookings preview */}
