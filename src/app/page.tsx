@@ -1037,29 +1037,86 @@ export default function LandingPage() {
             </motion.div>
           </div>
 
-          {/* Remaining add-ons — all show description + tags */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {ADDONS.filter(a => !["Client Portal", "AI Insights", "Loyalty & Referrals"].includes(a.name)).map((addon, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 8 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.04 }}
-                className="bg-white border border-border-light rounded-xl p-4 hover:border-primary/20 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300"
-              >
-                <div className="flex items-center gap-2.5 mb-2">
-                  <addon.icon className="w-4 h-4 text-text-secondary flex-shrink-0" />
-                  <span className="text-[13px] font-semibold text-foreground">{addon.name}</span>
+          {/* Remaining add-ons — with mini previews */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Memberships */}
+            <motion.div initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="bg-white rounded-2xl border border-border-light overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300" style={{ borderTop: "2px solid #8B5CF6" }}>
+              <div className="px-4 py-3 flex items-center gap-2.5"><Crown className="w-4 h-4 text-purple-500" /><p className="text-[13px] font-semibold text-foreground">Memberships</p></div>
+              <div className="px-4 pb-4 space-y-1.5">
+                {[{ plan: "10-Session Pack", price: "$450", members: "8 active" }, { plan: "Monthly Unlimited", price: "$99/mo", members: "12 active" }].map((p) => (
+                  <div key={p.plan} className="flex items-center justify-between px-3 py-2 rounded-lg bg-background border border-border-light">
+                    <div><p className="text-[11px] font-medium text-foreground">{p.plan}</p><p className="text-[9px] text-text-tertiary">{p.members}</p></div>
+                    <span className="text-[11px] font-semibold text-foreground">{p.price}</span>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Win-Back */}
+            <motion.div initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.08 }} className="bg-white rounded-2xl border border-border-light overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300" style={{ borderTop: "2px solid #F59E0B" }}>
+              <div className="px-4 py-3 flex items-center gap-2.5"><UserCheck className="w-4 h-4 text-amber-500" /><p className="text-[13px] font-semibold text-foreground">Win-Back</p></div>
+              <div className="px-4 pb-4 space-y-1.5">
+                {[{ name: "Sarah M.", days: "45 days inactive", status: "Contacted" }, { name: "Tom K.", days: "62 days inactive", status: "Detected" }].map((c) => (
+                  <div key={c.name} className="flex items-center justify-between px-3 py-2 rounded-lg bg-background border border-border-light">
+                    <div><p className="text-[11px] font-medium text-foreground">{c.name}</p><p className="text-[9px] text-text-tertiary">{c.days}</p></div>
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${c.status === "Contacted" ? "bg-emerald-50 text-emerald-700" : "bg-yellow-50 text-yellow-700"}`}>{c.status}</span>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Storefront */}
+            <motion.div initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.16 }} className="bg-white rounded-2xl border border-border-light overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300" style={{ borderTop: "2px solid #06B6D4" }}>
+              <div className="px-4 py-3 flex items-center gap-2.5"><Store className="w-4 h-4 text-cyan-500" /><p className="text-[13px] font-semibold text-foreground">Storefront</p></div>
+              <div className="px-4 pb-4">
+                <div className="rounded-lg bg-background border border-border-light p-3">
+                  <p className="text-[11px] font-semibold text-foreground mb-1">Your Business</p>
+                  <p className="text-[9px] text-text-tertiary mb-2">yourbusiness.magic/book</p>
+                  <div className="space-y-1">
+                    {["Lash Full Set — $150", "Brow Lamination — $65"].map((s) => (
+                      <div key={s} className="flex items-center justify-between text-[10px]"><span className="text-text-secondary">{s.split(" — ")[0]}</span><span className="font-medium text-foreground">{s.split(" — ")[1]}</span></div>
+                    ))}
+                  </div>
                 </div>
-                <p className="text-[11px] text-text-secondary leading-relaxed mb-3">{addon.desc}</p>
-                <div className="flex flex-wrap gap-1">
-                  {addon.tags.map((tag) => (
-                    <span key={tag} className="text-[10px] px-2 py-0.5 bg-primary/5 border border-primary/10 rounded-full text-primary font-medium">{tag}</span>
+              </div>
+            </motion.div>
+
+            {/* Intake Forms */}
+            <motion.div initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.04 }} className="bg-white rounded-2xl border border-border-light overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300" style={{ borderTop: "2px solid #EC4899" }}>
+              <div className="px-4 py-3 flex items-center gap-2.5"><FileInput className="w-4 h-4 text-pink-500" /><p className="text-[13px] font-semibold text-foreground">Intake Forms</p></div>
+              <div className="px-4 pb-4 space-y-1.5">
+                <div className="rounded-lg bg-background border border-border-light p-3 space-y-2">
+                  {["Full Name *", "Email *", "Any allergies?"].map((f) => (
+                    <div key={f}><p className="text-[9px] text-text-tertiary mb-0.5">{f}</p><div className="h-6 bg-surface rounded border border-border-light" /></div>
                   ))}
+                  <div className="h-7 bg-foreground/10 rounded flex items-center justify-center text-[9px] text-text-tertiary font-medium">Submit</div>
                 </div>
-              </motion.div>
-            ))}
+              </div>
+            </motion.div>
+
+            {/* Before & After */}
+            <motion.div initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.12 }} className="bg-white rounded-2xl border border-border-light overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300" style={{ borderTop: "2px solid #14B8A6" }}>
+              <div className="px-4 py-3 flex items-center gap-2.5"><Camera className="w-4 h-4 text-teal-500" /><p className="text-[13px] font-semibold text-foreground">Before & After</p></div>
+              <div className="px-4 pb-4">
+                <div className="grid grid-cols-2 gap-2">
+                  <div><p className="text-[9px] text-text-tertiary mb-1 text-center">Before</p><div className="aspect-square bg-surface rounded-lg border border-border-light flex items-center justify-center"><Camera className="w-5 h-5 text-text-tertiary/30" /></div></div>
+                  <div><p className="text-[9px] text-text-tertiary mb-1 text-center">After</p><div className="aspect-square bg-primary/5 rounded-lg border border-primary/15 flex items-center justify-center"><Camera className="w-5 h-5 text-primary/30" /></div></div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Treatment Notes */}
+            <motion.div initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.2 }} className="bg-white rounded-2xl border border-border-light overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300" style={{ borderTop: "2px solid #6366F1" }}>
+              <div className="px-4 py-3 flex items-center gap-2.5"><ClipboardList className="w-4 h-4 text-indigo-500" /><p className="text-[13px] font-semibold text-foreground">Treatment Notes</p></div>
+              <div className="px-4 pb-4 space-y-1.5">
+                {[{ letter: "S", label: "Subjective", text: "Patient reports lower back pain..." }, { letter: "O", label: "Objective", text: "ROM limited to 40° flexion..." }, { letter: "A", label: "Assessment", text: "Lumbar strain, improving..." }].map((n) => (
+                  <div key={n.letter} className="flex items-start gap-2 px-2 py-1.5 rounded-lg bg-background border border-border-light">
+                    <span className="text-[10px] font-bold text-primary bg-primary/10 w-5 h-5 rounded flex items-center justify-center flex-shrink-0">{n.letter}</span>
+                    <div><p className="text-[10px] font-medium text-foreground">{n.label}</p><p className="text-[9px] text-text-tertiary">{n.text}</p></div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
           </div>
         </div>
       </section>
