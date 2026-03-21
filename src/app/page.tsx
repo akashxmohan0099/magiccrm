@@ -574,15 +574,15 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Core Modules — Visual Showcases */}
+      {/* Core Modules — Full App Preview */}
       <section className="py-12 sm:py-20">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-10 sm:mb-14">
             <h2 className="text-[1.75rem] sm:text-[2.25rem] font-bold text-foreground leading-tight mb-3">
-              Everything you need. Nothing you don&apos;t.
+              See it in action.
             </h2>
             <p className="text-text-secondary text-[15px] max-w-lg mx-auto">
-              14 core modules, each with toggleable sub-features. Here&apos;s what they actually look like inside.
+              Pick a module. Toggle features on and off. Watch the page change in real time.
             </p>
           </div>
 
@@ -613,7 +613,7 @@ export default function LandingPage() {
             })}
           </div>
 
-          {/* Selected module — side by side: toggles + live preview */}
+          {/* Full-width app mockup — module page + customize panel */}
           <AnimatePresence mode="wait">
             {expandedModule && (() => {
               const mod = CORE_MODULES.find(m => m.name === expandedModule);
@@ -631,34 +631,63 @@ export default function LandingPage() {
                   transition={{ duration: 0.25 }}
                   className="mb-8"
                 >
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {/* Left: Toggle controls */}
-                    <div className="bg-white rounded-2xl border border-border-light overflow-hidden">
-                      <div className="px-5 py-4 border-b border-border-light flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 bg-primary/10 rounded-xl flex items-center justify-center">
-                            <mod.icon className="w-[18px] h-[18px] text-primary" />
-                          </div>
+                  {/* Browser chrome */}
+                  <div className="bg-white rounded-t-2xl border border-b-0 border-border-light px-4 py-2.5 flex items-center gap-2">
+                    <div className="flex gap-1.5"><div className="w-3 h-3 rounded-full bg-red-400" /><div className="w-3 h-3 rounded-full bg-yellow-400" /><div className="w-3 h-3 rounded-full bg-green-400" /></div>
+                    <div className="flex-1 flex justify-center">
+                      <div className="px-4 py-1 bg-background rounded-lg text-[11px] text-text-tertiary">app.magiccrm.com/dashboard/{mod.name.toLowerCase().replace(/ & /g, "-").replace(/ /g, "-")}</div>
+                    </div>
+                  </div>
+
+                  {/* App frame */}
+                  <div className="bg-white rounded-b-2xl border border-border-light overflow-hidden shadow-lg flex" style={{ minHeight: 480 }}>
+                    {/* Module page — takes most of the width */}
+                    <div className="flex-1 border-r border-border-light overflow-hidden">
+                      {/* Top bar */}
+                      <div className="px-6 py-3 border-b border-border-light flex items-center justify-between bg-background/50">
+                        <div className="flex items-center gap-2">
+                          <div className="w-5 h-5 bg-primary rounded-md flex items-center justify-center"><div className="w-2 h-2 bg-white rounded-sm" /></div>
+                          <span className="text-[12px] font-semibold text-foreground">Magic CRM</span>
+                        </div>
+                        <div className="px-3 py-1.5 bg-surface border border-border-light rounded-lg text-[11px] text-text-tertiary">Search...</div>
+                      </div>
+
+                      {/* Page content */}
+                      <div className="p-6">
+                        <div className="flex items-center justify-between mb-5">
                           <div>
-                            <p className="text-[15px] font-semibold text-foreground">{mod.name}</p>
-                            <p className="text-[11px] text-text-tertiary">{mod.desc}</p>
+                            <h3 className="text-[18px] font-bold text-foreground">{mod.name}</h3>
+                            <p className="text-[12px] text-text-tertiary">{mod.desc}</p>
+                          </div>
+                          <div className="px-4 py-2 bg-foreground text-white rounded-xl text-[12px] font-semibold">+ New</div>
+                        </div>
+
+                        <ModulePreview moduleName={mod.name} getToggle={getToggle} />
+                      </div>
+                    </div>
+
+                    {/* Customize panel — right side */}
+                    <div className="w-[320px] flex-shrink-0 overflow-y-auto bg-white">
+                      <div className="px-5 py-4 border-b border-border-light">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-[15px] font-bold text-foreground">Customize {mod.name}</p>
+                            <p className="text-[11px] text-text-tertiary">{enabledCount} of {mod.subs.length} features enabled</p>
                           </div>
                         </div>
-                        <span className="text-[10px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">{enabledCount}/{mod.subs.length}</span>
                       </div>
                       <div className="p-4 space-y-1.5">
-                        <p className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider mb-2">Toggle features on and off →</p>
                         {mod.subs.map((sub) => {
                           const isOn = getToggle(sub);
                           return (
                             <div
                               key={sub}
                               onClick={() => flipToggle(sub)}
-                              className={`flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer transition-all ${
-                                isOn ? "bg-primary/5 border border-primary/15" : "bg-background border border-transparent hover:border-border-light"
+                              className={`flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-all ${
+                                isOn ? "bg-primary/5" : "hover:bg-background"
                               }`}
                             >
-                              <span className={`text-[13px] font-medium ${isOn ? "text-foreground" : "text-text-tertiary line-through"}`}>{sub}</span>
+                              <span className={`text-[13px] font-medium ${isOn ? "text-foreground" : "text-text-tertiary"}`}>{sub}</span>
                               <div className={`w-9 h-[20px] rounded-full flex items-center px-0.5 transition-all duration-200 ${isOn ? "bg-primary justify-end" : "bg-gray-200 justify-start"}`}>
                                 <motion.div layout className="w-4 h-4 bg-white rounded-full shadow-sm" />
                               </div>
@@ -667,29 +696,13 @@ export default function LandingPage() {
                         })}
                       </div>
                     </div>
-
-                    {/* Right: ACTUAL module page preview */}
-                    <div className="bg-white rounded-2xl border border-border-light overflow-hidden shadow-sm">
-                      <div className="px-4 py-2.5 border-b border-border-light flex items-center gap-2">
-                        <div className="flex gap-1"><div className="w-2 h-2 rounded-full bg-red-400" /><div className="w-2 h-2 rounded-full bg-yellow-400" /><div className="w-2 h-2 rounded-full bg-green-400" /></div>
-                        <span className="text-[10px] text-text-tertiary ml-2">Magic CRM — {mod.name}</span>
-                      </div>
-                      <div className="p-4 text-[11px]">
-                        <div className="flex items-center justify-between mb-3">
-                          <p className="text-[14px] font-bold text-foreground">{mod.name}</p>
-                          <div className="px-2.5 py-1 bg-foreground text-white rounded-lg text-[10px] font-medium">+ New</div>
-                        </div>
-
-                        <ModulePreview moduleName={mod.name} getToggle={getToggle} />
-                      </div>
-                    </div>
                   </div>
                 </motion.div>
               );
             })()}
           </AnimatePresence>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 mt-4" style={{ display: expandedModule ? "none" : undefined }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 mt-4" style={{ display: "none" }}>
             {/* Bookings preview */}
             <motion.div initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="bg-card-bg rounded-2xl border border-border-light overflow-hidden">
               <div className="px-5 py-3.5 border-b border-border-light flex items-center justify-between">
