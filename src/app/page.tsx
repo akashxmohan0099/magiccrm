@@ -125,6 +125,7 @@ export default function LandingPage() {
     Object.fromEntries(ATTACHMENT_EXAMPLE.attachments.map((a) => [a.name, a.on]))
   );
   const [expandedModule, setExpandedModule] = useState<string | null>(CORE_MODULES[0].name);
+  const [demoToggles, setDemoToggles] = useState<Record<string, boolean>>({});
   const [selectedAddon, setSelectedAddon] = useState<number>(0);
   const [moduleAutoCycle, setModuleAutoCycle] = useState(true);
   const [moduleProgress, setModuleProgress] = useState(0);
@@ -378,41 +379,114 @@ export default function LandingPage() {
             })}
           </div>
 
-          {/* Selected module detail */}
+          {/* Selected module — side by side: toggles + live preview */}
           <AnimatePresence mode="wait">
             {expandedModule && (() => {
               const mod = CORE_MODULES.find(m => m.name === expandedModule);
               if (!mod) return null;
+              const getToggle = (sub: string) => demoToggles[`${mod.name}:${sub}`] !== false;
+              const flipToggle = (sub: string) => setDemoToggles(prev => ({ ...prev, [`${mod.name}:${sub}`]: !getToggle(sub) }));
+              const enabledCount = mod.subs.filter(s => getToggle(s)).length;
+
               return (
                 <motion.div
                   key={expandedModule}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2 }}
-                  className="max-w-2xl mx-auto mb-8"
+                  transition={{ duration: 0.25 }}
+                  className="mb-8"
                 >
-                  <div className="bg-white rounded-2xl border border-border-light overflow-hidden shadow-sm">
-                    <div className="px-6 py-4 border-b border-border-light flex items-center gap-3">
-                      <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
-                        <mod.icon className="w-5 h-5 text-primary" />
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {/* Left: Toggle controls */}
+                    <div className="bg-white rounded-2xl border border-border-light overflow-hidden">
+                      <div className="px-5 py-4 border-b border-border-light flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 bg-primary/10 rounded-xl flex items-center justify-center">
+                            <mod.icon className="w-[18px] h-[18px] text-primary" />
+                          </div>
+                          <div>
+                            <p className="text-[15px] font-semibold text-foreground">{mod.name}</p>
+                            <p className="text-[11px] text-text-tertiary">{mod.desc}</p>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">{enabledCount}/{mod.subs.length}</span>
                       </div>
-                      <div>
-                        <p className="text-[16px] font-semibold text-foreground">{mod.name}</p>
-                        <p className="text-[12px] text-text-tertiary">{mod.desc}</p>
+                      <div className="p-4 space-y-1.5">
+                        <p className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider mb-2">Toggle features on and off →</p>
+                        {mod.subs.map((sub) => {
+                          const isOn = getToggle(sub);
+                          return (
+                            <div
+                              key={sub}
+                              onClick={() => flipToggle(sub)}
+                              className={`flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer transition-all ${
+                                isOn ? "bg-primary/5 border border-primary/15" : "bg-background border border-transparent hover:border-border-light"
+                              }`}
+                            >
+                              <span className={`text-[13px] font-medium ${isOn ? "text-foreground" : "text-text-tertiary line-through"}`}>{sub}</span>
+                              <div className={`w-9 h-[20px] rounded-full flex items-center px-0.5 transition-all duration-200 ${isOn ? "bg-primary justify-end" : "bg-gray-200 justify-start"}`}>
+                                <motion.div layout className="w-4 h-4 bg-white rounded-full shadow-sm" />
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
-                    <div className="p-5">
-                      <p className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider mb-3">Toggleable features</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        {mod.subs.map((sub) => (
-                          <div key={sub} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background border border-border-light">
-                            <div className="w-8 h-[18px] rounded-full bg-primary flex items-center justify-end px-0.5">
-                              <div className="w-[14px] h-[14px] bg-white rounded-full shadow-sm" />
-                            </div>
-                            <span className="text-[12px] font-medium text-foreground">{sub}</span>
+
+                    {/* Right: Live module preview */}
+                    <div className="bg-white rounded-2xl border border-border-light overflow-hidden">
+                      <div className="px-5 py-3 border-b border-border-light flex items-center gap-2">
+                        <div className="flex gap-1">
+                          <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
+                          <div className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
+                          <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
+                        </div>
+                        <span className="text-[11px] text-text-tertiary ml-2">Magic CRM — {mod.name}</span>
+                      </div>
+                      <div className="p-4">
+                        {/* Simulated page header */}
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-[15px] font-bold text-foreground">{mod.name}</h3>
+                          <div className="px-3 py-1.5 bg-foreground text-white rounded-lg text-[11px] font-medium">+ New</div>
+                        </div>
+
+                        {/* Feature-aware preview content */}
+                        <div className="space-y-2">
+                          {mod.subs.map((sub) => {
+                            const isOn = getToggle(sub);
+                            return (
+                              <AnimatePresence key={sub}>
+                                {isOn && (
+                                  <motion.div
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: "auto" }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="overflow-hidden"
+                                  >
+                                    <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-background border border-border-light">
+                                      <div className="w-1.5 h-6 rounded-full bg-primary/30" />
+                                      <div className="flex-1">
+                                        <p className="text-[12px] font-medium text-foreground">{sub}</p>
+                                        <p className="text-[10px] text-text-tertiary">Active and ready to use</p>
+                                      </div>
+                                      <div className="w-2 h-2 bg-primary rounded-full" />
+                                    </div>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            );
+                          })}
+                        </div>
+
+                        {/* Empty state when nothing is on */}
+                        {enabledCount === 0 && (
+                          <div className="text-center py-8">
+                            <p className="text-[13px] text-text-tertiary">All features are off</p>
+                            <p className="text-[11px] text-text-tertiary mt-1">Toggle some on to see them appear here</p>
                           </div>
-                        ))}
+                        )}
                       </div>
                     </div>
                   </div>
