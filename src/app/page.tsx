@@ -10,6 +10,32 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import Link from "next/link";
+import { FEATURE_BLOCKS } from "@/types/features";
+
+// ── Module name to feature block ID mapping ──
+const MODULE_FEATURE_MAP: Record<string, string> = {
+  "Clients": "client-database",
+  "Leads & Pipeline": "leads-pipeline",
+  "Communication": "communication",
+  "Bookings": "bookings-calendar",
+  "Invoicing": "quotes-invoicing",
+  "Jobs & Projects": "jobs-projects",
+  "Marketing": "marketing",
+  "Support": "support",
+  "Documents": "documents",
+  "Products": "products",
+  "Team": "team",
+  "Payments": "payments",
+  "Automations": "automations",
+  "Reporting": "reporting",
+};
+
+function getModuleFeatures(moduleName: string) {
+  const blockId = MODULE_FEATURE_MAP[moduleName];
+  if (!blockId) return [];
+  const block = FEATURE_BLOCKS.find(b => b.id === blockId);
+  return block?.subFeatures.map(f => f.label) ?? [];
+}
 
 // ── Persona comparison data ──
 
@@ -140,44 +166,70 @@ function ModulePreview({ moduleName, getToggle }: { moduleName: string; getToggl
 }
 
 function ClientsPreview({ getToggle }: { getToggle: (s: string) => boolean }) {
-  const showTags = getToggle("Follow-up Reminders");
-  const showBirthday = getToggle("Birthday Alerts");
+  const showTags = getToggle("Tags & Categories");
+  const showBirthday = getToggle("Birthday Reminders");
   const showImport = getToggle("Import / Export");
   const showMerge = getToggle("Merge Duplicates");
+  const showSource = getToggle("Acquisition Source");
+  const showSegmentation = getToggle("Segmentation Filters");
+  const showFollowUp = getToggle("Follow-Up Reminders");
+  const showTimeline = getToggle("Activity Timeline");
+  const showLifecycle = getToggle("Lifecycle Stages");
+  const showNotes = getToggle("Internal Notes");
+  const showBulk = getToggle("Bulk Actions");
   return (
     <div>
-      {showImport && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex gap-2 mb-3">
-          <div className="px-2 py-1 bg-background border border-border-light rounded text-[10px] text-text-secondary">Import CSV</div>
-          <div className="px-2 py-1 bg-background border border-border-light rounded text-[10px] text-text-secondary">Export</div>
+      {(showImport || showSegmentation || showBulk) && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-2 mb-3 flex-wrap">
+          {showImport && <div className="px-2 py-1 bg-background border border-border-light rounded text-[10px] text-text-secondary">Import CSV</div>}
+          {showImport && <div className="px-2 py-1 bg-background border border-border-light rounded text-[10px] text-text-secondary">Export</div>}
+          {showSegmentation && <div className="px-2 py-1 bg-background border border-border-light rounded text-[10px] text-text-secondary">Filters</div>}
+          {showBulk && <div className="px-2 py-1 bg-background border border-border-light rounded text-[10px] text-text-secondary">Bulk Actions</div>}
         </motion.div>
       )}
       <div className="border border-border-light rounded-xl overflow-hidden">
-        <div className="grid bg-background px-3 py-2 border-b border-border-light text-[10px] font-medium text-text-tertiary" style={{ gridTemplateColumns: `1fr 1fr ${showTags ? "80px" : ""} ${showBirthday ? "60px" : ""} 60px` }}>
+        <div className="grid bg-background px-3 py-2 border-b border-border-light text-[10px] font-medium text-text-tertiary" style={{ gridTemplateColumns: `${showBulk ? "24px " : ""}1fr 1fr ${showTags ? "70px " : ""}${showBirthday ? "55px " : ""}${showSource ? "60px " : ""}${showLifecycle ? "60px " : ""}55px` }}>
+          {showBulk && <span></span>}
           <span>Name</span><span>Email</span>
           {showTags && <span>Tags</span>}
           {showBirthday && <span>Birthday</span>}
+          {showSource && <span>Source</span>}
+          {showLifecycle && <span>Stage</span>}
           <span>Status</span>
         </div>
         {MOCK_CLIENTS.map((c, i) => (
-          <motion.div key={i} layout className="grid px-3 py-2 border-b border-border-light/50 last:border-0" style={{ gridTemplateColumns: `1fr 1fr ${showTags ? "80px" : ""} ${showBirthday ? "60px" : ""} 60px` }}>
-            <span className="font-medium text-foreground">{c.name}</span>
-            <span className="text-text-tertiary">{c.email}</span>
-            <AnimatePresence>
-              {showTags && <motion.span initial={{ opacity: 0, width: 0 }} animate={{ opacity: 1, width: "auto" }} exit={{ opacity: 0, width: 0 }} className="overflow-hidden">
-                {c.tags.map(t => <span key={t} className="inline-block px-1.5 py-0.5 bg-primary/10 text-primary rounded text-[9px] mr-0.5">{t}</span>)}
-              </motion.span>}
-            </AnimatePresence>
-            <AnimatePresence>
-              {showBirthday && <motion.span initial={{ opacity: 0, width: 0 }} animate={{ opacity: 1, width: "auto" }} exit={{ opacity: 0, width: 0 }} className="text-text-tertiary overflow-hidden">{c.birthday}</motion.span>}
-            </AnimatePresence>
-            <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium inline-block w-fit ${c.status === "active" ? "bg-emerald-50 text-emerald-700" : c.status === "inactive" ? "bg-gray-100 text-gray-500" : "bg-blue-50 text-blue-600"}`}>{c.status}</span>
+          <motion.div key={i} layout className="grid px-3 py-2 border-b border-border-light/50 last:border-0 items-center" style={{ gridTemplateColumns: `${showBulk ? "24px " : ""}1fr 1fr ${showTags ? "70px " : ""}${showBirthday ? "55px " : ""}${showSource ? "60px " : ""}${showLifecycle ? "60px " : ""}55px` }}>
+            {showBulk && <input type="checkbox" className="w-3 h-3 rounded accent-primary" readOnly />}
+            <span className="font-medium text-foreground truncate">{c.name}</span>
+            <span className="text-text-tertiary truncate">{c.email}</span>
+            {showTags && <span className="overflow-hidden">{c.tags.map(t => <span key={t} className="inline-block px-1 py-0.5 bg-primary/10 text-primary rounded text-[8px] mr-0.5">{t}</span>)}</span>}
+            {showBirthday && <span className="text-text-tertiary text-[10px]">{c.birthday}</span>}
+            {showSource && <span className="text-text-tertiary text-[9px]">{c.source}</span>}
+            {showLifecycle && <span className="text-[8px] px-1 py-0.5 bg-emerald-50 text-emerald-700 rounded">Active</span>}
+            <span className={`px-1 py-0.5 rounded text-[8px] font-medium inline-block w-fit ${c.status === "active" ? "bg-emerald-50 text-emerald-700" : c.status === "inactive" ? "bg-gray-100 text-gray-500" : "bg-blue-50 text-blue-600"}`}>{c.status}</span>
           </motion.div>
         ))}
       </div>
       {showMerge && (
         <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="mt-3 px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-lg text-[10px] text-yellow-800">
           1 potential duplicate detected — <span className="font-medium underline cursor-pointer">Review</span>
+        </motion.div>
+      )}
+      {showFollowUp && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-[10px] text-blue-700">
+          2 follow-ups due today
+        </motion.div>
+      )}
+      {showTimeline && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-2 space-y-1">
+          {[{ text: "Sarah booked Lash Fill", time: "2hr ago" }, { text: "Invoice #42 sent to Jess", time: "Yesterday" }].map((e) => (
+            <div key={e.text} className="flex items-start gap-2 px-2 py-1"><div className="w-1 h-1 bg-primary rounded-full mt-1.5" /><div><p className="text-[10px] text-foreground">{e.text}</p><p className="text-[8px] text-text-tertiary">{e.time}</p></div></div>
+          ))}
+        </motion.div>
+      )}
+      {showNotes && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-2 px-3 py-2 bg-surface rounded-lg text-[10px] text-text-secondary italic">
+          "VIP client — always book extra 15min" — internal note
         </motion.div>
       )}
     </div>
@@ -619,9 +671,11 @@ export default function LandingPage() {
             {expandedModule && (() => {
               const mod = CORE_MODULES.find(m => m.name === expandedModule);
               if (!mod) return null;
+              const allFeatures = getModuleFeatures(mod.name);
+              const displayFeatures = allFeatures.length > 0 ? allFeatures : mod.subs;
               const getToggle = (sub: string) => demoToggles[`${mod.name}:${sub}`] !== false;
               const flipToggle = (sub: string) => setDemoToggles(prev => ({ ...prev, [`${mod.name}:${sub}`]: !getToggle(sub) }));
-              const enabledCount = mod.subs.filter(s => getToggle(s)).length;
+              const enabledCount = displayFeatures.filter(s => getToggle(s)).length;
 
               return (
                 <motion.div
@@ -692,24 +746,24 @@ export default function LandingPage() {
                             <ModulePreview moduleName={mod.name} getToggle={getToggle} />
                           </div>
 
-                          {/* Customize slide-over panel */}
-                          <div className="w-[260px] bg-white border-l border-border-light flex-shrink-0 overflow-y-auto">
-                            <div className="px-4 py-3 border-b border-border-light">
+                          {/* Customize slide-over panel — ALL features from features.ts */}
+                          <div className="w-[280px] bg-white border-l border-border-light flex-shrink-0 overflow-y-auto">
+                            <div className="px-4 py-3 border-b border-border-light sticky top-0 bg-white z-[1]">
                               <p className="text-[13px] font-bold text-foreground">Customize {mod.name}</p>
-                              <p className="text-[10px] text-text-tertiary">{enabledCount} of {mod.subs.length} features enabled</p>
+                              <p className="text-[10px] text-text-tertiary">{enabledCount} of {displayFeatures.length} features enabled</p>
                             </div>
-                            <div className="p-3 space-y-1">
-                              {mod.subs.map((sub) => {
+                            <div className="p-2.5 space-y-0.5">
+                              {displayFeatures.map((sub) => {
                                 const isOn = getToggle(sub);
                                 return (
                                   <div
                                     key={sub}
                                     onClick={() => flipToggle(sub)}
-                                    className={`flex items-center justify-between px-2.5 py-2 rounded-lg cursor-pointer transition-all ${isOn ? "bg-primary/5" : "hover:bg-background"}`}
+                                    className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg cursor-pointer transition-all ${isOn ? "bg-primary/5" : "hover:bg-background"}`}
                                   >
-                                    <span className={`text-[11px] font-medium ${isOn ? "text-foreground" : "text-text-tertiary"}`}>{sub}</span>
-                                    <div className={`w-8 h-[18px] rounded-full flex items-center px-0.5 transition-all duration-200 ${isOn ? "bg-primary justify-end" : "bg-gray-200 justify-start"}`}>
-                                      <motion.div layout className="w-3.5 h-3.5 bg-white rounded-full shadow-sm" />
+                                    <span className={`text-[10px] font-medium ${isOn ? "text-foreground" : "text-text-tertiary"}`}>{sub}</span>
+                                    <div className={`w-7 h-[16px] rounded-full flex items-center px-0.5 transition-all duration-200 flex-shrink-0 ${isOn ? "bg-primary justify-end" : "bg-gray-200 justify-start"}`}>
+                                      <motion.div layout className="w-3 h-3 bg-white rounded-full shadow-sm" />
                                     </div>
                                   </div>
                                 );
