@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import Link from "next/link";
 import { FEATURE_BLOCKS } from "@/types/features";
+import { CinematicDemo } from "@/components/landing/CinematicDemo";
 
 // ── Module name to feature block ID mapping ──
 const MODULE_FEATURE_MAP: Record<string, string> = {
@@ -685,7 +686,11 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Pick Your Modules — cinematic auto-demo */}
+      {/* Cinematic Demo — replaces module picker + customize sections */}
+      <CinematicDemo />
+
+      {/* HIDDEN: Pick Your Modules — replaced by CinematicDemo */}
+      <div style={{ display: "none" }}>
       <section className="py-12 sm:py-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-10 sm:mb-14">
@@ -1112,6 +1117,9 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      </div>
+      {/* END HIDDEN sections */}
 
       {/* Add-ons — Visual Showcases */}
       <section className="py-12 sm:py-20">
