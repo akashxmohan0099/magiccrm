@@ -141,40 +141,7 @@ button, a, input, select, textarea {
 
 /* ── Landing page animations ── */
 
-/* Floating glow orb */
-@keyframes float {
-  0%, 100% { transform: translateY(0px) translateX(0px); }
-  25% { transform: translateY(-20px) translateX(10px); }
-  50% { transform: translateY(-10px) translateX(-10px); }
-  75% { transform: translateY(-25px) translateX(5px); }
-}
-.glow-orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.15;
-  animation: float 12s ease-in-out infinite;
-  pointer-events: none;
-}
-.glow-orb-1 {
-  width: 400px; height: 400px;
-  background: var(--primary);
-  top: -100px; right: -100px;
-  animation-delay: 0s;
-}
-.glow-orb-2 {
-  width: 300px; height: 300px;
-  background: #818CF8;
-  bottom: -80px; left: -80px;
-  animation-delay: -4s;
-}
-.glow-orb-3 {
-  width: 250px; height: 250px;
-  background: var(--primary);
-  top: 40%; left: 50%;
-  animation-delay: -8s;
-  opacity: 0.08;
-}
+/* Floating glow orb — disabled */
 
 /* Gradient text shimmer */
 @keyframes gradient-shift {
