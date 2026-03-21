@@ -62,12 +62,6 @@ export function ModulePickerDemo() {
     });
   };
 
-  const disabledModules = useMemo(() => {
-    const disabled = new Set<string>();
-    MODULES.forEach((m) => { if (!enabledSet.has(m.name)) disabled.add(m.name); });
-    return disabled;
-  }, [enabledSet]);
-
   const activeCount = enabledSet.size;
 
   return (
@@ -96,7 +90,7 @@ export function ModulePickerDemo() {
               </div>
               <div className="space-y-1">
                 {MODULES.map((mod) => {
-                  const isOn = !disabledModules.has(mod.name);
+                  const isOn = enabledSet.has(mod.name);
                   return (
                     <motion.div
                       key={mod.name}
@@ -144,7 +138,7 @@ export function ModulePickerDemo() {
                     <BarChart3 className="w-3.5 h-3.5" /> Dashboard
                   </div>
                   <AnimatePresence>
-                    {MODULES.filter((m) => !disabledModules.has(m.name)).map((mod) => (
+                    {MODULES.filter((m) => enabledSet.has(m.name)).map((mod) => (
                       <motion.div
                         key={mod.name}
                         initial={{ opacity: 0, x: -15, height: 0 }}
