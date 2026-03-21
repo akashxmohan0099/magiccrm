@@ -421,7 +421,23 @@ export default function LandingPage() {
   );
   const [expandedModule, setExpandedModule] = useState<string | null>(CORE_MODULES[0].name);
   const [enabledModules, setEnabledModules] = useState<Set<string>>(new Set(CORE_MODULES.map(m => m.name)));
-  const toggleModule = (name: string) => setEnabledModules(prev => { const next = new Set(prev); if (next.has(name)) next.delete(name); else next.add(name); return next; });
+
+  // Auto-animate module toggles — cinematic sequence
+  useEffect(() => {
+    const sequence = ["Marketing", "Support", "Documents", "Payments", "Team", "Products", "Automations",
+      "Marketing", "Support", "Documents", "Team", "Products"];
+    let step = 0;
+    const interval = setInterval(() => {
+      const name = sequence[step % sequence.length];
+      setEnabledModules(prev => {
+        const next = new Set(prev);
+        if (next.has(name)) next.delete(name); else next.add(name);
+        return next;
+      });
+      step++;
+    }, 2500);
+    return () => clearInterval(interval);
+  }, []);
   // Start with some features OFF so the demo shows the toggle effect
   const [demoToggles, setDemoToggles] = useState<Record<string, boolean>>({
     "Clients:Birthday Reminders": false,
@@ -669,88 +685,51 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Pick Your Modules */}
+      {/* Pick Your Modules — cinematic auto-demo */}
       <section className="py-12 sm:py-20">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-10 sm:mb-14">
             <h2 className="text-[1.75rem] sm:text-[2.25rem] font-bold text-foreground leading-tight mb-3">
               Pick your modules.
             </h2>
             <p className="text-text-secondary text-[15px] max-w-lg mx-auto">
-              Only turn on what you need. Every business gets a different combination — yours is built for you.
+              Only turn on what you need. Every business gets a different combination.
             </p>
           </div>
 
-          {/* Module toggle grid + mini sidebar preview */}
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_240px] gap-6">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-              {CORE_MODULES.map((mod, i) => {
-                const isOn = enabledModules.has(mod.name);
-                return (
-                  <motion.div
-                    key={mod.name}
-                    initial={{ opacity: 0, y: 10 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.03 }}
-                    onClick={() => toggleModule(mod.name)}
-                    className={`relative p-3 rounded-xl border cursor-pointer transition-all duration-200 glow-border ${
-                      isOn
-                        ? "bg-white border-primary/30 shadow-sm"
-                        : "bg-background border-border-light opacity-50 hover:opacity-70"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <mod.icon className={`w-4 h-4 ${isOn ? "text-primary" : "text-text-tertiary"}`} />
-                      <span className={`text-[12px] font-semibold ${isOn ? "text-foreground" : "text-text-tertiary"}`}>{mod.name}</span>
-                    </div>
-                    <p className="text-[10px] text-text-tertiary leading-snug">{mod.desc}</p>
-                    <div className={`absolute top-2.5 right-2.5 w-7 h-[16px] rounded-full flex items-center px-0.5 transition-all duration-200 ${isOn ? "bg-primary justify-end" : "bg-gray-200 justify-start"}`}>
-                      <motion.div layout className="w-3 h-3 bg-white rounded-full shadow-sm" />
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-
-            {/* Live sidebar preview */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              className="bg-white rounded-2xl border border-border-light overflow-hidden shadow-sm hidden lg:block"
-            >
-              <div className="px-4 py-3 border-b border-border-light">
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 bg-primary rounded-lg flex items-center justify-center"><div className="w-2 h-2 bg-foreground rounded-sm" /></div>
-                  <span className="text-[11px] font-bold text-foreground">Your Sidebar</span>
-                </div>
+          {/* Compact module pills — auto-animating */}
+          <div className="bg-white rounded-2xl border border-border-light overflow-hidden shadow-sm">
+            <div className="px-6 py-4 border-b border-border-light flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 bg-primary rounded-lg flex items-center justify-center"><div className="w-2.5 h-2.5 bg-foreground rounded-sm" /></div>
+                <span className="text-[13px] font-bold text-foreground">Your CRM</span>
               </div>
-              <div className="px-3 py-2 space-y-0.5">
-                <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-surface text-[11px] font-medium text-foreground">
-                  <BarChart3 className="w-3.5 h-3.5" /> Dashboard
-                </div>
-                <AnimatePresence>
-                  {CORE_MODULES.filter(m => enabledModules.has(m.name)).map((mod) => (
+              <span className="text-[11px] text-text-tertiary">{enabledModules.size} of 14 modules active</span>
+            </div>
+            <div className="p-6">
+              <div className="flex flex-wrap gap-2 justify-center">
+                {CORE_MODULES.map((mod) => {
+                  const isOn = enabledModules.has(mod.name);
+                  return (
                     <motion.div
                       key={mod.name}
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="overflow-hidden"
+                      layout
+                      className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all duration-300 ${
+                        isOn
+                          ? "bg-white border-primary/25 shadow-sm"
+                          : "bg-background/50 border-transparent opacity-40"
+                      }`}
                     >
-                      <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] text-text-secondary">
-                        <mod.icon className="w-3.5 h-3.5" /> {mod.name}
+                      <mod.icon className={`w-3.5 h-3.5 ${isOn ? "text-primary" : "text-text-tertiary"}`} />
+                      <span className={`text-[12px] font-medium ${isOn ? "text-foreground" : "text-text-tertiary"}`}>{mod.name}</span>
+                      <div className={`w-7 h-[16px] rounded-full flex items-center px-0.5 transition-all duration-300 ${isOn ? "bg-primary justify-end" : "bg-gray-200 justify-start"}`}>
+                        <motion.div layout className="w-3 h-3 bg-white rounded-full shadow-sm" />
                       </div>
                     </motion.div>
-                  ))}
-                </AnimatePresence>
+                  );
+                })}
               </div>
-              <div className="px-4 py-3 border-t border-border-light mt-2">
-                <p className="text-[10px] text-text-tertiary text-center">{enabledModules.size} modules active</p>
-              </div>
-            </motion.div>
+            </div>
           </div>
         </div>
       </section>
