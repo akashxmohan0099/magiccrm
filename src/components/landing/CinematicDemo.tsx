@@ -67,14 +67,10 @@ export function ModulePickerDemo() {
     return autoDisabled;
   }, [paused, manualToggles, autoDisabled]);
 
-  // When auto-play resumes, sync manual toggles to current auto state
-  useEffect(() => {
-    if (!paused) setManualToggles({});
-  }, [paused]);
-
   const toggleModule = (name: string) => {
     setPaused(true);
-    setManualToggles((prev) => ({ ...prev, [name]: prev[name] === false ? true : disabledModules.has(name) ? true : false }));
+    const currentlyDisabled = disabledModules.has(name);
+    setManualToggles((prev) => ({ ...prev, [name]: currentlyDisabled }));
   };
 
   const activeCount = MODULES.length - disabledModules.size;
@@ -201,6 +197,15 @@ const CUSTOMIZE_TICK_MS = 550;
 export function FeatureCustomizeDemo() {
   const [tick, setTick] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [userInteracted, setUserInteracted] = useState(false);
+  const [manualFeatures, setManualFeatures] = useState<Record<string, boolean>>({
+    "Online Booking Page": true,
+    "Automated Reminders": true,
+    "Waitlist": false,
+    "Booking Deposits": false,
+    "Buffer Time": false,
+    "No-Show Protection": false,
+  });
 
   useEffect(() => {
     if (paused) return;
@@ -208,7 +213,8 @@ export function FeatureCustomizeDemo() {
     return () => clearInterval(interval);
   }, [paused]);
 
-  const featureStates = useMemo(() => {
+  // Auto-play feature states (only used when user hasn't interacted)
+  const autoFeatureStates = useMemo(() => {
     const states: Record<string, boolean> = {
       "Online Booking Page": true,
       "Automated Reminders": true,
@@ -222,6 +228,22 @@ export function FeatureCustomizeDemo() {
     });
     return states;
   }, [tick]);
+
+  // Use manual state if user has interacted, otherwise auto
+  const featureStates = userInteracted ? manualFeatures : autoFeatureStates;
+
+  // When auto-play resumes after user interaction, sync auto state to user's state
+  useEffect(() => {
+    if (!paused && userInteracted) {
+      // Auto-play continues from wherever user left off — don't reset
+    }
+  }, [paused, userInteracted]);
+
+  const toggleFeature = (name: string) => {
+    setPaused(true);
+    setUserInteracted(true);
+    setManualFeatures((prev) => ({ ...prev, [name]: !prev[name] }));
+  };
 
   const enabledCount = Object.values(featureStates).filter(Boolean).length;
 
@@ -346,7 +368,7 @@ export function FeatureCustomizeDemo() {
                     {BOOKING_FEATURES.map((f) => {
                       const isOn = featureStates[f] ?? false;
                       return (
-                        <div key={f} className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg transition-all duration-300 ${isOn ? "bg-primary/5" : ""}`}>
+                        <div key={f} onClick={() => toggleFeature(f)} className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg transition-all duration-300 cursor-pointer hover:bg-background ${isOn ? "bg-primary/5" : ""}`}>
                           <span className={`text-[10px] font-medium transition-colors duration-300 ${isOn ? "text-foreground" : "text-text-tertiary"}`}>{f}</span>
                           <div className={`w-7 h-[15px] rounded-full flex items-center px-0.5 transition-all duration-300 ${isOn ? "bg-primary justify-end" : "bg-gray-200 justify-start"}`}>
                             <motion.div layout transition={{ type: "spring", stiffness: 500, damping: 30 }} className="w-[11px] h-[11px] bg-white rounded-full shadow-sm" />
