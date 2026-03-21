@@ -570,31 +570,7 @@ export default function LandingPage() {
         </motion.div>
       </section>
 
-      {/* Stats bar */}
-      <section className="pb-12 sm:pb-16">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {[
-              { num: "23", label: "Modules" },
-              { num: "207", label: "Toggleable features" },
-              { num: "43", label: "Personas supported" },
-              { num: "$49", label: "Flat monthly" },
-            ].map((stat, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                whileInView={{ opacity: 1, y: 0, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.1 + i * 0.12, duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
-                className="bg-white/80 backdrop-blur-sm rounded-xl border border-border-light p-4 text-center glow-border"
-              >
-                <p className="text-[28px] sm:text-[32px] font-bold text-foreground leading-none">{stat.num}</p>
-                <p className="text-[11px] text-text-tertiary mt-1">{stat.label}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* Stats bar — removed, numbers mentioned elsewhere */}
 
       {/* Industry tags */}
       <section className="pb-12 sm:pb-16">
