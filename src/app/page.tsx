@@ -119,6 +119,240 @@ const ATTACHMENT_EXAMPLE = {
   ],
 };
 
+// ── Realistic module preview components ──
+
+const MOCK_CLIENTS = [
+  { name: "Sarah Mitchell", email: "sarah@email.com", status: "active", tags: ["VIP", "Lash"], birthday: "Mar 15", source: "Instagram" },
+  { name: "Jess Thompson", email: "jess@email.com", status: "active", tags: ["Regular"], birthday: "Jul 22", source: "Referral" },
+  { name: "Emma Roberts", email: "emma@email.com", status: "inactive", tags: [], birthday: "Nov 3", source: "Website" },
+  { name: "Tom Kennedy", email: "tom@email.com", status: "prospect", tags: ["New"], birthday: "Jan 8", source: "Walk-in" },
+];
+
+function ModulePreview({ moduleName, getToggle }: { moduleName: string; getToggle: (sub: string) => boolean }) {
+  if (moduleName === "Clients") return <ClientsPreview getToggle={getToggle} />;
+  if (moduleName === "Leads & Pipeline") return <LeadsPreview getToggle={getToggle} />;
+  if (moduleName === "Bookings") return <BookingsPreview getToggle={getToggle} />;
+  if (moduleName === "Invoicing") return <InvoicingPreview getToggle={getToggle} />;
+  if (moduleName === "Communication") return <CommunicationPreview getToggle={getToggle} />;
+  if (moduleName === "Jobs & Projects") return <JobsPreview getToggle={getToggle} />;
+  // Fallback for other modules
+  return <GenericPreview moduleName={moduleName} getToggle={getToggle} />;
+}
+
+function ClientsPreview({ getToggle }: { getToggle: (s: string) => boolean }) {
+  const showTags = getToggle("Follow-up Reminders");
+  const showBirthday = getToggle("Birthday Alerts");
+  const showImport = getToggle("Import / Export");
+  const showMerge = getToggle("Merge Duplicates");
+  return (
+    <div>
+      {showImport && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex gap-2 mb-3">
+          <div className="px-2 py-1 bg-background border border-border-light rounded text-[10px] text-text-secondary">Import CSV</div>
+          <div className="px-2 py-1 bg-background border border-border-light rounded text-[10px] text-text-secondary">Export</div>
+        </motion.div>
+      )}
+      <div className="border border-border-light rounded-xl overflow-hidden">
+        <div className="grid bg-background px-3 py-2 border-b border-border-light text-[10px] font-medium text-text-tertiary" style={{ gridTemplateColumns: `1fr 1fr ${showTags ? "80px" : ""} ${showBirthday ? "60px" : ""} 60px` }}>
+          <span>Name</span><span>Email</span>
+          {showTags && <span>Tags</span>}
+          {showBirthday && <span>Birthday</span>}
+          <span>Status</span>
+        </div>
+        {MOCK_CLIENTS.map((c, i) => (
+          <motion.div key={i} layout className="grid px-3 py-2 border-b border-border-light/50 last:border-0" style={{ gridTemplateColumns: `1fr 1fr ${showTags ? "80px" : ""} ${showBirthday ? "60px" : ""} 60px` }}>
+            <span className="font-medium text-foreground">{c.name}</span>
+            <span className="text-text-tertiary">{c.email}</span>
+            <AnimatePresence>
+              {showTags && <motion.span initial={{ opacity: 0, width: 0 }} animate={{ opacity: 1, width: "auto" }} exit={{ opacity: 0, width: 0 }} className="overflow-hidden">
+                {c.tags.map(t => <span key={t} className="inline-block px-1.5 py-0.5 bg-primary/10 text-primary rounded text-[9px] mr-0.5">{t}</span>)}
+              </motion.span>}
+            </AnimatePresence>
+            <AnimatePresence>
+              {showBirthday && <motion.span initial={{ opacity: 0, width: 0 }} animate={{ opacity: 1, width: "auto" }} exit={{ opacity: 0, width: 0 }} className="text-text-tertiary overflow-hidden">{c.birthday}</motion.span>}
+            </AnimatePresence>
+            <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium inline-block w-fit ${c.status === "active" ? "bg-emerald-50 text-emerald-700" : c.status === "inactive" ? "bg-gray-100 text-gray-500" : "bg-blue-50 text-blue-600"}`}>{c.status}</span>
+          </motion.div>
+        ))}
+      </div>
+      {showMerge && (
+        <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="mt-3 px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-lg text-[10px] text-yellow-800">
+          1 potential duplicate detected — <span className="font-medium underline cursor-pointer">Review</span>
+        </motion.div>
+      )}
+    </div>
+  );
+}
+
+function LeadsPreview({ getToggle }: { getToggle: (s: string) => boolean }) {
+  const stages = [
+    { label: "New", color: "bg-blue-400", leads: ["Lisa M.", "Tom K."] },
+    { label: "Contacted", color: "bg-yellow-400", leads: ["Sarah P."] },
+    { label: "Proposal", color: "bg-purple-400", leads: ["James W."] },
+    { label: "Won", color: "bg-green-400", leads: ["Zoe R."] },
+  ];
+  return (
+    <div>
+      {getToggle("Web Forms") && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-3 px-3 py-2 bg-primary/5 border border-primary/10 rounded-lg text-[10px] text-primary font-medium">
+          Web form active — share your capture link
+        </motion.div>
+      )}
+      <div className="grid grid-cols-4 gap-1.5">
+        {stages.map((s) => (
+          <div key={s.label}>
+            <div className="flex items-center gap-1 mb-1.5"><div className={`w-2 h-2 rounded-full ${s.color}`} /><span className="text-[9px] font-semibold text-text-tertiary uppercase">{s.label}</span></div>
+            {s.leads.map((l) => (
+              <div key={l} className="bg-background rounded-lg px-2 py-1.5 mb-1 border border-border-light">
+                <p className="text-[10px] font-medium text-foreground">{l}</p>
+                {getToggle("Lead Scoring") && <span className="text-[8px] px-1 py-0.5 bg-red-50 text-red-600 rounded mt-0.5 inline-block">Hot</span>}
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+      {getToggle("Auto-Assign") && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-2 text-[9px] text-text-tertiary">Auto-assigning to: <span className="font-medium text-foreground">You</span></motion.div>}
+    </div>
+  );
+}
+
+function BookingsPreview({ getToggle }: { getToggle: (s: string) => boolean }) {
+  const appts = [
+    { time: "9:00 AM", name: "Sarah — Lash Fill", color: "bg-pink-400" },
+    { time: "11:30 AM", name: "Jess — Volume Set", color: "bg-purple-400" },
+    { time: "2:00 PM", name: "Emma — Brow Tint", color: "bg-blue-400" },
+  ];
+  return (
+    <div>
+      <div className="space-y-1.5 mb-3">
+        {appts.map((a, i) => (
+          <div key={i} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-background border border-border-light">
+            <div className={`w-1 h-5 rounded-full ${a.color}`} />
+            <span className="text-[10px] text-text-tertiary w-14">{a.time}</span>
+            <span className="text-[10px] font-medium text-foreground flex-1">{a.name}</span>
+            {getToggle("Deposits") && <span className="text-[8px] text-primary font-medium">$30 dep</span>}
+          </div>
+        ))}
+      </div>
+      {getToggle("Waitlist") && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="px-2.5 py-1.5 bg-yellow-50 border border-yellow-200 rounded-lg text-[10px] text-yellow-800">2 on waitlist for today</motion.div>}
+      {getToggle("Buffer Time") && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-1.5 text-[9px] text-text-tertiary">15 min buffer between appointments</motion.div>}
+      {getToggle("No-Show Protection") && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-1.5 px-2.5 py-1 bg-red-50 border border-red-200 rounded-lg text-[9px] text-red-600">Tom K. — 2 no-shows this month</motion.div>}
+    </div>
+  );
+}
+
+function InvoicingPreview({ getToggle }: { getToggle: (s: string) => boolean }) {
+  const invoices = [
+    { num: "INV-001", client: "Sarah M.", amount: 175, status: "paid" },
+    { num: "INV-002", client: "Jess T.", amount: 200, status: "sent" },
+    { num: "INV-003", client: "Emma R.", amount: 95, status: "overdue" },
+  ];
+  return (
+    <div>
+      <div className="border border-border-light rounded-xl overflow-hidden">
+        <div className="grid grid-cols-4 bg-background px-3 py-1.5 border-b border-border-light text-[10px] font-medium text-text-tertiary">
+          <span>Invoice</span><span>Client</span><span>Amount</span><span>Status</span>
+        </div>
+        {invoices.map((inv) => (
+          <div key={inv.num} className="grid grid-cols-4 px-3 py-2 border-b border-border-light/50 last:border-0 text-[10px]">
+            <span className="font-medium text-foreground">{inv.num}</span>
+            <span className="text-text-secondary">{inv.client}</span>
+            <span className="font-medium text-foreground">
+              ${inv.amount}
+              {getToggle("Auto Tax") && <span className="text-text-tertiary ml-0.5">+GST</span>}
+            </span>
+            <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium inline-block w-fit ${inv.status === "paid" ? "bg-emerald-50 text-emerald-700" : inv.status === "overdue" ? "bg-red-50 text-red-600" : "bg-yellow-50 text-yellow-700"}`}>{inv.status}</span>
+          </div>
+        ))}
+      </div>
+      {getToggle("Tipping") && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-2 text-[9px] text-text-tertiary">Tipping enabled — clients can add a tip at checkout</motion.div>}
+      {getToggle("Partial Payments") && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-1.5 px-2.5 py-1.5 bg-blue-50 border border-blue-200 rounded-lg text-[10px] text-blue-700">Jess T. paid $100 of $200 — $100 remaining</motion.div>}
+      {getToggle("Late Reminders") && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-1.5 px-2.5 py-1.5 bg-red-50 border border-red-200 rounded-lg text-[10px] text-red-600">Reminder sent to Emma R. — 14 days overdue</motion.div>}
+    </div>
+  );
+}
+
+function CommunicationPreview({ getToggle }: { getToggle: (s: string) => boolean }) {
+  const convos = [
+    { name: "Sarah M.", channel: "SMS", msg: "Can I reschedule Thursday?", time: "2m", unread: true },
+    { name: "Jess T.", channel: "Email", msg: "Thanks for the invoice!", time: "1hr", unread: false },
+    { name: "Emma R.", channel: "Instagram", msg: "Do you have Saturday slots?", time: "3hr", unread: true },
+  ];
+  return (
+    <div>
+      <div className="space-y-1.5">
+        {convos.map((c, i) => (
+          <div key={i} className={`flex items-center gap-2 px-2.5 py-2 rounded-lg ${c.unread ? "bg-primary/5 border border-primary/10" : "bg-background border border-border-light"}`}>
+            <div className="w-6 h-6 bg-surface rounded-full flex items-center justify-center flex-shrink-0"><span className="text-[8px] font-bold">{c.name.split(" ").map(n => n[0]).join("")}</span></div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1"><span className="text-[10px] font-semibold text-foreground">{c.name}</span><span className="text-[8px] px-1 bg-surface rounded text-text-tertiary">{c.channel}</span></div>
+              <p className="text-[10px] text-text-secondary truncate">{c.msg}</p>
+            </div>
+            <span className="text-[9px] text-text-tertiary">{c.time}</span>
+          </div>
+        ))}
+      </div>
+      {getToggle("Canned Responses") && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-2 flex gap-1">{["Thanks!", "On my way", "Confirmed"].map(r => <span key={r} className="px-2 py-1 bg-background border border-border-light rounded-lg text-[9px] text-text-secondary cursor-pointer hover:border-foreground/15">{r}</span>)}</motion.div>}
+      {getToggle("Scheduled Send") && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-1.5 text-[9px] text-text-tertiary">1 message scheduled for 9:00 AM tomorrow</motion.div>}
+      {getToggle("After-Hours Auto-Reply") && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-1.5 px-2.5 py-1.5 bg-blue-50 border border-blue-200 rounded-lg text-[9px] text-blue-700">Auto-reply active outside business hours</motion.div>}
+    </div>
+  );
+}
+
+function JobsPreview({ getToggle }: { getToggle: (s: string) => boolean }) {
+  const jobs = [
+    { title: "Kitchen renovation", stage: "In Progress", priority: "High", cost: 2400 },
+    { title: "Bathroom refit", stage: "Quoted", priority: "Medium", cost: 850 },
+    { title: "Garden lights", stage: "Complete", priority: "Low", cost: 1100 },
+  ];
+  return (
+    <div>
+      <div className="border border-border-light rounded-xl overflow-hidden">
+        <div className="grid bg-background px-3 py-1.5 border-b border-border-light text-[10px] font-medium text-text-tertiary" style={{ gridTemplateColumns: `1fr 70px ${getToggle("Expense Tracking") ? "60px" : ""} ${getToggle("Time Tracking") ? "50px" : ""} 50px` }}>
+          <span>Job</span><span>Stage</span>
+          {getToggle("Expense Tracking") && <span>Cost</span>}
+          {getToggle("Time Tracking") && <span>Hours</span>}
+          <span>Priority</span>
+        </div>
+        {jobs.map((j) => (
+          <motion.div key={j.title} layout className="grid px-3 py-2 border-b border-border-light/50 last:border-0 text-[10px]" style={{ gridTemplateColumns: `1fr 70px ${getToggle("Expense Tracking") ? "60px" : ""} ${getToggle("Time Tracking") ? "50px" : ""} 50px` }}>
+            <span className="font-medium text-foreground">{j.title}</span>
+            <span className="text-text-secondary">{j.stage}</span>
+            <AnimatePresence>{getToggle("Expense Tracking") && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-text-secondary">${j.cost}</motion.span>}</AnimatePresence>
+            <AnimatePresence>{getToggle("Time Tracking") && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-text-secondary">12h</motion.span>}</AnimatePresence>
+            <span className={`text-[9px] font-medium ${j.priority === "High" ? "text-red-500" : j.priority === "Medium" ? "text-yellow-600" : "text-text-tertiary"}`}>{j.priority}</span>
+          </motion.div>
+        ))}
+      </div>
+      {getToggle("Recurring Jobs") && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-2 text-[9px] text-text-tertiary">1 recurring job: Garden maintenance (monthly)</motion.div>}
+    </div>
+  );
+}
+
+function GenericPreview({ moduleName, getToggle }: { moduleName: string; getToggle: (s: string) => boolean }) {
+  const mod = CORE_MODULES.find(m => m.name === moduleName);
+  if (!mod) return null;
+  const activeSubs = mod.subs.filter(s => getToggle(s));
+  return (
+    <div>
+      <div className="border border-border-light rounded-xl overflow-hidden mb-3">
+        <div className="bg-background px-3 py-2 border-b border-border-light text-[10px] font-medium text-text-tertiary">Overview</div>
+        <div className="p-3 space-y-2">
+          {activeSubs.length === 0 ? (
+            <p className="text-[10px] text-text-tertiary text-center py-4">Toggle features on to see them here</p>
+          ) : activeSubs.map((sub) => (
+            <motion.div key={sub} initial={{ opacity: 0, x: -5 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-background border border-border-light">
+              <div className="w-1 h-4 rounded-full bg-primary/30" />
+              <span className="text-[10px] font-medium text-foreground">{sub}</span>
+              <span className="ml-auto text-[8px] text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">Active</span>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function LandingPage() {
   const [activePersona, setActivePersona] = useState(0);
   const [attachmentToggles, setAttachmentToggles] = useState<Record<string, boolean>>(
@@ -434,59 +668,19 @@ export default function LandingPage() {
                       </div>
                     </div>
 
-                    {/* Right: Live module preview */}
-                    <div className="bg-white rounded-2xl border border-border-light overflow-hidden">
-                      <div className="px-5 py-3 border-b border-border-light flex items-center gap-2">
-                        <div className="flex gap-1">
-                          <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
-                          <div className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
-                          <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
-                        </div>
-                        <span className="text-[11px] text-text-tertiary ml-2">Magic CRM — {mod.name}</span>
+                    {/* Right: ACTUAL module page preview */}
+                    <div className="bg-white rounded-2xl border border-border-light overflow-hidden shadow-sm">
+                      <div className="px-4 py-2.5 border-b border-border-light flex items-center gap-2">
+                        <div className="flex gap-1"><div className="w-2 h-2 rounded-full bg-red-400" /><div className="w-2 h-2 rounded-full bg-yellow-400" /><div className="w-2 h-2 rounded-full bg-green-400" /></div>
+                        <span className="text-[10px] text-text-tertiary ml-2">Magic CRM — {mod.name}</span>
                       </div>
-                      <div className="p-4">
-                        {/* Simulated page header */}
-                        <div className="flex items-center justify-between mb-4">
-                          <h3 className="text-[15px] font-bold text-foreground">{mod.name}</h3>
-                          <div className="px-3 py-1.5 bg-foreground text-white rounded-lg text-[11px] font-medium">+ New</div>
+                      <div className="p-4 text-[11px]">
+                        <div className="flex items-center justify-between mb-3">
+                          <p className="text-[14px] font-bold text-foreground">{mod.name}</p>
+                          <div className="px-2.5 py-1 bg-foreground text-white rounded-lg text-[10px] font-medium">+ New</div>
                         </div>
 
-                        {/* Feature-aware preview content */}
-                        <div className="space-y-2">
-                          {mod.subs.map((sub) => {
-                            const isOn = getToggle(sub);
-                            return (
-                              <AnimatePresence key={sub}>
-                                {isOn && (
-                                  <motion.div
-                                    initial={{ opacity: 0, height: 0 }}
-                                    animate={{ opacity: 1, height: "auto" }}
-                                    exit={{ opacity: 0, height: 0 }}
-                                    transition={{ duration: 0.2 }}
-                                    className="overflow-hidden"
-                                  >
-                                    <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-background border border-border-light">
-                                      <div className="w-1.5 h-6 rounded-full bg-primary/30" />
-                                      <div className="flex-1">
-                                        <p className="text-[12px] font-medium text-foreground">{sub}</p>
-                                        <p className="text-[10px] text-text-tertiary">Active and ready to use</p>
-                                      </div>
-                                      <div className="w-2 h-2 bg-primary rounded-full" />
-                                    </div>
-                                  </motion.div>
-                                )}
-                              </AnimatePresence>
-                            );
-                          })}
-                        </div>
-
-                        {/* Empty state when nothing is on */}
-                        {enabledCount === 0 && (
-                          <div className="text-center py-8">
-                            <p className="text-[13px] text-text-tertiary">All features are off</p>
-                            <p className="text-[11px] text-text-tertiary mt-1">Toggle some on to see them appear here</p>
-                          </div>
-                        )}
+                        <ModulePreview moduleName={mod.name} getToggle={getToggle} />
                       </div>
                     </div>
                   </div>
