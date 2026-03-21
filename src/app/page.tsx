@@ -6,7 +6,7 @@ import {
   ArrowRight, Check, Users, Receipt, Calendar, MessageCircle,
   FolderKanban, BarChart3, Star, Inbox, Megaphone, Headphones,
   FileText, CreditCard, Zap, Package, Crown, Camera, FileInput,
-  ClipboardList, Gift, UserCheck, Store, Globe, Lightbulb, Puzzle, SlidersHorizontal,
+  ClipboardList, Gift, UserCheck, Store, Globe, Lightbulb, Puzzle, SlidersHorizontal, Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import Link from "next/link";
@@ -487,7 +487,7 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background grid-pattern noise-bg">
       {/* Nav */}
       <nav className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
@@ -507,16 +507,30 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero */}
-      <section className="max-w-4xl mx-auto px-4 sm:px-6 pt-12 sm:pt-20 pb-12 sm:pb-16 text-center relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-surface/50 to-background pointer-events-none" />
+      <section className="max-w-4xl mx-auto px-4 sm:px-6 pt-16 sm:pt-24 pb-12 sm:pb-16 text-center relative overflow-hidden">
+        {/* Floating glow orbs */}
+        <div className="glow-orb glow-orb-1" />
+        <div className="glow-orb glow-orb-2" />
+        <div className="glow-orb glow-orb-3" />
+
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
           className="relative z-10"
         >
-          <h1 className="text-[2rem] sm:text-[3.25rem] md:text-[3.75rem] font-bold text-foreground mb-6 leading-[1.08]">
-            The CRM that fits<br />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2, duration: 0.6 }}
+            className="inline-flex items-center gap-2 px-4 py-1.5 bg-primary/10 border border-primary/20 rounded-full text-[12px] font-medium text-foreground mb-6"
+          >
+            <span className="w-2 h-2 bg-primary rounded-full pulse-dot" />
+            23 modules &middot; 207 features &middot; 43 personas
+          </motion.div>
+
+          <h1 className="text-[2.25rem] sm:text-[3.5rem] md:text-[4rem] font-bold mb-6 leading-[1.05]">
+            <span className="gradient-text">The CRM that fits</span><br />
             <span className="text-text-secondary">your business, not the other way around</span>
           </h1>
 
@@ -549,10 +563,11 @@ export default function LandingPage() {
             ].map((stat, i) => (
               <motion.div
                 key={i}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 + i * 0.08 }}
-                className="bg-card-bg rounded-xl border border-border-light p-4 text-center"
+                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.1 + i * 0.12, duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
+                className="bg-white/80 backdrop-blur-sm rounded-xl border border-border-light p-4 text-center glow-border"
               >
                 <p className="text-[28px] sm:text-[32px] font-bold text-foreground leading-none">{stat.num}</p>
                 <p className="text-[11px] text-text-tertiary mt-1">{stat.label}</p>
@@ -598,7 +613,7 @@ export default function LandingPage() {
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.12 }}
                 onClick={() => setActivePersona(i)}
-                className={`bg-white rounded-2xl border overflow-hidden cursor-pointer transition-all duration-300 ${
+                className={`bg-white rounded-2xl border overflow-hidden cursor-pointer transition-all duration-300 glow-border ${
                   activePersona === i
                     ? "border-foreground/20 shadow-xl scale-[1.03] -translate-y-1"
                     : "border-border-light hover:border-foreground/10 hover:shadow-lg hover:-translate-y-1"
@@ -961,8 +976,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Attachment showcase */}
-      <section className="py-12 sm:py-20 bg-white">
+      {/* Attachment showcase — hidden, replaced by interactive demo above */}
+      <section className="py-12 sm:py-20 bg-white" style={{ display: "none" }}>
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
             <div>
@@ -1195,6 +1210,71 @@ export default function LandingPage() {
                     <div><p className="text-[10px] font-medium text-foreground">{n.label}</p><p className="text-[9px] text-text-tertiary">{n.text}</p></div>
                   </div>
                 ))}
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Build Your Own */}
+      <section className="py-12 sm:py-20 bg-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+            <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}>
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-50 border border-purple-200 rounded-full text-[11px] font-medium text-purple-700 mb-4">
+                <Zap className="w-3 h-3" /> AI-Powered
+              </div>
+              <h2 className="text-[1.75rem] sm:text-[2.25rem] font-bold text-foreground leading-tight mb-4">
+                Build your own<br />features with AI.
+              </h2>
+              <p className="text-text-secondary text-[15px] leading-relaxed mb-6">
+                Need something we don&apos;t have? Describe it in plain English and our AI builder creates a custom module — with its own data, views, and automations. Built on top of your existing CRM data.
+              </p>
+              <div className="space-y-3">
+                {[
+                  { title: "Describe what you need", desc: "\"I need a warranty tracker for each job\"" },
+                  { title: "AI builds it", desc: "Custom data model, views, and automations — in seconds" },
+                  { title: "It lives in your sidebar", desc: "Uses your existing clients, jobs, and invoices" },
+                ].map((step, i) => (
+                  <div key={i} className="flex items-start gap-3">
+                    <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-[11px] font-bold text-white">{i + 1}</span>
+                    </div>
+                    <div>
+                      <p className="text-[14px] font-semibold text-foreground">{step.title}</p>
+                      <p className="text-[12px] text-text-secondary">{step.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: 0.2, duration: 0.5 }}>
+              <div className="bg-white rounded-2xl border border-border-light overflow-hidden shadow-lg">
+                <div className="px-5 py-3 border-b border-border-light flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-purple-500" />
+                  <span className="text-[13px] font-semibold text-foreground">AI Builder</span>
+                  <span className="ml-auto text-[10px] bg-primary text-foreground px-2 py-0.5 rounded-full font-semibold">25 credits</span>
+                </div>
+                <div className="p-5 space-y-4">
+                  <div>
+                    <p className="text-[11px] text-text-tertiary mb-2">Describe your feature</p>
+                    <div className="px-4 py-3 bg-background border border-border-light rounded-xl text-[13px] text-text-secondary italic">
+                      &ldquo;I need a warranty tracker that links to completed jobs, tracks expiry dates, and sends reminders before warranties expire&rdquo;
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="flex-1 h-9 bg-foreground rounded-xl flex items-center justify-center text-[12px] text-white font-semibold">Build Feature</div>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-[10px] text-text-tertiary uppercase tracking-wider font-semibold">What AI can build</p>
+                    {["Custom data collections", "Table & kanban views", "Automated triggers", "Connected to your CRM data"].map((c) => (
+                      <div key={c} className="flex items-center gap-2 text-[11px] text-text-secondary">
+                        <Check className="w-3 h-3 text-primary" />{c}
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </motion.div>
           </div>
