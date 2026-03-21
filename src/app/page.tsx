@@ -1,6 +1,7 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowRight, Check, Users, Receipt, Calendar, MessageCircle,
   FolderKanban, BarChart3, Star, Inbox, Megaphone, Headphones,
@@ -119,6 +120,19 @@ const ATTACHMENT_EXAMPLE = {
 };
 
 export default function LandingPage() {
+  const [activePersona, setActivePersona] = useState(0);
+  const [attachmentToggles, setAttachmentToggles] = useState<Record<string, boolean>>(
+    Object.fromEntries(ATTACHMENT_EXAMPLE.attachments.map((a) => [a.name, a.on]))
+  );
+  const [expandedModule, setExpandedModule] = useState<string | null>(null);
+  const [selectedAddon, setSelectedAddon] = useState<number>(0);
+
+  const toggleAttachment = (name: string) => {
+    setAttachmentToggles((prev) => ({ ...prev, [name]: !prev[name] }));
+  };
+
+  const enabledAttachmentCount = Object.values(attachmentToggles).filter(Boolean).length;
+
   return (
     <div className="min-h-screen bg-background">
       {/* Nav */}
@@ -221,14 +235,33 @@ export default function LandingPage() {
               Magic CRM adapts its vocabulary, fields, and workflows to match how you actually run your business.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Persona tab switcher */}
+          <div className="flex justify-center gap-2 mb-6">
             {PERSONA_PREVIEWS.map((persona, i) => (
-              <motion.div
+              <button
                 key={i}
-                initial={{ opacity: 0, y: 15 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.12 }}
+                onClick={() => setActivePersona(i)}
+                className={`px-4 py-2 rounded-full text-[13px] font-medium transition-all cursor-pointer ${
+                  activePersona === i
+                    ? "bg-foreground text-white shadow-sm"
+                    : "bg-surface text-text-secondary hover:text-foreground border border-border-light"
+                }`}
+              >
+                {persona.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Active persona preview */}
+          <div className="max-w-lg mx-auto">
+            <AnimatePresence mode="wait">
+              {(() => { const persona = PERSONA_PREVIEWS[activePersona]; return (
+              <motion.div
+                key={activePersona}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.25 }}
                 className="bg-card-bg rounded-2xl border border-border-light overflow-hidden"
               >
                 <div className="px-4 py-3 border-b border-border-light flex items-center gap-2.5" style={{ borderTop: `2px solid ${persona.accent}` }}>
@@ -274,7 +307,8 @@ export default function LandingPage() {
                   </div>
                 </div>
               </motion.div>
-            ))}
+              ); })()}
+            </AnimatePresence>
           </div>
         </div>
       </section>
@@ -453,10 +487,33 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.03 }}
-                className="p-3 bg-card-bg border border-border-light rounded-xl flex items-center gap-2.5 hover:border-foreground/15 transition-all"
+                onClick={() => setExpandedModule(expandedModule === mod.name ? null : mod.name)}
+                className={`bg-card-bg border rounded-xl cursor-pointer transition-all ${
+                  expandedModule === mod.name ? "border-primary/30 col-span-2 sm:col-span-2 p-4" : "border-border-light p-3 hover:border-foreground/15"
+                }`}
               >
-                <mod.icon className="w-4 h-4 text-text-secondary flex-shrink-0" />
-                <span className="text-[12px] font-medium text-foreground truncate">{mod.name}</span>
+                <div className="flex items-center gap-2.5">
+                  <mod.icon className={`w-4 h-4 flex-shrink-0 ${expandedModule === mod.name ? "text-primary" : "text-text-secondary"}`} />
+                  <span className="text-[12px] font-medium text-foreground truncate">{mod.name}</span>
+                </div>
+                <AnimatePresence>
+                  {expandedModule === mod.name && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      <p className="text-[11px] text-text-tertiary mt-2 mb-2">{mod.desc}</p>
+                      <div className="flex flex-wrap gap-1">
+                        {mod.subs.map((sub) => (
+                          <span key={sub} className="text-[10px] px-2 py-0.5 bg-primary/5 border border-primary/10 rounded-full text-primary font-medium">{sub}</span>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </motion.div>
             ))}
           </div>
@@ -489,35 +546,44 @@ export default function LandingPage() {
               viewport={{ once: true }}
               className="bg-card-bg rounded-2xl border border-border-light overflow-hidden"
             >
-              <div className="px-5 py-4 border-b border-border-light flex items-center gap-3">
-                <div className="w-9 h-9 bg-primary/10 rounded-lg flex items-center justify-center">
-                  <ATTACHMENT_EXAMPLE.icon className="w-[18px] h-[18px] text-primary" />
+              <div className="px-5 py-4 border-b border-border-light flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 bg-primary/10 rounded-lg flex items-center justify-center">
+                    <ATTACHMENT_EXAMPLE.icon className="w-[18px] h-[18px] text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-[14px] font-semibold text-foreground">{ATTACHMENT_EXAMPLE.module}</p>
+                    <p className="text-[11px] text-text-tertiary">{ATTACHMENT_EXAMPLE.core}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-[14px] font-semibold text-foreground">{ATTACHMENT_EXAMPLE.module}</p>
-                  <p className="text-[11px] text-text-tertiary">{ATTACHMENT_EXAMPLE.core}</p>
-                </div>
+                <span className="text-[11px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                  {enabledAttachmentCount}/{ATTACHMENT_EXAMPLE.attachments.length} on
+                </span>
               </div>
               <div className="p-4 space-y-2">
-                <p className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider mb-3">Attachments</p>
-                {ATTACHMENT_EXAMPLE.attachments.map((att, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, x: 10 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.06 }}
-                    className="flex items-center justify-between py-2 px-3 rounded-lg bg-surface/50"
-                  >
-                    <div>
-                      <p className="text-[13px] font-medium text-foreground">{att.name}</p>
-                      <p className="text-[11px] text-text-tertiary">{att.desc}</p>
-                    </div>
-                    <div className={`w-10 h-[22px] rounded-full flex items-center px-0.5 transition-colors ${att.on ? "bg-primary justify-end" : "bg-gray-200 justify-start"}`}>
-                      <div className="w-[18px] h-[18px] bg-white rounded-full shadow-sm" />
-                    </div>
-                  </motion.div>
-                ))}
+                <p className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider mb-3">Try toggling — this is how it works inside the app</p>
+                {ATTACHMENT_EXAMPLE.attachments.map((att, i) => {
+                  const isOn = attachmentToggles[att.name] ?? att.on;
+                  return (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, x: 10 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: i * 0.06 }}
+                      onClick={() => toggleAttachment(att.name)}
+                      className={`flex items-center justify-between py-2.5 px-3 rounded-lg cursor-pointer transition-all ${isOn ? "bg-primary/5 border border-primary/15" : "bg-surface/50 hover:bg-surface"}`}
+                    >
+                      <div>
+                        <p className="text-[13px] font-medium text-foreground">{att.name}</p>
+                        <p className="text-[11px] text-text-tertiary">{att.desc}</p>
+                      </div>
+                      <div className={`w-10 h-[22px] rounded-full flex items-center px-0.5 transition-all duration-200 ${isOn ? "bg-primary justify-end" : "bg-gray-200 justify-start"}`}>
+                        <motion.div layout className="w-[18px] h-[18px] bg-white rounded-full shadow-sm" />
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </div>
             </motion.div>
           </div>
@@ -610,24 +676,47 @@ export default function LandingPage() {
             </motion.div>
           </div>
 
-          {/* Remaining add-ons — compact grid */}
+          {/* Remaining add-ons — expandable grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {ADDONS.filter(a => !["Client Portal", "AI Insights", "Loyalty & Referrals"].includes(a.name)).map((addon, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 8 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.04 }}
-                className="p-3 bg-card-bg border border-border-light rounded-xl flex items-center gap-2.5 hover:border-primary/20 transition-all"
-              >
-                <addon.icon className="w-4 h-4 text-text-secondary flex-shrink-0" />
-                <div className="min-w-0">
-                  <span className="text-[12px] font-medium text-foreground block truncate">{addon.name}</span>
-                  <span className="text-[10px] text-text-tertiary block truncate">{addon.tags[0]}</span>
-                </div>
-              </motion.div>
-            ))}
+            {ADDONS.filter(a => !["Client Portal", "AI Insights", "Loyalty & Referrals"].includes(a.name)).map((addon, i) => {
+              const isExpanded = selectedAddon === i + 100;
+              return (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 8 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.04 }}
+                  onClick={() => setSelectedAddon(isExpanded ? -1 : i + 100)}
+                  className={`bg-card-bg border rounded-xl cursor-pointer transition-all ${
+                    isExpanded ? "border-primary/30 col-span-2 sm:col-span-2 p-4" : "border-border-light p-3 hover:border-primary/20"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <addon.icon className={`w-4 h-4 flex-shrink-0 ${isExpanded ? "text-primary" : "text-text-secondary"}`} />
+                    <span className="text-[12px] font-medium text-foreground truncate">{addon.name}</span>
+                  </div>
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                      >
+                        <p className="text-[11px] text-text-secondary mt-2 mb-2 leading-relaxed">{addon.desc}</p>
+                        <div className="flex flex-wrap gap-1">
+                          {addon.tags.map((tag) => (
+                            <span key={tag} className="text-[10px] px-2 py-0.5 bg-primary/5 border border-primary/10 rounded-full text-primary font-medium">{tag}</span>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </section>
