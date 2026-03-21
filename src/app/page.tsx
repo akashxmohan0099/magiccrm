@@ -223,9 +223,9 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Persona Comparison */}
-      <section className="py-12 sm:py-20 bg-surface">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+      {/* Persona Comparison — side by side */}
+      <section className="py-12 sm:py-20 bg-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-10 sm:mb-14">
             <h2 className="text-[1.75rem] sm:text-[2.25rem] font-bold text-foreground leading-tight mb-3">
               Same platform. Your language.
@@ -235,34 +235,21 @@ export default function LandingPage() {
               Magic CRM adapts its vocabulary, fields, and workflows to match how you actually run your business.
             </p>
           </div>
-          {/* Persona tab switcher */}
-          <div className="flex justify-center gap-2 mb-6">
-            {PERSONA_PREVIEWS.map((persona, i) => (
-              <button
-                key={i}
-                onClick={() => setActivePersona(i)}
-                className={`px-4 py-2 rounded-full text-[13px] font-medium transition-all cursor-pointer ${
-                  activePersona === i
-                    ? "bg-foreground text-white shadow-sm"
-                    : "bg-surface text-text-secondary hover:text-foreground border border-border-light"
-                }`}
-              >
-                {persona.label}
-              </button>
-            ))}
-          </div>
 
-          {/* Active persona preview */}
-          <div className="max-w-lg mx-auto">
-            <AnimatePresence mode="wait">
-              {(() => { const persona = PERSONA_PREVIEWS[activePersona]; return (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {PERSONA_PREVIEWS.map((persona, i) => (
               <motion.div
-                key={activePersona}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.25 }}
-                className="bg-card-bg rounded-2xl border border-border-light overflow-hidden"
+                key={i}
+                initial={{ opacity: 0, y: 15 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.12 }}
+                onClick={() => setActivePersona(i)}
+                className={`bg-white rounded-2xl border overflow-hidden cursor-pointer transition-all duration-200 ${
+                  activePersona === i
+                    ? "border-foreground/20 shadow-lg scale-[1.02]"
+                    : "border-border-light hover:border-foreground/10 hover:shadow-md"
+                }`}
               >
                 <div className="px-4 py-3 border-b border-border-light flex items-center gap-2.5" style={{ borderTop: `2px solid ${persona.accent}` }}>
                   <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ backgroundColor: persona.accent + "18" }}>
@@ -274,9 +261,9 @@ export default function LandingPage() {
                   </div>
                 </div>
                 <div className="flex" style={{ minHeight: 195 }}>
-                  <div className="w-[100px] border-r border-border-light bg-surface/30 p-1.5 flex flex-col gap-0.5">
+                  <div className="w-[100px] border-r border-border-light p-1.5 flex flex-col gap-0.5">
                     {persona.nav.map((item) => (
-                      <div key={item} className={`text-[11px] py-1.5 px-2 rounded-md ${item === persona.activeNav ? "bg-card-bg font-semibold text-foreground shadow-sm" : "text-text-tertiary"}`}>
+                      <div key={item} className={`text-[11px] py-1.5 px-2 rounded-md ${item === persona.activeNav ? "bg-background font-semibold text-foreground shadow-sm" : "text-text-tertiary"}`}>
                         {item}
                       </div>
                     ))}
@@ -285,7 +272,7 @@ export default function LandingPage() {
                     <p className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider mb-2">{persona.contentTitle}</p>
                     <div className="space-y-1.5">
                       {persona.items.map((item, j) => (
-                        <div key={j} className="flex items-center gap-2 bg-surface/50 rounded-lg px-2.5 py-1.5">
+                        <div key={j} className="flex items-center gap-2 bg-background rounded-lg px-2.5 py-1.5">
                           {"stageColor" in item && <div className={`w-2 h-2 rounded-full flex-shrink-0 ${item.stageColor}`} />}
                           <span className="text-[11px] text-foreground font-medium flex-1 truncate">{item.name}</span>
                           <span className="text-[10px] text-text-tertiary">{item.meta}</span>
@@ -298,17 +285,16 @@ export default function LandingPage() {
                     </div>
                   </div>
                 </div>
-                <div className="px-3 py-2.5 border-t border-border-light bg-surface/20">
+                <div className="px-3 py-2.5 border-t border-border-light">
                   <p className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider mb-1.5">Client fields</p>
                   <div className="flex flex-wrap gap-1">
                     {persona.fields.map((f) => (
-                      <span key={f} className="text-[10px] px-2 py-0.5 bg-surface border border-border-light rounded-full text-text-secondary">{f}</span>
+                      <span key={f} className="text-[10px] px-2 py-0.5 bg-background border border-border-light rounded-full text-text-secondary">{f}</span>
                     ))}
                   </div>
                 </div>
               </motion.div>
-              ); })()}
-            </AnimatePresence>
+            ))}
           </div>
         </div>
       </section>
@@ -325,7 +311,68 @@ export default function LandingPage() {
             </p>
           </div>
 
-          {/* Hero modules with mini UI previews */}
+          {/* Interactive module selector */}
+          <div className="flex flex-wrap justify-center gap-2 mb-8">
+            {CORE_MODULES.map((mod, i) => (
+              <button
+                key={mod.name}
+                onClick={() => setExpandedModule(expandedModule === mod.name ? null : mod.name)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium transition-all cursor-pointer ${
+                  expandedModule === mod.name
+                    ? "bg-foreground text-white shadow-sm"
+                    : "bg-white text-text-secondary hover:text-foreground border border-border-light hover:border-foreground/15"
+                }`}
+              >
+                <mod.icon className="w-3.5 h-3.5" />
+                {mod.name}
+              </button>
+            ))}
+          </div>
+
+          {/* Selected module detail */}
+          <AnimatePresence mode="wait">
+            {expandedModule && (() => {
+              const mod = CORE_MODULES.find(m => m.name === expandedModule);
+              if (!mod) return null;
+              return (
+                <motion.div
+                  key={expandedModule}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="max-w-2xl mx-auto mb-8"
+                >
+                  <div className="bg-white rounded-2xl border border-border-light overflow-hidden shadow-sm">
+                    <div className="px-6 py-4 border-b border-border-light flex items-center gap-3">
+                      <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                        <mod.icon className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-[16px] font-semibold text-foreground">{mod.name}</p>
+                        <p className="text-[12px] text-text-tertiary">{mod.desc}</p>
+                      </div>
+                    </div>
+                    <div className="p-5">
+                      <p className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider mb-3">Toggleable features</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {mod.subs.map((sub) => (
+                          <div key={sub} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background border border-border-light">
+                            <div className="w-8 h-[18px] rounded-full bg-primary flex items-center justify-end px-0.5">
+                              <div className="w-[14px] h-[14px] bg-white rounded-full shadow-sm" />
+                            </div>
+                            <span className="text-[12px] font-medium text-foreground">{sub}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })()}
+          </AnimatePresence>
+
+          {!expandedModule && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             {/* Bookings preview */}
             <motion.div initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="bg-card-bg rounded-2xl border border-border-light overflow-hidden">
@@ -478,50 +525,13 @@ export default function LandingPage() {
             </motion.div>
           </div>
 
-          {/* Remaining modules — compact grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-            {CORE_MODULES.filter(m => !["Bookings", "Leads & Pipeline", "Invoicing", "Communication"].includes(m.name)).map((mod, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 8 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.03 }}
-                onClick={() => setExpandedModule(expandedModule === mod.name ? null : mod.name)}
-                className={`bg-card-bg border rounded-xl cursor-pointer transition-all ${
-                  expandedModule === mod.name ? "border-primary/30 col-span-2 sm:col-span-2 p-4" : "border-border-light p-3 hover:border-foreground/15"
-                }`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <mod.icon className={`w-4 h-4 flex-shrink-0 ${expandedModule === mod.name ? "text-primary" : "text-text-secondary"}`} />
-                  <span className="text-[12px] font-medium text-foreground truncate">{mod.name}</span>
-                </div>
-                <AnimatePresence>
-                  {expandedModule === mod.name && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="overflow-hidden"
-                    >
-                      <p className="text-[11px] text-text-tertiary mt-2 mb-2">{mod.desc}</p>
-                      <div className="flex flex-wrap gap-1">
-                        {mod.subs.map((sub) => (
-                          <span key={sub} className="text-[10px] px-2 py-0.5 bg-primary/5 border border-primary/10 rounded-full text-primary font-medium">{sub}</span>
-                        ))}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            ))}
-          </div>
+          )}
+          {!expandedModule && <p className="text-center text-[13px] text-text-tertiary mt-4">Click any module above to explore its features</p>}
         </div>
       </section>
 
       {/* Attachment showcase */}
-      <section className="py-12 sm:py-20 bg-surface">
+      <section className="py-12 sm:py-20 bg-white">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
             <div>
@@ -722,7 +732,7 @@ export default function LandingPage() {
       </section>
 
       {/* How it works */}
-      <section className="py-12 sm:py-20 bg-surface">
+      <section className="py-12 sm:py-20 bg-white">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-10 sm:mb-14">
             <h2 className="text-[1.75rem] sm:text-[2.25rem] font-bold text-foreground leading-tight mb-3">
@@ -836,7 +846,7 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing */}
-      <section className="py-12 sm:py-20 bg-surface">
+      <section className="py-12 sm:py-20 bg-white">
         <div className="max-w-md mx-auto px-4 sm:px-6 text-center">
           <h2 className="text-[1.75rem] sm:text-[2.25rem] font-bold text-foreground mb-3 leading-tight">
             One plan. Everything included.
