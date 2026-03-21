@@ -43,8 +43,11 @@ export function ModulePickerDemo() {
     return () => clearInterval(interval);
   }, [paused]);
 
-  // Modules toggle off one by one, then back on
-  const disabledModules = useMemo(() => {
+  // Track manually toggled modules (when user interacts)
+  const [manualToggles, setManualToggles] = useState<Record<string, boolean>>({});
+
+  // Modules toggle off one by one, then back on (auto-play)
+  const autoDisabled = useMemo(() => {
     const disabled = new Set<string>();
     MODULE_SEQUENCE.forEach((name, i) => {
       const offTick = 2 + i * 2;
@@ -53,6 +56,26 @@ export function ModulePickerDemo() {
     });
     return disabled;
   }, [tick]);
+
+  // When paused, use manual toggles; when auto-playing, use auto state
+  const disabledModules = useMemo(() => {
+    if (paused && Object.keys(manualToggles).length > 0) {
+      const disabled = new Set<string>();
+      MODULES.forEach((m) => { if (manualToggles[m.name] === false) disabled.add(m.name); });
+      return disabled;
+    }
+    return autoDisabled;
+  }, [paused, manualToggles, autoDisabled]);
+
+  // When auto-play resumes, sync manual toggles to current auto state
+  useEffect(() => {
+    if (!paused) setManualToggles({});
+  }, [paused]);
+
+  const toggleModule = (name: string) => {
+    setPaused(true);
+    setManualToggles((prev) => ({ ...prev, [name]: prev[name] === false ? true : disabledModules.has(name) ? true : false }));
+  };
 
   const activeCount = MODULES.length - disabledModules.size;
 
@@ -87,7 +110,8 @@ export function ModulePickerDemo() {
                     <motion.div
                       key={mod.name}
                       layout
-                      className={`flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-300 ${
+                      onClick={() => toggleModule(mod.name)}
+                      className={`flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-300 cursor-pointer hover:bg-background ${
                         isOn ? "" : "opacity-40"
                       }`}
                     >
@@ -114,7 +138,7 @@ export function ModulePickerDemo() {
             <div className="flex-1 bg-background flex flex-col">
               <div className="px-5 py-3 border-b border-border-light bg-white flex items-center gap-2">
                 <div className="w-5 h-5 bg-primary rounded-lg flex items-center justify-center"><div className="w-2 h-2 bg-foreground rounded-sm" /></div>
-                <span className="text-[12px] font-bold text-foreground">Your CRM Sidebar</span>
+                <span className="text-[12px] font-bold text-foreground">Only what you need</span>
                 {!paused && <div className="ml-auto flex items-center gap-1"><div className="w-1.5 h-1.5 bg-primary rounded-full pulse-dot" /><span className="text-[9px] text-text-tertiary">Live</span></div>}
               </div>
               <div className="flex-1 bg-white mx-4 my-4 rounded-xl border border-border-light overflow-hidden">
