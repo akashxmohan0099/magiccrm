@@ -1037,47 +1037,29 @@ export default function LandingPage() {
             </motion.div>
           </div>
 
-          {/* Remaining add-ons — expandable grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {ADDONS.filter(a => !["Client Portal", "AI Insights", "Loyalty & Referrals"].includes(a.name)).map((addon, i) => {
-              const isExpanded = selectedAddon === i + 100;
-              return (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 8 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.04 }}
-                  onClick={() => setSelectedAddon(isExpanded ? -1 : i + 100)}
-                  className={`bg-card-bg border rounded-xl cursor-pointer transition-all ${
-                    isExpanded ? "border-primary/30 col-span-2 sm:col-span-2 p-4" : "border-border-light p-3 hover:border-primary/20"
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <addon.icon className={`w-4 h-4 flex-shrink-0 ${isExpanded ? "text-primary" : "text-text-secondary"}`} />
-                    <span className="text-[12px] font-medium text-foreground truncate">{addon.name}</span>
-                  </div>
-                  <AnimatePresence>
-                    {isExpanded && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="overflow-hidden"
-                      >
-                        <p className="text-[11px] text-text-secondary mt-2 mb-2 leading-relaxed">{addon.desc}</p>
-                        <div className="flex flex-wrap gap-1">
-                          {addon.tags.map((tag) => (
-                            <span key={tag} className="text-[10px] px-2 py-0.5 bg-primary/5 border border-primary/10 rounded-full text-primary font-medium">{tag}</span>
-                          ))}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </motion.div>
-              );
-            })}
+          {/* Remaining add-ons — all show description + tags */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {ADDONS.filter(a => !["Client Portal", "AI Insights", "Loyalty & Referrals"].includes(a.name)).map((addon, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 8 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.04 }}
+                className="bg-white border border-border-light rounded-xl p-4 hover:border-primary/20 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300"
+              >
+                <div className="flex items-center gap-2.5 mb-2">
+                  <addon.icon className="w-4 h-4 text-text-secondary flex-shrink-0" />
+                  <span className="text-[13px] font-semibold text-foreground">{addon.name}</span>
+                </div>
+                <p className="text-[11px] text-text-secondary leading-relaxed mb-3">{addon.desc}</p>
+                <div className="flex flex-wrap gap-1">
+                  {addon.tags.map((tag) => (
+                    <span key={tag} className="text-[10px] px-2 py-0.5 bg-primary/5 border border-primary/10 rounded-full text-primary font-medium">{tag}</span>
+                  ))}
+                </div>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
