@@ -30,11 +30,20 @@ const MODULE_FEATURE_MAP: Record<string, string> = {
   "Reporting": "reporting",
 };
 
+// Only show features that have VISIBLE impact on the preview
+const DEMO_FEATURES: Record<string, string[]> = {
+  "Clients": ["Tags & Categories", "Birthday Reminders", "Import / Export", "Merge Duplicates", "Bulk Actions", "Acquisition Source", "Activity Timeline", "Internal Notes"],
+  "Leads & Pipeline": ["Web Forms", "Lead Scoring", "Auto-Assign", "Follow-up Reminders"],
+  "Communication": ["Canned Responses", "Scheduled Send", "After-Hours Auto-Reply"],
+  "Bookings": ["Deposits", "Waitlist", "Buffer Time", "No-Show Protection"],
+  "Invoicing": ["Auto Tax", "Tipping", "Partial Payments", "Late Reminders"],
+  "Jobs & Projects": ["Expense Tracking", "Time Tracking", "Recurring Jobs"],
+  "Marketing": ["Email Sequences", "Social Scheduling", "Coupons"],
+  "Support": ["Auto-Responses", "Satisfaction Ratings", "Knowledge Base"],
+};
+
 function getModuleFeatures(moduleName: string) {
-  const blockId = MODULE_FEATURE_MAP[moduleName];
-  if (!blockId) return [];
-  const block = FEATURE_BLOCKS.find(b => b.id === blockId);
-  return block?.subFeatures.map(f => f.label) ?? [];
+  return DEMO_FEATURES[moduleName] ?? CORE_MODULES.find(m => m.name === moduleName)?.subs ?? [];
 }
 
 // ── Persona comparison data ──
@@ -411,7 +420,24 @@ export default function LandingPage() {
     Object.fromEntries(ATTACHMENT_EXAMPLE.attachments.map((a) => [a.name, a.on]))
   );
   const [expandedModule, setExpandedModule] = useState<string | null>(CORE_MODULES[0].name);
-  const [demoToggles, setDemoToggles] = useState<Record<string, boolean>>({});
+  // Start with some features OFF so the demo shows the toggle effect
+  const [demoToggles, setDemoToggles] = useState<Record<string, boolean>>({
+    "Clients:Birthday Reminders": false,
+    "Clients:Merge Duplicates": false,
+    "Clients:Bulk Actions": false,
+    "Clients:Activity Timeline": false,
+    "Clients:Internal Notes": false,
+    "Leads & Pipeline:Lead Scoring": false,
+    "Leads & Pipeline:Auto-Assign": false,
+    "Bookings:Waitlist": false,
+    "Bookings:No-Show Protection": false,
+    "Invoicing:Tipping": false,
+    "Invoicing:Partial Payments": false,
+    "Jobs & Projects:Expense Tracking": false,
+    "Jobs & Projects:Time Tracking": false,
+    "Communication:Scheduled Send": false,
+    "Communication:After-Hours Auto-Reply": false,
+  });
   const [selectedAddon, setSelectedAddon] = useState<number>(0);
   const [moduleAutoCycle, setModuleAutoCycle] = useState(true);
   const [moduleProgress, setModuleProgress] = useState(0);
@@ -429,15 +455,15 @@ export default function LandingPage() {
     setModuleProgress(0);
 
     const progressInterval = setInterval(() => {
-      setModuleProgress((p) => Math.min(p + 2, 100));
-    }, 80);
+      setModuleProgress((p) => Math.min(p + 1.7, 100));
+    }, 100);
 
     moduleTimerRef.current = setTimeout(() => {
       setExpandedModule((prev) => {
         const idx = CORE_MODULES.findIndex((m) => m.name === prev);
         return CORE_MODULES[(idx + 1) % CORE_MODULES.length].name;
       });
-    }, 4000);
+    }, 6000);
 
     return () => {
       clearInterval(progressInterval);
