@@ -142,7 +142,7 @@ export default function LandingPage() {
           <Link href="/login" className="text-[13px] text-text-secondary hover:text-foreground transition-colors font-medium">
             Log in
           </Link>
-          <Link href="/signup">
+          <Link href="/onboarding">
             <Button size="sm">Start free</Button>
           </Link>
         </div>
@@ -161,7 +161,7 @@ export default function LandingPage() {
             transition={{ delay: 0.2, duration: 0.6 }}
             className="text-[13px] text-text-secondary font-medium mb-6"
           >
-            14 modules &middot; 200+ features &middot; 43 personas
+            Built for how you actually work
           </motion.div>
 
           <motion.h1
@@ -180,7 +180,7 @@ export default function LandingPage() {
             transition={{ delay: 0.15, duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
             className="text-[15px] sm:text-[17px] text-text-secondary mb-8 sm:mb-10 max-w-xl mx-auto leading-relaxed"
           >
-            14 modules. 200+ toggleable features. One flat price. Tell us what you do and we&apos;ll assemble a toolkit with only what you need.
+            Tell us what you do and we&apos;ll assemble a workspace with only the tools you need. One flat price, nothing you won&apos;t use.
           </motion.p>
 
           <motion.div
@@ -189,7 +189,7 @@ export default function LandingPage() {
             transition={{ delay: 0.3, duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
             className="flex flex-col items-center gap-4"
           >
-            <Link href="/signup">
+            <Link href="/onboarding">
               <Button size="lg" className="px-10">
                 Build my workspace <ArrowRight className="w-5 h-5" />
               </Button>
@@ -814,7 +814,7 @@ export default function LandingPage() {
                 {[
                   { title: "No per-seat pricing", desc: "Your whole team gets access. Add people without doing math." },
                   { title: "Only your features", desc: "No hidden tabs, no locked modules, no 'upgrade to unlock' walls." },
-                  { title: "200+ features, all toggleable", desc: "Every feature is a switch. Flip it on when you need it, off when you don't." },
+                  { title: "Everything is customizable", desc: "Every module adapts to your workflow. Turn features on or off as your business grows." },
                   { title: "Add-ons, one click each", desc: "Need gift cards next month? Click install. Need treatment notes? Click install." },
                   { title: "Industry-native vocabulary", desc: "A plumber sees Jobs and Quotes. A physio sees Patients and Treatment Plans." },
                 ].map((item, i) => (
@@ -957,7 +957,7 @@ export default function LandingPage() {
             </div>
             <div className="space-y-3 mb-8">
               {[
-                "14 modules — pick what you need",
+                "Only the tools you need — nothing else",
                 "200+ toggleable features included",
                 "Add-ons — install anytime",
                 "Unlimited team members",
@@ -976,7 +976,7 @@ export default function LandingPage() {
               whileInView="visible"
               viewport={viewportConfig}
             >
-              <Link href="/signup">
+              <Link href="/onboarding">
                 <Button size="lg" className="w-full cta-glow">
                   Start building <ArrowRight className="w-5 h-5" />
                 </Button>
@@ -1023,7 +1023,7 @@ export default function LandingPage() {
             whileInView="visible"
             viewport={viewportConfig}
           >
-            <Link href="/signup">
+            <Link href="/onboarding">
               <Button size="lg" className="px-10 bg-primary text-foreground hover:bg-primary-hover shadow-none hover:shadow-none cta-glow">
                 Build my workspace <ArrowRight className="w-5 h-5" />
               </Button>

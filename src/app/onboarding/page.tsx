@@ -3,9 +3,11 @@
 import { AnimatePresence } from "framer-motion";
 import { useOnboardingStore } from "@/store/onboarding";
 import { useHydration } from "@/hooks/useHydration";
+import { useAuth } from "@/hooks/useAuth";
 import { WelcomeStep } from "@/components/onboarding/WelcomeStep";
 import { IndustryStep } from "@/components/onboarding/IndustryStep";
 import { BusinessContextStep } from "@/components/onboarding/BusinessContextStep";
+import { SignupStep } from "@/components/onboarding/SignupStep";
 import { SetupMethodStep } from "@/components/onboarding/SetupMethodStep";
 import { SelfServeStep } from "@/components/onboarding/SelfServeStep";
 import { NeedsAssessmentStep } from "@/components/onboarding/NeedsAssessmentStep";
@@ -26,27 +28,36 @@ function OnboardingContent() {
   const step = useOnboardingStore((s) => s.step);
   const setupMethod = useOnboardingStore((s) => s.setupMethod);
   const isBuilding = useOnboardingStore((s) => s.isBuilding);
+  const { user, loading } = useAuth();
 
   if (isBuilding) {
     return <BuildingScreen />;
   }
 
   // Steps:
-  // 0 = Welcome
-  // 1 = Industry/Persona
-  // 2 = Business Context
-  // 3 = SetupMethodStep (fork: guided vs self-serve)
-  // 4 = self-serve ? SelfServeStep : NeedsAssessmentStep (yes/no module questions)
-  // 5 = SummaryStep (both paths)
-  //
-  // When a module is enabled, ALL its sub-features are ON by default.
-  // Users can toggle individual features off later from dashboard settings.
+  // 0 = Welcome (public)
+  // 1 = Industry/Persona (public)
+  // 2 = Business Context (public)
+  // 3 = Signup (if not authenticated — creates account, then continues)
+  // 4 = Setup Method (fork: guided vs self-serve)
+  // 5 = Discovery questions OR SelfServe module picker
+  // 6 = Summary → Launch
   const renderStep = () => {
     if (step === 0) return <WelcomeStep />;
     if (step === 1) return <IndustryStep />;
     if (step === 2) return <BusinessContextStep />;
-    if (step === 3) return <SetupMethodStep />;
-    if (step === 4) return setupMethod === "self-serve" ? <SelfServeStep /> : <NeedsAssessmentStep />;
+
+    // Step 3: signup gate — skip if already authenticated
+    if (step === 3) {
+      if (loading) return <div className="min-h-screen bg-background" />;
+      if (!user) return <SignupStep />;
+      // Already logged in — auto-advance
+      useOnboardingStore.getState().nextStep();
+      return null;
+    }
+
+    if (step === 4) return <SetupMethodStep />;
+    if (step === 5) return setupMethod === "self-serve" ? <SelfServeStep /> : <NeedsAssessmentStep />;
     return <SummaryStep />;
   };
 

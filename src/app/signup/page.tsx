@@ -121,7 +121,7 @@ export default function SignupPage() {
               className="w-9 h-9 rounded-xl flex items-center justify-center"
               style={{ backgroundColor: "var(--logo-green)" }}
             >
-              <div className="w-3.5 h-3.5 bg-foreground rounded-[4px]" />
+              <div className="w-3.5 h-3.5 bg-white rounded-[4px]" />
             </div>
             <span className="font-bold text-foreground text-[16px] tracking-tight">Magic</span>
           </Link>
