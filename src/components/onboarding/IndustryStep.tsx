@@ -3,8 +3,8 @@
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, ArrowRight, Check,
-  Sparkles, Wrench, Briefcase, Heart, Palette,
-  UtensilsCrossed, GraduationCap, ShoppingBag, Rocket,
+  Scissors, Wrench, Briefcase, Dumbbell, PenTool,
+  UtensilsCrossed, GraduationCap, ShoppingBag, Layers,
 } from "lucide-react";
 import { useOnboardingStore } from "@/store/onboarding";
 import { INDUSTRY_CONFIGS } from "@/types/onboarding";
@@ -14,15 +14,15 @@ const INDUSTRY_ICONS: Record<string, {
   bg: string;
   color: string;
 }> = {
-  "beauty-wellness":       { icon: Sparkles,         bg: "bg-pink-50",    color: "text-pink-500" },
+  "beauty-wellness":       { icon: Scissors,         bg: "bg-pink-50",    color: "text-pink-500" },
   "trades-construction":   { icon: Wrench,           bg: "bg-amber-50",   color: "text-amber-600" },
   "professional-services": { icon: Briefcase,        bg: "bg-blue-50",    color: "text-blue-500" },
-  "health-fitness":        { icon: Heart,            bg: "bg-rose-50",    color: "text-rose-500" },
-  "creative-services":     { icon: Palette,          bg: "bg-violet-50",  color: "text-violet-500" },
+  "health-fitness":        { icon: Dumbbell,         bg: "bg-rose-50",    color: "text-rose-500" },
+  "creative-services":     { icon: PenTool,          bg: "bg-violet-50",  color: "text-violet-500" },
   "hospitality-events":    { icon: UtensilsCrossed,  bg: "bg-orange-50",  color: "text-orange-500" },
   "education-coaching":    { icon: GraduationCap,    bg: "bg-emerald-50", color: "text-emerald-600" },
   "retail-ecommerce":      { icon: ShoppingBag,      bg: "bg-cyan-50",    color: "text-cyan-600" },
-  "other":                 { icon: Rocket,           bg: "bg-purple-50",  color: "text-purple-500" },
+  "other":                 { icon: Layers,           bg: "bg-gray-50",    color: "text-gray-500" },
 };
 
 export function IndustryStep() {
