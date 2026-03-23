@@ -23,33 +23,47 @@ interface Slide {
 
 const SLIDES: Slide[] = [
   {
-    title: "How do you work with clients?",
+    title: "How do clients reach you?",
     subtitle: "Select all that apply",
     chips: [
-      { id: "clients-book", label: "Clients book appointments with me", activates: ["bookings-calendar"], needsKeys: ["acceptBookings"] },
-      { id: "visit-clients", label: "I visit clients at their location", activates: ["bookings-calendar", "jobs-projects"], needsKeys: ["acceptBookings", "manageProjects"] },
-      { id: "recurring", label: "I have repeat or regular clients", activates: ["bookings-calendar", "automations"], needsKeys: ["acceptBookings"] },
-      { id: "online-booking", label: "Clients should be able to book online", activates: ["bookings-calendar"], needsKeys: ["acceptBookings"] },
+      { id: "clients-book", label: "They book appointments or sessions", activates: ["bookings-calendar"], needsKeys: ["acceptBookings"] },
+      { id: "inquiries", label: "They send inquiries or requests", activates: ["leads-pipeline"], needsKeys: ["receiveInquiries"] },
+      { id: "walk-ins", label: "They walk in or call directly", activates: ["bookings-calendar"], needsKeys: ["acceptBookings"] },
+      { id: "online-booking", label: "I want an online booking page", activates: ["bookings-calendar"], needsKeys: ["acceptBookings"] },
+      { id: "messaging", label: "They message me on WhatsApp, Instagram, etc.", activates: ["communication"], needsKeys: ["communicateClients"] },
     ],
   },
   {
-    title: "How do you get paid?",
+    title: "How do you deliver your work?",
     subtitle: "Select all that apply",
     chips: [
-      { id: "deposits", label: "I take deposits before starting", activates: ["quotes-invoicing"], needsKeys: ["sendInvoices"] },
-      { id: "proposals", label: "I send proposals or quotes first", activates: ["quotes-invoicing"], needsKeys: ["sendInvoices"] },
-      { id: "track-time", label: "I bill by the hour or track time", activates: ["jobs-projects", "quotes-invoicing"], needsKeys: ["manageProjects", "sendInvoices"] },
-      { id: "contracts", label: "I use contracts or terms of service", activates: ["documents"], needsKeys: [] },
+      { id: "at-my-place", label: "Clients come to me", activates: ["bookings-calendar"], needsKeys: ["acceptBookings"] },
+      { id: "visit-clients", label: "I go to the client", activates: ["bookings-calendar", "jobs-projects"], needsKeys: ["acceptBookings", "manageProjects"] },
+      { id: "projects", label: "I track my work from start to finish", activates: ["jobs-projects"], needsKeys: ["manageProjects"] },
+      { id: "recurring-clients", label: "I see the same clients regularly", activates: ["bookings-calendar", "automations"], needsKeys: ["acceptBookings"] },
+      { id: "track-time", label: "I track how long things take", activates: ["jobs-projects"], needsKeys: ["manageProjects"] },
     ],
   },
   {
-    title: "How does your business operate?",
+    title: "How do you handle payments?",
     subtitle: "Select all that apply",
     chips: [
-      { id: "team", label: "I have employees or contractors", activates: ["team"], needsKeys: [] },
-      { id: "referrals", label: "I rely on referrals and word of mouth", activates: ["marketing"], needsKeys: ["runMarketing"] },
-      { id: "automate", label: "I want to automate reminders and follow-ups", activates: ["automations"], needsKeys: [] },
-      { id: "reports", label: "I want to track revenue and performance", activates: ["reporting"], needsKeys: [] },
+      { id: "invoices", label: "I send invoices after the work", activates: ["quotes-invoicing"], needsKeys: ["sendInvoices"] },
+      { id: "deposits", label: "I collect deposits upfront", activates: ["quotes-invoicing"], needsKeys: ["sendInvoices"] },
+      { id: "proposals", label: "I send quotes or proposals first", activates: ["quotes-invoicing"], needsKeys: ["sendInvoices"] },
+      { id: "recurring-billing", label: "I have recurring or subscription billing", activates: ["quotes-invoicing", "automations"], needsKeys: ["sendInvoices"] },
+      { id: "contracts", label: "I use contracts or agreements", activates: ["documents"], needsKeys: [] },
+    ],
+  },
+  {
+    title: "How do you manage your business?",
+    subtitle: "Select all that apply",
+    chips: [
+      { id: "team", label: "I have staff or contractors", activates: ["team"], needsKeys: [] },
+      { id: "automate", label: "I want to automate repetitive tasks", activates: ["automations"], needsKeys: [] },
+      { id: "reports", label: "I want to see revenue and reports", activates: ["reporting"], needsKeys: [] },
+      { id: "products", label: "I sell products alongside services", activates: ["products"], needsKeys: [] },
+      { id: "client-portal", label: "I want clients to have a self-service portal", activates: ["client-portal"], needsKeys: [] },
     ],
   },
 ];
@@ -99,8 +113,25 @@ export function BubblesStep() {
         chip.needsKeys.forEach(n => needs.add(n));
       }
     }
+    // Always-on
     (["manageCustomers", "receiveInquiries", "communicateClients", "sendInvoices"] as const).forEach(n => needs.add(n));
     needs.forEach(n => setNeed(n, true));
+
+    // Store activated modules in discoveryAnswers so Summary page can read them
+    // Key format: "module:{moduleId}" = true
+    const store = useOnboardingStore.getState();
+    const answers: Record<string, boolean> = {};
+    for (const chip of ALL_CHIPS) {
+      if (selected.has(chip.id)) {
+        answers[chip.id] = true;
+        // Also store module activations directly
+        chip.activates.forEach(m => { answers[`module:${m}`] = true; });
+      }
+    }
+    // Write all at once
+    for (const [key, val] of Object.entries(answers)) {
+      store.setDiscoveryAnswer(key, val);
+    }
 
     const M2N: Record<string, string> = { "client-database": "manageCustomers", "leads-pipeline": "receiveInquiries", "communication": "communicateClients", "bookings-calendar": "acceptBookings", "quotes-invoicing": "sendInvoices", "jobs-projects": "manageProjects", "marketing": "runMarketing" };
     const N2M = Object.fromEntries(Object.entries(M2N).map(([m, n]) => [n, m]));

@@ -112,27 +112,11 @@ export function SummaryStep() {
       if (needs[needKey as keyof typeof needs]) enabled.add(moduleId);
     }
 
-    // Add modules directly activated by discovery answers (team, products, automations, reporting)
-    // These questions have activatesModules but no needsKey
-    const personaId = useOnboardingStore.getState().selectedPersona;
-    const industryId = useOnboardingStore.getState().selectedIndustry;
-    let questions: { id: string; activatesModules: string[] }[] = [];
-    try {
-      if (personaId) {
-        const { getPersonaQuestions } = require("@/lib/persona-questions");
-        questions = getPersonaQuestions(personaId).questions;
-      } else if (industryId) {
-        const { getIndustryFallbackQuestions } = require("@/lib/persona-questions");
-        const fb = getIndustryFallbackQuestions(industryId);
-        if (fb) questions = fb.questions;
-      }
-    } catch { /* ignore */ }
-
-    for (const q of questions) {
-      if (discoveryAnswers[q.id] === true) {
-        for (const modId of q.activatesModules) {
-          enabled.add(modId);
-        }
+    // Add modules directly activated by chip selections
+    // The BubblesStep stores "module:{moduleId}" = true in discoveryAnswers
+    for (const [key, val] of Object.entries(discoveryAnswers)) {
+      if (key.startsWith("module:") && val === true) {
+        enabled.add(key.replace("module:", ""));
       }
     }
 
