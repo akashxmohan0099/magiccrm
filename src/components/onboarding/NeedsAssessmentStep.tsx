@@ -162,7 +162,7 @@ export function NeedsAssessmentStep() {
             <h2 className="text-[28px] font-bold text-foreground tracking-tight mb-4 leading-[1.2] max-w-xl mx-auto">
               {currentQ.text}
             </h2>
-            <p className="text-[15px] text-text-tertiary mb-16 max-w-md mx-auto leading-relaxed">
+            <p className="text-[15px] text-text-secondary mb-16 max-w-md mx-auto leading-relaxed">
               {currentQ.subtitle}
             </p>
 
