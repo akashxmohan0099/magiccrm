@@ -99,31 +99,15 @@ function universalQuestions(prefix: string, subs: UniversalSubtitles): Discovery
 
 const hairSalon: PersonaQuestionConfig = {
   personaId: "hair-salon",
-  questions: [
-    ...universalQuestions("hs", {
-      bookings: "Manage your calendar, availability, and appointment reminders",
-      projects: "Track colour corrections, bridal packages, and multi-visit plans",
-      products: "Sell retail hair products and track stock levels",
-      marketing: "Post before-and-after transformations, collect reviews, and run promos",
-      team: "Manage stylists, schedules, commissions, and permissions",
-      automations: "Auto-send booking reminders, follow-ups, and rebooking nudges",
-      reporting: "Track revenue per stylist, retention rates, and appointment trends",
-    }),
-    {
-      id: "hs-beforeafter",
-      text: "Do you take before-and-after photos of colour or styling work?",
-      subtitle: "Capture transformation photos linked to client profiles for your portfolio.",
-      activatesModules: ["before-after"],
-      defaultOnFeatures: [{ moduleId: "before-after", featureId: "side-by-side-view" }],
-    },
-    {
-      id: "hs-loyalty",
-      text: "Would you like a loyalty program to reward repeat clients?",
-      subtitle: "Points per visit, punch cards, and reward tiers to keep clients coming back.",
-      activatesModules: ["loyalty"],
-      defaultOnFeatures: [{ moduleId: "loyalty", featureId: "points-per-visit" }],
-    },
-  ],
+  questions: universalQuestions("hs", {
+    bookings: "Manage your calendar, availability, and appointment reminders",
+    projects: "Track colour corrections, bridal packages, and multi-visit plans",
+    products: "Sell retail hair products and track stock levels",
+    marketing: "Post before-and-after transformations, collect reviews, and run promos",
+    team: "Manage stylists, schedules, commissions, and permissions",
+    automations: "Auto-send booking reminders, follow-ups, and rebooking nudges",
+    reporting: "Track revenue per stylist, retention rates, and appointment trends",
+  }),
   visibility: {
     hiddenModules: ["jobs-projects", "documents"],
     hiddenFeatures: [
@@ -138,24 +122,15 @@ const hairSalon: PersonaQuestionConfig = {
 
 const barber: PersonaQuestionConfig = {
   personaId: "barber",
-  questions: [
-    ...universalQuestions("bb", {
-      bookings: "Online booking for clients who plan ahead, walk-in queue for the rest",
-      projects: "Track multi-session work or special grooming packages",
-      products: "Sell beard oils, pomades, and grooming kits at the counter",
-      marketing: "Post your best fades, collect Google reviews, and run mate-rate promos",
-      team: "Manage barber schedules, chair assignments, and commissions",
-      automations: "Auto-send booking confirmations, no-show follow-ups, and review requests",
-      reporting: "Track cuts per day, revenue per barber, and busiest hours",
-    }),
-    {
-      id: "bb-loyalty",
-      text: "Would you like a loyalty card — every 10th cut free?",
-      subtitle: "Digital punch cards and loyalty points to keep regulars coming back.",
-      activatesModules: ["loyalty"],
-      defaultOnFeatures: [{ moduleId: "loyalty", featureId: "digital-punch-card" }],
-    },
-  ],
+  questions: universalQuestions("bb", {
+    bookings: "Online booking for clients who plan ahead, walk-in queue for the rest",
+    projects: "Track multi-session work or special grooming packages",
+    products: "Sell beard oils, pomades, and grooming kits at the counter",
+    marketing: "Post your best fades, collect Google reviews, and run mate-rate promos",
+    team: "Manage barber schedules, chair assignments, and commissions",
+    automations: "Auto-send booking confirmations, no-show follow-ups, and review requests",
+    reporting: "Track cuts per day, revenue per barber, and busiest hours",
+  }),
   visibility: {
     hiddenModules: ["jobs-projects", "documents", "support"],
     hiddenFeatures: [
@@ -173,31 +148,15 @@ const barber: PersonaQuestionConfig = {
 
 const nailTech: PersonaQuestionConfig = {
   personaId: "nail-tech",
-  questions: [
-    ...universalQuestions("nt", {
-      bookings: "Let clients pick a time and service — gel set, infills, nail art",
-      projects: "Track multi-session nail art projects or bridal packages",
-      products: "Sell nail care products, press-ons, and accessories",
-      marketing: "Post your nail sets on Instagram, collect reviews, and run promos",
-      team: "Manage nail tech schedules, availability, and permissions",
-      automations: "Auto-send booking reminders, rebooking nudges, and aftercare tips",
-      reporting: "Track revenue per service type, client retention, and popular designs",
-    }),
-    {
-      id: "nt-beforeafter",
-      text: "Do you photograph your nail sets to build a portfolio?",
-      subtitle: "Capture before-and-after transformation photos linked to clients.",
-      activatesModules: ["before-after"],
-      defaultOnFeatures: [{ moduleId: "before-after", featureId: "side-by-side-view" }],
-    },
-    {
-      id: "nt-loyalty",
-      text: "Would you like a loyalty program for repeat clients?",
-      subtitle: "Digital punch cards or points per visit to reward regulars.",
-      activatesModules: ["loyalty"],
-      defaultOnFeatures: [{ moduleId: "loyalty", featureId: "points-per-visit" }],
-    },
-  ],
+  questions: universalQuestions("nt", {
+    bookings: "Let clients pick a time and service — gel set, infills, nail art",
+    projects: "Track multi-session nail art projects or bridal packages",
+    products: "Sell nail care products, press-ons, and accessories",
+    marketing: "Post your nail sets on Instagram, collect reviews, and run promos",
+    team: "Manage nail tech schedules, availability, and permissions",
+    automations: "Auto-send booking reminders, rebooking nudges, and aftercare tips",
+    reporting: "Track revenue per service type, client retention, and popular designs",
+  }),
   visibility: {
     hiddenModules: ["jobs-projects", "documents", "support"],
     hiddenFeatures: [
@@ -213,31 +172,15 @@ const nailTech: PersonaQuestionConfig = {
 
 const lashBrowTech: PersonaQuestionConfig = {
   personaId: "lash-brow-tech",
-  questions: [
-    ...universalQuestions("lb", {
-      bookings: "Online booking for extensions, lifts, lamination, and microblading",
-      projects: "Track multi-session treatments like lash courses or brow transformations",
-      products: "Sell lash serums, brow kits, and aftercare products",
-      marketing: "Post lash and brow transformations, collect reviews, and run promos",
-      team: "Manage tech schedules, room availability, and permissions",
-      automations: "Auto-send patch test reminders, aftercare tips, and rebooking nudges",
-      reporting: "Track revenue per treatment type, retention rates, and popular services",
-    }),
-    {
-      id: "lb-beforeafter",
-      text: "Do you take before-and-after photos of lash or brow treatments?",
-      subtitle: "Side-by-side comparison photos linked to client profiles.",
-      activatesModules: ["before-after"],
-      defaultOnFeatures: [{ moduleId: "before-after", featureId: "side-by-side-view" }],
-    },
-    {
-      id: "lb-loyalty",
-      text: "Would you like a loyalty program for repeat clients?",
-      subtitle: "Points per visit and reward tiers to keep clients coming back.",
-      activatesModules: ["loyalty"],
-      defaultOnFeatures: [{ moduleId: "loyalty", featureId: "points-per-visit" }],
-    },
-  ],
+  questions: universalQuestions("lb", {
+    bookings: "Online booking for extensions, lifts, lamination, and microblading",
+    projects: "Track multi-session treatments like lash courses or brow transformations",
+    products: "Sell lash serums, brow kits, and aftercare products",
+    marketing: "Post lash and brow transformations, collect reviews, and run promos",
+    team: "Manage tech schedules, room availability, and permissions",
+    automations: "Auto-send patch test reminders, aftercare tips, and rebooking nudges",
+    reporting: "Track revenue per treatment type, retention rates, and popular services",
+  }),
   visibility: {
     hiddenModules: ["jobs-projects", "documents", "support"],
     hiddenFeatures: [
@@ -254,24 +197,15 @@ const lashBrowTech: PersonaQuestionConfig = {
 
 const makeupArtist: PersonaQuestionConfig = {
   personaId: "makeup-artist",
-  questions: [
-    ...universalQuestions("mu", {
-      bookings: "Book appointments, trials, and event dates",
-      projects: "Track bridal packages, editorial shoots, and multi-day events",
-      products: "Sell makeup kits, skincare, and beauty accessories",
-      marketing: "Share glam shots, collect testimonials, and run seasonal promos",
-      team: "Manage assistants, second artists, and their schedules",
-      automations: "Auto-send prep guides, booking confirmations, and post-event follow-ups",
-      reporting: "Track revenue per event type, booking trends, and seasonal demand",
-    }),
-    {
-      id: "mu-beforeafter",
-      text: "Do you photograph your work — glam shots, bridal looks?",
-      subtitle: "Build a portfolio of transformation photos linked to client profiles.",
-      activatesModules: ["before-after"],
-      defaultOnFeatures: [{ moduleId: "before-after", featureId: "side-by-side-view" }],
-    },
-  ],
+  questions: universalQuestions("mu", {
+    bookings: "Book appointments, trials, and event dates",
+    projects: "Track bridal packages, editorial shoots, and multi-day events",
+    products: "Sell makeup kits, skincare, and beauty accessories",
+    marketing: "Share glam shots, collect testimonials, and run seasonal promos",
+    team: "Manage assistants, second artists, and their schedules",
+    automations: "Auto-send prep guides, booking confirmations, and post-event follow-ups",
+    reporting: "Track revenue per event type, booking trends, and seasonal demand",
+  }),
   visibility: {
     hiddenModules: ["jobs-projects", "support"],
     hiddenFeatures: [
@@ -284,31 +218,15 @@ const makeupArtist: PersonaQuestionConfig = {
 
 const spaMassage: PersonaQuestionConfig = {
   personaId: "spa-massage",
-  questions: [
-    ...universalQuestions("sm", {
-      bookings: "Online booking with therapist and room assignment",
-      projects: "Track treatment plans, wellness packages, and multi-session programs",
-      products: "Sell skincare, essential oils, and wellness products",
-      marketing: "Promote spa packages, seasonal offers, and collect reviews",
-      team: "Manage therapist schedules, availability, and room assignments",
-      automations: "Auto-send booking reminders, aftercare tips, and rebooking nudges",
-      reporting: "Track revenue per therapist, popular treatments, and occupancy rates",
-    }),
-    {
-      id: "sm-beforeafter",
-      text: "Do you take before-and-after photos of skin treatments?",
-      subtitle: "Capture treatment results linked to client profiles.",
-      activatesModules: ["before-after"],
-      defaultOnFeatures: [{ moduleId: "before-after", featureId: "side-by-side-view" }],
-    },
-    {
-      id: "sm-loyalty",
-      text: "Would you like a loyalty program for repeat visitors?",
-      subtitle: "Points per visit, reward tiers, and special offers for regulars.",
-      activatesModules: ["loyalty"],
-      defaultOnFeatures: [{ moduleId: "loyalty", featureId: "points-per-visit" }],
-    },
-  ],
+  questions: universalQuestions("sm", {
+    bookings: "Online booking with therapist and room assignment",
+    projects: "Track treatment plans, wellness packages, and multi-session programs",
+    products: "Sell skincare, essential oils, and wellness products",
+    marketing: "Promote spa packages, seasonal offers, and collect reviews",
+    team: "Manage therapist schedules, availability, and room assignments",
+    automations: "Auto-send booking reminders, aftercare tips, and rebooking nudges",
+    reporting: "Track revenue per therapist, popular treatments, and occupancy rates",
+  }),
   visibility: {
     hiddenModules: ["jobs-projects", "documents"],
     hiddenFeatures: [
@@ -561,141 +479,75 @@ const marketingAgency: PersonaQuestionConfig = {
 
 const personalTrainer: PersonaQuestionConfig = {
   personaId: "personal-trainer",
-  questions: [
-    ...universalQuestions("pt", {
-      bookings: "1-on-1 sessions, group training, and recurring weekly slots",
-      projects: "Track transformation programs, 12-week challenges, and PT packages",
-      products: "Sell supplements, merchandise, and training gear",
-      marketing: "Share transformation stories, collect reviews, and run seasonal promos",
-      team: "Manage trainers, class instructors, and their schedules",
-      automations: "Auto-send session reminders, progress check-ins, and rebooking nudges",
-      reporting: "Track revenue per client, session completion rates, and retention",
-    }),
-    {
-      id: "pt-soap",
-      text: "Do you write session notes or track client measurements?",
-      subtitle: "Structured session notes with body measurements and progress tracking.",
-      activatesModules: ["soap-notes"],
-      defaultOnFeatures: [{ moduleId: "soap-notes", featureId: "note-templates" }],
-    },
-    {
-      id: "pt-timetable",
-      text: "Do you run group classes on a timetable?",
-      subtitle: "Publish a class timetable for clients to browse and book into.",
-      activatesModules: ["class-timetable"],
-      defaultOnFeatures: [{ moduleId: "class-timetable", featureId: "weekly-view" }],
-    },
-  ],
+  questions: universalQuestions("pt", {
+    bookings: "1-on-1 sessions, group training, and recurring weekly slots",
+    projects: "Track transformation programs, 12-week challenges, and PT packages",
+    products: "Sell supplements, merchandise, and training gear",
+    marketing: "Share transformation stories, collect reviews, and run seasonal promos",
+    team: "Manage trainers, class instructors, and their schedules",
+    automations: "Auto-send session reminders, progress check-ins, and rebooking nudges",
+    reporting: "Track revenue per client, session completion rates, and retention",
+  }),
   visibility: { hiddenModules: ["jobs-projects", "documents", "support"], hiddenFeatures: [{ moduleId: "quotes-invoicing", featureId: "travel-costs" }, { moduleId: "quotes-invoicing", featureId: "quote-builder" }], hiddenAddons: ["client-portal", "notes-docs"] },
   defaultChannels: ["sms", "whatsapp", "instagram-dms"],
 };
 
 const gymStudioOwner: PersonaQuestionConfig = {
   personaId: "gym-studio-owner",
-  questions: [
-    ...universalQuestions("go", {
-      bookings: "Class timetables, PT sessions, and recurring weekly bookings",
-      projects: "Track gym challenges, programs, and membership drives",
-      products: "Sell supplements, merchandise, and branded gear",
-      marketing: "Promote classes, challenges, and new member offers",
-      team: "Manage trainers, front desk staff, and class assignments",
-      automations: "Auto-send class reminders, membership renewals, and win-back messages",
-      reporting: "Track membership growth, class attendance, and revenue trends",
-    }),
-    {
-      id: "go-timetable",
-      text: "Do you run group classes on a weekly timetable?",
-      subtitle: "Publish a class timetable for members to browse and book.",
-      activatesModules: ["class-timetable"],
-      defaultOnFeatures: [{ moduleId: "class-timetable", featureId: "weekly-view" }],
-    },
-    {
-      id: "go-loyalty",
-      text: "Would you like a loyalty program for members?",
-      subtitle: "Points per visit, reward tiers, and referral credits.",
-      activatesModules: ["loyalty"],
-      defaultOnFeatures: [{ moduleId: "loyalty", featureId: "points-per-visit" }],
-    },
-  ],
+  questions: universalQuestions("go", {
+    bookings: "Class timetables, PT sessions, and recurring weekly bookings",
+    projects: "Track gym challenges, programs, and membership drives",
+    products: "Sell supplements, merchandise, and branded gear",
+    marketing: "Promote classes, challenges, and new member offers",
+    team: "Manage trainers, front desk staff, and class assignments",
+    automations: "Auto-send class reminders, membership renewals, and win-back messages",
+    reporting: "Track membership growth, class attendance, and revenue trends",
+  }),
   visibility: { hiddenModules: ["jobs-projects", "documents", "support"], hiddenFeatures: [{ moduleId: "quotes-invoicing", featureId: "travel-costs" }, { moduleId: "quotes-invoicing", featureId: "quote-builder" }, { moduleId: "quotes-invoicing", featureId: "tipping" }], hiddenAddons: ["soap-notes", "client-portal"] },
   defaultChannels: ["email", "sms", "instagram-dms"],
 };
 
 const yogaPilatesStudio: PersonaQuestionConfig = {
   personaId: "yoga-pilates-studio",
-  questions: [
-    ...universalQuestions("yp", {
-      bookings: "Class timetable, private sessions, and recurring weekly bookings",
-      projects: "Track retreats, teacher trainings, and workshop programs",
-      products: "Sell mats, props, and wellness accessories",
-      marketing: "Promote workshops, retreats, and new class schedules",
-      team: "Manage teachers, class assignments, and substitute cover",
-      automations: "Auto-send class reminders, waitlist notifications, and membership renewals",
-      reporting: "Track class attendance, membership revenue, and teacher utilisation",
-    }),
-    {
-      id: "yp-timetable",
-      text: "Do you run classes on a weekly timetable?",
-      subtitle: "Publish a class timetable for students to browse and book.",
-      activatesModules: ["class-timetable"],
-      defaultOnFeatures: [{ moduleId: "class-timetable", featureId: "weekly-view" }],
-    },
-  ],
+  questions: universalQuestions("yp", {
+    bookings: "Class timetable, private sessions, and recurring weekly bookings",
+    projects: "Track retreats, teacher trainings, and workshop programs",
+    products: "Sell mats, props, and wellness accessories",
+    marketing: "Promote workshops, retreats, and new class schedules",
+    team: "Manage teachers, class assignments, and substitute cover",
+    automations: "Auto-send class reminders, waitlist notifications, and membership renewals",
+    reporting: "Track class attendance, membership revenue, and teacher utilisation",
+  }),
   visibility: { hiddenModules: ["jobs-projects", "documents", "support"], hiddenFeatures: [{ moduleId: "quotes-invoicing", featureId: "travel-costs" }, { moduleId: "quotes-invoicing", featureId: "quote-builder" }, { moduleId: "quotes-invoicing", featureId: "tipping" }], hiddenAddons: ["soap-notes", "client-portal", "before-after"] },
   defaultChannels: ["email", "instagram-dms"],
 };
 
 const physioChiro: PersonaQuestionConfig = {
   personaId: "physio-chiro",
-  questions: [
-    ...universalQuestions("pc", {
-      bookings: "Online booking for initial consults, follow-ups, and treatment sessions",
-      projects: "Track treatment plans with stages and milestones",
-      products: "Sell rehab equipment, braces, and wellness products",
-      marketing: "Collect Google reviews, share exercise tips, and run awareness campaigns",
-      team: "Manage practitioner schedules, rooms, and caseloads",
-      automations: "Auto-send appointment reminders, exercise follow-ups, and rebooking nudges",
-      reporting: "Track revenue per practitioner, treatment outcomes, and patient retention",
-    }),
-    {
-      id: "pc-soap",
-      text: "Do you write treatment notes — SOAP, clinical, or progress notes?",
-      subtitle: "Structured SOAP notes linked to appointments with body map markup.",
-      activatesModules: ["soap-notes"],
-      defaultOnFeatures: [{ moduleId: "soap-notes", featureId: "auto-link-booking" }],
-    },
-    {
-      id: "pc-timetable",
-      text: "Do you run group rehab classes on a timetable?",
-      subtitle: "Publish a class timetable for group exercise or rehab sessions.",
-      activatesModules: ["class-timetable"],
-      defaultOnFeatures: [{ moduleId: "class-timetable", featureId: "weekly-view" }],
-    },
-  ],
+  questions: universalQuestions("pc", {
+    bookings: "Online booking for initial consults, follow-ups, and treatment sessions",
+    projects: "Track treatment plans with stages and milestones",
+    products: "Sell rehab equipment, braces, and wellness products",
+    marketing: "Collect Google reviews, share exercise tips, and run awareness campaigns",
+    team: "Manage practitioner schedules, rooms, and caseloads",
+    automations: "Auto-send appointment reminders, exercise follow-ups, and rebooking nudges",
+    reporting: "Track revenue per practitioner, treatment outcomes, and patient retention",
+  }),
   visibility: { hiddenModules: ["jobs-projects"], hiddenFeatures: [{ moduleId: "quotes-invoicing", featureId: "tipping" }, { moduleId: "quotes-invoicing", featureId: "travel-costs" }, { moduleId: "quotes-invoicing", featureId: "quote-builder" }], hiddenAddons: ["loyalty", "before-after"] },
   defaultChannels: ["email", "sms"],
 };
 
 const nutritionist: PersonaQuestionConfig = {
   personaId: "nutritionist",
-  questions: [
-    ...universalQuestions("nu", {
-      bookings: "Initial consults, follow-ups, and recurring check-in sessions",
-      projects: "Track meal plan programs and multi-week nutrition plans",
-      products: "Sell supplements, meal prep guides, and recipe books",
-      marketing: "Share recipes, client success stories, and collect reviews",
-      team: "Manage dietitians, admin staff, and their schedules",
-      automations: "Auto-send appointment reminders, meal plan check-ins, and review requests",
-      reporting: "Track revenue per client, program completion rates, and referral sources",
-    }),
-    {
-      id: "nu-soap",
-      text: "Do you write clinical or consultation notes?",
-      subtitle: "Structured consultation notes linked to client appointments.",
-      activatesModules: ["soap-notes"],
-      defaultOnFeatures: [{ moduleId: "soap-notes", featureId: "note-templates" }],
-    },
-  ],
+  questions: universalQuestions("nu", {
+    bookings: "Initial consults, follow-ups, and recurring check-in sessions",
+    projects: "Track meal plan programs and multi-week nutrition plans",
+    products: "Sell supplements, meal prep guides, and recipe books",
+    marketing: "Share recipes, client success stories, and collect reviews",
+    team: "Manage dietitians, admin staff, and their schedules",
+    automations: "Auto-send appointment reminders, meal plan check-ins, and review requests",
+    reporting: "Track revenue per client, program completion rates, and referral sources",
+  }),
   visibility: { hiddenModules: ["jobs-projects", "support"], hiddenFeatures: [{ moduleId: "quotes-invoicing", featureId: "tipping" }, { moduleId: "quotes-invoicing", featureId: "travel-costs" }, { moduleId: "quotes-invoicing", featureId: "quote-builder" }], hiddenAddons: ["before-after", "loyalty"] },
   defaultChannels: ["email", "whatsapp"],
 };
@@ -712,24 +564,15 @@ const creativeVisibility = {
 
 const photographer: PersonaQuestionConfig = {
   personaId: "photographer",
-  questions: [
-    ...universalQuestions("ph", {
-      bookings: "Shoot day bookings, mini sessions, and consultation calls",
-      projects: "Track shoots from enquiry through shoot day, editing, to delivery",
-      products: "Sell prints, albums, and digital packages",
-      marketing: "Showcase your portfolio, collect reviews, and promote mini sessions",
-      team: "Manage second shooters, editors, and their availability",
-      automations: "Auto-send prep guides, delivery updates, and review requests",
-      reporting: "Track revenue per shoot type, booking trends, and average order value",
-    }),
-    {
-      id: "ph-beforeafter",
-      text: "Do you showcase before-and-after editing work?",
-      subtitle: "Raw vs edited comparison photos for your portfolio.",
-      activatesModules: ["before-after"],
-      defaultOnFeatures: [{ moduleId: "before-after", featureId: "side-by-side-view" }],
-    },
-  ],
+  questions: universalQuestions("ph", {
+    bookings: "Shoot day bookings, mini sessions, and consultation calls",
+    projects: "Track shoots from enquiry through shoot day, editing, to delivery",
+    products: "Sell prints, albums, and digital packages",
+    marketing: "Showcase your portfolio, collect reviews, and promote mini sessions",
+    team: "Manage second shooters, editors, and their availability",
+    automations: "Auto-send prep guides, delivery updates, and review requests",
+    reporting: "Track revenue per shoot type, booking trends, and average order value",
+  }),
   visibility: creativeVisibility,
   defaultChannels: ["email", "instagram-dms"],
 };
@@ -766,48 +609,30 @@ const webDesignerDeveloper: PersonaQuestionConfig = {
 
 const videographer: PersonaQuestionConfig = {
   personaId: "videographer",
-  questions: [
-    ...universalQuestions("vg", {
-      bookings: "Shoot day bookings, pre-production calls, and review sessions",
-      projects: "Track video productions from pre-production through shoot, edit, to delivery",
-      products: "Sell stock footage, editing presets, and production packages",
-      marketing: "Share showreels, behind-the-scenes, and collect client testimonials",
-      team: "Manage camera ops, editors, and production crew",
-      automations: "Auto-send production schedules, revision reminders, and delivery notifications",
-      reporting: "Track revenue per production type, turnaround times, and client repeat rate",
-    }),
-    {
-      id: "vg-beforeafter",
-      text: "Do you showcase raw vs finished edits for your portfolio?",
-      subtitle: "Before-and-after comparison of raw footage and final edit.",
-      activatesModules: ["before-after"],
-      defaultOnFeatures: [{ moduleId: "before-after", featureId: "side-by-side-view" }],
-    },
-  ],
+  questions: universalQuestions("vg", {
+    bookings: "Shoot day bookings, pre-production calls, and review sessions",
+    projects: "Track video productions from pre-production through shoot, edit, to delivery",
+    products: "Sell stock footage, editing presets, and production packages",
+    marketing: "Share showreels, behind-the-scenes, and collect client testimonials",
+    team: "Manage camera ops, editors, and production crew",
+    automations: "Auto-send production schedules, revision reminders, and delivery notifications",
+    reporting: "Track revenue per production type, turnaround times, and client repeat rate",
+  }),
   visibility: creativeVisibility,
   defaultChannels: ["email", "instagram-dms"],
 };
 
 const interiorDesigner: PersonaQuestionConfig = {
   personaId: "interior-designer",
-  questions: [
-    ...universalQuestions("id", {
-      bookings: "Schedule consultations, site visits, and design presentations",
-      projects: "Track design projects from concept through sourcing, install, to reveal",
-      products: "Manage furniture, fixtures, and material selections for clients",
-      marketing: "Showcase project reveals, share design tips, and collect reviews",
-      team: "Manage junior designers, drafters, and their workloads",
-      automations: "Auto-send sourcing updates, install schedules, and invoice reminders",
-      reporting: "Track revenue per project, material margins, and client satisfaction",
-    }),
-    {
-      id: "id-beforeafter",
-      text: "Do you photograph room transformations?",
-      subtitle: "Before-and-after comparison photos of design reveals.",
-      activatesModules: ["before-after"],
-      defaultOnFeatures: [{ moduleId: "before-after", featureId: "side-by-side-view" }],
-    },
-  ],
+  questions: universalQuestions("id", {
+    bookings: "Schedule consultations, site visits, and design presentations",
+    projects: "Track design projects from concept through sourcing, install, to reveal",
+    products: "Manage furniture, fixtures, and material selections for clients",
+    marketing: "Showcase project reveals, share design tips, and collect reviews",
+    team: "Manage junior designers, drafters, and their workloads",
+    automations: "Auto-send sourcing updates, install schedules, and invoice reminders",
+    reporting: "Track revenue per project, material margins, and client satisfaction",
+  }),
   visibility: creativeVisibility,
   defaultChannels: ["email", "instagram-dms"],
 };
@@ -901,24 +726,15 @@ const eduVisibility = { hiddenModules: ["jobs-projects"] as string[], hiddenFeat
 
 const tutor: PersonaQuestionConfig = {
   personaId: "tutor",
-  questions: [
-    ...universalQuestions("tu", {
-      bookings: "1-on-1 lessons, group sessions, and recurring weekly slots",
-      projects: "Track student programs, exam prep plans, and curriculum progress",
-      products: "Sell study guides, workbooks, and course materials",
-      marketing: "Collect parent reviews, run referral programs, and promote subjects",
-      team: "Manage other tutors, their subjects, and availability",
-      automations: "Auto-send lesson reminders, homework follow-ups, and invoice nudges",
-      reporting: "Track revenue per student, lesson completion rates, and subject demand",
-    }),
-    {
-      id: "tu-timetable",
-      text: "Do you run group classes on a timetable?",
-      subtitle: "Publish a class timetable for students to browse and book.",
-      activatesModules: ["class-timetable"],
-      defaultOnFeatures: [{ moduleId: "class-timetable", featureId: "weekly-view" }],
-    },
-  ],
+  questions: universalQuestions("tu", {
+    bookings: "1-on-1 lessons, group sessions, and recurring weekly slots",
+    projects: "Track student programs, exam prep plans, and curriculum progress",
+    products: "Sell study guides, workbooks, and course materials",
+    marketing: "Collect parent reviews, run referral programs, and promote subjects",
+    team: "Manage other tutors, their subjects, and availability",
+    automations: "Auto-send lesson reminders, homework follow-ups, and invoice nudges",
+    reporting: "Track revenue per student, lesson completion rates, and subject demand",
+  }),
   visibility: eduVisibility,
   defaultChannels: ["email", "sms"],
 };
@@ -940,24 +756,15 @@ const lifeBusinessCoach: PersonaQuestionConfig = {
 
 const musicTeacher: PersonaQuestionConfig = {
   personaId: "music-teacher",
-  questions: [
-    ...universalQuestions("mt", {
-      bookings: "Recurring weekly lessons, make-up lessons, and group sessions",
-      projects: "Track student progress through grades, recitals, and exam prep",
-      products: "Sell sheet music, instrument accessories, and course materials",
-      marketing: "Collect parent reviews, promote recitals, and run seasonal enrolment",
-      team: "Manage other teachers, their instruments, and availability",
-      automations: "Auto-send lesson reminders, practice assignments, and term invoices",
-      reporting: "Track revenue per student, lesson attendance, and instrument demand",
-    }),
-    {
-      id: "mt-timetable",
-      text: "Do you run group lessons or ensemble sessions on a timetable?",
-      subtitle: "Publish a lesson timetable for students to browse and book.",
-      activatesModules: ["class-timetable"],
-      defaultOnFeatures: [{ moduleId: "class-timetable", featureId: "weekly-view" }],
-    },
-  ],
+  questions: universalQuestions("mt", {
+    bookings: "Recurring weekly lessons, make-up lessons, and group sessions",
+    projects: "Track student progress through grades, recitals, and exam prep",
+    products: "Sell sheet music, instrument accessories, and course materials",
+    marketing: "Collect parent reviews, promote recitals, and run seasonal enrolment",
+    team: "Manage other teachers, their instruments, and availability",
+    automations: "Auto-send lesson reminders, practice assignments, and term invoices",
+    reporting: "Track revenue per student, lesson attendance, and instrument demand",
+  }),
   visibility: eduVisibility,
   defaultChannels: ["email", "sms"],
 };
@@ -1000,48 +807,30 @@ const retailVisibility = { hiddenModules: ["jobs-projects", "documents"] as stri
 
 const onlineStore: PersonaQuestionConfig = {
   personaId: "online-store",
-  questions: [
-    ...universalQuestions("os", {
-      bookings: "Schedule consultations, personal shopping sessions, or pickups",
-      projects: "Track custom orders, wholesale fulfillment, and seasonal campaigns",
-      products: "Manage your product catalog with categories, variants, and stock levels",
-      marketing: "Run email campaigns, social ads, and seasonal promotions",
-      team: "Manage pickers, packers, and customer service staff",
-      automations: "Auto-send order confirmations, shipping updates, and review requests",
-      reporting: "Track sales, average order value, and customer lifetime value",
-    }),
-    {
-      id: "os-loyalty",
-      text: "Would you like a loyalty program for repeat customers?",
-      subtitle: "Points per purchase, reward tiers, and referral credits.",
-      activatesModules: ["loyalty"],
-      defaultOnFeatures: [{ moduleId: "loyalty", featureId: "points-per-visit" }],
-    },
-  ],
+  questions: universalQuestions("os", {
+    bookings: "Schedule consultations, personal shopping sessions, or pickups",
+    projects: "Track custom orders, wholesale fulfillment, and seasonal campaigns",
+    products: "Manage your product catalog with categories, variants, and stock levels",
+    marketing: "Run email campaigns, social ads, and seasonal promotions",
+    team: "Manage pickers, packers, and customer service staff",
+    automations: "Auto-send order confirmations, shipping updates, and review requests",
+    reporting: "Track sales, average order value, and customer lifetime value",
+  }),
   visibility: { ...retailVisibility, hiddenAddons: ["soap-notes", "before-after", "intake-forms", "client-portal", "memberships"] },
   defaultChannels: ["email"],
 };
 
 const boutiqueShop: PersonaQuestionConfig = {
   personaId: "boutique-shop",
-  questions: [
-    ...universalQuestions("bs", {
-      bookings: "Schedule personal styling sessions, VIP previews, and consultations",
-      projects: "Track custom orders, alterations, and seasonal collection launches",
-      products: "Manage your inventory with categories, sizes, and stock levels",
-      marketing: "Post new arrivals, run seasonal sales, and collect reviews",
-      team: "Manage sales staff, stylists, and their schedules",
-      automations: "Auto-send restock alerts, sale announcements, and loyalty rewards",
-      reporting: "Track sales by category, top-selling items, and customer retention",
-    }),
-    {
-      id: "bs-loyalty",
-      text: "Would you like a loyalty program for regular customers?",
-      subtitle: "Points per purchase and rewards for loyal shoppers.",
-      activatesModules: ["loyalty"],
-      defaultOnFeatures: [{ moduleId: "loyalty", featureId: "points-per-visit" }],
-    },
-  ],
+  questions: universalQuestions("bs", {
+    bookings: "Schedule personal styling sessions, VIP previews, and consultations",
+    projects: "Track custom orders, alterations, and seasonal collection launches",
+    products: "Manage your inventory with categories, sizes, and stock levels",
+    marketing: "Post new arrivals, run seasonal sales, and collect reviews",
+    team: "Manage sales staff, stylists, and their schedules",
+    automations: "Auto-send restock alerts, sale announcements, and loyalty rewards",
+    reporting: "Track sales by category, top-selling items, and customer retention",
+  }),
   visibility: retailVisibility,
   defaultChannels: ["email", "instagram-dms"],
 };
@@ -1063,24 +852,15 @@ const handmadeArtisan: PersonaQuestionConfig = {
 
 const foodBeverage: PersonaQuestionConfig = {
   personaId: "food-beverage",
-  questions: [
-    ...universalQuestions("fb", {
-      bookings: "Schedule tastings, catering consultations, and market appearances",
-      projects: "Track wholesale orders, catering gigs, and seasonal product launches",
-      products: "Manage your food catalog with categories, allergens, and stock levels",
-      marketing: "Share food photography, seasonal launches, and collect reviews",
-      team: "Manage kitchen staff, delivery drivers, and their schedules",
-      automations: "Auto-send order confirmations, delivery updates, and reorder reminders",
-      reporting: "Track sales by product, wholesale vs direct revenue, and seasonal trends",
-    }),
-    {
-      id: "fb-loyalty",
-      text: "Would you like a loyalty program for repeat customers?",
-      subtitle: "Points per purchase, punch cards, and rewards.",
-      activatesModules: ["loyalty"],
-      defaultOnFeatures: [{ moduleId: "loyalty", featureId: "digital-punch-card" }],
-    },
-  ],
+  questions: universalQuestions("fb", {
+    bookings: "Schedule tastings, catering consultations, and market appearances",
+    projects: "Track wholesale orders, catering gigs, and seasonal product launches",
+    products: "Manage your food catalog with categories, allergens, and stock levels",
+    marketing: "Share food photography, seasonal launches, and collect reviews",
+    team: "Manage kitchen staff, delivery drivers, and their schedules",
+    automations: "Auto-send order confirmations, delivery updates, and reorder reminders",
+    reporting: "Track sales by product, wholesale vs direct revenue, and seasonal trends",
+  }),
   visibility: retailVisibility,
   defaultChannels: ["email", "instagram-dms"],
 };
