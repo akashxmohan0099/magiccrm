@@ -57,7 +57,7 @@ const BUBBLES: BubbleData[] = [
   { id: "reports", label: "I need\nreports", activates: ["reporting"], needsKeys: [] },
 ];
 
-const RADIUS = 52;
+const RADIUS = 60;
 
 interface Body { x: number; y: number; vx: number; vy: number }
 
@@ -153,6 +153,14 @@ export function BubblesStep() {
 
   return (
     <div className="fixed inset-0 overflow-hidden" style={{ background: "#FAFAFA" }}>
+      {/* Background ambient gradients — like landing page */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute -top-40 -left-40 w-[500px] h-[500px] rounded-full opacity-[0.07]" style={{ background: "radial-gradient(circle, var(--primary) 0%, transparent 70%)" }} />
+        <div className="absolute -bottom-32 -right-32 w-[600px] h-[600px] rounded-full opacity-[0.05]" style={{ background: "radial-gradient(circle, #8B5CF6 0%, transparent 70%)" }} />
+        <div className="absolute top-1/3 right-1/4 w-[400px] h-[400px] rounded-full opacity-[0.04]" style={{ background: "radial-gradient(circle, #F59E0B 0%, transparent 70%)" }} />
+        <div className="absolute bottom-1/4 left-1/5 w-[350px] h-[350px] rounded-full opacity-[0.04]" style={{ background: "radial-gradient(circle, #EC4899 0%, transparent 70%)" }} />
+      </div>
+
       {/* Bubbles */}
       <div className="absolute inset-0">
         {ready && pos.map((p, i) => {
@@ -169,23 +177,26 @@ export function BubblesStep() {
                 x: { duration: 0 }, y: { duration: 0 },
               }}
               whileHover={{ scale: 1.08 }}
-              whileTap={{ scale: 0.9 }}
+              whileTap={{ scale: 0.88 }}
               onClick={() => toggle(b.id)}
               className="absolute flex items-center justify-center cursor-pointer select-none"
               style={{
                 width: RADIUS * 2, height: RADIUS * 2, borderRadius: "50%",
-                background: on ? "var(--primary)" : "rgba(255,255,255,0.85)",
-                border: on ? "2px solid var(--primary-hover)" : "1.5px solid var(--border-light)",
+                background: on
+                  ? "linear-gradient(135deg, #34D399 0%, #2BBF89 100%)"
+                  : "rgba(255,255,255,0.9)",
+                border: on ? "2.5px solid rgba(255,255,255,0.3)" : "1.5px solid rgba(0,0,0,0.06)",
                 boxShadow: on
-                  ? "0 6px 24px rgba(52, 211, 153, 0.35), 0 0 0 4px rgba(52, 211, 153, 0.1)"
-                  : "0 2px 8px rgba(0,0,0,0.04)",
-                transition: "background 0.2s, box-shadow 0.2s, border-color 0.2s",
+                  ? "0 8px 30px rgba(52, 211, 153, 0.4), 0 0 0 4px rgba(52, 211, 153, 0.12), inset 0 1px 0 rgba(255,255,255,0.2)"
+                  : "0 2px 12px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.02)",
+                transition: "background 0.25s, box-shadow 0.3s, border-color 0.25s, transform 0.15s",
               }}
             >
-              <span className="text-center leading-[1.2] font-semibold whitespace-pre-line" style={{
+              <span className="text-center leading-[1.2] font-semibold whitespace-pre-line px-2" style={{
                 fontSize: 13,
-                color: on ? "#fff" : "var(--foreground)",
+                color: on ? "#fff" : "#1a1a1a",
                 transition: "color 0.2s",
+                textShadow: on ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
               }}>
                 {b.label}
               </span>
@@ -195,20 +206,20 @@ export function BubblesStep() {
       </div>
 
       {/* Header */}
-      <div className="absolute top-0 left-0 right-0 z-20 pt-5 pb-6 text-center pointer-events-none" style={{ background: "linear-gradient(to bottom, #FAFAFA 55%, transparent)" }}>
-        <h2 className="text-[26px] font-bold text-foreground tracking-tight mb-1">
+      <div className="absolute top-0 left-0 right-0 z-20 pt-6 pb-8 text-center pointer-events-none" style={{ background: "linear-gradient(to bottom, #FAFAFA 50%, transparent)" }}>
+        <h2 className="text-[28px] font-bold text-foreground tracking-tight mb-1.5">
           What do you do day-to-day?
         </h2>
-        <p className="text-[14px] text-text-secondary">
+        <p className="text-[15px] text-text-secondary">
           Tap everything that applies
           {selected.size > 0 && <span className="text-primary font-bold"> &middot; {selected.size} selected</span>}
         </p>
       </div>
 
       {/* Footer */}
-      <div className="absolute bottom-0 left-0 right-0 z-20 px-6 pb-5 pt-16 pointer-events-none" style={{ background: "linear-gradient(to top, #FAFAFA 45%, transparent)" }}>
+      <div className="absolute bottom-0 left-0 right-0 z-20 px-6 pb-6 pt-20 pointer-events-none" style={{ background: "linear-gradient(to top, #FAFAFA 50%, transparent)" }}>
         <div className="max-w-md mx-auto flex gap-3 pointer-events-auto">
-          <button onClick={prevStep} className="px-6 py-3.5 rounded-2xl text-[14px] font-medium text-text-tertiary hover:text-foreground hover:bg-white transition-all cursor-pointer">
+          <button onClick={prevStep} className="px-6 py-3.5 rounded-2xl text-[14px] font-medium text-text-tertiary hover:text-foreground hover:bg-white/80 transition-all cursor-pointer">
             Back
           </button>
           <button
