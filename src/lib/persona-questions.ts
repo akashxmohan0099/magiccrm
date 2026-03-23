@@ -703,21 +703,6 @@ const caterer: PersonaQuestionConfig = {
   defaultChannels: ["email", "sms"],
 };
 
-const venueManager: PersonaQuestionConfig = {
-  personaId: "venue-manager",
-  questions: universalQuestions("vm", {
-    bookings: "Manage venue bookings, date holds, and availability calendar",
-    projects: "Track events from inquiry through setup, event day, to pack-down",
-    products: "Manage hire packages, AV add-ons, and catering options",
-    marketing: "Showcase your venue, share event highlights, and collect reviews",
-    team: "Manage event staff, coordinators, and AV techs with shift scheduling",
-    automations: "Auto-send booking confirmations, event run sheets, and payment reminders",
-    reporting: "Track occupancy rates, revenue per event, and booking lead time",
-  }),
-  visibility: eventVisibility,
-  defaultChannels: ["email"],
-};
-
 const florist: PersonaQuestionConfig = {
   personaId: "florist",
   questions: universalQuestions("fl", {
@@ -858,7 +843,6 @@ export const PERSONA_QUESTIONS: PersonaQuestionsMap = {
   "wedding-planner": weddingPlanner,
   "event-planner": eventPlanner,
   "caterer": caterer,
-  "venue-manager": venueManager,
   "florist": florist,
   // Education & Coaching
   "tutor": tutor,

@@ -423,9 +423,9 @@ export const INDUSTRY_CONFIGS: IndustryConfig[] = [
   },
   {
     id: "hospitality-events",
-    label: "Hospitality & Events",
+    label: "Events & Planning",
     emoji: "\uD83C\uDF7D\uFE0F",
-    description: "Restaurants, caterers, event planners, venues, food trucks",
+    description: "Wedding planners, event planners, caterers, florists",
     smartDefaults: {
       manageCustomers: true,
       acceptBookings: true,
@@ -439,10 +439,10 @@ export const INDUSTRY_CONFIGS: IndustryConfig[] = [
     },
     questionOverrides: {
       manageCustomers: { label: "Do you keep records of past clients and events?", subtitle: "Guest preferences, dietary needs, and event history." },
-      acceptBookings: { label: "Do clients book events, tables, or catering?", subtitle: "Event bookings, table reservations, and catering inquiries." },
+      acceptBookings: { label: "Do clients book events or catering?", subtitle: "Event bookings, consultations, and catering inquiries." },
       sendInvoices: { label: "Do you send quotes and invoices for events or orders?", subtitle: "Event proposals, deposit invoices, and final settlement." },
       manageProjects: { label: "Do you plan events with multiple moving parts?", subtitle: "Vendor coordination, timelines, checklists, and floor plans." },
-      receiveInquiries: { label: "Do new clients inquire about availability or menus?", subtitle: "Capture event inquiries, menu requests, and venue tours." },
+      receiveInquiries: { label: "Do new clients inquire about availability?", subtitle: "Capture event inquiries and consultation requests." },
     },
     descriptionPlaceholder: "e.g. Boutique event planning and catering",
     namePlaceholder: "e.g. Sage & Thyme Events",
@@ -466,14 +466,6 @@ export const INDUSTRY_CONFIGS: IndustryConfig[] = [
         label: "Caterer",
         description: "Full-service catering, private chef",
         descriptionPlaceholder: "e.g. Full-service catering for weddings and events",
-      },
-      {
-        id: "venue-manager",
-        label: "Venue Manager",
-        description: "Function rooms, event spaces",
-        descriptionPlaceholder: "e.g. Boutique event venue and function space",
-        namePlaceholder: "e.g. The Garden Terrace",
-        suggestedTeamSize: "6-15",
       },
       {
         id: "florist",

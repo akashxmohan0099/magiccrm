@@ -2,7 +2,7 @@ import type { IndustryAdaptiveConfig, IndustryAdaptiveOverride } from "@/types/i
 
 export const hospitalityEventsConfig: IndustryAdaptiveConfig = {
   id: "hospitality-events",
-  label: "Hospitality & Events",
+  label: "Events & Planning",
 
   vocabulary: {
     client: "Client",

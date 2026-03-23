@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, ArrowRight, Check,
   Scissors, Wrench, Briefcase, Dumbbell, PenTool,
-  UtensilsCrossed, GraduationCap, Layers,
+  CalendarDays, GraduationCap, Layers,
 } from "lucide-react";
 import { useOnboardingStore } from "@/store/onboarding";
 import { INDUSTRY_CONFIGS } from "@/types/onboarding";
@@ -19,7 +19,7 @@ const INDUSTRY_ICONS: Record<string, {
   "professional-services": { icon: Briefcase,        bg: "bg-blue-50",    color: "text-blue-500" },
   "health-fitness":        { icon: Dumbbell,         bg: "bg-rose-50",    color: "text-rose-500" },
   "creative-services":     { icon: PenTool,          bg: "bg-violet-50",  color: "text-violet-500" },
-  "hospitality-events":    { icon: UtensilsCrossed,  bg: "bg-orange-50",  color: "text-orange-500" },
+  "hospitality-events":    { icon: CalendarDays,      bg: "bg-orange-50",  color: "text-orange-500" },
   "education-coaching":    { icon: GraduationCap,    bg: "bg-emerald-50", color: "text-emerald-600" },
   "other":                 { icon: Layers,           bg: "bg-gray-50",    color: "text-gray-500" },
 };
