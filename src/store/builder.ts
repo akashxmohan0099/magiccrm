@@ -1,11 +1,16 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { CustomFeature, CustomCollection } from "@/types/custom-feature";
+import { generateId } from "@/lib/id";
+import type {
+  BuilderRequest,
+  CustomFeature,
+} from "@/types/custom-feature";
 
 interface BuilderStore {
   credits: number;
   prompt: string;
   customFeatures: CustomFeature[];
+  buildRequests: BuilderRequest[];
 
   // Prompt
   setPrompt: (prompt: string) => void;
@@ -21,6 +26,13 @@ interface BuilderStore {
   getFeature: (id: string) => CustomFeature | undefined;
   getReadyFeatures: () => CustomFeature[];
 
+  // Requests
+  createBuildRequest: (
+    request: Omit<BuilderRequest, "id" | "createdAt" | "updatedAt">
+  ) => BuilderRequest;
+  updateBuildRequest: (id: string, data: Partial<BuilderRequest>) => void;
+  removeBuildRequest: (id: string) => void;
+
   // Collection data (records within custom collections)
   addRecord: (featureId: string, collectionId: string, record: Record<string, unknown>) => void;
   updateRecord: (featureId: string, collectionId: string, recordIndex: number, data: Record<string, unknown>) => void;
@@ -33,6 +45,7 @@ export const useBuilderStore = create<BuilderStore>()(
       credits: 25,
       prompt: "",
       customFeatures: [],
+      buildRequests: [],
 
       setPrompt: (prompt) => set({ prompt }),
 
@@ -64,6 +77,34 @@ export const useBuilderStore = create<BuilderStore>()(
       getFeature: (id) => get().customFeatures.find((f) => f.id === id),
 
       getReadyFeatures: () => get().customFeatures.filter((f) => f.status === "ready"),
+
+      createBuildRequest: (request) => {
+        const now = new Date().toISOString();
+        const buildRequest: BuilderRequest = {
+          ...request,
+          id: generateId(),
+          createdAt: now,
+          updatedAt: now,
+        };
+        set((s) => ({
+          buildRequests: [buildRequest, ...s.buildRequests],
+        }));
+        return buildRequest;
+      },
+
+      updateBuildRequest: (id, data) =>
+        set((s) => ({
+          buildRequests: s.buildRequests.map((request) =>
+            request.id === id
+              ? { ...request, ...data, updatedAt: new Date().toISOString() }
+              : request
+          ),
+        })),
+
+      removeBuildRequest: (id) =>
+        set((s) => ({
+          buildRequests: s.buildRequests.filter((request) => request.id !== id),
+        })),
 
       // Record CRUD within sandboxed collections
       addRecord: (featureId, collectionId, record) =>
@@ -110,6 +151,19 @@ export const useBuilderStore = create<BuilderStore>()(
           }),
         })),
     }),
-    { name: "magic-crm-builder" }
+    {
+      name: "magic-crm-builder",
+      version: 2,
+      migrate: (persisted: unknown, version: number) => {
+        const state = persisted as Record<string, unknown>;
+        if (version < 2) {
+          return {
+            ...state,
+            buildRequests: state.buildRequests ?? [],
+          };
+        }
+        return state;
+      },
+    }
   )
 );

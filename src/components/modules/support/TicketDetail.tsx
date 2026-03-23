@@ -4,7 +4,6 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import Link from "next/link";
 import { Pencil, X, Send, User, CalendarDays, FolderKanban, Clock, Star } from "lucide-react";
 import { useSupportStore } from "@/store/support";
-import { SupportTicket } from "@/types/models";
 import { SlideOver } from "@/components/ui/SlideOver";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Button } from "@/components/ui/Button";
@@ -30,7 +29,7 @@ function formatTimestamp(timestamp: string): string {
 }
 
 export function TicketDetail({ open, onClose, ticketId }: TicketDetailProps) {
-  const { tickets, updateTicket, deleteTicket, addTicketMessage } = useSupportStore();
+  const { tickets, updateTicket, deleteTicket: _deleteTicket, addTicketMessage } = useSupportStore();
   const [replyText, setReplyText] = useState("");
   const [editOpen, setEditOpen] = useState(false);
   const [confirmClose, setConfirmClose] = useState(false);

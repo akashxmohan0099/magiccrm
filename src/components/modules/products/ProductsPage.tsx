@@ -1,18 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Package } from "lucide-react";
+import { Plus, Package, Upload } from "lucide-react";
 import { useProductsStore } from "@/store/products";
 import { Product } from "@/types/models";
+import { FeatureSection } from "@/components/modules/FeatureSection";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { DataTable, Column } from "@/components/ui/DataTable";
 import { Button } from "@/components/ui/Button";
 import { ProductForm } from "./ProductForm";
+import { CSVImportWizard } from "@/components/modules/shared/CSVImportWizard";
 
 export function ProductsPage() {
   const { products } = useProductsStore();
   const [formOpen, setFormOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | undefined>(undefined);
+  const [importOpen, setImportOpen] = useState(false);
 
   const columns: Column<Product>[] = [
     { key: "name", label: "Name", sortable: true },
@@ -59,9 +63,17 @@ export function ProductsPage() {
         title="Products & Services"
         description="Manage your product and service catalog."
         actions={
-          <Button variant="primary" size="sm" onClick={() => setFormOpen(true)}>
-            <Plus className="w-4 h-4" /> Add Product
-          </Button>
+          <div className="flex items-center gap-2">
+            <FeatureSection moduleId="client-database" featureId="import-export" featureLabel="Import / Export">
+              <Button variant="secondary" size="sm" onClick={() => setImportOpen(true)}>
+                <Upload className="w-4 h-4 mr-1.5" />
+                Import
+              </Button>
+            </FeatureSection>
+            <Button variant="primary" size="sm" onClick={() => { setEditingProduct(undefined); setFormOpen(true); }}>
+              <Plus className="w-4 h-4" /> Add Product
+            </Button>
+          </div>
         }
       />
 
@@ -71,7 +83,7 @@ export function ProductsPage() {
           title="No products yet"
           description="Add your products and services to start building your catalog."
           setupSteps={[
-            { label: "Add your first product or service", description: "Name, price, and category", action: () => setFormOpen(true) },
+            { label: "Add your first product or service", description: "Name, price, and category", action: () => { setEditingProduct(undefined); setFormOpen(true); } },
           ]}
         />
       ) : (
@@ -80,11 +92,18 @@ export function ProductsPage() {
             columns={columns}
             data={products}
             keyExtractor={(p) => p.id}
+            onRowClick={(p) => { setEditingProduct(p); setFormOpen(true); }}
           />
         </div>
       )}
 
-      <ProductForm open={formOpen} onClose={() => setFormOpen(false)} />
+      <CSVImportWizard
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        defaultTarget="products"
+      />
+
+      <ProductForm open={formOpen} onClose={() => { setFormOpen(false); setEditingProduct(undefined); }} product={editingProduct} />
     </div>
   );
 }

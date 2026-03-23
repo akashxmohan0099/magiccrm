@@ -1,58 +1,58 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import {
-  Wand2, Send, ArrowLeft, Sparkles, Coins,
-  Clock, Check, AlertCircle, Star,
+  Wand2, Send, ArrowLeft, Sparkles, Coins, Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import Link from "next/link";
-
-interface BuildRequest {
-  id: string;
-  prompt: string;
-  status: "pending" | "building" | "complete" | "error";
-  result?: string;
-  timestamp: Date;
-}
+import { useBuilderStore } from "@/store/builder";
+import { useOnboardingStore } from "@/store/onboarding";
+import { BuilderRequestList } from "@/components/builder/BuilderRequestList";
+import { requestBuilderBrief } from "@/lib/builder-requests";
+import { toast } from "@/components/ui/Toast";
 
 export default function AIBuilderPage() {
-  const [prompt, setPrompt] = useState("");
-  const [credits, setCredits] = useState(25);
-  const [requests, setRequests] = useState<BuildRequest[]>([]);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const { credits, prompt, setPrompt, buildRequests, createBuildRequest, updateBuildRequest, useCredits: consumeCredits } =
+    useBuilderStore();
+  const businessContext = useOnboardingStore((s) => s.businessContext);
+  const [submitting, setSubmitting] = useState(false);
+  const requests = buildRequests.filter((request) => request.source === "ai-builder");
 
   const handleSubmit = async () => {
-    if (!prompt.trim() || credits <= 0 || isGenerating) return;
+    const trimmedPrompt = prompt.trim();
+    if (!trimmedPrompt || submitting) return;
 
-    const newRequest: BuildRequest = {
-      id: Date.now().toString(),
-      prompt: prompt.trim(),
-      status: "building",
-      timestamp: new Date(),
-    };
+    if (!consumeCredits(1)) {
+      toast("You need at least 1 credit to submit a builder request", "error");
+      return;
+    }
 
-    setRequests((prev) => [newRequest, ...prev]);
+    const request = createBuildRequest({
+      prompt: trimmedPrompt,
+      source: "ai-builder",
+      requestType: "feature",
+      status: "generating",
+      creditCost: 1,
+    });
+
     setPrompt("");
-    setIsGenerating(true);
-    setCredits((c) => c - 1);
+    setSubmitting(true);
 
-    // Simulate AI generation (in production, this calls /api/ai-builder)
-    setTimeout(() => {
-      setRequests((prev) =>
-        prev.map((r) =>
-          r.id === newRequest.id
-            ? {
-                ...r,
-                status: "complete",
-                result: `Custom feature "${r.prompt}" has been generated and added to your CRM. You can find it in your dashboard under Custom Features.`,
-              }
-            : r
-        )
-      );
-      setIsGenerating(false);
-    }, 3000);
+    try {
+      const result = await requestBuilderBrief({ prompt: trimmedPrompt, businessContext });
+      updateBuildRequest(request.id, { status: "review-ready", result, error: undefined });
+      toast("Implementation brief generated");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to generate AI brief";
+      updateBuildRequest(request.id, {
+        status: "failed",
+        error: `${message}. The request is still saved for backend handoff.`,
+      });
+      toast("AI generation failed. Request saved locally for backend handoff.", "warning");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -72,7 +72,7 @@ export default function AIBuilderPage() {
                 AI Builder
               </h1>
               <p className="text-sm text-text-secondary">
-                Describe a custom feature and we&apos;ll build it for you
+                Describe a feature and generate an implementation brief for the backend
               </p>
             </div>
           </div>
@@ -110,49 +110,20 @@ export default function AIBuilderPage() {
             </p>
             <Button
               onClick={handleSubmit}
-              disabled={!prompt.trim() || credits <= 0 || isGenerating}
+              disabled={!prompt.trim() || submitting || credits < 1}
+              loading={submitting}
               size="sm"
             >
-              {isGenerating ? (
-                <>
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                  >
-                    <Sparkles className="w-4 h-4" />
-                  </motion.div>
-                  Building...
-                </>
-              ) : (
-                <>
-                  <Send className="w-4 h-4" /> Build Feature
-                </>
-              )}
+              <Send className="w-4 h-4" /> Generate Brief
             </Button>
           </div>
         </div>
 
-        {/* Credit upsell */}
-        {credits <= 5 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-surface border border-border-light rounded-xl p-4 mb-6 flex items-center gap-3"
-          >
-            <AlertCircle className="w-5 h-5 text-foreground flex-shrink-0" />
-            <div className="flex-1">
-              <p className="text-sm font-medium text-foreground">
-                {credits === 0 ? "Out of credits!" : `Only ${credits} credits left`}
-              </p>
-              <p className="text-xs text-text-secondary">
-                Get more credits to keep building custom features.
-              </p>
-            </div>
-            <Button size="sm" variant="secondary">
-              Buy Credits
-            </Button>
-          </motion.div>
-        )}
+        <div className="bg-surface border border-border-light rounded-xl p-4 mb-6">
+          <p className="text-sm text-text-secondary leading-relaxed">
+            Requests are persisted locally now. If the AI route is available, this screen generates a short implementation brief immediately; if not, the saved request still defines the backend work item.
+          </p>
+        </div>
 
         {/* Suggestions */}
         {requests.length === 0 && (
@@ -182,65 +153,11 @@ export default function AIBuilderPage() {
           </div>
         )}
 
-        {/* Request history */}
-        <AnimatePresence>
-          {requests.map((req) => (
-            <motion.div
-              key={req.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-card-bg rounded-xl border border-border-light p-5 mb-4"
-            >
-              <div className="flex items-start gap-3">
-                <div
-                  className={`p-2 rounded-lg ${
-                    req.status === "complete"
-                      ? "bg-surface"
-                      : req.status === "error"
-                      ? "bg-[#FFBDB1]/20"
-                      : "bg-surface"
-                  }`}
-                >
-                  {req.status === "complete" ? (
-                    <Check className="w-4 h-4 text-foreground" />
-                  ) : req.status === "error" ? (
-                    <AlertCircle className="w-4 h-4 text-[#CB2D2D]" />
-                  ) : (
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                    >
-                      <Sparkles className="w-4 h-4 text-foreground" />
-                    </motion.div>
-                  )}
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium text-foreground text-sm">{req.prompt}</p>
-                  {req.result && (
-                    <p className="text-sm text-text-secondary mt-2">{req.result}</p>
-                  )}
-                  <div className="flex items-center gap-2 mt-2">
-                    <Clock className="w-3 h-3 text-text-secondary" />
-                    <span className="text-xs text-text-secondary">
-                      {req.timestamp.toLocaleTimeString()}
-                    </span>
-                    <span
-                      className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                        req.status === "complete"
-                          ? "bg-surface text-foreground"
-                          : req.status === "error"
-                          ? "bg-[#FFBDB1]/20 text-[#CB2D2D]"
-                          : "bg-surface text-foreground"
-                      }`}
-                    >
-                      {req.status}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
+        <BuilderRequestList
+          requests={requests}
+          title="AI Builder Requests"
+          description="Saved prompts and AI-generated implementation briefs for custom features."
+        />
       </div>
     </div>
   );

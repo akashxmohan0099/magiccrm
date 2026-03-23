@@ -2,14 +2,11 @@
 
 import { useState, useRef } from "react";
 import { Download, Trash2, Upload } from "lucide-react";
-import { useClientsStore } from "@/store/clients";
-import { useLeadsStore } from "@/store/leads";
-import { useJobsStore } from "@/store/jobs";
-import { useInvoicesStore } from "@/store/invoices";
-import { usePaymentsStore } from "@/store/payments";
-import { useBookingsStore } from "@/store/bookings";
-import { useActivityStore } from "@/store/activity";
-import { useAutomationsStore } from "@/store/automations";
+import {
+  clearMagicCrmLocalData,
+  createMagicCrmLocalBackup,
+  restoreMagicCrmBackup,
+} from "@/lib/local-backup";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
@@ -18,29 +15,8 @@ export function DataManagement() {
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const clients = useClientsStore((s) => s.clients);
-  const leads = useLeadsStore((s) => s.leads);
-  const jobs = useJobsStore((s) => s.jobs);
-  const invoices = useInvoicesStore((s) => s.invoices);
-  const quotes = useInvoicesStore((s) => s.quotes);
-  const payments = usePaymentsStore((s) => s.payments);
-  const bookings = useBookingsStore((s) => s.bookings);
-  const activities = useActivityStore((s) => s.entries);
-  const automations = useAutomationsStore((s) => s.rules);
-
   const exportAllData = () => {
-    const data = {
-      exportedAt: new Date().toISOString(),
-      clients,
-      leads,
-      jobs,
-      invoices,
-      quotes,
-      payments,
-      bookings,
-      activities,
-      automations,
-    };
+    const data = createMagicCrmLocalBackup(window.localStorage);
 
     const blob = new Blob([JSON.stringify(data, null, 2)], {
       type: "application/json",
@@ -56,26 +32,7 @@ export function DataManagement() {
   };
 
   const clearAllData = () => {
-    // Clear all localStorage keys used by stores
-    const storeKeys = [
-      "magic-crm-clients",
-      "magic-crm-leads",
-      "magic-crm-jobs",
-      "magic-crm-invoices",
-      "magic-crm-payments",
-      "magic-crm-bookings",
-      "magic-crm-activity",
-      "magic-crm-automations",
-      "magic-crm-communication",
-      "magic-crm-marketing",
-      "magic-crm-support",
-      "magic-crm-documents",
-      "magic-crm-reminders",
-      "magic-crm-goals",
-    ];
-    storeKeys.forEach((key) => localStorage.removeItem(key));
-
-    // Reload to reset all Zustand stores
+    clearMagicCrmLocalData(window.localStorage);
     window.location.reload();
   };
 
@@ -90,12 +47,18 @@ export function DataManagement() {
     const reader = new FileReader();
     reader.onload = () => {
       try {
-        JSON.parse(reader.result as string);
+        const parsed = JSON.parse(reader.result as string) as unknown;
+        const result = restoreMagicCrmBackup(window.localStorage, parsed);
         setImportStatus(
-          "File parsed successfully. Full import functionality coming soon."
+          result.mode === "full"
+            ? `Restored ${result.restoredKeys.length} stores. Reloading…`
+            : `Restored ${result.restoredKeys.length} legacy data stores. Reloading…`
         );
+        window.setTimeout(() => {
+          window.location.reload();
+        }, 400);
       } catch {
-        setImportStatus("Invalid JSON file. Please check the file format.");
+        setImportStatus("Unsupported JSON backup. Export a fresh backup from Magic and try again.");
       }
     };
     reader.readAsText(file);
@@ -112,7 +75,7 @@ export function DataManagement() {
           Export Data
         </h2>
         <p className="text-sm text-text-secondary mb-4">
-          Download a complete backup of all your CRM data as a JSON file.
+          Download a complete local backup of every persisted Magic store, including add-ons and settings.
         </p>
         <Button variant="secondary" onClick={exportAllData}>
           <Download className="w-4 h-4 mr-1.5" />
@@ -126,7 +89,7 @@ export function DataManagement() {
           Import Data
         </h2>
         <p className="text-sm text-text-secondary mb-4">
-          Restore data from a previously exported JSON backup file.
+          Restore data from a previously exported Magic backup file.
         </p>
         <input
           ref={fileInputRef}

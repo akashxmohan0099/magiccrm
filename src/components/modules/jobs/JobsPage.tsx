@@ -4,9 +4,10 @@ import { useState, useMemo } from "react";
 import { Briefcase, Plus, LayoutList, Kanban } from "lucide-react";
 import { useJobsStore } from "@/store/jobs";
 import { useClientsStore } from "@/store/clients";
+import { useWorkflowSettingsStore } from "@/store/workflow-settings";
 import { Job } from "@/types/models";
 import { useVocabulary } from "@/hooks/useVocabulary";
-import { useIndustryConfig } from "@/hooks/useIndustryConfig";
+import { useBaseIndustryConfig, useIndustryConfig } from "@/hooks/useIndustryConfig";
 import { FeatureSection } from "@/components/modules/FeatureSection";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -15,21 +16,41 @@ import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { DataTable, Column } from "@/components/ui/DataTable";
 import { KanbanBoard, KanbanColumn } from "@/components/ui/KanbanBoard";
+import { ViewToggle } from "@/components/ui/ViewToggle";
+import { useTeamStore } from "@/store/team";
+import { useModuleEnabled } from "@/hooks/useFeature";
 import { JobForm } from "./JobForm";
 import { JobDetail } from "./JobDetail";
+import { StageSettingsCard } from "@/components/modules/shared/StageSettingsCard";
 
 type ViewMode = "list" | "board";
 
 export function JobsPage() {
   const { jobs, moveJob } = useJobsStore();
   const { clients } = useClientsStore();
+  const { members } = useTeamStore();
+  const teamEnabled = useModuleEnabled("team");
   const vocab = useVocabulary();
+  const baseConfig = useBaseIndustryConfig();
   const config = useIndustryConfig();
+  const setJobStages = useWorkflowSettingsStore((s) => s.setJobStages);
+  const resetJobStages = useWorkflowSettingsStore((s) => s.resetJobStages);
   const [view, setView] = useState<ViewMode>("list");
   const [search, setSearch] = useState("");
+  const [teamView, setTeamView] = useState<"my" | "team">("team");
   const [formOpen, setFormOpen] = useState(false);
   const [editJob, setEditJob] = useState<Job | undefined>();
   const [detailJobId, setDetailJobId] = useState<string | null>(null);
+  const jobStageKey = useMemo(
+    () => config.jobStages.map((stage) => `${stage.id}:${stage.label}:${stage.color}:${stage.isClosed ? 1 : 0}`).join("|"),
+    [config.jobStages]
+  );
+
+  // For "My" view: use the first owner/member as "current user" (placeholder until auth)
+  const currentUserId = useMemo(() => {
+    const owner = members.find((m) => m.role === "owner");
+    return owner?.id ?? members[0]?.id;
+  }, [members]);
 
   const clientMap = useMemo(() => {
     const map: Record<string, string> = {};
@@ -40,14 +61,21 @@ export function JobsPage() {
   }, [clients]);
 
   const filtered = useMemo(() => {
-    if (!search) return jobs;
+    let result = jobs;
+
+    // Apply "My" view filter
+    if (teamView === "my" && currentUserId) {
+      result = result.filter((j) => j.assignedToId === currentUserId);
+    }
+
+    if (!search) return result;
     const q = search.toLowerCase();
-    return jobs.filter(
+    return result.filter(
       (j) =>
         j.title.toLowerCase().includes(q) ||
         (j.clientId && clientMap[j.clientId]?.toLowerCase().includes(q))
     );
-  }, [jobs, search, clientMap]);
+  }, [jobs, search, clientMap, teamView, currentUserId]);
 
   const columns: Column<Job>[] = [
     { key: "title", label: "Title", sortable: true },
@@ -74,6 +102,16 @@ export function JobsPage() {
       render: (j) => (
         <span className="text-text-secondary">
           {j.dueDate ? new Date(j.dueDate).toLocaleDateString() : "\u2014"}
+        </span>
+      ),
+    },
+    {
+      key: "assignedToName" as keyof Job,
+      label: "Assigned To",
+      sortable: true,
+      render: (j) => (
+        <span className="text-text-secondary text-xs">
+          {j.assignedToName ?? "\u2014"}
         </span>
       ),
     },
@@ -144,6 +182,13 @@ export function JobsPage() {
             placeholder={`Search ${vocab.jobs.toLowerCase()}...`}
           />
         </div>
+        {teamEnabled && members.length > 0 && (
+          <ViewToggle
+            view={teamView}
+            onChange={setTeamView}
+            moduleLabel={vocab.jobs}
+          />
+        )}
         <div className="flex items-center bg-surface rounded-lg border border-border-light p-0.5">
           <button
             onClick={() => setView("list")}
@@ -169,18 +214,16 @@ export function JobsPage() {
       </div>
 
       <FeatureSection moduleId="jobs-projects" featureId="custom-job-stages" featureLabel="Custom Job Stages">
-        <div className="mb-4 p-4 bg-card-bg rounded-xl border border-border-light">
-          <h4 className="text-[13px] font-semibold text-text-tertiary uppercase tracking-wider mb-2">Workflow Stages</h4>
-          <div className="flex flex-wrap gap-2">
-            {config.jobStages.map((stage) => (
-              <div key={stage.id} className="flex items-center gap-1.5 px-3 py-1.5 bg-surface rounded-lg border border-border-light">
-                <div className={`w-2.5 h-2.5 rounded-full ${stage.color}`} />
-                <span className="text-[12px] font-medium text-foreground">{stage.label}</span>
-              </div>
-            ))}
-          </div>
-          <p className="text-[10px] text-text-tertiary mt-2">Stage customization coming soon. Currently using industry defaults.</p>
-        </div>
+        <StageSettingsCard
+          key={jobStageKey}
+          title="Workflow Stages"
+          description="Define the job stages the backend should persist, automate, and report on."
+          entityLabel={vocab.job.toLowerCase()}
+          stages={config.jobStages}
+          defaultStages={baseConfig.jobStages}
+          onSave={setJobStages}
+          onReset={resetJobStages}
+        />
       </FeatureSection>
 
       {filtered.length === 0 ? (

@@ -169,14 +169,14 @@ export function DocumentPreview({ open, onClose, documentId }: DocumentPreviewPr
               </h4>
               <div className="flex items-center gap-2">
                 <div className="flex-1 px-3 py-2 bg-card-bg border border-border-light rounded-lg text-sm text-text-secondary truncate">
-                  https://app.magiccrm.com/shared/{document.id}
+                  https://app.usemagic.com/shared/{document.id}
                 </div>
                 <Button
                   variant="secondary"
                   size="sm"
                   onClick={() => {
                     navigator.clipboard.writeText(
-                      `https://app.magiccrm.com/shared/${document.id}`
+                      `https://app.usemagic.com/shared/${document.id}`
                     );
                   }}
                 >

@@ -1,6 +1,6 @@
 import type { IndustryAdaptiveConfig } from "@/types/industry-config";
 
-/** Generic / fallback config — matches exact current CRM behavior */
+/** Generic / fallback config — matches exact current platform behavior */
 export const genericConfig: IndustryAdaptiveConfig = {
   id: "generic",
   label: "Generic",

@@ -5,7 +5,6 @@ import { usePaymentsStore } from "@/store/payments";
 import { useClientsStore } from "@/store/clients";
 import { useInvoicesStore } from "@/store/invoices";
 import { PaymentMethod } from "@/types/models";
-import { generateId } from "@/lib/id";
 import { SlideOver } from "@/components/ui/SlideOver";
 import { FormField } from "@/components/ui/FormField";
 import { SelectField } from "@/components/ui/SelectField";
@@ -31,6 +30,8 @@ export function PaymentForm({ open, onClose }: PaymentFormProps) {
   const { clients } = useClientsStore();
   const { invoices } = useInvoicesStore();
 
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
   const [amount, setAmount] = useState("");
   const [clientId, setClientId] = useState("");
   const [invoiceId, setInvoiceId] = useState("");
@@ -42,6 +43,7 @@ export function PaymentForm({ open, onClose }: PaymentFormProps) {
 
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAmount("");
       setClientId("");
       setInvoiceId("");
@@ -50,6 +52,8 @@ export function PaymentForm({ open, onClose }: PaymentFormProps) {
       setNotes("");
       setIsRefund(false);
       setIsWriteOff(false);
+      setErrors({});
+      setSaving(false);
     }
   }, [open]);
 
@@ -66,8 +70,17 @@ export function PaymentForm({ open, onClose }: PaymentFormProps) {
   ];
 
   const handleSubmit = () => {
+    if (saving) return;
+
+    const newErrors: Record<string, string> = {};
     const parsedAmount = parseFloat(amount);
-    if (isNaN(parsedAmount) || parsedAmount <= 0) return;
+    if (!amount.trim() || isNaN(parsedAmount) || parsedAmount <= 0) newErrors.amount = "Amount must be greater than 0";
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+    setErrors({});
+    setSaving(true);
 
     addPayment({
       amount: parsedAmount,
@@ -76,19 +89,22 @@ export function PaymentForm({ open, onClose }: PaymentFormProps) {
       method,
       date: date || new Date().toISOString().split("T")[0],
       notes,
+      isRefund,
+      isWriteOff,
     });
 
     onClose();
+    setSaving(false);
   };
 
   return (
     <SlideOver open={open} onClose={onClose} title="Record Payment">
       <div className="space-y-1">
-        <FormField label="Amount" required>
+        <FormField label="Amount" required error={errors.amount}>
           <input
             type="number"
             value={amount}
-            onChange={(e) => setAmount(e.target.value)}
+            onChange={(e) => { setAmount(e.target.value); if (errors.amount) setErrors((prev) => { const next = { ...prev }; delete next.amount; return next; }); }}
             placeholder="0.00"
             min={0}
             step={0.01}
@@ -154,7 +170,7 @@ export function PaymentForm({ open, onClose }: PaymentFormProps) {
 
         <div className="flex justify-end gap-2 pt-4 border-t border-border-light">
           <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSubmit}>Record Payment</Button>
+          <Button loading={saving} onClick={handleSubmit}>Record Payment</Button>
         </div>
       </div>
     </SlideOver>

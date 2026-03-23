@@ -9,9 +9,26 @@ const urbanist = Urbanist({
 });
 
 export const metadata: Metadata = {
-  title: "Magic CRM - Your Custom CRM, Built in Minutes",
+  title: "Magic - Your Custom Business Software, Built in Minutes",
   description:
-    "Stop paying for features you don't use. Magic CRM builds a personalized CRM tailored to your exact business needs.",
+    "Stop paying for features you don't use. Magic builds personalized business software tailored to your exact needs.",
+  openGraph: {
+    title: "Magic - Your Custom Business Software, Built in Minutes",
+    description:
+      "Stop paying for features you don't use. Magic builds personalized business software tailored to your exact needs.",
+    type: "website",
+    siteName: "Magic",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Magic - Your Custom Business Software, Built in Minutes",
+    description:
+      "Stop paying for features you don't use. Magic builds personalized business software tailored to your exact needs.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({

@@ -15,6 +15,7 @@ export function BookingPagePreview() {
   const enabledDays = availability.filter((s) => s.enabled).length;
 
   const handleCopyLink = () => {
+    navigator.clipboard.writeText(window.location.origin + "/book/" + "preview").catch(() => {});
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -60,7 +61,7 @@ export function BookingPagePreview() {
             <Clock className="w-3.5 h-3.5" />
             Available Time Slots
           </p>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {MOCK_SLOTS.map((slot) => (
               <button
                 key={slot}
@@ -85,7 +86,7 @@ export function BookingPagePreview() {
         </button>
 
         <p className="text-[10px] text-text-secondary text-center mt-3">
-          Powered by MAGIC CRM
+          Powered by Magic
         </p>
       </div>
     </div>

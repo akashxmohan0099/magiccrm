@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Plus, Tag } from "lucide-react";
 import { useMarketingStore } from "@/store/marketing";
 import { Coupon } from "@/types/models";
@@ -29,7 +29,7 @@ const emptyForm = {
 };
 
 export function CouponManager() {
-  const { coupons, addCoupon, updateCoupon, deleteCoupon } =
+  const { coupons, addCoupon, updateCoupon, deleteCoupon: _deleteCoupon } =
     useMarketingStore();
   const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);

@@ -6,15 +6,30 @@ import { generateId } from "@/lib/id";
 import { logActivity } from "@/lib/activity-logger";
 import { toast } from "@/components/ui/Toast";
 import { useClientsStore } from "./clients";
+import {
+  fetchLeads,
+  dbCreateLead,
+  dbUpdateLead,
+  dbDeleteLead,
+  dbUpsertLeads,
+  mapLeadFromDB,
+} from "@/lib/db/leads";
 
 interface LeadsStore {
   leads: Lead[];
-  addLead: (data: Omit<Lead, "id" | "createdAt" | "updatedAt">) => Lead;
-  updateLead: (id: string, data: Partial<Lead>) => void;
-  deleteLead: (id: string) => void;
-  moveLead: (id: string, stage: LeadStage) => void;
-  convertToClient: (id: string) => string | null;
+  addLead: (
+    data: Omit<Lead, "id" | "createdAt" | "updatedAt">,
+    workspaceId?: string
+  ) => Lead;
+  updateLead: (id: string, data: Partial<Lead>, workspaceId?: string) => void;
+  deleteLead: (id: string, workspaceId?: string) => void;
+  moveLead: (id: string, stage: LeadStage, workspaceId?: string) => void;
+  convertToClient: (id: string, workspaceId?: string) => string | null;
   getLeadsByStage: (stage: LeadStage) => Lead[];
+
+  // Supabase sync
+  syncToSupabase: (workspaceId: string) => Promise<void>;
+  loadFromSupabase: (workspaceId: string) => Promise<void>;
 }
 
 export const useLeadsStore = create<LeadsStore>()(
@@ -22,7 +37,7 @@ export const useLeadsStore = create<LeadsStore>()(
     (set, get) => ({
       leads: [],
 
-      addLead: (data) => {
+      addLead: (data, workspaceId?) => {
         const lead: Lead = {
           ...data,
           id: generateId(),
@@ -32,30 +47,56 @@ export const useLeadsStore = create<LeadsStore>()(
         set((s) => ({ leads: [...s.leads, lead] }));
         logActivity("create", "leads", `New lead "${lead.name}"`);
         toast(`Created lead "${lead.name}"`);
+
+        // Sync to Supabase if workspaceId available
+        if (workspaceId) {
+          dbCreateLead(workspaceId, lead).catch((err) =>
+            console.error("[leads] dbCreateLead failed:", err)
+          );
+        }
+
         return lead;
       },
 
-      updateLead: (id, data) => {
+      updateLead: (id, data, workspaceId?) => {
+        const updatedData = { ...data, updatedAt: new Date().toISOString() };
         set((s) => ({
           leads: s.leads.map((l) =>
-            l.id === id ? { ...l, ...data, updatedAt: new Date().toISOString() } : l
+            l.id === id ? { ...l, ...updatedData } : l
           ),
         }));
+        logActivity("update", "leads", "Updated lead");
+        toast("Lead updated");
+
+        // Sync to Supabase if workspaceId available
+        if (workspaceId) {
+          dbUpdateLead(workspaceId, id, updatedData).catch((err) =>
+            console.error("[leads] dbUpdateLead failed:", err)
+          );
+        }
       },
 
-      deleteLead: (id) => {
+      deleteLead: (id, workspaceId?) => {
         const lead = get().leads.find((l) => l.id === id);
         set((s) => ({ leads: s.leads.filter((l) => l.id !== id) }));
         if (lead) {
           logActivity("delete", "leads", `Deleted lead "${lead.name}"`);
           toast(`Lead "${lead.name}" deleted`, "info");
+
+          // Sync to Supabase if workspaceId available
+          if (workspaceId) {
+            dbDeleteLead(workspaceId, id).catch((err) =>
+              console.error("[leads] dbDeleteLead failed:", err)
+            );
+          }
         }
       },
 
-      moveLead: (id, stage) => {
+      moveLead: (id, stage, workspaceId?) => {
+        const updatedData = { stage, updatedAt: new Date().toISOString() };
         set((s) => ({
           leads: s.leads.map((l) =>
-            l.id === id ? { ...l, stage, updatedAt: new Date().toISOString() } : l
+            l.id === id ? { ...l, ...updatedData } : l
           ),
         }));
         const lead = get().leads.find((l) => l.id === id);
@@ -63,32 +104,80 @@ export const useLeadsStore = create<LeadsStore>()(
           logActivity("update", "leads", `Moved "${lead.name}" to ${stage}`);
           toast(`Moved "${lead.name}" to ${stage}`);
         }
+
+        // Sync to Supabase if workspaceId available
+        if (workspaceId) {
+          dbUpdateLead(workspaceId, id, updatedData).catch((err) =>
+            console.error("[leads] dbUpdateLead (moveLead) failed:", err)
+          );
+        }
       },
 
-      convertToClient: (id) => {
+      convertToClient: (id, workspaceId?) => {
         const lead = get().leads.find((l) => l.id === id);
         if (!lead) return null;
-        const client = useClientsStore.getState().addClient({
-          name: lead.name,
-          email: lead.email,
-          phone: lead.phone,
-          company: lead.company,
-          tags: [],
-          notes: lead.notes,
-          source: lead.source as "referral" | "website" | "social" | "other" | undefined,
-          status: "active",
-        });
+        const client = useClientsStore.getState().addClient(
+          {
+            name: lead.name,
+            email: lead.email,
+            phone: lead.phone,
+            company: lead.company,
+            tags: [],
+            notes: lead.notes,
+            source: lead.source as "referral" | "website" | "social" | "other" | undefined,
+            status: "active",
+          },
+          workspaceId
+        );
+        const updatedData = {
+          stage: "won" as LeadStage,
+          clientId: client.id,
+          updatedAt: new Date().toISOString(),
+        };
         set((s) => ({
           leads: s.leads.map((l) =>
-            l.id === id ? { ...l, stage: "won" as LeadStage, clientId: client.id, updatedAt: new Date().toISOString() } : l
+            l.id === id ? { ...l, ...updatedData } : l
           ),
         }));
         logActivity("convert", "leads", `Converted "${lead.name}" to client`);
         toast(`Converted "${lead.name}" to client`);
+
+        // Sync the lead update to Supabase
+        if (workspaceId) {
+          dbUpdateLead(workspaceId, id, updatedData).catch((err) =>
+            console.error("[leads] dbUpdateLead (convertToClient) failed:", err)
+          );
+        }
+
         return client.id;
       },
 
       getLeadsByStage: (stage) => get().leads.filter((l) => l.stage === stage),
+
+      // ---------------------------------------------------------------
+      // Supabase sync
+      // ---------------------------------------------------------------
+
+      syncToSupabase: async (workspaceId: string) => {
+        try {
+          const { leads } = get();
+          await dbUpsertLeads(workspaceId, leads);
+        } catch (err) {
+          console.error("[leads] syncToSupabase failed:", err);
+        }
+      },
+
+      loadFromSupabase: async (workspaceId: string) => {
+        try {
+          const rows = await fetchLeads(workspaceId);
+          const mappedLeads = (rows ?? []).map((row: Record<string, unknown>) =>
+            mapLeadFromDB(row)
+          );
+          set({ leads: mappedLeads });
+        } catch (err) {
+          console.error("[leads] loadFromSupabase failed:", err);
+        }
+      },
     }),
     { name: "magic-crm-leads" }
   )

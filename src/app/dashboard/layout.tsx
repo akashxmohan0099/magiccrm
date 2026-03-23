@@ -8,14 +8,18 @@ import {
   LayoutDashboard, Users, Calendar, Receipt, Inbox,
   FolderKanban, Megaphone, Headphones, FileText,
   MessageCircle, CreditCard, Zap, BarChart3, Package,
-  Wand2, Settings, Bell, Search, Command, Menu, X, Sparkles,
+  Wand2, Settings, Bell, Search, Command, Menu, Sparkles, SlidersHorizontal,
   Crown, Camera, FileInput, ClipboardList, Gift, UserCheck,
   Store, Globe, Lightbulb, Puzzle, UsersRound,
+  Ticket, CalendarRange, Building2, ScrollText, Wrench, Banknote, ImagePlus, ListOrdered,
+  NotebookPen, LogOut,
 } from "lucide-react";
 import { useOnboardingStore } from "@/store/onboarding";
 import { useBuilderStore } from "@/store/builder";
 import { useEnabledModules, useEnabledAddons } from "@/hooks/useFeature";
 import { useHydration } from "@/hooks/useHydration";
+import { useAuth } from "@/hooks/useAuth";
+import { useSupabaseSync } from "@/hooks/useSupabaseSync";
 import { useVocabulary } from "@/hooks/useVocabulary";
 import { getModuleDisplayName, getModuleBySlug, GROUP_LABELS } from "@/lib/module-registry";
 import { ModuleConfigurator } from "@/components/ui/ModuleConfigurator";
@@ -30,6 +34,8 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   CreditCard, Zap, BarChart3, Package, Wand2,
   Crown, Camera, FileInput, ClipboardList, Gift, UserCheck,
   Store, Globe, Lightbulb, Puzzle, UsersRound,
+  Ticket, CalendarRange, Building2, ScrollText, Wrench, Banknote, ImagePlus, ListOrdered,
+  NotebookPen,
 };
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
@@ -48,6 +54,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 }
 
 function DashboardShell({ children }: { children: ReactNode }) {
+  const { syncing } = useSupabaseSync();
   const pathname = usePathname();
   const businessContext = useOnboardingStore((s) => s.businessContext);
   const enabledModules = useEnabledModules();
@@ -56,16 +63,32 @@ function DashboardShell({ children }: { children: ReactNode }) {
   const builderCredits = useBuilderStore((s) => s.credits);
   const allCustomFeatures = useBuilderStore((s) => s.customFeatures);
   const customFeatures = useMemo(() => allCustomFeatures.filter((f) => f.status === "ready"), [allCustomFeatures]);
+  const { user, signOut } = useAuth();
   const [searchFocused, setSearchFocused] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
+  const teamSize = useOnboardingStore((s) => s.teamSize);
+  const isSolo = teamSize === "Just me";
 
-  // Group enabled modules by their group
-  const groupedModules = enabledModules.reduce<Record<string, typeof enabledModules>>((acc, mod) => {
-    const group = mod.group;
-    if (!acc[group]) acc[group] = [];
-    acc[group].push(mod);
-    return acc;
-  }, {});
+  // Show skeleton while Supabase data is loading
+  if (syncing) {
+    return <DashboardSkeleton />;
+  }
+
+  // Modules to collapse into their parent (not shown as separate sidebar items)
+  const COLLAPSED_MODULES = new Set<string>(); // payments was removed from registry; keep set for future use
+
+  // Group enabled modules by their group, filtering out collapsed and solo-hidden ones
+  const groupedModules = enabledModules
+    .filter((mod) => !COLLAPSED_MODULES.has(mod.id))
+    .filter((mod) => !(mod.id === "team" && isSolo)) // Hide Team for solo operators
+    .reduce<Record<string, typeof enabledModules>>((acc, mod) => {
+      const group = mod.group;
+      if (!acc[group]) acc[group] = [];
+      acc[group].push(mod);
+      return acc;
+    }, {});
 
   // Build nav groups
   const moduleGroups = ["business", "grow", "system"]
@@ -198,15 +221,64 @@ function DashboardShell({ children }: { children: ReactNode }) {
           </div>
           <div className="flex items-center gap-2 flex-shrink-0 ml-3">
             <NavBarConfigurator pathname={pathname} vocab={vocab} />
-            <button className="relative p-2 text-text-secondary hover:text-foreground rounded-lg hover:bg-surface cursor-pointer transition-colors">
-              <Bell className="w-[17px] h-[17px]" />
-              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full" />
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setNotifOpen((o) => !o)}
+                className="relative p-2 text-text-secondary hover:text-foreground rounded-lg hover:bg-surface cursor-pointer transition-colors"
+              >
+                <Bell className="w-[17px] h-[17px]" />
+              </button>
+              {notifOpen && (
+                <>
+                  <div className="fixed inset-0 z-30" onClick={() => setNotifOpen(false)} />
+                  <div className="absolute right-0 top-full mt-1 w-72 bg-card-bg border border-border-light rounded-xl shadow-lg z-40 overflow-hidden">
+                    <div className="px-4 py-3 border-b border-border-light">
+                      <p className="text-[13px] font-semibold text-foreground">Notifications</p>
+                    </div>
+                    <div className="px-4 py-6 text-center">
+                      <Bell className="w-6 h-6 text-text-tertiary mx-auto mb-2" />
+                      <p className="text-[13px] text-text-tertiary">No new notifications</p>
+                      <p className="text-[11px] text-text-tertiary mt-1">You&apos;re all caught up.</p>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
             <div className="w-px h-5 bg-border-light mx-1" />
-            <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center cursor-pointer shadow-[0_1px_3px_rgba(91,91,214,0.15)]">
-              <span className="text-[11px] font-bold text-white">
-                {(businessContext.businessName || "U")[0].toUpperCase()}
-              </span>
+            <div className="relative">
+              <button
+                onClick={() => setAvatarMenuOpen((o) => !o)}
+                className="w-8 h-8 bg-primary rounded-full flex items-center justify-center cursor-pointer shadow-[0_1px_3px_rgba(91,91,214,0.15)]"
+              >
+                <span className="text-[11px] font-bold text-white">
+                  {(user?.user_metadata?.full_name || businessContext.businessName || "U")[0].toUpperCase()}
+                </span>
+              </button>
+              {avatarMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-30" onClick={() => setAvatarMenuOpen(false)} />
+                  <div className="absolute right-0 top-full mt-1 w-56 bg-card-bg border border-border-light rounded-xl shadow-lg z-40 overflow-hidden">
+                    <div className="px-4 py-3 border-b border-border-light">
+                      <p className="text-[13px] font-semibold text-foreground truncate">
+                        {user?.user_metadata?.full_name || "Account"}
+                      </p>
+                      <p className="text-[11px] text-text-tertiary truncate">{user?.email}</p>
+                    </div>
+                    <div className="py-1">
+                      <button
+                        onClick={async () => {
+                          setAvatarMenuOpen(false);
+                          await signOut();
+                        }}
+                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-text-secondary hover:text-foreground hover:bg-surface transition-colors cursor-pointer"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Sign out
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </header>
@@ -253,11 +325,11 @@ function SidebarContent({
       {/* Logo */}
       <div className="px-5 py-4 border-b border-border-light">
         <Link href="/dashboard" className="flex items-center gap-2.5 group" onClick={onNavClick}>
-          <div className="w-7 h-7 bg-primary rounded-xl flex items-center justify-center">
+          <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ backgroundColor: "var(--logo-green)" }}>
             <div className="w-3 h-3 bg-foreground rounded-[3px]" />
           </div>
           <h1 className="font-bold text-foreground text-[13px] tracking-tight leading-tight">
-            {businessName || "Magic CRM"}
+            {businessName || "Magic"}
           </h1>
         </Link>
       </div>
@@ -344,6 +416,11 @@ function SidebarContent({
 
 /** Renders the Customize button in the nav bar — auto-detects which module page you're on */
 function NavBarConfigurator({ pathname, vocab }: { pathname: string; vocab: Parameters<typeof getModuleDisplayName>[1] }) {
+  // Dashboard home — show Add Widget button
+  if (pathname === "/dashboard") {
+    return <DashboardCustomizeButton />;
+  }
+
   // Extract slug from /dashboard/[slug] or /dashboard/[slug]/...
   const match = pathname.match(/^\/dashboard\/([a-z0-9-]+)/);
   if (!match) return null;
@@ -358,4 +435,15 @@ function NavBarConfigurator({ pathname, vocab }: { pathname: string; vocab: Para
   const displayName = getModuleDisplayName(mod, vocab);
 
   return <ModuleConfigurator moduleId={mod.id} moduleName={displayName} />;
+}
+
+function DashboardCustomizeButton() {
+  return (
+    <button
+      onClick={() => window.dispatchEvent(new CustomEvent("dashboard:toggle-edit"))}
+      className="flex items-center gap-1.5 px-2.5 py-1.5 bg-surface border border-border-light rounded-xl text-[12px] font-medium text-text-secondary hover:text-foreground hover:border-foreground/15 cursor-pointer transition-all"
+    >
+      <SlidersHorizontal className="w-3.5 h-3.5" /> Customize
+    </button>
+  );
 }

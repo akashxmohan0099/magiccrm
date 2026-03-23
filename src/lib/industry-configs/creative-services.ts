@@ -72,6 +72,20 @@ export const creativeServicesConfig: IndustryAdaptiveConfig = {
 
 /** Persona overrides */
 export const creativePersonaOverrides: Record<string, IndustryAdaptiveOverride> = {
+  "web-designer-developer": {
+    vocabulary: {
+      booking: "Call",
+      bookings: "Calls",
+      addBooking: "Schedule Call",
+    },
+  },
+  "interior-designer": {
+    vocabulary: {
+      booking: "Consultation",
+      bookings: "Consultations",
+      addBooking: "Book Consultation",
+    },
+  },
   "photographer": {
     bookingMode: {
       defaultMode: "date-exclusive",

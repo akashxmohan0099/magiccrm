@@ -16,16 +16,18 @@ export function AnimatedNumber({ value, duration = 600 }: AnimatedNumberProps) {
     startRef.current = display;
     startTimeRef.current = null;
 
+    let frameId: number;
     const animate = (timestamp: number) => {
       if (!startTimeRef.current) startTimeRef.current = timestamp;
       const progress = Math.min((timestamp - startTimeRef.current) / duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
       const current = Math.round(startRef.current + (value - startRef.current) * eased);
       setDisplay(current);
-      if (progress < 1) requestAnimationFrame(animate);
+      if (progress < 1) frameId = requestAnimationFrame(animate);
     };
 
-    requestAnimationFrame(animate);
+    frameId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frameId);
   }, [value, duration]);
 
   return <>{display}</>;

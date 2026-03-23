@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { Users } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { Users, Upload } from "lucide-react";
 import { useClientsStore } from "@/store/clients";
 import { Client } from "@/types/models";
 import { useVocabulary } from "@/hooks/useVocabulary";
+import { FeatureSection } from "@/components/modules/FeatureSection";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { DataTable, Column } from "@/components/ui/DataTable";
@@ -13,13 +14,23 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Button } from "@/components/ui/Button";
 import { ClientForm } from "./ClientForm";
 import { ClientDetail } from "./ClientDetail";
+import { CSVImportWizard } from "@/components/modules/shared/CSVImportWizard";
 
 export function ClientsPage() {
-  const { clients } = useClientsStore();
+  const { clients, getClient } = useClientsStore();
   const vocab = useVocabulary();
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [detailClientId, setDetailClientId] = useState<string | null>(null);
+
+  // Auto-close detail panel if the selected client was deleted
+  const detailClient = detailClientId ? getClient(detailClientId) : null;
+  useEffect(() => {
+    if (detailClientId && !detailClient) {
+      queueMicrotask(() => setDetailClientId(null));
+    }
+  }, [detailClientId, detailClient]);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return clients;
@@ -74,6 +85,12 @@ export function ClientsPage() {
               onChange={setSearch}
               placeholder={`Search ${vocab.clients.toLowerCase()}...`}
             />
+            <FeatureSection moduleId="client-database" featureId="import-export" featureLabel="Import / Export">
+              <Button variant="secondary" size="sm" onClick={() => setImportOpen(true)}>
+                <Upload className="w-4 h-4 mr-1.5" />
+                Import
+              </Button>
+            </FeatureSection>
             <Button onClick={() => setFormOpen(true)}>{vocab.addClient}</Button>
           </div>
         }
@@ -106,6 +123,12 @@ export function ClientsPage() {
       )}
 
       <ClientForm open={formOpen} onClose={() => setFormOpen(false)} />
+
+      <CSVImportWizard
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        defaultTarget="clients"
+      />
 
       <ClientDetail
         open={detailClientId !== null}

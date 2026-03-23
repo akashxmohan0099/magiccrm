@@ -50,22 +50,26 @@ export function InvoiceForm({ open, onClose, invoice }: InvoiceFormProps) {
   const [invoiceNumber, setInvoiceNumber] = useState("");
   const [recurring, setRecurring] = useState("");
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [applyTax, setApplyTax] = useState(false);
   const [taxRate, setTaxRate] = useState("10");
 
   useEffect(() => {
     if (open) {
       if (invoice) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setClientId(invoice.clientId ?? "");
         setDueDate(invoice.dueDate ?? "");
         setNotes(invoice.notes);
         setStatus(invoice.status);
         setLineItems(invoice.lineItems);
-        setPaymentSchedule(((invoice as any).paymentSchedule as InvoiceMode) ?? config.invoiceMode.defaultMode);
-        setDepositPercent((invoice as any).depositPercent ?? 50);
-        setMilestones((invoice as any).milestones ?? []);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const inv = invoice as Record<string, any>;
+        setPaymentSchedule((inv.paymentSchedule as InvoiceMode) ?? config.invoiceMode.defaultMode);
+        setDepositPercent(inv.depositPercent ?? 50);
+        setMilestones(inv.milestones ?? []);
         setInvoiceNumber(invoice.number ?? "");
-        setRecurring((invoice as any).recurring ?? "");
+        setRecurring(inv.recurring ?? "");
       } else {
         setClientId("");
         setDueDate("");
@@ -90,6 +94,15 @@ export function InvoiceForm({ open, onClose, invoice }: InvoiceFormProps) {
 
   const handleSubmit = () => {
     if (saving) return;
+
+    const newErrors: Record<string, string> = {};
+    const validItems = lineItems.filter((li) => li.description.trim() && li.unitPrice > 0);
+    if (validItems.length === 0) newErrors.lineItems = "Add at least one line item with a description and price greater than 0";
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+    setErrors({});
     setSaving(true);
 
     const now = new Date().toISOString();
@@ -105,6 +118,8 @@ export function InvoiceForm({ open, onClose, invoice }: InvoiceFormProps) {
       }
     }
 
+    const taxField = applyTax ? parseFloat(taxRate) || 0 : 0;
+
     if (invoice) {
       updateInvoice(invoice.id, {
         clientId: clientId || undefined,
@@ -113,6 +128,7 @@ export function InvoiceForm({ open, onClose, invoice }: InvoiceFormProps) {
         status,
         lineItems,
         updatedAt: now,
+        taxRate: taxField,
         ...extraFields,
       });
     } else {
@@ -122,7 +138,10 @@ export function InvoiceForm({ open, onClose, invoice }: InvoiceFormProps) {
         status,
         dueDate: dueDate || undefined,
         notes,
+        taxRate: taxField,
+        ...(invoiceNumber.trim() ? { customNumber: invoiceNumber.trim() } : {}),
         ...extraFields,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
     }
 
@@ -148,7 +167,7 @@ export function InvoiceForm({ open, onClose, invoice }: InvoiceFormProps) {
               value={invoiceNumber}
               onChange={(e) => setInvoiceNumber(e.target.value)}
               placeholder="e.g. INV-2026-001"
-              className="w-full px-3 py-2 bg-card-bg border border-border-light rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
+              className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
             />
           </FormField>
         </FeatureSection>
@@ -195,7 +214,7 @@ export function InvoiceForm({ open, onClose, invoice }: InvoiceFormProps) {
                 onChange={(e) => setDepositPercent(Number(e.target.value))}
                 min={1}
                 max={99}
-                className="w-24 px-3 py-2 bg-card-bg border border-border-light rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
+                className="w-24 px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
               />
               <span className="text-sm text-text-secondary">%</span>
               {total > 0 && (
@@ -229,8 +248,8 @@ export function InvoiceForm({ open, onClose, invoice }: InvoiceFormProps) {
           </FormField>
         </FeatureSection>
 
-        <FormField label="Line Items">
-          <LineItemEditor items={lineItems} onChange={setLineItems} />
+        <FormField label="Line Items" required error={errors.lineItems}>
+          <LineItemEditor items={lineItems} onChange={(items) => { setLineItems(items); if (errors.lineItems) setErrors((prev) => { const next = { ...prev }; delete next.lineItems; return next; }); }} />
         </FormField>
 
         <FeatureSection moduleId="quotes-invoicing" featureId="travel-costs" featureLabel="Travel Costs">
@@ -261,7 +280,7 @@ export function InvoiceForm({ open, onClose, invoice }: InvoiceFormProps) {
                 <span className="text-[13px] font-medium text-foreground">Apply GST/VAT</span>
               </label>
               {applyTax && (
-                <input type="number" step="0.1" value={taxRate} onChange={(e) => setTaxRate(e.target.value)} className="w-16 px-2 py-1 bg-card-bg border border-border-light rounded-lg text-[13px] text-foreground text-center" />
+                <input type="number" step="0.1" value={taxRate} onChange={(e) => setTaxRate(e.target.value)} className="w-16 px-2 py-1 bg-surface border border-border-light rounded-xl text-[13px] text-foreground text-center focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30" />
               )}
               {applyTax && <span className="text-[12px] text-text-tertiary">%</span>}
             </div>

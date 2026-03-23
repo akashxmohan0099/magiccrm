@@ -7,6 +7,10 @@ import {
   Shield, Database, Layout, Zap, Trash2,
 } from "lucide-react";
 import { useBuilderStore } from "@/store/builder";
+import { useOnboardingStore } from "@/store/onboarding";
+import { BuilderRequestList } from "@/components/builder/BuilderRequestList";
+import { requestBuilderBrief } from "@/lib/builder-requests";
+import { toast } from "@/components/ui/Toast";
 
 const EXAMPLE_PROMPTS = [
   "Gift card & voucher system",
@@ -18,16 +22,57 @@ const EXAMPLE_PROMPTS = [
 ];
 
 export default function BuilderPage() {
-  const { credits, prompt, setPrompt, customFeatures, removeFeature } = useBuilderStore();
-  const [isBuilding, setIsBuilding] = useState(false);
+  const {
+    credits,
+    prompt,
+    setPrompt,
+    customFeatures,
+    buildRequests,
+    removeFeature,
+    createBuildRequest,
+    updateBuildRequest,
+    useCredits: consumeCredits,
+  } = useBuilderStore();
+  const businessContext = useOnboardingStore((s) => s.businessContext);
+  const [submitting, setSubmitting] = useState(false);
 
   const readyFeatures = customFeatures.filter((f) => f.status === "ready");
+  const requests = buildRequests.filter((request) => request.source !== "ai-builder");
 
-  const handleBuild = () => {
-    if (!prompt.trim()) return;
-    setIsBuilding(true);
-    // TODO: Wire to Claude API to generate CustomFeature definition
-    setTimeout(() => setIsBuilding(false), 2000);
+  const handleBuild = async () => {
+    const trimmedPrompt = prompt.trim();
+    if (!trimmedPrompt || submitting) return;
+
+    if (!consumeCredits(1)) {
+      toast("You need at least 1 credit to submit a builder request", "error");
+      return;
+    }
+
+    const request = createBuildRequest({
+      prompt: trimmedPrompt,
+      source: "dashboard-builder",
+      requestType: "feature",
+      status: "generating",
+      creditCost: 1,
+    });
+
+    setPrompt("");
+    setSubmitting(true);
+
+    try {
+      const result = await requestBuilderBrief({ prompt: trimmedPrompt, businessContext });
+      updateBuildRequest(request.id, { status: "review-ready", result, error: undefined });
+      toast("Custom feature brief generated");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to generate AI brief";
+      updateBuildRequest(request.id, {
+        status: "failed",
+        error: `${message}. The request is still saved for backend handoff.`,
+      });
+      toast("AI generation failed. Request saved locally for backend handoff.", "warning");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -41,7 +86,7 @@ export default function BuilderPage() {
           Build Your Own Feature
         </h1>
         <p className="text-[15px] text-text-secondary max-w-md mx-auto leading-relaxed">
-          Describe what you need in plain English. We&apos;ll build it as an add-on to your existing platform.
+          Describe what you need in plain English. This creates a backend-ready feature brief and request record.
         </p>
       </motion.div>
 
@@ -60,11 +105,16 @@ export default function BuilderPage() {
           </span>
           <button
             onClick={handleBuild}
-            disabled={!prompt.trim() || isBuilding}
+            disabled={!prompt.trim() || submitting || credits < 1}
             className="px-6 py-2.5 bg-foreground text-white rounded-full text-[14px] font-semibold hover:opacity-90 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer flex items-center gap-2"
           >
-            {isBuilding ? "Building..." : "Build it"} <ArrowRight className="w-4 h-4" />
+            {submitting ? "Generating..." : "Generate Brief"} <ArrowRight className="w-4 h-4" />
           </button>
+        </div>
+        <div className="mt-3 px-4 py-3 bg-surface/50 rounded-xl border border-border-light">
+          <p className="text-[13px] text-text-secondary leading-relaxed">
+            Requests are now stored locally and can generate a short implementation brief immediately when the AI route is available. Either way, the request shape is ready for backend handoff.
+          </p>
         </div>
       </motion.div>
 
@@ -87,12 +137,12 @@ export default function BuilderPage() {
       {/* How it works */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mb-12">
         <p className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider mb-4">How it works</p>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {[
             { icon: MessageSquare, title: "Describe it", desc: "Tell us what you need" },
-            { icon: Cpu, title: "We build it", desc: "AI creates the feature" },
-            { icon: Sparkles, title: "It's yours", desc: "Use it right away" },
-          ].map((step, i) => (
+            { icon: Cpu, title: "Generate brief", desc: "AI drafts the implementation plan" },
+            { icon: Sparkles, title: "Hand to backend", desc: "Use the saved request as the build contract" },
+          ].map((step, _i) => (
             <div key={step.title} className="bg-card-bg border border-border-light rounded-2xl p-5 text-center">
               <div className="w-9 h-9 bg-surface rounded-xl flex items-center justify-center mx-auto mb-3">
                 <step.icon className="w-4 h-4 text-text-secondary" />
@@ -112,7 +162,7 @@ export default function BuilderPage() {
             { icon: Database, label: "Custom data tables", desc: "Track anything — loyalty points, inventory, waitlists" },
             { icon: Layout, label: "Custom pages & views", desc: "Tables, kanban boards, and forms for your data" },
             { icon: Zap, label: "Automations & triggers", desc: "React to events — send alerts, update records" },
-            { icon: Shield, label: "Sandboxed & safe", desc: "Add-ons sit on top — your core CRM is never modified" },
+            { icon: Shield, label: "Sandboxed & safe", desc: "Add-ons sit on top — your core workspace is never modified" },
           ].map((item) => (
             <div key={item.label} className="flex items-center gap-4 px-5 py-4">
               <div className="w-8 h-8 bg-surface rounded-lg flex items-center justify-center flex-shrink-0">
@@ -125,6 +175,14 @@ export default function BuilderPage() {
             </div>
           ))}
         </div>
+      </motion.div>
+
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28 }} className="mb-12">
+        <BuilderRequestList
+          requests={requests}
+          title="Builder Requests"
+          description="Feature and widget requests queued from the dashboard and builder surfaces."
+        />
       </motion.div>
 
       {/* Existing custom features */}

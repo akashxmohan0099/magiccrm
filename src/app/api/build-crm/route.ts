@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAuth } from "@/lib/api-auth";
 
 export async function POST(req: NextRequest) {
   try {
+    const { user: _user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     const { businessContext, needs, featureSelections } = await req.json();
 
     // In production, this would:
-    // 1. Create a Supabase record for the CRM instance
+    // 1. Create a Supabase record for the workspace instance
     // 2. Initialize the selected modules/tables
     // 3. Set up default configurations per module
     // 4. Create the user's workspace
@@ -40,9 +44,9 @@ export async function POST(req: NextRequest) {
       crm: crmConfig,
     });
   } catch (error) {
-    console.error("Build CRM error:", error);
+    console.error("Build workspace error:", error);
     return NextResponse.json(
-      { error: "Failed to build CRM" },
+      { error: "Failed to build workspace" },
       { status: 500 }
     );
   }

@@ -1,9 +1,19 @@
 "use client";
 
-import { ReactNode, useEffect, useId, useState } from "react";
+import { ReactNode, useEffect, useId, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
+
+// SSR-safe mount detection without setState-in-effect
+const emptySubscribe = () => () => {};
+function useMounted() {
+  return useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  );
+}
 
 interface SlideOverProps {
   open: boolean;
@@ -15,11 +25,7 @@ interface SlideOverProps {
 
 export function SlideOver({ open, onClose, title, children, wide }: SlideOverProps) {
   const titleId = useId();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useMounted();
 
   useEffect(() => {
     if (open) {

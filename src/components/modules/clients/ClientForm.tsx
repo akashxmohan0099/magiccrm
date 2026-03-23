@@ -5,6 +5,7 @@ import { useClientsStore } from "@/store/clients";
 import { Client } from "@/types/models";
 import { useVocabulary } from "@/hooks/useVocabulary";
 import { useIndustryConfig } from "@/hooks/useIndustryConfig";
+import { useAuth } from "@/hooks/useAuth";
 import { SlideOver } from "@/components/ui/SlideOver";
 import { FormField } from "@/components/ui/FormField";
 import { SelectField } from "@/components/ui/SelectField";
@@ -34,7 +35,7 @@ const STATUS_OPTIONS = [
 ];
 
 function getInitialState(client?: Client) {
-  const customData = (client as any)?.customData ?? {} as Record<string, unknown>;
+  const customData = client?.customData ?? {} as Record<string, unknown>;
   return {
     name: client?.name ?? "",
     email: client?.email ?? "",
@@ -53,6 +54,7 @@ function getInitialState(client?: Client) {
 
 export function ClientForm({ open, onClose, client }: ClientFormProps) {
   const { addClient, updateClient } = useClientsStore();
+  const { workspaceId } = useAuth();
   const vocab = useVocabulary();
   const config = useIndustryConfig();
   const customFieldDefs = config.customFields.clients ?? [];
@@ -62,6 +64,7 @@ export function ClientForm({ open, onClose, client }: ClientFormProps) {
 
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setForm(getInitialState(client));
       setErrors({});
     }
@@ -113,16 +116,16 @@ export function ClientForm({ open, onClose, client }: ClientFormProps) {
     };
 
     if (client) {
-      updateClient(client.id, data);
+      updateClient(client.id, data, workspaceId ?? undefined);
     } else {
-      addClient(data);
+      addClient(data, workspaceId ?? undefined);
     }
     onClose();
     setSaving(false);
   };
 
   const inputClass =
-    "w-full px-3 py-2 bg-card-bg border border-border-light rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand";
+    "w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30";
 
   return (
     <SlideOver

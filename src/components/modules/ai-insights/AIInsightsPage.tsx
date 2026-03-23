@@ -2,7 +2,6 @@
 
 import { Lightbulb, X, TrendingUp, UserMinus, CalendarClock, DollarSign, ArrowUpRight } from "lucide-react";
 import { useAIInsightsStore } from "@/store/ai-insights";
-import { ClientInsight } from "@/types/models";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/Button";
@@ -66,35 +65,35 @@ export function AIInsightsPage() {
       <FeatureSection moduleId="ai-insights" featureId="revenue-forecast" featureLabel="Revenue Forecast">
         <div className="bg-card-bg rounded-xl border border-border-light p-5 mt-4">
           <h3 className="text-[13px] font-semibold text-text-tertiary uppercase tracking-wider mb-2">Revenue Forecast</h3>
-          <p className="text-[13px] text-text-tertiary">Add bookings and invoices to see next month's predicted revenue.</p>
+          <p className="text-[13px] text-text-tertiary">Add bookings and invoices to see next month&apos;s predicted revenue. (requires cloud connection)</p>
         </div>
       </FeatureSection>
 
       <FeatureSection moduleId="ai-insights" featureId="churn-risk-score" featureLabel="Churn Risk Score">
         <div className="bg-card-bg rounded-xl border border-border-light p-5 mt-4">
           <h3 className="text-[13px] font-semibold text-text-tertiary uppercase tracking-wider mb-2">Churn Risk</h3>
-          <p className="text-[13px] text-text-tertiary">Clients at risk of leaving will be flagged here with a red/yellow/green score.</p>
+          <p className="text-[13px] text-text-tertiary">Clients at risk of leaving will be flagged here with a red/yellow/green score. (requires cloud connection)</p>
         </div>
       </FeatureSection>
 
       <FeatureSection moduleId="ai-insights" featureId="weekly-digest" featureLabel="Weekly Digest">
         <div className="bg-card-bg rounded-xl border border-border-light p-5 mt-4">
           <h3 className="text-[13px] font-semibold text-text-tertiary uppercase tracking-wider mb-2">Weekly Digest</h3>
-          <p className="text-[13px] text-text-tertiary">An AI-generated summary of your week's activity is sent every Monday morning.</p>
+          <p className="text-[13px] text-text-tertiary">An AI-generated summary of your week&apos;s activity is sent every Monday morning. (requires cloud connection)</p>
         </div>
       </FeatureSection>
 
       <FeatureSection moduleId="ai-insights" featureId="anomaly-alerts" featureLabel="Anomaly Alerts">
         <div className="bg-card-bg rounded-xl border border-border-light p-5 mt-4">
           <h3 className="text-[13px] font-semibold text-text-tertiary uppercase tracking-wider mb-2">Anomaly Detection</h3>
-          <p className="text-[13px] text-text-tertiary">Unusual patterns (sudden drop in bookings, spike in cancellations) will be flagged here.</p>
+          <p className="text-[13px] text-text-tertiary">Unusual patterns (sudden drop in bookings, spike in cancellations) will be flagged here. (requires cloud connection)</p>
         </div>
       </FeatureSection>
 
       <FeatureSection moduleId="ai-insights" featureId="client-lifetime-value" featureLabel="Client Lifetime Value">
         <div className="bg-card-bg rounded-xl border border-border-light p-5 mt-4">
           <h3 className="text-[13px] font-semibold text-text-tertiary uppercase tracking-wider mb-2">Client Lifetime Value</h3>
-          <p className="text-[13px] text-text-tertiary">Estimated lifetime value per client will appear here based on booking and payment history.</p>
+          <p className="text-[13px] text-text-tertiary">Estimated lifetime value per client will appear here based on booking and payment history. (requires cloud connection)</p>
         </div>
       </FeatureSection>
     </div>

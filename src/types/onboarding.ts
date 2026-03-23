@@ -7,13 +7,16 @@ export interface BusinessContext {
 }
 
 export interface NeedsAssessment {
+  // Always-on (clients, leads, messaging, billing) — no question needed
   manageCustomers: boolean;
   receiveInquiries: boolean;
   communicateClients: boolean;
-  acceptBookings: boolean;
   sendInvoices: boolean;
+  // Question-gated modules
+  acceptBookings: boolean;
   manageProjects: boolean;
   runMarketing: boolean;
+  // Removed from core — now add-ons (kept for backward compat)
   handleSupport: boolean;
   manageDocuments: boolean;
 }

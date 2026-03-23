@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus, List, Columns3, Users, FileInput } from "lucide-react";
+import { Plus, List, Columns3, Users, FileInput, Upload } from "lucide-react";
 import { useLeadsStore } from "@/store/leads";
+import { useWorkflowSettingsStore } from "@/store/workflow-settings";
 import { Lead } from "@/types/models";
 import { useVocabulary } from "@/hooks/useVocabulary";
-import { useIndustryConfig } from "@/hooks/useIndustryConfig";
+import { useBaseIndustryConfig, useIndustryConfig } from "@/hooks/useIndustryConfig";
 import { FeatureSection } from "@/components/modules/FeatureSection";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -16,17 +17,27 @@ import { Button } from "@/components/ui/Button";
 import { LeadForm } from "./LeadForm";
 import { PipelineBoard } from "./PipelineBoard";
 import { WebFormPreview } from "./WebFormPreview";
+import { CSVImportWizard } from "@/components/modules/shared/CSVImportWizard";
+import { StageSettingsCard } from "@/components/modules/shared/StageSettingsCard";
 
 type ViewMode = "list" | "pipeline" | "form";
 
 export function LeadsPage() {
   const { leads } = useLeadsStore();
   const vocab = useVocabulary();
+  const baseConfig = useBaseIndustryConfig();
   const { leadStages } = useIndustryConfig();
+  const setLeadStages = useWorkflowSettingsStore((s) => s.setLeadStages);
+  const resetLeadStages = useWorkflowSettingsStore((s) => s.resetLeadStages);
   const [view, setView] = useState<ViewMode>("list");
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | undefined>(undefined);
+  const leadStageKey = useMemo(
+    () => leadStages.map((stage) => `${stage.id}:${stage.label}:${stage.color}:${stage.isClosed ? 1 : 0}`).join("|"),
+    [leadStages]
+  );
 
   const filtered = useMemo(() => {
     if (!search.trim()) return leads;
@@ -79,10 +90,18 @@ export function LeadsPage() {
         title={vocab.leads}
         description={`Track ${vocab.leads.toLowerCase()} from first contact to closed deal.`}
         actions={
-          <Button variant="primary" size="sm" onClick={handleAdd}>
-            <Plus className="w-4 h-4 mr-1.5" />
-            {vocab.addLead}
-          </Button>
+          <div className="flex items-center gap-2">
+            <FeatureSection moduleId="client-database" featureId="import-export" featureLabel="Import / Export">
+              <Button variant="secondary" size="sm" onClick={() => setImportOpen(true)}>
+                <Upload className="w-4 h-4 mr-1.5" />
+                Import
+              </Button>
+            </FeatureSection>
+            <Button variant="primary" size="sm" onClick={handleAdd}>
+              <Plus className="w-4 h-4 mr-1.5" />
+              {vocab.addLead}
+            </Button>
+          </div>
         }
       />
 
@@ -128,18 +147,16 @@ export function LeadsPage() {
       </div>
 
       <FeatureSection moduleId="leads-pipeline" featureId="custom-pipeline-stages" featureLabel="Custom Pipeline Stages">
-        <div className="mb-4 p-4 bg-card-bg rounded-xl border border-border-light">
-          <h4 className="text-[13px] font-semibold text-text-tertiary uppercase tracking-wider mb-2">Pipeline Stages</h4>
-          <div className="flex flex-wrap gap-2">
-            {leadStages.map((stage) => (
-              <div key={stage.id} className="flex items-center gap-1.5 px-3 py-1.5 bg-surface rounded-lg border border-border-light">
-                <div className={`w-2.5 h-2.5 rounded-full ${stage.color}`} />
-                <span className="text-[12px] font-medium text-foreground">{stage.label}</span>
-              </div>
-            ))}
-          </div>
-          <p className="text-[10px] text-text-tertiary mt-2">Stage customization coming soon. Currently using industry defaults.</p>
-        </div>
+        <StageSettingsCard
+          key={leadStageKey}
+          title="Pipeline Stages"
+          description="Rename, reorder, add, and recolor your lead pipeline stages before backend workflow rules are attached."
+          entityLabel={vocab.lead.toLowerCase()}
+          stages={leadStages}
+          defaultStages={baseConfig.leadStages}
+          onSave={setLeadStages}
+          onReset={resetLeadStages}
+        />
       </FeatureSection>
 
       {leads.length === 0 ? (
@@ -166,6 +183,12 @@ export function LeadsPage() {
       ) : (
         <PipelineBoard leads={filtered} />
       )}
+
+      <CSVImportWizard
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        defaultTarget="leads"
+      />
 
       <LeadForm
         open={formOpen}

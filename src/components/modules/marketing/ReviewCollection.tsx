@@ -4,7 +4,6 @@ import { useState } from "react";
 import { Star, Plus } from "lucide-react";
 import { useMarketingStore } from "@/store/marketing";
 import { useClientsStore } from "@/store/clients";
-import { ReviewRequest } from "@/types/models";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/Button";

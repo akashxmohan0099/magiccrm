@@ -18,7 +18,7 @@ export function useFeature(moduleId: string, featureId: string): boolean {
   // Core features are always enabled when the module has any selections
   if (CORE_FEATURE_IDS[moduleId]?.has(featureId)) {
     const features = featureSelections[moduleId];
-    return !!features && features.length > 0;
+    return !!features && features.some(f => f.selected);
   }
 
   const features = featureSelections[moduleId];
@@ -40,16 +40,58 @@ export function useModuleEnabled(moduleId: string): boolean {
   return features.some((f) => f.selected);
 }
 
+// Always-on modules — enabled for every user regardless of answers
+const ALWAYS_ON_MODULES = new Set([
+  "client-database",
+  "leads-pipeline",
+  "communication",
+  "quotes-invoicing",
+]);
+
+// Map from module IDs to their NeedsAssessment trigger keys
+const MODULE_TO_NEED: Record<string, string> = {
+  "client-database": "manageCustomers",
+  "leads-pipeline": "receiveInquiries",
+  "communication": "communicateClients",
+  "bookings-calendar": "acceptBookings",
+  "quotes-invoicing": "sendInvoices",
+  "jobs-projects": "manageProjects",
+  "marketing": "runMarketing",
+};
+
 /** Returns only core modules that are enabled via onboarding */
 export function useEnabledModules(): ModuleDefinition[] {
   const featureSelections = useOnboardingStore((s) => s.featureSelections);
+  const needs = useOnboardingStore((s) => s.needs);
   return useMemo(() => {
     return MODULE_REGISTRY.filter((mod) => {
-      if (mod.kind === "addon") return false; // add-ons handled separately
+      if (mod.kind === "addon") return false;
+
+      // Always-on modules are enabled for every user
+      if (ALWAYS_ON_MODULES.has(mod.id)) return true;
+
+      // Check direct feature selections (by module ID)
       const features = featureSelections[mod.id];
-      return features && features.length > 0 && features.some((f) => f.selected);
+      if (features && features.length > 0 && features.some((f) => f.selected)) return true;
+
+      // Check by NeedsAssessment key (legacy/onboarding writes)
+      const needKey = MODULE_TO_NEED[mod.id];
+      if (needKey) {
+        const needFeatures = featureSelections[needKey];
+        if (needFeatures && needFeatures.length > 0 && needFeatures.some((f) => f.selected)) return true;
+      }
+
+      // Check auto-enabled modules (products, team, automations, reporting, client-portal)
+      const block = FEATURE_BLOCKS.find((b) => b.id === mod.id);
+      if (block?.autoEnabledBy) {
+        const isAutoEnabled = block.autoEnabledBy.some((trigger) => needs[trigger]);
+        if (isAutoEnabled) return true;
+      }
+      if (block?.triggeredBy && needs[block.triggeredBy]) return true;
+
+      return false;
     });
-  }, [featureSelections]);
+  }, [featureSelections, needs]);
 }
 
 /** Returns add-on modules that the user has enabled */

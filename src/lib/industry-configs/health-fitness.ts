@@ -39,7 +39,8 @@ export const healthFitnessConfig: IndustryAdaptiveConfig = {
     { id: "active", label: "Active", color: "bg-yellow-400" },
     { id: "review", label: "Review", color: "bg-purple-400" },
     { id: "completed", label: "Completed", color: "bg-green-400", isClosed: true },
-    { id: "paused", label: "Paused", color: "bg-gray-400", isClosed: true },
+    { id: "paused", label: "Paused", color: "bg-gray-400", isClosed: false },
+    { id: "cancelled", label: "Cancelled", color: "bg-red-400", isClosed: true },
   ],
 
   leadStages: [
@@ -92,6 +93,30 @@ export const healthFitnessPersonaOverrides: Record<string, IndustryAdaptiveOverr
       lead: "Referral",
       leads: "Referrals",
       addLead: "Add Referral",
+    },
+    bookingMode: {
+      defaultMode: "appointment" as const,
+      defaultServices: [
+        { id: "initial-consult", name: "Initial Consultation", duration: 60, price: 120, category: "Consultations" },
+        { id: "standard-treatment", name: "Standard Treatment", duration: 30, price: 80, category: "Treatments" },
+        { id: "extended-treatment", name: "Extended Treatment", duration: 45, price: 110, category: "Treatments" },
+        { id: "follow-up", name: "Follow-Up", duration: 20, price: 65, category: "Consultations" },
+      ],
+    },
+    customFields: {
+      clients: [
+        { id: "referring-gp", label: "Referring GP", type: "text" as const, group: "Medical" },
+        { id: "health-fund", label: "Health Fund", type: "text" as const, group: "Medical" },
+        { id: "diagnosis-condition", label: "Diagnosis / Condition", type: "textarea" as const, group: "Medical" },
+        { id: "medicare-number", label: "Medicare Number", type: "text" as const, group: "Medical" },
+      ],
+    },
+  },
+  "gym-studio-owner": {
+    vocabulary: {
+      client: "Member",
+      clients: "Members",
+      addClient: "Add Member",
     },
   },
 };

@@ -65,6 +65,22 @@ export interface CustomFeature {
   coreReadAccess: string[];        // e.g. ["clients", "bookings-calendar"] — read-only access to core modules
 }
 
+export type BuilderRequestStatus = "queued" | "generating" | "review-ready" | "failed";
+export type BuilderRequestSource = "ai-builder" | "dashboard-builder" | "dashboard-widget-builder";
+
+export interface BuilderRequest {
+  id: string;
+  prompt: string;
+  source: BuilderRequestSource;
+  requestType: "feature" | "widget";
+  status: BuilderRequestStatus;
+  creditCost: number;
+  createdAt: string;
+  updatedAt: string;
+  result?: string;
+  error?: string;
+}
+
 /** Sandboxed permissions — what custom features are allowed to do */
 export const CUSTOM_FEATURE_PERMISSIONS = {
   // CAN do:

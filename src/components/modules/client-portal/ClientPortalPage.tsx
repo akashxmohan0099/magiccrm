@@ -11,7 +11,7 @@ import { PortalAccessForm } from "./PortalAccessForm";
 import { FeatureSection } from "@/components/modules/FeatureSection";
 
 export function ClientPortalPage() {
-  const { config, updateConfig, accessList, revokeAccess, toggleAccess } = useClientPortalStore();
+  const { config, updateConfig, accessList, revokeAccess: _revokeAccess, toggleAccess } = useClientPortalStore();
   const [formOpen, setFormOpen] = useState(false);
 
   const accessColumns: Column<PortalAccess>[] = [

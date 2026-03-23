@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus, List, CalendarDays, Calendar, ListPlus, Clock, Globe } from "lucide-react";
+import { Plus, List, CalendarDays, Calendar } from "lucide-react";
 import { useBookingsStore } from "@/store/bookings";
 import { useClientsStore } from "@/store/clients";
 import { Booking } from "@/types/models";
@@ -17,20 +17,36 @@ import { BookingForm } from "./BookingForm";
 import { CalendarView } from "./CalendarView";
 import { AvailabilitySettings } from "./AvailabilitySettings";
 import { BookingPagePreview } from "./BookingPagePreview";
+import { RebookingPrompts } from "./RebookingPrompts";
+import { WaitlistPanel } from "./WaitlistPanel";
+import { TextArea } from "@/components/ui/TextArea";
+import { ViewToggle } from "@/components/ui/ViewToggle";
+import { useTeamStore } from "@/store/team";
+import { useModuleEnabled } from "@/hooks/useFeature";
 
 type ViewMode = "list" | "calendar";
 
 export function BookingsPage() {
-  const { bookings, deleteBooking } = useBookingsStore();
+  const { bookings, deleteBooking: _deleteBooking, cancellationPolicy, setCancellationPolicy } = useBookingsStore();
   const { clients } = useClientsStore();
+  const { members } = useTeamStore();
+  const teamEnabled = useModuleEnabled("team");
   const vocab = useVocabulary();
   const [view, setView] = useState<ViewMode>("calendar");
   const [search, setSearch] = useState("");
+  const [teamView, setTeamView] = useState<"my" | "team">("team");
   const [formOpen, setFormOpen] = useState(false);
   const [editingBooking, setEditingBooking] = useState<Booking | undefined>(undefined);
   const [defaultDate, setDefaultDate] = useState<string | undefined>(undefined);
-  const [defaultStartTime, setDefaultStartTime] = useState<string | undefined>(undefined);
-  const [defaultEndTime, setDefaultEndTime] = useState<string | undefined>(undefined);
+  const [_defaultStartTime, setDefaultStartTime] = useState<string | undefined>(undefined);
+  const [_defaultEndTime, setDefaultEndTime] = useState<string | undefined>(undefined);
+  const [waitlistDate, setWaitlistDate] = useState(() => new Date().toISOString().split("T")[0]);
+
+  // For "My" view: use the first owner/member as "current user" (placeholder until auth)
+  const currentUserId = useMemo(() => {
+    const owner = members.find((m) => m.role === "owner");
+    return owner?.id ?? members[0]?.id;
+  }, [members]);
 
   const clientMap = useMemo(() => {
     const map: Record<string, string> = {};
@@ -41,14 +57,21 @@ export function BookingsPage() {
   }, [clients]);
 
   const filtered = useMemo(() => {
-    if (!search.trim()) return bookings;
+    let result = bookings;
+
+    // Apply "My" view filter
+    if (teamView === "my" && currentUserId) {
+      result = result.filter((b) => b.assignedToId === currentUserId);
+    }
+
+    if (!search.trim()) return result;
     const q = search.toLowerCase();
-    return bookings.filter(
+    return result.filter(
       (b) =>
         b.title.toLowerCase().includes(q) ||
         (b.clientId && clientMap[b.clientId]?.toLowerCase().includes(q))
     );
-  }, [bookings, search, clientMap]);
+  }, [bookings, search, clientMap, teamView, currentUserId]);
 
   const columns: Column<Booking>[] = [
     { key: "title", label: "Title", sortable: true },
@@ -69,6 +92,16 @@ export function BookingsPage() {
       label: "Time",
       sortable: true,
       render: (b) => `${b.startTime} – ${b.endTime}`,
+    },
+    {
+      key: "assignedToName" as keyof Booking,
+      label: "Assigned To",
+      sortable: true,
+      render: (b) => (
+        <span className="text-text-secondary text-xs">
+          {b.assignedToName ?? "\u2014"}
+        </span>
+      ),
     },
     {
       key: "status",
@@ -95,6 +128,7 @@ export function BookingsPage() {
     setDefaultDate(date);
     setDefaultStartTime(undefined);
     setDefaultEndTime(undefined);
+    setWaitlistDate(date);
     setFormOpen(true);
   };
 
@@ -125,6 +159,13 @@ export function BookingsPage() {
           onChange={setSearch}
           placeholder={`Search ${vocab.bookings.toLowerCase()}...`}
         />
+        {teamEnabled && members.length > 0 && (
+          <ViewToggle
+            view={teamView}
+            onChange={setTeamView}
+            moduleLabel={vocab.bookings}
+          />
+        )}
         <div className="flex items-center bg-surface rounded-lg p-1 border border-border-light">
           <button
             onClick={() => setView("list")}
@@ -178,25 +219,39 @@ export function BookingsPage() {
         />
       )}
 
-      <AvailabilitySettings />
+      {bookings.length > 0 && (
+        <>
+          <AvailabilitySettings />
 
-      <FeatureSection moduleId="bookings-calendar" featureId="waitlist" featureLabel="Waitlist">
-        <div className="mt-4 bg-card-bg rounded-xl border border-border-light p-5">
-          <h3 className="text-[13px] font-semibold text-text-tertiary uppercase tracking-wider mb-3">Waitlist</h3>
-          <p className="text-[13px] text-text-tertiary text-center py-4">No one on the waitlist. When slots are full, clients can join the waitlist and get notified when a spot opens.</p>
-        </div>
-      </FeatureSection>
+          <WaitlistPanel selectedDate={waitlistDate} />
 
-      <FeatureSection moduleId="bookings-calendar" featureId="team-calendar" featureLabel="Team Calendar">
-        <div className="mt-4 p-4 bg-surface/50 rounded-xl border border-border-light">
-          <p className="text-[13px] font-medium text-foreground">Team Calendar View</p>
-          <p className="text-[11px] text-text-tertiary">See all team members' schedules side by side. Filter by team member from the calendar header.</p>
-        </div>
-      </FeatureSection>
+          <FeatureSection moduleId="bookings-calendar" featureId="cancellation-policy" featureLabel="Cancellation Policy">
+            <div className="mt-4 bg-card-bg rounded-xl border border-border-light p-5">
+              <h3 className="text-[13px] font-semibold text-text-tertiary uppercase tracking-wider mb-3">Cancellation Policy</h3>
+              <p className="text-[11px] text-text-tertiary mb-2">Set your cancellation policy text. Clients will be asked to consent when booking.</p>
+              <TextArea
+                value={cancellationPolicy}
+                onChange={(e) => setCancellationPolicy(e.target.value)}
+                placeholder="Enter your cancellation policy here, e.g. Cancellations must be made at least 24 hours in advance..."
+                rows={4}
+              />
+            </div>
+          </FeatureSection>
 
-      <FeatureSection moduleId="bookings-calendar" featureId="booking-page">
-        <BookingPagePreview />
-      </FeatureSection>
+          <FeatureSection moduleId="bookings-calendar" featureId="team-calendar" featureLabel="Team Calendar">
+            <div className="mt-4 p-4 bg-surface/50 rounded-xl border border-border-light">
+              <p className="text-[13px] font-medium text-foreground">Team Calendar View</p>
+              <p className="text-[11px] text-text-tertiary">See all team members&apos; schedules side by side. Filter by team member from the calendar header.</p>
+            </div>
+          </FeatureSection>
+
+          <FeatureSection moduleId="bookings-calendar" featureId="booking-page">
+            <BookingPagePreview />
+          </FeatureSection>
+
+          <RebookingPrompts />
+        </>
+      )}
 
       <BookingForm
         open={formOpen}

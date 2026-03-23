@@ -354,7 +354,8 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
           const weekDragHeight = Math.max((Math.abs(dragEndMin - dragStartMin) / 60) * WEEK_PX_PER_HOUR, 12);
 
           return (
-            <div className="select-none">
+            <div className="select-none overflow-x-auto">
+             <div className="min-w-[600px]">
               {/* Day headers — double-click to go to day view */}
               <div className="grid grid-cols-7 border-b border-border-light">
                 {weekDays.map((d, i) => {
@@ -450,6 +451,7 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
                   });
                 })}
               </div>
+             </div>
             </div>
           );
         })()}
@@ -468,30 +470,32 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
           for (let d = 1; d <= rem; d++) { cells.push({ day: d, dateKey: formatDateKey(new Date(year, month + 1, d)), inMonth: false }); }
 
           return (
-            <>
-              <div className="grid grid-cols-7 border-b border-border-light">
-                {DAY_LABELS.map((l) => <div key={l} className="text-center text-[11px] font-medium text-text-tertiary py-2">{l}</div>)}
+            <div className="overflow-x-auto">
+              <div className="min-w-[600px]">
+                <div className="grid grid-cols-7 border-b border-border-light">
+                  {DAY_LABELS.map((l) => <div key={l} className="text-center text-[11px] font-medium text-text-tertiary py-2">{l}</div>)}
+                </div>
+                <div className="grid grid-cols-7">
+                  {cells.map(({ day, dateKey, inMonth }, idx) => {
+                    const dayBookings = bookingsByDate[dateKey] || [];
+                    const isToday = dateKey === todayKey;
+                    return (
+                      <button key={idx} onClick={() => { setCurrentDate(new Date(dateKey + "T00:00:00")); setMode("today"); }} className={`relative min-h-[80px] p-1.5 text-left border-b border-r border-border-light transition-colors cursor-pointer ${!inMonth ? "bg-surface/30" : "hover:bg-surface/50"}`}>
+                        <span className={`text-[12px] font-medium inline-flex items-center justify-center w-6 h-6 rounded-full ${isToday ? "bg-foreground text-white" : inMonth ? "text-foreground" : "text-text-tertiary/40"}`}>{day}</span>
+                        <div className="mt-0.5 space-y-0.5">
+                          {dayBookings.slice(0, 2).map((b) => (
+                            <div key={b.id} className={`text-[10px] px-1.5 py-0.5 rounded truncate ${getBookingStyle(b)}`}>
+                              {b.bookingType === "break" ? "Break" : b.bookingType === "unavailable" ? "Blocked" : `${b.startTime} ${b.title}`}
+                            </div>
+                          ))}
+                          {dayBookings.length > 2 && <p className="text-[10px] text-text-tertiary px-1.5">+{dayBookings.length - 2} more</p>}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              <div className="grid grid-cols-7">
-                {cells.map(({ day, dateKey, inMonth }, idx) => {
-                  const dayBookings = bookingsByDate[dateKey] || [];
-                  const isToday = dateKey === todayKey;
-                  return (
-                    <button key={idx} onClick={() => { setCurrentDate(new Date(dateKey + "T00:00:00")); setMode("today"); }} className={`relative min-h-[80px] p-1.5 text-left border-b border-r border-border-light transition-colors cursor-pointer ${!inMonth ? "bg-surface/30" : "hover:bg-surface/50"}`}>
-                      <span className={`text-[12px] font-medium inline-flex items-center justify-center w-6 h-6 rounded-full ${isToday ? "bg-foreground text-white" : inMonth ? "text-foreground" : "text-text-tertiary/40"}`}>{day}</span>
-                      <div className="mt-0.5 space-y-0.5">
-                        {dayBookings.slice(0, 2).map((b) => (
-                          <div key={b.id} className={`text-[10px] px-1.5 py-0.5 rounded truncate ${getBookingStyle(b)}`}>
-                            {b.bookingType === "break" ? "Break" : b.bookingType === "unavailable" ? "Blocked" : `${b.startTime} ${b.title}`}
-                          </div>
-                        ))}
-                        {dayBookings.length > 2 && <p className="text-[10px] text-text-tertiary px-1.5">+{dayBookings.length - 2} more</p>}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </>
+            </div>
           );
         })()}
       </div>

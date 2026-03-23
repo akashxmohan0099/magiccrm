@@ -15,17 +15,8 @@ interface NewConversationFormProps {
   onCreated: (conversation: Conversation) => void;
 }
 
-const channelOptions = [
-  { value: "email", label: "Email" },
-  { value: "sms", label: "SMS" },
-  { value: "instagram", label: "Instagram" },
-  { value: "facebook", label: "Facebook" },
-  { value: "whatsapp", label: "WhatsApp" },
-  { value: "linkedin", label: "LinkedIn" },
-];
-
 export function NewConversationForm({ open, onClose, onCreated }: NewConversationFormProps) {
-  const { addConversation } = useCommunicationStore();
+  const { addConversation, connectedChannels, channelConfigs } = useCommunicationStore();
   const { clients } = useClientsStore();
   const [form, setForm] = useState({ clientId: "", channel: "email" as Channel, subject: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -38,9 +29,32 @@ export function NewConversationForm({ open, onClose, onCreated }: NewConversatio
     [clients]
   );
 
+  const availableChannels = useMemo(() => {
+    const configuredChannels = Object.keys(channelConfigs) as Channel[];
+    return Array.from(new Set<Channel>([...connectedChannels, ...configuredChannels]));
+  }, [channelConfigs, connectedChannels]);
+
+  const channelOptions = useMemo(() => {
+    const allOptions = [
+      { value: "email", label: "Email" },
+      { value: "sms", label: "SMS" },
+      { value: "instagram", label: "Instagram" },
+      { value: "facebook", label: "Facebook" },
+      { value: "whatsapp", label: "WhatsApp" },
+      { value: "linkedin", label: "LinkedIn" },
+    ] satisfies { value: Channel; label: string }[];
+
+    return allOptions.filter((option) => availableChannels.includes(option.value));
+  }, [availableChannels]);
+
+  const selectedChannel = channelOptions.some((option) => option.value === form.channel)
+    ? form.channel
+    : channelOptions[0]?.value ?? "email";
+
   const validate = () => {
     const errs: Record<string, string> = {};
     if (!form.clientId) errs.clientId = "Client is required";
+    if (channelOptions.length === 0) errs.channel = "Configure at least one channel first";
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -55,11 +69,15 @@ export function NewConversationForm({ open, onClose, onCreated }: NewConversatio
     const convo = addConversation({
       clientId: client.id,
       clientName: client.name,
-      channel: form.channel,
+      channel: selectedChannel,
       subject: form.subject.trim() || undefined,
     });
 
-    setForm({ clientId: "", channel: "email", subject: "" });
+    setForm({
+      clientId: "",
+      channel: channelOptions[0]?.value ?? "email",
+      subject: "",
+    });
     setErrors({});
     onCreated(convo);
     onClose();
@@ -82,10 +100,14 @@ export function NewConversationForm({ open, onClose, onCreated }: NewConversatio
         <FormField label="Channel">
           <SelectField
             options={channelOptions}
-            value={form.channel}
+            value={selectedChannel}
             onChange={(e) => set("channel", e.target.value)}
+            disabled={channelOptions.length === 0}
           />
         </FormField>
+        {errors.channel && (
+          <p className="text-[12px] text-red-500 -mt-3">{errors.channel}</p>
+        )}
 
         <FormField label="Subject">
           <input

@@ -114,6 +114,20 @@ export const educationPersonaOverrides: Record<string, IndustryAdaptiveOverride>
       ],
     },
   },
+  "music-teacher": {
+    vocabulary: {
+      booking: "Lesson",
+      bookings: "Lessons",
+    },
+    customFields: {
+      clients: [
+        { id: "instrument", label: "Instrument", type: "text", placeholder: "e.g. Piano, Guitar, Violin...", group: "Music Details" },
+        { id: "current-grade-level", label: "Current Grade/Level", type: "text", placeholder: "e.g. Grade 3, Beginner, Advanced...", group: "Music Details" },
+        { id: "exam-board", label: "Exam Board", type: "select", options: ["AMEB", "ABRSM", "Trinity", "Rockschool", "LCM", "Other", "N/A"], group: "Music Details" },
+        { id: "practice-log-notes", label: "Practice Log Notes", type: "textarea", placeholder: "Practice goals, pieces being worked on...", group: "Music Details" },
+      ],
+    },
+  },
   "driving-instructor": {
     customFields: {
       clients: [
@@ -121,6 +135,7 @@ export const educationPersonaOverrides: Record<string, IndustryAdaptiveOverride>
         { id: "hours-logged", label: "Hours Logged", type: "number", placeholder: "Total supervised hours", group: "Licence Details" },
         { id: "test-date", label: "Test Date", type: "date", group: "Licence Details" },
         { id: "vehicle-pref", label: "Vehicle Preference", type: "select", options: ["Auto", "Manual"], group: "Licence Details" },
+        { id: "licence-class", label: "Licence Class", type: "select", options: ["C", "LR", "MR", "HR", "HC", "MC", "R", "RE"], group: "Licence Details" },
       ],
     },
   },

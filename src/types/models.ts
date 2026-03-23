@@ -37,6 +37,8 @@ export interface Lead {
   value?: number;
   notes: string;
   clientId?: string;
+  lastContactedAt?: string;
+  nextFollowUpDate?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -51,6 +53,7 @@ export interface Task {
   completed: boolean;
   dueDate?: string;
   assignee?: string;
+  assigneeId?: string;        // team member ID (structured assignment)
 }
 
 export interface TimeEntry {
@@ -58,6 +61,8 @@ export interface TimeEntry {
   description: string;
   minutes: number;
   date: string;
+  billableRate?: number;
+  billable?: boolean;
 }
 
 export interface FileAttachment {
@@ -79,6 +84,11 @@ export interface Job {
   timeEntries: TimeEntry[];
   files: FileAttachment[];
   dueDate?: string;
+  assignedToId?: string;
+  assignedToName?: string;
+  satisfactionRating?: number;
+  satisfactionFeedback?: string;
+  ratedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -116,8 +126,20 @@ export interface Invoice {
   depositPercent?: number;
   depositPaid?: boolean;
   milestones?: InvoiceMilestone[];
+  paidAmount?: number;
+  lastReminderSentAt?: string;
+  reminderCount?: number;
+  taxRate?: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface QuoteVersion {
+  version: number;
+  lineItems: LineItem[];
+  notes: string;
+  validUntil?: string;
+  savedAt: string;
 }
 
 export interface Quote {
@@ -130,6 +152,8 @@ export interface Quote {
   notes: string;
   createdAt: string;
   updatedAt: string;
+  version?: number;
+  previousVersions?: QuoteVersion[];
 }
 
 // ── Payments ──────────────────────────────────────────────
@@ -144,7 +168,11 @@ export interface Payment {
   method: PaymentMethod;
   notes: string;
   date: string;
+  status?: "pending" | "processed" | "refunded";
+  isRefund?: boolean;
+  isWriteOff?: boolean;
   createdAt: string;
+  updatedAt?: string;
 }
 
 // ── Bookings & Calendar ───────────────────────────────────
@@ -167,8 +195,32 @@ export interface Booking {
   serviceName?: string;
   price?: number;
   duration?: number;
+  cancellationReason?: string;
+  cancellationPolicyConsent?: {
+    accepted: boolean;
+    acceptedAt: string;
+  };
+  assignedToId?: string;      // team member ID
+  assignedToName?: string;    // denormalized for display
+  satisfactionRating?: number;
+  satisfactionFeedback?: string;
+  ratedAt?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface WaitlistEntry {
+  id: string;
+  clientId?: string;
+  clientName: string;
+  date: string;
+  startTime?: string;
+  endTime?: string;
+  serviceId?: string;
+  serviceName?: string;
+  status: "waiting" | "notified" | "booked" | "expired";
+  notifiedAt?: string;
+  createdAt: string;
 }
 
 export interface AvailabilitySlot {
@@ -181,6 +233,8 @@ export interface AvailabilitySlot {
 // ── Communication ─────────────────────────────────────────
 
 export type Channel = "email" | "sms" | "instagram" | "facebook" | "whatsapp" | "linkedin";
+export type ChannelConnectionStatus = "configured" | "action-required" | "connected" | "syncing" | "error";
+export type ChannelSyncState = "idle" | "pending" | "syncing" | "synced" | "error";
 
 export interface Message {
   id: string;
@@ -197,7 +251,33 @@ export interface Conversation {
   subject?: string;
   messages: Message[];
   lastMessageAt: string;
+  unreadCount?: number;
   createdAt: string;
+  updatedAt?: string;
+}
+
+export interface ChannelConnectionConfig {
+  channel: Channel;
+  identifier: string;
+  displayName?: string;
+  signature?: string;
+  status: ChannelConnectionStatus;
+  syncState: ChannelSyncState;
+  statusMessage?: string;
+  configuredAt: string;
+  connectedAt?: string;
+  lastSyncedAt?: string;
+}
+
+export interface CommunicationAutomationSettings {
+  afterHoursEnabled: boolean;
+  afterHoursMessage: string;
+  unreadAlertsEnabled: boolean;
+  unreadAlertThresholdMinutes: number;
+  bulkMessageChannel: Channel;
+  bulkAudienceLabel: string;
+  bulkMessageTemplate: string;
+  includeUnsubscribeLink: boolean;
 }
 
 // ── Marketing ─────────────────────────────────────────────
@@ -417,6 +497,9 @@ export interface Membership {
   nextBillingDate: string;
   sessionsUsed: number;
   sessionsTotal?: number;
+  autoRenew?: boolean;
+  renewalDate?: string;
+  cancellationReason?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -505,6 +588,121 @@ export interface ReferralCode {
   createdAt: string;
 }
 
+// ── Gift Cards ───────────────────────────────────────────
+
+export interface GiftCard {
+  id: string;
+  code: string;
+  amount: number;
+  balance: number;
+  purchasedBy?: string;
+  recipientName?: string;
+  recipientEmail?: string;
+  status: "active" | "redeemed" | "expired";
+  expiresAt?: string;
+  createdAt: string;
+}
+
+// ── Class Timetable ──────────────────────────────────────
+
+export interface ClassDefinition {
+  id: string;
+  name: string;
+  instructor?: string;
+  dayOfWeek: number; // 0=Sun, 6=Sat
+  startTime: string;
+  endTime: string;
+  capacity: number;
+  enrolled: number;
+  recurring: boolean;
+  color?: string;
+  createdAt: string;
+}
+
+// ── Vendor Management ────────────────────────────────────
+
+export interface Vendor {
+  id: string;
+  name: string;
+  category: string;
+  contactName?: string;
+  email?: string;
+  phone?: string;
+  website?: string;
+  notes: string;
+  rating?: number; // 1-5
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ── Proposals ───────────────────────────────────────
+
+export type ProposalStatus = "draft" | "sent" | "viewed" | "accepted" | "declined" | "expired";
+
+export interface ProposalSection {
+  id: string;
+  type: "text" | "services" | "pricing-table" | "terms" | "signature" | "image" | "divider";
+  title?: string;
+  content?: string;
+  lineItems?: LineItem[];
+  interactive?: boolean;
+  order: number;
+}
+
+export interface ProposalSignature {
+  signedBy: string;
+  signedAt: string;
+  signatureDataUrl?: string;
+}
+
+export interface ProposalTemplate {
+  id: string;
+  name: string;
+  description: string;
+  sections: ProposalSection[];
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProposalVersion {
+  version: number;
+  sections: ProposalSection[];
+  savedAt: string;
+  notes?: string;
+}
+
+export interface Proposal {
+  id: string;
+  number: string;
+  title: string;
+  clientId?: string;
+  clientName?: string;
+  templateId?: string;
+  sections: ProposalSection[];
+  status: ProposalStatus;
+  validUntil?: string;
+  branding: {
+    accentColor?: string;
+    businessName?: string;
+    tagline?: string;
+    designStyle?: string;
+    palette?: string;
+  };
+  termsAndConditions?: string;
+  signature?: ProposalSignature;
+  convertedToQuoteId?: string;
+  convertedToInvoiceId?: string;
+  shareToken?: string;
+  viewCount: number;
+  lastViewedAt?: string;
+  notes: string;
+  version: number;
+  previousVersions?: ProposalVersion[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ── Storefront ───────────────────────────────────────────
 
 export interface StorefrontConfig {
@@ -559,8 +757,61 @@ export interface TeamMember {
   title?: string;
   status: TeamMemberStatus;
   avatar?: string;
+  moduleAccess?: string[];     // module IDs this member can access (empty = all)
+  assignedServices?: string[]; // service IDs they can perform (for booking assignment)
+  availability?: AvailabilitySlot[];  // per-member working hours
   createdAt: string;
   updatedAt: string;
+}
+
+export interface TeamShift {
+  id: string;
+  memberId: string;
+  memberName: string;
+  dayOfWeek: number; // 0=Sun, 6=Sat
+  startTime: string;
+  endTime: string;
+  label?: string; // e.g., "Morning", "Afternoon"
+}
+
+// ── Rebooking Prompts ─────────────────────────────────────
+
+export interface RebookingPrompt {
+  id: string;
+  clientId: string;
+  clientName: string;
+  serviceId: string;
+  serviceName: string;
+  lastBookingDate: string;
+  suggestedRebookDate: string;
+  status: "pending" | "snoozed" | "booked" | "dismissed";
+  snoozedUntil?: string;
+  createdAt: string;
+}
+
+// ── Discussion Comments ──────────────────────────────────
+
+export interface DiscussionComment {
+  id: string;
+  content: string;
+  authorName: string;
+  entityType: "client" | "lead" | "job" | "booking" | "invoice" | "proposal";
+  entityId: string;
+  parentId?: string;
+  createdAt: string;
+}
+
+// ── Recurring Task Templates ─────────────────────────────
+
+export interface RecurringTaskTemplate {
+  id: string;
+  name: string;
+  description: string;
+  frequency: "daily" | "weekly" | "biweekly" | "monthly" | "quarterly";
+  category: string;
+  taskTitle: string;
+  isBuiltIn: boolean;
+  createdAt: string;
 }
 
 // ── Activity ──────────────────────────────────────────────

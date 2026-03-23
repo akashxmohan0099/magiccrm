@@ -1,16 +1,21 @@
 @import "tailwindcss";
 
+html, body {
+  overflow-x: hidden;
+}
+
 :root {
-  /* ── MAGIC CRM — Fresh, modern palette ── */
+  /* ── Magic — Fresh, modern palette ── */
   --background: #FAFAFA;
   --foreground: #111111;
-  --primary: #7CFE9D;
-  --primary-hover: #5EE882;
-  --primary-muted: rgba(124, 254, 157, 0.10);
-  --primary-subtle: rgba(124, 254, 157, 0.25);
-  --brand: #7CFE9D;
-  --brand-hover: #5EE882;
-  --brand-light: #F0FFF4;
+  --primary: #34D399;
+  --primary-hover: #2BBF89;
+  --primary-muted: rgba(52, 211, 153, 0.10);
+  --primary-subtle: rgba(52, 211, 153, 0.25);
+  --brand: #34D399;
+  --brand-hover: #2BBF89;
+  --brand-light: #ECFDF5;
+  --logo-green: #7CFE9D;
   --text-secondary: #555555;
   --text-tertiary: #999999;
   --border: #E5E5E5;
@@ -229,4 +234,23 @@ button, a, input, select, textarea {
 }
 .marquee-track:hover {
   animation-play-state: paused;
+}
+
+/* CTA glow pulse — subtle box-shadow animation on scroll-into-view */
+@keyframes cta-glow-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
+  50% { box-shadow: 0 0 20px 4px rgba(52, 211, 153, 0.25); }
+}
+.cta-glow {
+  animation: cta-glow-pulse 2s ease-in-out 1;
+}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

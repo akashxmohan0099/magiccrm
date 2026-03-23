@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ArrowLeft, ArrowRight, Check,
+  ArrowLeft, Check,
   Sparkles, Wrench, Briefcase, Heart, Palette,
   UtensilsCrossed, GraduationCap, ShoppingBag, Rocket,
 } from "lucide-react";
@@ -90,7 +90,7 @@ export function IndustryStep() {
               </p>
             </div>
 
-            <div className="grid grid-cols-3 gap-3 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-8">
               {INDUSTRY_CONFIGS.map((config, i) => {
                 const IconComp = INDUSTRY_ICONS[config.id];
                 const isSelected = selectedIndustry === config.id;

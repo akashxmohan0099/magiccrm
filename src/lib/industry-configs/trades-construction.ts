@@ -1,4 +1,4 @@
-import type { IndustryAdaptiveConfig } from "@/types/industry-config";
+import type { IndustryAdaptiveConfig, IndustryAdaptiveOverride } from "@/types/industry-config";
 
 export const tradesConstructionConfig: IndustryAdaptiveConfig = {
   id: "trades-construction",
@@ -72,5 +72,58 @@ export const tradesConstructionConfig: IndustryAdaptiveConfig = {
       { label: "Add Client", icon: "Users", href: "/dashboard/clients", shortcut: "⌘N" },
       { label: "Schedule Visit", icon: "Calendar", href: "/dashboard/bookings", shortcut: "⌘B" },
     ],
+  },
+};
+
+/** Persona overrides */
+export const tradesPersonaOverrides: Record<string, IndustryAdaptiveOverride> = {
+  "hvac-technician": {
+    customFields: {
+      clients: [
+        { id: "unit-make-model", label: "Unit Make & Model", type: "text", placeholder: "e.g. Daikin FTXM25, Mitsubishi MSZ-AP25...", group: "Equipment Tracking" },
+        { id: "serial-number", label: "Serial Number", type: "text", placeholder: "Unit serial number", group: "Equipment Tracking" },
+        { id: "refrigerant-type", label: "Refrigerant Type", type: "select", options: ["R-410A", "R-32", "R-134a", "R-407C", "R-22", "Other"], group: "Equipment Tracking" },
+        { id: "install-date", label: "Install Date", type: "date", group: "Equipment Tracking" },
+        { id: "warranty-expiry", label: "Warranty Expiry", type: "date", group: "Equipment Tracking" },
+      ],
+    },
+  },
+  "electrician": {
+    customFields: {
+      clients: [
+        { id: "switchboard-details", label: "Switchboard Details", type: "textarea", placeholder: "Switchboard type, age, capacity...", group: "Electrical Details" },
+        { id: "circuit-info", label: "Circuit Info", type: "textarea", placeholder: "Number of circuits, load details...", group: "Electrical Details" },
+        { id: "safety-cert-number", label: "Safety Certificate Number", type: "text", placeholder: "Certificate or compliance number", group: "Compliance" },
+        { id: "compliance-status", label: "Compliance Status", type: "select", options: ["Compliant", "Non-Compliant", "Pending Inspection", "Expired"], group: "Compliance" },
+      ],
+    },
+  },
+  "cleaner": {
+    vocabulary: {
+      booking: "Clean",
+      bookings: "Cleans",
+      addBooking: "Schedule Clean",
+      job: "Job",
+      jobs: "Jobs",
+    },
+    customFields: {
+      clients: [
+        { id: "key-access-code", label: "Key / Access Code", type: "text" as const, group: "Access" },
+        { id: "bedrooms", label: "Bedrooms", type: "number" as const, group: "Property" },
+        { id: "bathrooms", label: "Bathrooms", type: "number" as const, group: "Property" },
+        { id: "pets-in-home", label: "Pets in Home", type: "select" as const, options: ["None", "Dog", "Cat", "Other"], group: "Property" },
+        { id: "product-preference", label: "Product Preference", type: "select" as const, options: ["Standard", "Eco-Friendly", "Client Supplies"], group: "Preferences" },
+      ],
+    },
+    bookingMode: {
+      defaultMode: "appointment" as const,
+      defaultServices: [
+        { id: "regular-clean", name: "Regular Clean", duration: 120, price: 120, category: "Cleaning" },
+        { id: "deep-clean", name: "Deep Clean", duration: 240, price: 280, category: "Cleaning" },
+        { id: "end-of-lease", name: "End of Lease", duration: 360, price: 450, category: "Cleaning" },
+        { id: "oven-clean", name: "Oven Clean", duration: 60, price: 80, category: "Add-ons" },
+        { id: "window-clean", name: "Window Cleaning", duration: 90, price: 100, category: "Add-ons" },
+      ],
+    },
   },
 };

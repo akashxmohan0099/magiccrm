@@ -46,6 +46,7 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
   useEffect(() => {
     if (open) {
       if (lead) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setForm({
           name: lead.name,
           email: lead.email,
@@ -55,9 +56,9 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
           stage: lead.stage,
           value: lead.value != null ? String(lead.value) : "",
           notes: lead.notes,
-          lostReason: (lead as any).lostReason ?? "",
+          lostReason: (lead as unknown as Record<string, string>).lostReason ?? "",
         });
-        setLeadScore((lead as any).score ?? "");
+        setLeadScore((lead as unknown as Record<string, string>).score ?? "");
       } else {
         setForm(emptyForm);
         setLeadScore("");
@@ -93,6 +94,8 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
       value: form.value ? Number(form.value) : undefined,
       notes: form.notes.trim(),
       lostReason: form.stage === "lost" ? form.lostReason.trim() : undefined,
+      assignedTo: assignedTo || undefined,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any;
 
     if (lead) {
@@ -120,7 +123,7 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
             type="text"
             value={form.name}
             onChange={(e) => set("name", e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
+            className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
             placeholder="Full name"
           />
         </FormField>
@@ -130,7 +133,7 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
             type="email"
             value={form.email}
             onChange={(e) => set("email", e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
+            className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
             placeholder="email@example.com"
           />
         </FormField>
@@ -140,7 +143,7 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
             type="tel"
             value={form.phone}
             onChange={(e) => set("phone", e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
+            className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
             placeholder="(555) 123-4567"
           />
         </FormField>
@@ -150,7 +153,7 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
             type="text"
             value={form.company}
             onChange={(e) => set("company", e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
+            className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
             placeholder="Company name"
           />
         </FormField>
@@ -161,7 +164,7 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
               type="text"
               value={form.source}
               onChange={(e) => set("source", e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
+              className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
               placeholder="e.g. Referral, Website, Social"
             />
           </FormField>
@@ -193,7 +196,7 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
                 onChange={(e) => set("lostReason", e.target.value)}
                 placeholder="Why was this lead lost?"
                 rows={2}
-                className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 resize-none"
+                className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 resize-none"
               />
             </div>
           </FeatureSection>
@@ -204,7 +207,7 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
             type="number"
             value={form.value}
             onChange={(e) => set("value", e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
+            className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
             placeholder="0.00"
             min="0"
             step="0.01"

@@ -25,6 +25,7 @@ export function GeneralSettings() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setForm({
       businessName: businessContext.businessName,
       businessDescription: businessContext.businessDescription,

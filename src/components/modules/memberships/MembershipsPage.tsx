@@ -40,7 +40,14 @@ export function MembershipsPage() {
             <p className="text-[11px] text-text-tertiary">Active Members</p>
           </div>
           <div className="bg-card-bg rounded-xl border border-border-light p-4 text-center">
-            <p className="text-[20px] font-bold text-foreground">${plans.filter(p => p.active).reduce((s, p) => s + p.price, 0).toFixed(0)}</p>
+            <p className="text-[20px] font-bold text-foreground">${plans.filter(p => p.active).reduce((s, p) => {
+              if (p.interval === "monthly") return s + p.price;
+              if (p.interval === "yearly") return s + p.price / 12;
+              if (p.interval === "quarterly") return s + p.price / 3;
+              if (p.interval === "weekly") return s + p.price * 4.33;
+              if (p.interval === "fortnightly") return s + p.price * 2.17;
+              return s + p.price;
+            }, 0).toFixed(0)}</p>
             <p className="text-[11px] text-text-tertiary">Monthly Plan Revenue</p>
           </div>
           <div className="bg-card-bg rounded-xl border border-border-light p-4 text-center">
@@ -65,7 +72,7 @@ export function MembershipsPage() {
       <FeatureSection moduleId="memberships" featureId="freeze-pause" featureLabel="Freeze / Pause">
         <div className="mt-4 p-4 bg-surface/50 rounded-xl border border-border-light">
           <p className="text-[13px] font-medium text-foreground">Freeze / Pause is active</p>
-          <p className="text-[11px] text-text-tertiary">Members can pause their membership without cancelling. You can freeze from the member's detail view.</p>
+          <p className="text-[11px] text-text-tertiary">Members can pause their membership without cancelling. You can freeze from the member&apos;s detail view.</p>
         </div>
       </FeatureSection>
 

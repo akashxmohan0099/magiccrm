@@ -5,11 +5,14 @@ import { X } from "lucide-react";
 import { useMembershipsStore } from "@/store/memberships";
 import { MembershipInterval } from "@/types/models";
 import { Button } from "@/components/ui/Button";
+import { FormField } from "@/components/ui/FormField";
 
 interface MembershipPlanFormProps { open: boolean; onClose: () => void; }
 
 export function MembershipPlanForm({ open, onClose }: MembershipPlanFormProps) {
   const { addPlan } = useMembershipsStore();
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
@@ -21,7 +24,18 @@ export function MembershipPlanForm({ open, onClose }: MembershipPlanFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (saving) return;
+
+    const newErrors: Record<string, string> = {};
+    if (!name.trim()) newErrors.name = "Plan name is required";
+    if (!price.trim() || isNaN(parseFloat(price)) || parseFloat(price) <= 0) newErrors.price = "Price must be greater than 0";
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+    setErrors({});
+    setSaving(true);
+
     addPlan({
       name: name.trim(), description: description.trim(), price: parseFloat(price) || 0,
       interval, sessionsIncluded: unlimited ? undefined : parseInt(sessions) || undefined,
@@ -29,6 +43,7 @@ export function MembershipPlanForm({ open, onClose }: MembershipPlanFormProps) {
     });
     setName(""); setDescription(""); setPrice(""); setSessions(""); setUnlimited(false);
     onClose();
+    setSaving(false);
   };
 
   const inputClass = "w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30";
@@ -42,19 +57,17 @@ export function MembershipPlanForm({ open, onClose }: MembershipPlanFormProps) {
           <button onClick={onClose} className="p-1.5 text-text-secondary hover:text-foreground rounded-lg hover:bg-surface cursor-pointer"><X className="w-4 h-4" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div>
-            <label className="block text-[13px] font-medium text-foreground mb-1.5">Plan Name *</label>
-            <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. 10-Session Pack" required className={inputClass} />
-          </div>
+          <FormField label="Plan Name" required error={errors.name}>
+            <input type="text" value={name} onChange={(e) => { setName(e.target.value); if (errors.name) setErrors((prev) => { const next = { ...prev }; delete next.name; return next; }); }} placeholder="e.g. 10-Session Pack" className={inputClass} />
+          </FormField>
           <div>
             <label className="block text-[13px] font-medium text-foreground mb-1.5">Description</label>
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What's included in this plan?" rows={2} className={`${inputClass} resize-none`} />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[13px] font-medium text-foreground mb-1.5">Price</label>
-              <input type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0.00" className={inputClass} />
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <FormField label="Price" required error={errors.price}>
+              <input type="number" step="0.01" value={price} onChange={(e) => { setPrice(e.target.value); if (errors.price) setErrors((prev) => { const next = { ...prev }; delete next.price; return next; }); }} placeholder="0.00" className={inputClass} />
+            </FormField>
             <div>
               <label className="block text-[13px] font-medium text-foreground mb-1.5">Billing Interval</label>
               <select value={interval} onChange={(e) => setInterval(e.target.value as MembershipInterval)} className={inputClass}>
@@ -78,7 +91,7 @@ export function MembershipPlanForm({ open, onClose }: MembershipPlanFormProps) {
               <input type="number" value={sessions} onChange={(e) => setSessions(e.target.value)} placeholder="e.g. 10" className={inputClass} />
             </div>
           )}
-          <div className="pt-2"><Button type="submit" className="w-full">Create Plan</Button></div>
+          <div className="pt-2"><Button type="submit" loading={saving} className="w-full">Create Plan</Button></div>
         </form>
       </div>
     </div>

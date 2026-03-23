@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { requireAuth } from "@/lib/api-auth";
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -7,6 +8,9 @@ const anthropic = new Anthropic({
 
 export async function POST(req: NextRequest) {
   try {
+    const { user: _user, error: authError } = await requireAuth();
+    if (authError) return authError;
+
     const { prompt, businessContext } = await req.json();
 
     if (!prompt) {
@@ -22,7 +26,7 @@ export async function POST(req: NextRequest) {
       messages: [
         {
           role: "user",
-          content: `You are an AI assistant for Magic CRM, a custom CRM platform for small businesses.
+          content: `You are an AI assistant for Magic, a custom business software platform for small businesses.
 
 A user with the following business context wants to build a custom feature:
 - Business: ${businessContext?.businessName || "Unknown"}
@@ -31,7 +35,7 @@ A user with the following business context wants to build a custom feature:
 
 They requested: "${prompt}"
 
-Describe how this feature would work in their CRM. Be specific, practical, and keep it under 200 words.
+Describe how this feature would work in their workspace. Be specific, practical, and keep it under 200 words.
 Format: Start with the feature name, then describe what it does, how the user interacts with it, and any automations included.`,
         },
       ],

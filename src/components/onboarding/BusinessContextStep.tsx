@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -9,7 +8,6 @@ import { useOnboardingStore } from "@/store/onboarding";
 export function BusinessContextStep() {
   const { businessContext, setBusinessContext, nextStep, prevStep, getIndustryConfig } =
     useOnboardingStore();
-  const [focusedField, setFocusedField] = useState<string | null>(null);
 
   const config = getIndustryConfig();
 
@@ -17,6 +15,9 @@ export function BusinessContextStep() {
     businessContext.businessName.trim() &&
     businessContext.businessDescription.trim() &&
     businessContext.location.trim();
+
+  const inputClass =
+    "w-full px-4 py-3.5 rounded-xl border border-border-light bg-card-bg text-foreground placeholder:text-text-tertiary focus:border-foreground focus:ring-2 focus:ring-foreground/10 outline-none transition-all text-[15px]";
 
   return (
     <motion.div
@@ -40,57 +41,38 @@ export function BusinessContextStep() {
         </h2>
         <p className="text-text-secondary text-[15px]">
           {config
-            ? `We'll customize your ${config.label.toLowerCase()} CRM based on this.`
-            : "We'll use this to personalize your CRM."}
+            ? `We'll customize your ${config.label.toLowerCase()} workspace based on this.`
+            : "We'll use this to personalize your workspace."}
         </p>
       </div>
 
       <div className="space-y-5">
         {/* Business Name */}
-        <div className="relative">
-          <motion.label
-            className="absolute left-4 text-[13px] font-medium text-foreground pointer-events-none origin-left"
-            animate={{
-              y: businessContext.businessName || focusedField === 'name' ? -24 : 12,
-              scale: businessContext.businessName || focusedField === 'name' ? 0.85 : 1,
-              opacity: 1,
-            }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-          >
+        <div>
+          <label className="block text-[13px] font-medium text-foreground mb-1.5">
             Business name
-          </motion.label>
+          </label>
           <input
             type="text"
             value={businessContext.businessName}
             onChange={(e) => setBusinessContext({ businessName: e.target.value })}
-            onFocus={() => setFocusedField('name')}
-            onBlur={() => setFocusedField(null)}
-            placeholder={config?.namePlaceholder || "Your business name"}
-            className="w-full px-4 py-3 rounded-xl border border-border-light bg-card-bg text-foreground placeholder:text-text-tertiary focus:border-foreground focus:ring-2 focus:ring-foreground/10 outline-none transition-all text-[15px]"
+            placeholder={config?.namePlaceholder || "e.g. Glow Studio"}
+            className={inputClass}
+            autoFocus
           />
         </div>
 
         {/* Business Description */}
-        <div className="relative">
-          <motion.label
-            className="absolute left-4 text-[13px] font-medium text-foreground pointer-events-none origin-left"
-            animate={{
-              y: businessContext.businessDescription || focusedField === 'description' ? -24 : 12,
-              scale: businessContext.businessDescription || focusedField === 'description' ? 0.85 : 1,
-              opacity: 1,
-            }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-          >
+        <div>
+          <label className="block text-[13px] font-medium text-foreground mb-1.5">
             What does your business do?
-          </motion.label>
+          </label>
           <input
             type="text"
             value={businessContext.businessDescription}
             onChange={(e) => setBusinessContext({ businessDescription: e.target.value })}
-            onFocus={() => setFocusedField('description')}
-            onBlur={() => setFocusedField(null)}
-            placeholder={config?.descriptionPlaceholder || "Describe what your business does"}
-            className="w-full px-4 py-3 rounded-xl border border-border-light bg-card-bg text-foreground placeholder:text-text-tertiary focus:border-foreground focus:ring-2 focus:ring-foreground/10 outline-none transition-all text-[15px]"
+            placeholder={config?.descriptionPlaceholder || "e.g. Mobile lash technician in Brisbane"}
+            className={inputClass}
           />
           <p className="text-[11px] text-text-tertiary mt-1.5">
             One sentence is fine. This helps us understand your workflow.
@@ -98,26 +80,16 @@ export function BusinessContextStep() {
         </div>
 
         {/* Location */}
-        <div className="relative">
-          <motion.label
-            className="absolute left-4 text-[13px] font-medium text-foreground pointer-events-none origin-left"
-            animate={{
-              y: businessContext.location || focusedField === 'location' ? -24 : 12,
-              scale: businessContext.location || focusedField === 'location' ? 0.85 : 1,
-              opacity: 1,
-            }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-          >
+        <div>
+          <label className="block text-[13px] font-medium text-foreground mb-1.5">
             Where are you based?
-          </motion.label>
+          </label>
           <input
             type="text"
             value={businessContext.location}
             onChange={(e) => setBusinessContext({ location: e.target.value })}
-            onFocus={() => setFocusedField('location')}
-            onBlur={() => setFocusedField(null)}
             placeholder="City or region"
-            className="w-full px-4 py-3 rounded-xl border border-border-light bg-card-bg text-foreground placeholder:text-text-tertiary focus:border-foreground focus:ring-2 focus:ring-foreground/10 outline-none transition-all text-[15px]"
+            className={inputClass}
           />
         </div>
       </div>

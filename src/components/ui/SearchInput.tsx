@@ -30,7 +30,7 @@ export function SearchInput({ value, onChange, placeholder = "Search..." }: Sear
       {value && (
         <button
           onClick={() => onChange("")}
-          className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-surface text-text-secondary cursor-pointer"
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded hover:bg-surface text-text-secondary cursor-pointer"
         >
           <X className="w-3.5 h-3.5" />
         </button>

@@ -32,7 +32,7 @@ export function WelcomeStep() {
           transition={{ delay: 0.2 }}
           className="text-[40px] font-bold text-foreground mb-5 leading-[1.1] tracking-tight"
         >
-          Your CRM, built around
+          Your workspace, built around
           <br />
           the way you work
         </motion.h1>

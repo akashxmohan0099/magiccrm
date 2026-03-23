@@ -72,7 +72,12 @@ export function FollowUpSection({ clientId }: FollowUpSectionProps) {
   };
 
   const isOverdue = (dateStr: string) => {
-    return new Date(dateStr) < new Date() && !isNaN(new Date(dateStr).getTime());
+    const reminderDate = new Date(dateStr);
+    if (isNaN(reminderDate.getTime())) return false;
+    reminderDate.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return reminderDate < today;
   };
 
   const sorted = [...reminders].sort((a, b) => {

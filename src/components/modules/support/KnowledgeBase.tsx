@@ -49,6 +49,7 @@ export function KnowledgeBase() {
   useEffect(() => {
     if (formOpen) {
       if (editArticle) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setTitle(editArticle.title);
         setCategory(editArticle.category);
         setContent(editArticle.content);

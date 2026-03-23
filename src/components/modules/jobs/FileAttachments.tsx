@@ -3,7 +3,6 @@
 import { useRef, useMemo } from "react";
 import { Upload, Trash2, FileIcon, Paperclip } from "lucide-react";
 import { useJobsStore } from "@/store/jobs";
-import { Button } from "@/components/ui/Button";
 
 interface FileAttachmentsProps {
   jobId: string;

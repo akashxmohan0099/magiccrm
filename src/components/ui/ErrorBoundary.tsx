@@ -19,7 +19,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     // Let Next.js handle its own navigation errors (notFound, redirect)
-    if ((error as any).digest?.startsWith("NEXT_")) {
+    if ((error as Error & { digest?: string }).digest?.startsWith("NEXT_")) {
       throw error;
     }
     return { hasError: true };

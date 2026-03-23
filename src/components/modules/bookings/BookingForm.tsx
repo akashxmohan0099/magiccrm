@@ -8,14 +8,20 @@ import { Booking, BookingStatus } from "@/types/models";
 import { useVocabulary } from "@/hooks/useVocabulary";
 import { useIndustryConfig } from "@/hooks/useIndustryConfig";
 import { SlideOver } from "@/components/ui/SlideOver";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { FormField } from "@/components/ui/FormField";
 import { SelectField } from "@/components/ui/SelectField";
 import { DateField } from "@/components/ui/DateField";
 import { TextArea } from "@/components/ui/TextArea";
 import { Button } from "@/components/ui/Button";
+import type { ServiceVariant } from "@/types/industry-config";
 import { ServicePicker } from "./ServicePicker";
 import { FeatureSection } from "@/components/modules/FeatureSection";
 import { TravelCalculator } from "@/components/ui/TravelCalculator";
+import { SatisfactionPrompt } from "./SatisfactionPrompt";
+import { StarRating } from "@/components/ui/StarRating";
+import { TeamMemberPicker } from "@/components/ui/TeamMemberPicker";
+import { useModuleEnabled } from "@/hooks/useFeature";
 
 interface BookingFormProps {
   open: boolean;
@@ -50,15 +56,19 @@ const emptyForm = {
 };
 
 export function BookingForm({ open, onClose, booking, defaultDate }: BookingFormProps) {
-  const { addBooking, updateBooking, deleteBooking, hasConflict } = useBookingsStore();
+  const { addBooking, updateBooking, deleteBooking, hasConflict, cancellationPolicy } = useBookingsStore();
   const { clients } = useClientsStore();
   const vocab = useVocabulary();
   const config = useIndustryConfig();
+  const teamEnabled = useModuleEnabled("team");
   const isServiceMenu = config.bookingMode.defaultMode === "service-menu";
   const isRecurringLesson = config.bookingMode.defaultMode === "recurring-lesson";
   const isDateExclusive = config.bookingMode.defaultMode === "date-exclusive";
   const [form, setForm] = useState(emptyForm);
+  const [assignedToId, setAssignedToId] = useState<string | undefined>(undefined);
+  const [assignedToName, setAssignedToName] = useState<string | undefined>(undefined);
   const [selectedService, setSelectedService] = useState<{ id: string; name: string; duration: number; price: number } | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [requireDeposit, setRequireDeposit] = useState(false);
@@ -68,6 +78,7 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
   const [noShow, setNoShow] = useState(false);
   const [maxAttendees, setMaxAttendees] = useState("");
   const [resource, setResource] = useState("");
+  const [policyConsent, setPolicyConsent] = useState(false);
 
   const clientOptions = useMemo(
     () => [
@@ -80,6 +91,7 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
   useEffect(() => {
     if (open) {
       if (booking) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setForm({
           title: booking.title,
           clientId: booking.clientId ?? "",
@@ -90,15 +102,20 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
           notes: booking.notes,
           recurring: booking.recurring ?? "none",
         });
+        setAssignedToId(booking.assignedToId);
+        setAssignedToName(booking.assignedToName);
       } else {
         setForm({
           ...emptyForm,
           date: defaultDate ?? "",
           recurring: isRecurringLesson ? "weekly" : "none",
         });
+        setAssignedToId(undefined);
+        setAssignedToName(undefined);
       }
       setErrors({});
       setSelectedService(null);
+      setPolicyConsent(!!booking?.cancellationPolicyConsent?.accepted);
     }
   }, [open, booking, defaultDate]);
 
@@ -138,6 +155,8 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
       status: form.status,
       notes: form.notes.trim(),
       recurring: form.recurring === "none" ? undefined : (form.recurring as Booking["recurring"]),
+      assignedToId: assignedToId || undefined,
+      assignedToName: assignedToName || undefined,
     };
 
     if (selectedService) {
@@ -145,6 +164,38 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
       data.serviceName = selectedService.name;
       data.price = selectedService.price;
       data.duration = selectedService.duration;
+    }
+
+    if (requireDeposit) {
+      data.requireDeposit = true;
+      data.depositAmount = parseFloat(depositAmount) || 0;
+    }
+
+    if (travelMinutes && parseInt(travelMinutes) > 0) {
+      data.travelMinutes = parseInt(travelMinutes);
+    }
+
+    if (parseInt(reminderHours) > 0) {
+      data.reminderHours = parseInt(reminderHours);
+    }
+
+    if (noShow) {
+      data.noShow = true;
+    }
+
+    if (maxAttendees && parseInt(maxAttendees) > 0) {
+      data.maxAttendees = parseInt(maxAttendees);
+    }
+
+    if (resource.trim()) {
+      data.resource = resource.trim();
+    }
+
+    if (policyConsent && cancellationPolicy) {
+      data.cancellationPolicyConsent = {
+        accepted: true,
+        acceptedAt: new Date().toISOString(),
+      };
     }
 
     if (booking) {
@@ -178,18 +229,21 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
         {(isServiceMenu || isRecurringLesson) && !booking && config.bookingMode.defaultServices && config.bookingMode.defaultServices.length > 0 && (
           <ServicePicker
             services={config.bookingMode.defaultServices}
-            onSelect={(service) => {
+            onSelect={(service, variant?: ServiceVariant) => {
+              const duration = variant ? variant.duration : service.duration;
+              const price = variant ? variant.price : service.price;
+              const label = variant ? `${service.name} (${variant.label})` : service.name;
               const startMinutes = parseInt(form.startTime.split(":")[0]) * 60 + parseInt(form.startTime.split(":")[1]);
-              const endMinutes = startMinutes + service.duration;
+              const endMinutes = startMinutes + duration;
               const endHours = String(Math.floor(endMinutes / 60)).padStart(2, "0");
               const endMins = String(endMinutes % 60).padStart(2, "0");
               setForm((f) => ({
                 ...f,
-                title: service.name,
+                title: label,
                 endTime: `${endHours}:${endMins}`,
               }));
               // Store service metadata for the booking record
-              setSelectedService(service);
+              setSelectedService({ id: service.id, name: label, duration, price });
             }}
           />
         )}
@@ -199,7 +253,7 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
             type="text"
             value={form.title}
             onChange={(e) => set("title", e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
+            className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
             placeholder={`${vocab.booking} title`}
           />
         </FormField>
@@ -212,6 +266,16 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
           />
         </FormField>
 
+        {teamEnabled && (
+          <TeamMemberPicker
+            value={assignedToId}
+            onChange={(id, name) => {
+              setAssignedToId(id);
+              setAssignedToName(name);
+            }}
+          />
+        )}
+
         <FormField label="Date" required error={errors.date}>
           <DateField
             value={form.date}
@@ -221,13 +285,13 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
         </FormField>
 
         {!isDateExclusive && (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField label="Start Time" required error={errors.startTime}>
               <input
                 type="time"
                 value={form.startTime}
                 onChange={(e) => set("startTime", e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
+                className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
               />
             </FormField>
 
@@ -236,7 +300,7 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
                 type="time"
                 value={form.endTime}
                 onChange={(e) => set("endTime", e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
+                className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
               />
             </FormField>
           </div>
@@ -262,7 +326,7 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
             {requireDeposit && (
               <div>
                 <label className="block text-[13px] font-medium text-foreground mb-1.5">Deposit Amount ($)</label>
-                <input type="number" step="0.01" value={depositAmount} onChange={(e) => setDepositAmount(e.target.value)} placeholder="0.00" className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40" />
+                <input type="number" step="0.01" value={depositAmount} onChange={(e) => setDepositAmount(e.target.value)} placeholder="0.00" className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30" />
               </div>
             )}
           </div>
@@ -278,7 +342,7 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
         <FeatureSection moduleId="bookings-calendar" featureId="group-class-booking" featureLabel="Group Booking">
           <div>
             <label className="block text-[13px] font-medium text-foreground mb-1.5">Max Attendees</label>
-            <input type="number" value={maxAttendees} onChange={(e) => setMaxAttendees(e.target.value)} placeholder="e.g. 10" className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40" />
+            <input type="number" value={maxAttendees} onChange={(e) => setMaxAttendees(e.target.value)} placeholder="e.g. 10" className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30" />
             <p className="text-[11px] text-text-tertiary mt-1">Leave empty for 1-on-1 appointments.</p>
           </div>
         </FeatureSection>
@@ -286,7 +350,7 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
         <FeatureSection moduleId="bookings-calendar" featureId="resource-room-assignment" featureLabel="Room / Resource">
           <div>
             <label className="block text-[13px] font-medium text-foreground mb-1.5">Room / Resource</label>
-            <input type="text" value={resource} onChange={(e) => setResource(e.target.value)} placeholder="e.g. Room 1, Chair 3" className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40" />
+            <input type="text" value={resource} onChange={(e) => setResource(e.target.value)} placeholder="e.g. Room 1, Chair 3" className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30" />
           </div>
         </FeatureSection>
 
@@ -311,7 +375,7 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
 
         <FeatureSection moduleId="bookings-calendar" featureId="booking-confirmation-flow" featureLabel="Booking Confirmation">
           <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl">
-            <p className="text-[12px] text-blue-800">New bookings will land as "Pending" and need manual confirmation.</p>
+            <p className="text-[12px] text-blue-800">New bookings will land as &quot;Pending&quot; and need manual confirmation.</p>
           </div>
         </FeatureSection>
 
@@ -343,7 +407,7 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
         <FeatureSection moduleId="bookings-calendar" featureId="booking-reminders" featureLabel="Automated Reminders">
           <div>
             <label className="block text-[13px] font-medium text-foreground mb-1.5">Send reminder</label>
-            <select value={reminderHours} onChange={(e) => setReminderHours(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40">
+            <select value={reminderHours} onChange={(e) => setReminderHours(e.target.value)} className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30">
               <option value="0">No reminder</option>
               <option value="1">1 hour before</option>
               <option value="2">2 hours before</option>
@@ -353,10 +417,56 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
           </div>
         </FeatureSection>
 
+        <FeatureSection moduleId="bookings-calendar" featureId="cancellation-policy" featureLabel="Cancellation Policy">
+          {cancellationPolicy ? (
+            <div className="space-y-2">
+              <div className="p-3 bg-surface rounded-lg border border-border-light">
+                <p className="text-[12px] text-text-secondary whitespace-pre-wrap">{cancellationPolicy}</p>
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={policyConsent}
+                  onChange={(e) => setPolicyConsent(e.target.checked)}
+                  className="rounded"
+                />
+                <span className="text-[13px] text-foreground">Client agrees to cancellation policy</span>
+              </label>
+              {booking?.cancellationPolicyConsent?.accepted && (
+                <p className="text-[11px] text-green-600">
+                  Accepted on {new Date(booking.cancellationPolicyConsent.acceptedAt).toLocaleString()}
+                </p>
+              )}
+            </div>
+          ) : (
+            <p className="text-[12px] text-text-tertiary">No cancellation policy set. Add one from the Scheduling page settings.</p>
+          )}
+        </FeatureSection>
+
+        <FeatureSection moduleId="bookings-calendar" featureId="satisfaction-rating" featureLabel="Post-Service Rating">
+          {booking && booking.status === "completed" && !booking.satisfactionRating && (
+            <SatisfactionPrompt booking={booking} />
+          )}
+          {booking && booking.satisfactionRating && (
+            <div className="p-3 bg-green-50 border border-green-200 rounded-xl space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[13px] font-medium text-green-900">Client Rating</span>
+                <StarRating value={booking.satisfactionRating} readOnly size="sm" />
+              </div>
+              {booking.satisfactionFeedback && (
+                <p className="text-[12px] text-green-800">{booking.satisfactionFeedback}</p>
+              )}
+              {booking.ratedAt && (
+                <p className="text-[11px] text-green-600">Rated on {new Date(booking.ratedAt).toLocaleString()}</p>
+              )}
+            </div>
+          )}
+        </FeatureSection>
+
         <div className="flex justify-between pt-4 border-t border-border-light">
           <div>
             {booking && (
-              <Button variant="secondary" size="sm" type="button" onClick={handleDelete}>
+              <Button variant="secondary" size="sm" type="button" onClick={() => setDeleteConfirmOpen(true)}>
                 Delete
               </Button>
             )}
@@ -371,6 +481,14 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
           </div>
         </div>
       </form>
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        onConfirm={handleDelete}
+        title={`Delete ${vocab.booking}`}
+        message={`Are you sure you want to delete "${booking?.title}"? This action cannot be undone.`}
+      />
     </SlideOver>
   );
 }

@@ -24,7 +24,7 @@ async function geocode(address: string): Promise<{ lat: number; lon: number } | 
   try {
     const res = await fetch(
       `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`,
-      { headers: { "User-Agent": "MagicCRM/1.0" } }
+      { headers: { "User-Agent": "Magic/1.0" } }
     );
     const data = await res.json();
     if (data.length > 0) {

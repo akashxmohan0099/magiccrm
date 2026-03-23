@@ -1,24 +1,39 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 import { useOnboardingStore } from "@/store/onboarding";
+import { useClientsStore } from "@/store/clients";
+import { useBookingsStore } from "@/store/bookings";
+import { useInvoicesStore } from "@/store/invoices";
+import { useJobsStore } from "@/store/jobs";
+import { useLeadsStore } from "@/store/leads";
 
-// Track if we've confirmed hydration across all mounts
-let globalHydrated = false;
+// All critical stores that must hydrate before rendering
+const CRITICAL_STORES = [
+  useOnboardingStore,
+  useClientsStore,
+  useBookingsStore,
+  useInvoicesStore,
+  useJobsStore,
+  useLeadsStore,
+];
 
 function subscribe(callback: () => void) {
-  // Subscribe to onboarding store's persist hydration
-  const unsub = useOnboardingStore.persist.onFinishHydration(callback);
-  return typeof unsub === "function" ? unsub : () => {};
+  const unsubs = CRITICAL_STORES.map((store) =>
+    store.persist.onFinishHydration(callback)
+  );
+  return () => {
+    unsubs.forEach((unsub) => {
+      if (typeof unsub === "function") unsub();
+    });
+  };
 }
 
 function getSnapshot() {
-  if (globalHydrated) return true;
   if (typeof window === "undefined") return false;
-  // Check if the critical store has finished hydrating
-  const hydrated = useOnboardingStore.persist.hasHydrated();
-  if (hydrated) globalHydrated = true;
-  return hydrated;
+  return CRITICAL_STORES.every((store) =>
+    store.persist.hasHydrated()
+  );
 }
 
 function getServerSnapshot() {

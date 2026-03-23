@@ -9,6 +9,7 @@ import { SelectField } from "@/components/ui/SelectField";
 import { TextArea } from "@/components/ui/TextArea";
 import { DateField } from "@/components/ui/DateField";
 import { Button } from "@/components/ui/Button";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 interface CampaignFormProps {
   open: boolean;
@@ -39,13 +40,15 @@ const emptyForm = {
 };
 
 export function CampaignForm({ open, onClose, campaign }: CampaignFormProps) {
-  const { addCampaign, updateCampaign } = useMarketingStore();
+  const { addCampaign, updateCampaign, deleteCampaign } = useMarketingStore();
   const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   useEffect(() => {
     if (open) {
       if (campaign) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setForm({
           name: campaign.name,
           type: campaign.type,
@@ -116,7 +119,7 @@ export function CampaignForm({ open, onClose, campaign }: CampaignFormProps) {
             type="text"
             value={form.name}
             onChange={(e) => set("name", e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
+            className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
             placeholder="e.g. Spring Sale Announcement"
           />
         </FormField>
@@ -143,7 +146,7 @@ export function CampaignForm({ open, onClose, campaign }: CampaignFormProps) {
               type="text"
               value={form.subject}
               onChange={(e) => set("subject", e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
+              className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
               placeholder="Email subject line"
             />
           </FormField>
@@ -163,7 +166,7 @@ export function CampaignForm({ open, onClose, campaign }: CampaignFormProps) {
             type="text"
             value={form.audienceTags}
             onChange={(e) => set("audienceTags", e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
+            className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
             placeholder="e.g. vip, new-customer, local"
           />
           <p className="text-xs text-text-secondary mt-1">
@@ -179,6 +182,11 @@ export function CampaignForm({ open, onClose, campaign }: CampaignFormProps) {
         </FormField>
 
         <div className="flex justify-end gap-3 pt-4 border-t border-border-light">
+          {campaign && (
+            <Button variant="danger" size="sm" onClick={() => setDeleteOpen(true)} type="button" className="mr-auto">
+              Delete
+            </Button>
+          )}
           <Button variant="secondary" size="sm" onClick={onClose} type="button">
             Cancel
           </Button>
@@ -187,6 +195,21 @@ export function CampaignForm({ open, onClose, campaign }: CampaignFormProps) {
           </Button>
         </div>
       </form>
+
+      <ConfirmDialog
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={() => {
+          if (campaign) {
+            deleteCampaign(campaign.id);
+            onClose();
+          }
+        }}
+        title="Delete Campaign"
+        message={`Are you sure you want to delete "${campaign?.name}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        variant="danger"
+      />
     </SlideOver>
   );
 }

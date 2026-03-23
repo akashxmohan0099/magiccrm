@@ -18,7 +18,7 @@ export default function SettingsPage() {
 
   return (
     <div>
-      <PageHeader title="Settings" description="Configure your CRM" />
+      <PageHeader title="Settings" description="Configure your workspace" />
       <Tabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} />
 
       {activeTab === "general" && <GeneralSettings />}

@@ -4,12 +4,15 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import { useSOAPNotesStore } from "@/store/soap-notes";
 import { Button } from "@/components/ui/Button";
+import { FormField } from "@/components/ui/FormField";
 import { FeatureSection } from "@/components/modules/FeatureSection";
 
 interface SOAPNoteFormProps { open: boolean; onClose: () => void; }
 
 export function SOAPNoteForm({ open, onClose }: SOAPNoteFormProps) {
   const { addNote } = useSOAPNotesStore();
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
   const [clientName, setClientName] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [practitioner, setPractitioner] = useState("");
@@ -45,10 +48,21 @@ export function SOAPNoteForm({ open, onClose }: SOAPNoteFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!clientName.trim()) return;
+    if (saving) return;
+
+    const newErrors: Record<string, string> = {};
+    if (!clientName.trim()) newErrors.clientName = "Patient name is required";
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+    setErrors({});
+    setSaving(true);
+
     addNote({ clientId: "", clientName: clientName.trim(), date, subjective, objective, assessment, plan, practitioner: practitioner.trim() || undefined });
     setClientName(""); setSubjective(""); setObjective(""); setAssessment(""); setPlan(""); setPractitioner("");
     onClose();
+    setSaving(false);
   };
 
   const inputClass = "w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30";
@@ -73,11 +87,10 @@ export function SOAPNoteForm({ open, onClose }: SOAPNoteFormProps) {
               </select>
             </div>
           </FeatureSection>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[13px] font-medium text-foreground mb-1.5">Patient *</label>
-              <input type="text" value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Patient name" required className={inputClass} />
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <FormField label="Patient" required error={errors.clientName}>
+              <input type="text" value={clientName} onChange={(e) => { setClientName(e.target.value); if (errors.clientName) setErrors((prev) => { const next = { ...prev }; delete next.clientName; return next; }); }} placeholder="Patient name" className={inputClass} />
+            </FormField>
             <div>
               <label className="block text-[13px] font-medium text-foreground mb-1.5">Date</label>
               <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputClass} />
@@ -102,7 +115,7 @@ export function SOAPNoteForm({ open, onClose }: SOAPNoteFormProps) {
                 className={`${inputClass} resize-none`} />
             </div>
           ))}
-          <div className="pt-2"><Button type="submit" className="w-full">Save Note</Button></div>
+          <div className="pt-2"><Button type="submit" loading={saving} className="w-full">Save Note</Button></div>
         </form>
       </div>
     </div>

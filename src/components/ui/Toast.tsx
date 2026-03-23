@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect } from "react";
 import { CheckCircle2, XCircle, AlertCircle, Info, X } from "lucide-react";
 import { create } from "zustand";
 
@@ -83,7 +83,7 @@ function ToastItem({ item }: { item: ToastItem }) {
           markExiting(item.id);
           setTimeout(() => remove(item.id), 300);
         }}
-        className={`p-0.5 rounded hover:opacity-75 transition-opacity cursor-pointer flex-shrink-0 ${colors.text}`}
+        className={`p-1.5 rounded hover:opacity-75 transition-opacity cursor-pointer flex-shrink-0 ${colors.text}`}
       >
         <X className="w-3.5 h-3.5" />
       </button>

@@ -13,6 +13,8 @@ import { TextArea } from "@/components/ui/TextArea";
 import { DateField } from "@/components/ui/DateField";
 import { Button } from "@/components/ui/Button";
 import { FeatureSection } from "@/components/modules/FeatureSection";
+import { TeamMemberPicker } from "@/components/ui/TeamMemberPicker";
+import { useModuleEnabled } from "@/hooks/useFeature";
 
 interface JobFormProps {
   open: boolean;
@@ -25,6 +27,7 @@ export function JobForm({ open, onClose, job }: JobFormProps) {
   const { clients } = useClientsStore();
   const vocab = useVocabulary();
   const config = useIndustryConfig();
+  const teamEnabled = useModuleEnabled("team");
   const stageOptions = config.jobStages.map((s) => ({ value: s.id, label: s.label }));
   const defaultStage = config.jobStages.find((s) => !s.isClosed)?.id ?? config.jobStages[0]?.id ?? "not-started";
 
@@ -34,18 +37,23 @@ export function JobForm({ open, onClose, job }: JobFormProps) {
   const [stage, setStage] = useState(defaultStage);
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState("");
+  const [assignedToId, setAssignedToId] = useState<string | undefined>(undefined);
+  const [assignedToName, setAssignedToName] = useState<string | undefined>(undefined);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (open) {
       if (job) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setTitle(job.title);
         setDescription(job.description);
         setClientId(job.clientId || "");
         setStage(job.stage);
         setDueDate(job.dueDate || "");
-        setPriority((job as any).priority ?? "");
+        setPriority((job as unknown as Record<string, string>).priority ?? "");
+        setAssignedToId(job.assignedToId);
+        setAssignedToName(job.assignedToName);
       } else {
         setTitle("");
         setDescription("");
@@ -53,6 +61,8 @@ export function JobForm({ open, onClose, job }: JobFormProps) {
         setStage(defaultStage);
         setDueDate("");
         setPriority("");
+        setAssignedToId(undefined);
+        setAssignedToName(undefined);
       }
       setErrors({});
     }
@@ -84,6 +94,9 @@ export function JobForm({ open, onClose, job }: JobFormProps) {
       stage,
       dueDate: dueDate || undefined,
       priority: priority || undefined,
+      assignedToId: assignedToId || undefined,
+      assignedToName: assignedToName || undefined,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any;
 
     if (job) {
@@ -109,7 +122,7 @@ export function JobForm({ open, onClose, job }: JobFormProps) {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g. Website Redesign"
-            className="w-full px-3 py-2 bg-card-bg border border-border-light rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
+            className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
           />
         </FormField>
 
@@ -130,6 +143,16 @@ export function JobForm({ open, onClose, job }: JobFormProps) {
           />
         </FormField>
 
+        {teamEnabled && (
+          <TeamMemberPicker
+            value={assignedToId}
+            onChange={(id, name) => {
+              setAssignedToId(id);
+              setAssignedToName(name);
+            }}
+          />
+        )}
+
         <FormField label="Stage">
           <SelectField
             value={stage}
@@ -148,7 +171,7 @@ export function JobForm({ open, onClose, job }: JobFormProps) {
         <FeatureSection moduleId="jobs-projects" featureId="job-priority">
           <div>
             <label className="block text-[13px] font-medium text-foreground mb-1.5">Priority</label>
-            <select value={priority} onChange={(e) => setPriority(e.target.value)} className="w-full px-3 py-2 bg-card-bg border border-border-light rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand">
+            <select value={priority} onChange={(e) => setPriority(e.target.value)} className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30">
               <option value="">Not set</option>
               <option value="low">Low</option>
               <option value="medium">Medium</option>

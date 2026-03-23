@@ -23,6 +23,7 @@ import { useInvoicesStore } from "@/store/invoices";
 import { useBookingsStore } from "@/store/bookings";
 import { useVocabulary } from "@/hooks/useVocabulary";
 import { useIndustryConfig } from "@/hooks/useIndustryConfig";
+import { useAuth } from "@/hooks/useAuth";
 import { SlideOver } from "@/components/ui/SlideOver";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Button } from "@/components/ui/Button";
@@ -34,6 +35,7 @@ import { ClientTags } from "./ClientTags";
 import { SegmentationFilters } from "./SegmentationFilters";
 import { FollowUpSection } from "./FollowUpSection";
 import { RelationshipsSection } from "./RelationshipsSection";
+import { DiscussionThread } from "@/components/ui/DiscussionThread";
 
 interface ClientDetailProps {
   open: boolean;
@@ -43,6 +45,7 @@ interface ClientDetailProps {
 
 export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
   const { getClient, deleteClient, updateClient } = useClientsStore();
+  const { workspaceId } = useAuth();
   const { leads } = useLeadsStore();
   const { jobs } = useJobsStore();
   const { invoices } = useInvoicesStore();
@@ -80,7 +83,7 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
   }
 
   const handleDelete = () => {
-    deleteClient(client.id);
+    deleteClient(client.id, workspaceId ?? undefined);
     onClose();
   };
 
@@ -252,7 +255,7 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
 
           {/* Custom Fields */}
           {customFieldDefs.length > 0 && (() => {
-            const customData = (client as any).customData ?? {};
+            const customData = client.customData ?? {};
             const hasData = customFieldDefs.some((f) => {
               const v = customData[f.id];
               return v !== undefined && v !== "" && v !== false;
@@ -294,8 +297,8 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
           {config.relationships.length > 0 && (
             <RelationshipsSection
               clientId={client.id}
-              relationships={(client as any).relationships ?? []}
-              onUpdate={(relationships) => updateClient(client.id, { relationships } as any)}
+              relationships={client.relationships ?? []}
+              onUpdate={(relationships) => updateClient(client.id, { relationships }, workspaceId ?? undefined)}
             />
           )}
 
@@ -340,6 +343,11 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
                 </div>
               )}
             </div>
+          </FeatureSection>
+
+          {/* Team Discussion - Feature Gated */}
+          <FeatureSection moduleId="team" featureId="record-discussions" featureLabel="Team Discussion">
+            <DiscussionThread entityType="client" entityId={client.id} />
           </FeatureSection>
         </div>
       </SlideOver>

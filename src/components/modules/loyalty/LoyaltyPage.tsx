@@ -38,8 +38,49 @@ export function LoyaltyPage() {
         actions={<Button variant="primary" size="sm" onClick={() => setFormOpen(true)}><Plus className="w-4 h-4" /> New Referral Code</Button>}
       />
 
+      {transactions.length === 0 && referralCodes.length === 0 ? (
+        <EmptyState
+          icon={<Gift className="w-10 h-10" />}
+          title="No loyalty activity yet"
+          description="Reward your best clients with points and referral bonuses. Points are earned automatically on every transaction."
+          setupSteps={[
+            { label: "Create a referral code", description: "Give clients a code to share", action: () => setFormOpen(true) },
+          ]}
+        />
+      ) : (
+        <div className="space-y-6">
+          {leaderboard.length > 0 && (
+            <div className="bg-card-bg rounded-xl border border-border-light p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <Trophy className="w-4 h-4 text-primary" />
+                <h3 className="text-[14px] font-semibold text-foreground">Top Members</h3>
+              </div>
+              <div className="space-y-2">
+                {leaderboard.map((entry, i) => (
+                  <div key={i} className="flex items-center justify-between py-1.5">
+                    <div className="flex items-center gap-3">
+                      <span className="text-[12px] font-bold text-text-tertiary w-5">{i + 1}.</span>
+                      <span className="text-[14px] text-foreground">{entry.name}</span>
+                    </div>
+                    <span className="text-[13px] font-semibold text-primary">{entry.points} pts</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {referralCodes.length > 0 && (
+            <div className="bg-card-bg rounded-xl border border-border-light overflow-hidden">
+              <div className="px-5 py-3 border-b border-border-light">
+                <h3 className="text-[14px] font-semibold text-foreground">Referral Codes</h3>
+              </div>
+              <DataTable<ReferralCode> columns={codeColumns} data={referralCodes} keyExtractor={(c) => c.id} />
+            </div>
+          )}
+        </div>
+      )}
       <FeatureSection moduleId="loyalty" featureId="digital-punch-card" featureLabel="Digital Punch Card">
-        <div className="bg-card-bg rounded-xl border border-border-light p-5 mb-4">
+        <div className="bg-card-bg rounded-xl border border-border-light p-5 mb-4 mt-4">
           <h3 className="text-[14px] font-semibold text-foreground mb-3">Digital Punch Card</h3>
           <div className="flex gap-2">
             {Array.from({ length: 10 }, (_, i) => (
@@ -88,47 +129,6 @@ export function LoyaltyPage() {
         </div>
       </FeatureSection>
 
-      {transactions.length === 0 && referralCodes.length === 0 ? (
-        <EmptyState
-          icon={<Gift className="w-10 h-10" />}
-          title="No loyalty activity yet"
-          description="Reward your best clients with points and referral bonuses. Points are earned automatically on every transaction."
-          setupSteps={[
-            { label: "Create a referral code", description: "Give clients a code to share", action: () => setFormOpen(true) },
-          ]}
-        />
-      ) : (
-        <div className="space-y-6">
-          {leaderboard.length > 0 && (
-            <div className="bg-card-bg rounded-xl border border-border-light p-5">
-              <div className="flex items-center gap-2 mb-4">
-                <Trophy className="w-4 h-4 text-primary" />
-                <h3 className="text-[14px] font-semibold text-foreground">Top Members</h3>
-              </div>
-              <div className="space-y-2">
-                {leaderboard.map((entry, i) => (
-                  <div key={i} className="flex items-center justify-between py-1.5">
-                    <div className="flex items-center gap-3">
-                      <span className="text-[12px] font-bold text-text-tertiary w-5">{i + 1}.</span>
-                      <span className="text-[14px] text-foreground">{entry.name}</span>
-                    </div>
-                    <span className="text-[13px] font-semibold text-primary">{entry.points} pts</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {referralCodes.length > 0 && (
-            <div className="bg-card-bg rounded-xl border border-border-light overflow-hidden">
-              <div className="px-5 py-3 border-b border-border-light">
-                <h3 className="text-[14px] font-semibold text-foreground">Referral Codes</h3>
-              </div>
-              <DataTable<ReferralCode> columns={codeColumns} data={referralCodes} keyExtractor={(c) => c.id} />
-            </div>
-          )}
-        </div>
-      )}
       <FeatureSection moduleId="loyalty" featureId="auto-notify-reward" featureLabel="Auto-Notify on Reward">
         <div className="mt-4 p-4 bg-surface/50 rounded-xl border border-border-light">
           <p className="text-[13px] font-medium text-foreground">Reward Notifications are active</p>

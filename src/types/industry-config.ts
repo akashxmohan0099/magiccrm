@@ -64,6 +64,14 @@ export type InvoiceMode = "one-time" | "recurring" | "milestone" | "deposit-bala
 /** Supported booking modes */
 export type BookingMode = "appointment" | "service-menu" | "date-exclusive" | "recurring-lesson";
 
+/** A duration/price variant for a service */
+export interface ServiceVariant {
+  id: string;
+  label: string;       // e.g. "60 min", "90 min"
+  duration: number;
+  price: number;
+}
+
 /** A service definition for service-menu booking mode */
 export interface ServiceDefinition {
   id: string;
@@ -71,6 +79,9 @@ export interface ServiceDefinition {
   duration: number;  // minutes
   price: number;
   category?: string;
+  variants?: ServiceVariant[];
+  rebookingIntervalDays?: number;
+  rebookingMessage?: string;
 }
 
 /** Invoice mode configuration */

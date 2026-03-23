@@ -21,7 +21,7 @@ export function ModuleConfigurator({ moduleId, moduleName }: ModuleConfiguratorP
   const featureSelections = useOnboardingStore((s) => s.featureSelections);
   const setFeatureSelectionsForModule = useOnboardingStore((s) => s.setFeatureSelections);
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => { queueMicrotask(() => setMounted(true)); }, []);
 
   // Find the feature block for this module (core or addon)
   const coreBlock = FEATURE_BLOCKS.find((b) => b.id === moduleId);

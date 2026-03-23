@@ -39,7 +39,7 @@ export function Modal({ open, onClose, title, children, role: roleProp, "aria-de
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black/20 backdrop-blur-overlay z-40"
+            className="fixed inset-0 bg-black/20 backdrop-blur-overlay z-[110]"
             onClick={onClose}
           />
           <motion.div
@@ -47,7 +47,7 @@ export function Modal({ open, onClose, title, children, role: roleProp, "aria-de
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 5 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 z-[120] flex items-center justify-center p-4"
             onClick={(e) => e.target === e.currentTarget && onClose()}
           >
             <div role={roleProp || "dialog"} aria-modal="true" aria-labelledby={titleId} aria-describedby={ariaDescribedBy} className="bg-card-bg rounded-2xl shadow-xl shadow-black/8 w-full max-w-md">

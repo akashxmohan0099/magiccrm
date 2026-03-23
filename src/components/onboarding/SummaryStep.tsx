@@ -17,6 +17,17 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
 };
 
 const BLOCK_META: Record<string, { name: string; icon: string }> = {
+  // NeedsAssessment keys (new flow)
+  "manageCustomers": { name: "Client Database", icon: "Users" },
+  "receiveInquiries": { name: "Leads & Pipeline", icon: "Inbox" },
+  "communicateClients": { name: "Communication", icon: "MessageCircle" },
+  "acceptBookings": { name: "Bookings & Calendar", icon: "Calendar" },
+  "sendInvoices": { name: "Quotes & Invoicing", icon: "Receipt" },
+  "manageProjects": { name: "Jobs & Projects", icon: "FolderKanban" },
+  "runMarketing": { name: "Marketing", icon: "Megaphone" },
+  "handleSupport": { name: "Support", icon: "Headphones" },
+  "manageDocuments": { name: "Documents", icon: "FileText" },
+  // Legacy block IDs (backwards compat)
   "client-database": { name: "Client Database", icon: "Users" },
   "leads-pipeline": { name: "Leads & Pipeline", icon: "Inbox" },
   "communication": { name: "Communication", icon: "MessageCircle" },
@@ -70,8 +81,8 @@ export function SummaryStep() {
       <div className="mb-8">
         <h2 className="text-[24px] font-bold text-foreground tracking-tight mb-2">
           {businessContext.businessName
-            ? `${businessContext.businessName}'s CRM`
-            : "Your Custom CRM"}
+            ? `${businessContext.businessName}'s workspace`
+            : "Your Custom Workspace"}
         </h2>
         <p className="text-text-secondary text-[15px]">
           {displayBlocks.length} modules with {totalFeatures} features.
@@ -140,7 +151,7 @@ export function SummaryStep() {
       </motion.div>
 
       <Button size="lg" onClick={() => setIsBuilding(true)} className="w-full">
-        Build my CRM <ArrowRight className="w-5 h-5" />
+        Build my workspace <ArrowRight className="w-5 h-5" />
       </Button>
     </motion.div>
   );

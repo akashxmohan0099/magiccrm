@@ -42,7 +42,8 @@ export const professionalServicesConfig: IndustryAdaptiveConfig = {
     { id: "active", label: "Active", color: "bg-yellow-400" },
     { id: "review", label: "Review", color: "bg-purple-400" },
     { id: "completed", label: "Complete", color: "bg-green-400", isClosed: true },
-    { id: "on-hold", label: "On Hold", color: "bg-gray-400", isClosed: true },
+    { id: "on-hold", label: "On Hold", color: "bg-gray-400", isClosed: false },
+    { id: "cancelled", label: "Cancelled", color: "bg-red-400", isClosed: true },
   ],
 
   leadStages: [

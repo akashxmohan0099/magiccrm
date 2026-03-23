@@ -49,6 +49,7 @@ export function GoalTracking() {
   const { jobs } = useJobsStore();
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setGoals(loadGoals());
     setMounted(true);
   }, []);

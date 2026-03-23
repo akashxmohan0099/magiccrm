@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Plus, X } from "lucide-react";
 import { useClientsStore } from "@/store/clients";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/Button";
 
 interface ClientTagsProps {
@@ -11,6 +12,7 @@ interface ClientTagsProps {
 
 export function ClientTags({ clientId }: ClientTagsProps) {
   const { getClient, updateClient } = useClientsStore();
+  const { workspaceId } = useAuth();
   const [newTag, setNewTag] = useState("");
   const [isAdding, setIsAdding] = useState(false);
 
@@ -23,7 +25,7 @@ export function ClientTags({ clientId }: ClientTagsProps) {
       setNewTag("");
       return;
     }
-    updateClient(clientId, { tags: [...client.tags, tag] });
+    updateClient(clientId, { tags: [...client.tags, tag] }, workspaceId ?? undefined);
     setNewTag("");
     setIsAdding(false);
   };
@@ -31,7 +33,7 @@ export function ClientTags({ clientId }: ClientTagsProps) {
   const handleRemoveTag = (tag: string) => {
     updateClient(clientId, {
       tags: client.tags.filter((t) => t !== tag),
-    });
+    }, workspaceId ?? undefined);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

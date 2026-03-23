@@ -10,7 +10,7 @@ export function WebFormPreview() {
   const [autoReply, setAutoReply] = useState("");
 
   const handleCopyEmbed = () => {
-    const embedSnippet = `<iframe src="https://your-crm.com/forms/lead-capture" width="100%" height="500" frameborder="0"></iframe>`;
+    const embedSnippet = `<iframe src="https://your-workspace.com/forms/lead-capture" width="100%" height="500" frameborder="0"></iframe>`;
     navigator.clipboard.writeText(embedSnippet).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);

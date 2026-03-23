@@ -35,6 +35,7 @@ export function QuoteForm({ open, onClose, quote }: QuoteFormProps) {
   useEffect(() => {
     if (open) {
       if (quote) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setClientId(quote.clientId ?? "");
         setValidUntil(quote.validUntil ?? "");
         setNotes(quote.notes);

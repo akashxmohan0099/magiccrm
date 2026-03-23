@@ -88,7 +88,7 @@ export function ExportReports() {
       bookings,
     };
     downloadFile(
-      "magic-crm-export.json",
+      "magic-export.json",
       JSON.stringify(data, null, 2),
       "application/json"
     );

@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, FileText, Receipt } from "lucide-react";
+import { Plus, FileText, Receipt, ScrollText } from "lucide-react";
 import { useInvoicesStore } from "@/store/invoices";
+import { useProposalsStore } from "@/store/proposals";
 import { useClientsStore } from "@/store/clients";
-import { Invoice, Quote } from "@/types/models";
+import { Invoice, Quote, Proposal } from "@/types/models";
 import { useVocabulary } from "@/hooks/useVocabulary";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -16,17 +17,23 @@ import { InvoiceForm } from "./InvoiceForm";
 import { InvoiceDetail } from "./InvoiceDetail";
 import { QuoteForm } from "./QuoteForm";
 import { QuoteDetail } from "./QuoteDetail";
+import { ProposalForm } from "./ProposalForm";
+import { ProposalBuilder } from "./ProposalBuilder";
+import { ProposalDetail } from "./ProposalDetail";
 import { FeatureSection } from "@/components/modules/FeatureSection";
 import { useFeature } from "@/hooks/useFeature";
 
 export function InvoicingPage() {
   const { invoices, quotes } = useInvoicesStore();
+  const { proposals } = useProposalsStore();
   const { clients } = useClientsStore();
   const vocab = useVocabulary();
   const creditNotesEnabled = useFeature("quotes-invoicing", "credit-notes");
+  const proposalsEnabled = useFeature("quotes-invoicing", "proposals");
   const TABS = [
     { id: "invoices", label: vocab.invoices },
     { id: "quotes", label: vocab.quotes },
+    ...(proposalsEnabled ? [{ id: "proposals", label: "Proposals" }] : []),
     ...(creditNotesEnabled ? [{ id: "credit-notes", label: "Credit Notes" }] : []),
   ];
   const [activeTab, setActiveTab] = useState("invoices");
@@ -36,6 +43,10 @@ export function InvoicingPage() {
   const [quoteFormOpen, setQuoteFormOpen] = useState(false);
   const [editingQuote, setEditingQuote] = useState<Quote | undefined>(undefined);
   const [detailQuoteId, setDetailQuoteId] = useState<string | null>(null);
+  const [proposalFormOpen, setProposalFormOpen] = useState(false);
+  const [proposalBuilderOpen, setProposalBuilderOpen] = useState(false);
+  const [editingProposal, setEditingProposal] = useState<Proposal | undefined>(undefined);
+  const [detailProposalId, setDetailProposalId] = useState<string | null>(null);
 
   const getClientName = (clientId?: string) => {
     if (!clientId) return "\u2014";
@@ -124,6 +135,33 @@ export function InvoicingPage() {
     setQuoteFormOpen(true);
   };
 
+  const handleNewProposal = () => {
+    setProposalBuilderOpen(true);
+  };
+
+  const proposalColumns: Column<Proposal>[] = [
+    { key: "number", label: "Proposal #", sortable: true },
+    { key: "title", label: "Title", sortable: true },
+    {
+      key: "clientId",
+      label: "Client",
+      sortable: true,
+      render: (p) => p.clientName ?? getClientName(p.clientId),
+    },
+    {
+      key: "status",
+      label: "Status",
+      sortable: true,
+      render: (p) => <StatusBadge status={p.status} />,
+    },
+    {
+      key: "createdAt",
+      label: "Created",
+      sortable: true,
+      render: (p) => new Date(p.createdAt).toLocaleDateString(),
+    },
+  ];
+
   return (
     <div>
       <PageHeader
@@ -131,6 +169,11 @@ export function InvoicingPage() {
         description={`Create and manage ${vocab.quotes.toLowerCase()} and ${vocab.invoices.toLowerCase()} for your ${vocab.clients.toLowerCase()}.`}
         actions={
           <div className="flex items-center gap-2">
+            {proposalsEnabled && (
+              <Button variant="secondary" size="sm" onClick={handleNewProposal}>
+                <ScrollText className="w-4 h-4" /> New Proposal
+              </Button>
+            )}
             <Button variant="secondary" size="sm" onClick={handleNewQuote}>
               <FileText className="w-4 h-4" /> New {vocab.quote}
             </Button>
@@ -190,14 +233,35 @@ export function InvoicingPage() {
         </>
       )}
 
+      {activeTab === "proposals" && (
+        <FeatureSection moduleId="quotes-invoicing" featureId="proposals" featureLabel="Proposals">
+          {proposals.length === 0 ? (
+            <EmptyState
+              icon={<ScrollText className="w-10 h-10" />}
+              title="No proposals yet"
+              description="Create rich branded proposals with sections, pricing tables, and e-signature."
+              actionLabel="New Proposal"
+              onAction={handleNewProposal}
+            />
+          ) : (
+            <div className="bg-card-bg rounded-xl border border-border-light overflow-hidden">
+              <DataTable<Proposal>
+                columns={proposalColumns}
+                data={proposals}
+                keyExtractor={(p) => p.id}
+                onRowClick={(p) => setDetailProposalId(p.id)}
+              />
+            </div>
+          )}
+        </FeatureSection>
+      )}
+
       {activeTab === "credit-notes" && (
         <FeatureSection moduleId="quotes-invoicing" featureId="credit-notes" featureLabel="Credit Notes">
           <EmptyState
             icon={<Receipt className="w-10 h-10" />}
             title="No credit notes yet"
-            description="Issue credit notes for returns, errors, or goodwill adjustments."
-            actionLabel="New Credit Note"
-            onAction={() => {}}
+            description="Credit notes for returns, errors, or goodwill adjustments will appear here once issued."
           />
         </FeatureSection>
       )}
@@ -239,6 +303,31 @@ export function InvoicingPage() {
           setDetailQuoteId(null);
           setEditingQuote(q);
           setQuoteFormOpen(true);
+        }}
+      />
+
+      <ProposalBuilder
+        open={proposalBuilderOpen}
+        onClose={() => setProposalBuilderOpen(false)}
+      />
+
+      <ProposalForm
+        open={proposalFormOpen}
+        onClose={() => {
+          setProposalFormOpen(false);
+          setEditingProposal(undefined);
+        }}
+        proposal={editingProposal}
+      />
+
+      <ProposalDetail
+        open={detailProposalId !== null}
+        onClose={() => setDetailProposalId(null)}
+        proposalId={detailProposalId}
+        onEdit={(p) => {
+          setDetailProposalId(null);
+          setEditingProposal(p);
+          setProposalFormOpen(true);
         }}
       />
     </div>

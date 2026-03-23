@@ -1,13 +1,13 @@
 import type { IndustryAdaptiveConfig, IndustryAdaptiveOverride, VocabularyMap, ModuleFieldGroups, InvoiceModeConfig, BookingModeConfig, DashboardWidgetConfig } from "@/types/industry-config";
 import { genericConfig } from "./generic";
 import { beautyWellnessConfig, beautyPersonaOverrides } from "./beauty-wellness";
-import { tradesConstructionConfig } from "./trades-construction";
+import { tradesConstructionConfig, tradesPersonaOverrides } from "./trades-construction";
 import { professionalServicesConfig, professionalPersonaOverrides } from "./professional-services";
 import { healthFitnessConfig, healthFitnessPersonaOverrides } from "./health-fitness";
 import { creativeServicesConfig, creativePersonaOverrides } from "./creative-services";
 import { hospitalityEventsConfig, hospitalityPersonaOverrides } from "./hospitality-events";
 import { educationCoachingConfig, educationPersonaOverrides } from "./education-coaching";
-import { retailEcommerceConfig } from "./retail-ecommerce";
+import { retailEcommerceConfig, retailPersonaOverrides } from "./retail-ecommerce";
 
 /** Registry mapping industry IDs → configs */
 const INDUSTRY_CONFIG_MAP: Record<string, IndustryAdaptiveConfig> = {
@@ -28,7 +28,9 @@ const PERSONA_OVERRIDE_MAP: Record<string, Record<string, IndustryAdaptiveOverri
   "hospitality-events": hospitalityPersonaOverrides,
   "professional-services": professionalPersonaOverrides,
   "health-fitness": healthFitnessPersonaOverrides,
+  "trades-construction": tradesPersonaOverrides,
   "education-coaching": educationPersonaOverrides,
+  "retail-ecommerce": retailPersonaOverrides,
 };
 
 /** Deep-merge a partial override onto a full config */
@@ -39,10 +41,28 @@ function applyOverride(base: IndustryAdaptiveConfig, override: IndustryAdaptiveO
     result.vocabulary = { ...base.vocabulary, ...override.vocabulary } as VocabularyMap;
   }
   if (override.customFields) {
+    const mergedClients = [
+      ...(base.customFields.clients ?? []),
+      ...(override.customFields?.clients ?? []),
+    ];
+    const mergedJobs = [
+      ...(base.customFields.jobs ?? []),
+      ...(override.customFields?.jobs ?? []),
+    ];
+    const mergedBookings = [
+      ...(base.customFields.bookings ?? []),
+      ...(override.customFields?.bookings ?? []),
+    ];
+    // Deduplicate by field id — override fields win on conflict
+    const dedup = <T extends { id: string }>(arr: T[]): T[] => {
+      const map = new Map<string, T>();
+      for (const item of arr) map.set(item.id, item);
+      return Array.from(map.values());
+    };
     result.customFields = {
-      clients: override.customFields.clients ?? base.customFields.clients,
-      jobs: override.customFields.jobs ?? base.customFields.jobs,
-      bookings: override.customFields.bookings ?? base.customFields.bookings,
+      clients: dedup(mergedClients),
+      jobs: dedup(mergedJobs),
+      bookings: dedup(mergedBookings),
     } as ModuleFieldGroups;
   }
   if (override.relationships) {

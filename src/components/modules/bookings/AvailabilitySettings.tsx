@@ -9,15 +9,23 @@ import { FeatureSection } from "@/components/modules/FeatureSection";
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 export function AvailabilitySettings() {
-  const { availability, setAvailability } = useBookingsStore();
+  const { availability, setAvailability, bufferMinutes: storedBuffer, cancelNotice: storedCancel } = useBookingsStore();
   const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
   const [saved, setSaved] = useState(false);
   const [bufferMinutes, setBufferMinutes] = useState("0");
   const [cancelNotice, setCancelNotice] = useState("0");
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSlots(availability.map((s) => ({ ...s })));
   }, [availability]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setBufferMinutes(String(storedBuffer ?? 0));
+     
+    setCancelNotice(String(storedCancel ?? 0));
+  }, [storedBuffer, storedCancel]);
 
   const updateSlot = (day: number, field: keyof AvailabilitySlot, value: string | boolean) => {
     setSlots((prev) =>
@@ -27,7 +35,10 @@ export function AvailabilitySettings() {
   };
 
   const handleSave = () => {
-    setAvailability(slots);
+    setAvailability(slots, {
+      bufferMinutes: Number(bufferMinutes),
+      cancelNotice: Number(cancelNotice),
+    });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };

@@ -4,12 +4,15 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import { useWinBackStore } from "@/store/win-back";
 import { Button } from "@/components/ui/Button";
+import { FormField } from "@/components/ui/FormField";
 import { FeatureSection } from "@/components/modules/FeatureSection";
 
 interface WinBackRuleFormProps { open: boolean; onClose: () => void; }
 
 export function WinBackRuleForm({ open, onClose }: WinBackRuleFormProps) {
   const { addRule } = useWinBackStore();
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
   const [name, setName] = useState("");
   const [days, setDays] = useState("60");
   const [channel, setChannel] = useState<"email" | "sms">("email");
@@ -20,10 +23,21 @@ export function WinBackRuleForm({ open, onClose }: WinBackRuleFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (saving) return;
+
+    const newErrors: Record<string, string> = {};
+    if (!name.trim()) newErrors.name = "Rule name is required";
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+    setErrors({});
+    setSaving(true);
+
     addRule({ name: name.trim(), inactiveDays: parseInt(days) || 60, channel, messageTemplate: template, enabled: true });
     setName(""); setDays("60"); setTemplate("");
     onClose();
+    setSaving(false);
   };
 
   const inputClass = "w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30";
@@ -37,11 +51,10 @@ export function WinBackRuleForm({ open, onClose }: WinBackRuleFormProps) {
           <button onClick={onClose} className="p-1.5 text-text-secondary hover:text-foreground rounded-lg hover:bg-surface cursor-pointer"><X className="w-4 h-4" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div>
-            <label className="block text-[13px] font-medium text-foreground mb-1.5">Rule Name *</label>
-            <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. 60-day lash rebook reminder" required className={inputClass} />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
+          <FormField label="Rule Name" required error={errors.name}>
+            <input type="text" value={name} onChange={(e) => { setName(e.target.value); if (errors.name) setErrors((prev) => { const next = { ...prev }; delete next.name; return next; }); }} placeholder="e.g. 60-day lash rebook reminder" className={inputClass} />
+          </FormField>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-[13px] font-medium text-foreground mb-1.5">Days Inactive</label>
               <input type="number" value={days} onChange={(e) => setDays(e.target.value)} placeholder="60" className={inputClass} />
@@ -66,7 +79,7 @@ export function WinBackRuleForm({ open, onClose }: WinBackRuleFormProps) {
               <p className="text-[11px] text-text-tertiary mt-1">Include a discount code in the re-engagement message.</p>
             </div>
           </FeatureSection>
-          <div className="pt-2"><Button type="submit" className="w-full">Create Rule</Button></div>
+          <div className="pt-2"><Button type="submit" loading={saving} className="w-full">Create Rule</Button></div>
         </form>
       </div>
     </div>

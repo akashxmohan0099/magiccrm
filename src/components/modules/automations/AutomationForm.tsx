@@ -50,6 +50,7 @@ export function AutomationForm({ open, onClose, rule }: AutomationFormProps) {
 
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setForm(getInitialState(rule));
       setErrors({});
     }
@@ -93,7 +94,7 @@ export function AutomationForm({ open, onClose, rule }: AutomationFormProps) {
   };
 
   const inputClass =
-    "w-full px-3 py-2 bg-card-bg border border-border-light rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand";
+    "w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30";
 
   return (
     <SlideOver

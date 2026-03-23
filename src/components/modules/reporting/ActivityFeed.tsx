@@ -44,7 +44,7 @@ export function ActivityFeed() {
           Activity Feed
         </h2>
         {entries.length > 0 && (
-          <Button variant="ghost" size="sm" onClick={clearEntries}>
+          <Button variant="ghost" size="sm" onClick={() => clearEntries()}>
             <Trash2 className="w-4 h-4 mr-1" />
             Clear All
           </Button>
