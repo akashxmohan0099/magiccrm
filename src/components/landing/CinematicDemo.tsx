@@ -272,14 +272,14 @@ export function ModulePickerDemo() {
             {/* Right: Live sidebar preview */}
             <div className="flex-1 bg-background flex flex-col">
               <div className="px-5 py-3 border-b border-border-light bg-white flex items-center gap-2">
-                <div className="w-5 h-5 rounded-lg flex items-center justify-center" style={{backgroundColor:"var(--logo-green)"}}><div className="w-2 h-2 bg-foreground rounded-sm" /></div>
+                <div className="w-5 h-5 rounded-lg flex items-center justify-center" style={{backgroundColor:"var(--logo-green)"}}><div className="w-2 h-2 bg-white rounded-sm" /></div>
                 <span className="text-[12px] font-bold text-foreground">Only what you need</span>
                 {!paused && <div className="ml-auto flex items-center gap-1"><div className="w-1.5 h-1.5 bg-primary rounded-full pulse-dot" /><span className="text-[9px] text-text-tertiary">Live</span></div>}
               </div>
               <div className="flex-1 bg-white mx-4 my-4 rounded-xl border border-border-light overflow-hidden">
                 <div className="px-4 py-3 border-b border-border-light">
                   <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-lg flex items-center justify-center" style={{backgroundColor:"var(--logo-green)"}}><div className="w-2 h-2 bg-foreground rounded-sm" /></div>
+                    <div className="w-5 h-5 rounded-lg flex items-center justify-center" style={{backgroundColor:"var(--logo-green)"}}><div className="w-2 h-2 bg-white rounded-sm" /></div>
                     <span className="text-[11px] font-bold text-foreground">Magic</span>
                   </div>
                 </div>
@@ -571,7 +571,7 @@ export function FeatureCustomizeDemo() {
             <div className="w-[170px] bg-white border-r border-border-light flex flex-col flex-shrink-0">
               <div className="px-3 py-3 border-b border-border-light">
                 <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 rounded-lg flex items-center justify-center" style={{backgroundColor:"var(--logo-green)"}}><div className="w-2 h-2 bg-foreground rounded-sm" /></div>
+                  <div className="w-5 h-5 rounded-lg flex items-center justify-center" style={{backgroundColor:"var(--logo-green)"}}><div className="w-2 h-2 bg-white rounded-sm" /></div>
                   <span className="text-[10px] font-bold text-foreground">Magic</span>
                 </div>
               </div>
@@ -1328,7 +1328,7 @@ function DemoContent({ module, features, data }: { module: string; features: Rec
   if (module === "Client Portal") {
     return (
       <div>
-        {f("Custom Branding") && <motion.div key="Custom Branding" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 mb-3 px-3 py-2 bg-primary/5 border border-primary/10 rounded-lg"><div className="w-5 h-5 rounded-lg flex items-center justify-center" style={{ backgroundColor: "var(--logo-green)" }}><div className="w-2 h-2 bg-foreground rounded-sm" /></div><span className="text-[10px] text-primary font-medium">Your brand colors and logo applied to portal</span></motion.div>}
+        {f("Custom Branding") && <motion.div key="Custom Branding" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 mb-3 px-3 py-2 bg-primary/5 border border-primary/10 rounded-lg"><div className="w-5 h-5 rounded-lg flex items-center justify-center" style={{ backgroundColor: "var(--logo-green)" }}><div className="w-2 h-2 bg-white rounded-sm" /></div><span className="text-[10px] text-primary font-medium">Your brand colors and logo applied to portal</span></motion.div>}
         <div className="border border-border-light rounded-xl overflow-hidden">
           <div className="grid bg-background px-3 py-1.5 border-b border-border-light text-[9px] font-medium text-text-tertiary" style={{ gridTemplateColumns: "1fr 80px 50px" }}>
             <span>Section</span><span>Details</span><span>Status</span>

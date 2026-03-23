@@ -227,7 +227,7 @@ export function BuildingScreen() {
             <motion.div
               animate={{ scale: [1, 1.15, 1], rotate: [0, 3, -3, 0] }}
               transition={{ duration: 2.5, repeat: Infinity }}
-              className="w-8 h-8 bg-foreground rounded-xl"
+              className="w-8 h-8 bg-white rounded-xl"
             />
           </motion.div>
         </div>

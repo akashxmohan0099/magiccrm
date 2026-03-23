@@ -7,7 +7,7 @@ import { ArrowLeft } from "lucide-react";
 export default function NotFound() {
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6">
-      <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center mb-6">
+      <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-6" style={{ backgroundColor: "var(--logo-green)" }}>
         <div className="w-5 h-5 bg-white rounded-md" />
       </div>
       <h1 className="text-[64px] font-bold text-foreground leading-none mb-2">404</h1>
