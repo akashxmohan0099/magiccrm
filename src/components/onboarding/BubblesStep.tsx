@@ -21,9 +21,9 @@ interface Chip {
 
 const CHIPS: Chip[] = [
   { id: "appointments", label: "I book appointments", icon: "📅", activates: ["bookings-calendar"], needsKeys: ["acceptBookings"], followUp: "booking-style" },
-  { id: "projects", label: "I run projects or jobs", icon: "📋", activates: ["jobs-projects"], needsKeys: ["manageProjects"] },
-  { id: "quotes", label: "I send quotes & invoices", icon: "💰", activates: ["quotes-invoicing"], needsKeys: ["sendInvoices"] },
-  { id: "marketing", label: "I market my business", icon: "📣", activates: ["marketing"], needsKeys: ["runMarketing"] },
+  { id: "projects", label: "I run projects or jobs", icon: "📋", activates: ["jobs-projects"], needsKeys: ["manageProjects"], followUp: "project-style" },
+  { id: "quotes", label: "I send quotes & invoices", icon: "💰", activates: ["quotes-invoicing"], needsKeys: ["sendInvoices"], followUp: "billing-style" },
+  { id: "marketing", label: "I market my business", icon: "📣", activates: ["marketing"], needsKeys: ["runMarketing"], followUp: "marketing-channels" },
   { id: "team", label: "I have a team", icon: "👥", activates: ["team"], needsKeys: [], followUp: "team-size" },
   { id: "onsite", label: "I work on-site or travel", icon: "🚗", activates: ["jobs-projects", "bookings-calendar"], needsKeys: ["manageProjects", "acceptBookings"] },
   { id: "products", label: "I sell products or services", icon: "🏷️", activates: ["products"], needsKeys: [] },
@@ -45,6 +45,35 @@ const FOLLOW_UPS: Record<string, FollowUp> = {
       { label: "They book online", value: "online" },
       { label: "I manage it manually", value: "manual" },
       { label: "Both", value: "both" },
+    ],
+  },
+  "project-style": {
+    id: "project-style",
+    question: "What kind of projects do you run?",
+    options: [
+      { label: "One-off jobs", value: "one-off" },
+      { label: "Ongoing retainers", value: "retainer" },
+      { label: "Mix of both", value: "mixed" },
+    ],
+  },
+  "billing-style": {
+    id: "billing-style",
+    question: "How do you usually bill?",
+    options: [
+      { label: "Fixed price quotes", value: "fixed" },
+      { label: "Hourly / time-based", value: "hourly" },
+      { label: "Deposits + final invoice", value: "deposits" },
+      { label: "Recurring / subscriptions", value: "recurring" },
+    ],
+  },
+  "marketing-channels": {
+    id: "marketing-channels",
+    question: "Where do you find most clients?",
+    options: [
+      { label: "Word of mouth", value: "referral" },
+      { label: "Social media", value: "social" },
+      { label: "Google / SEO", value: "search" },
+      { label: "Paid ads", value: "ads" },
     ],
   },
   "team-size": {
