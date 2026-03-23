@@ -43,13 +43,13 @@ const SLIDES: Slide[] = [
     ],
   },
   {
-    title: "How do you grow your business?",
+    title: "How does your business operate?",
     subtitle: "Select all that apply",
     chips: [
-      { id: "social-clients", label: "Clients find me through social media", activates: ["marketing"], needsKeys: ["runMarketing"] },
-      { id: "reviews-matter", label: "Online reviews are important for me", activates: ["marketing"], needsKeys: ["runMarketing"] },
       { id: "team", label: "I have employees or contractors", activates: ["team"], needsKeys: [] },
-      { id: "referrals", label: "Most clients come from word of mouth", activates: ["marketing"], needsKeys: ["runMarketing"] },
+      { id: "referrals", label: "I rely on referrals and word of mouth", activates: ["marketing"], needsKeys: ["runMarketing"] },
+      { id: "automate", label: "I want to automate reminders and follow-ups", activates: ["automations"], needsKeys: [] },
+      { id: "reports", label: "I want to track revenue and performance", activates: ["reporting"], needsKeys: [] },
     ],
   },
 ];
