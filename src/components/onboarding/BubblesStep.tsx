@@ -125,26 +125,36 @@ export function BubblesStep() {
   };
 
   return (
-    <div className="fixed inset-0 overflow-hidden" style={{ background: "#FAFAFA" }}>
-      {/* Animated ambient blobs */}
+    <div className="fixed inset-0 overflow-hidden" style={{ background: "linear-gradient(160deg, #F0FDF4 0%, #FAFAFA 30%, #F5F3FF 60%, #FAFAFA 100%)" }}>
+      {/* Animated mesh gradient blobs */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {/* Large green wash — slowly drifts */}
         <motion.div
-          animate={{ x: [0, 30, -20, 0], y: [0, -20, 30, 0] }}
-          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          className="absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full"
-          style={{ background: "radial-gradient(circle, rgba(52,211,153,0.08) 0%, transparent 70%)" }}
+          animate={{ x: [0, 60, -40, 0], y: [0, -40, 50, 0], scale: [1, 1.1, 0.95, 1] }}
+          transition={{ duration: 30, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute -top-20 -left-20 w-[700px] h-[700px] rounded-full"
+          style={{ background: "radial-gradient(circle, rgba(52,211,153,0.12) 0%, rgba(52,211,153,0.04) 40%, transparent 70%)", filter: "blur(40px)" }}
         />
+        {/* Purple accent — opposite corner */}
         <motion.div
-          animate={{ x: [0, -40, 20, 0], y: [0, 20, -30, 0] }}
-          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-          className="absolute -bottom-40 -right-40 w-[600px] h-[600px] rounded-full"
-          style={{ background: "radial-gradient(circle, rgba(139,92,246,0.06) 0%, transparent 70%)" }}
+          animate={{ x: [0, -50, 30, 0], y: [0, 30, -50, 0], scale: [1, 0.95, 1.05, 1] }}
+          transition={{ duration: 35, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute -bottom-32 -right-32 w-[600px] h-[600px] rounded-full"
+          style={{ background: "radial-gradient(circle, rgba(139,92,246,0.08) 0%, rgba(139,92,246,0.02) 40%, transparent 70%)", filter: "blur(40px)" }}
         />
+        {/* Warm accent — drifts through center */}
         <motion.div
-          animate={{ x: [0, 20, -30, 0], y: [0, -30, 15, 0] }}
-          transition={{ duration: 22, repeat: Infinity, ease: "linear" }}
-          className="absolute top-1/4 right-1/3 w-[400px] h-[400px] rounded-full"
-          style={{ background: "radial-gradient(circle, rgba(245,158,11,0.05) 0%, transparent 70%)" }}
+          animate={{ x: [-60, 80, -40, -60], y: [20, -60, 40, 20] }}
+          transition={{ duration: 40, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-1/3 left-1/3 w-[500px] h-[500px] rounded-full"
+          style={{ background: "radial-gradient(circle, rgba(52,211,153,0.07) 0%, transparent 60%)", filter: "blur(50px)" }}
+        />
+        {/* Subtle teal — bottom left */}
+        <motion.div
+          animate={{ x: [0, 40, -20, 0], y: [0, -30, 40, 0] }}
+          transition={{ duration: 28, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute bottom-1/4 -left-20 w-[400px] h-[400px] rounded-full"
+          style={{ background: "radial-gradient(circle, rgba(20,184,166,0.06) 0%, transparent 60%)", filter: "blur(30px)" }}
         />
       </div>
 
@@ -202,7 +212,7 @@ export function BubblesStep() {
                       transformOrigin: `4px ${R + 6}px`,
                     }}
                     animate={{ rotate: 360 }}
-                    transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                    transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
                   />
                 )}
 
@@ -231,8 +241,8 @@ export function BubblesStep() {
                     <motion.div
                       className="absolute inset-0 rounded-full"
                       style={{ background: "rgba(255,255,255,0.15)" }}
-                      animate={{ scale: [1, 1.05, 1], opacity: [0.3, 0, 0.3] }}
-                      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                      animate={{ scale: [1, 1.04, 1], opacity: [0.2, 0, 0.2] }}
+                      transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
                     />
                   )}
 
