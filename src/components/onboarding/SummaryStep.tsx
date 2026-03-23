@@ -7,7 +7,7 @@ import {
   Megaphone, MessageCircle, Package,
   Zap, BarChart3, ArrowRight, Globe, UsersRound,
   Scissors, Wrench, Briefcase, Dumbbell, PenTool,
-  UtensilsCrossed, GraduationCap, ShoppingBag,
+  UtensilsCrossed, GraduationCap,
   Check, Plus,
 } from "lucide-react";
 import { useOnboardingStore } from "@/store/onboarding";
@@ -87,7 +87,7 @@ const MODULE_DISPLAY: Record<string, {
 const INDUSTRY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   "beauty-wellness": Scissors, "trades-construction": Wrench, "professional-services": Briefcase,
   "health-fitness": Dumbbell, "creative-services": PenTool, "hospitality-events": UtensilsCrossed,
-  "education-coaching": GraduationCap, "retail-ecommerce": ShoppingBag,
+  "education-coaching": GraduationCap,
 };
 
 export function SummaryStep() {

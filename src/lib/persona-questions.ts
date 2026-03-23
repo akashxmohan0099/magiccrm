@@ -552,6 +552,21 @@ const nutritionist: PersonaQuestionConfig = {
   defaultChannels: ["email", "whatsapp"],
 };
 
+const therapist: PersonaQuestionConfig = {
+  personaId: "therapist",
+  questions: universalQuestions("th", {
+    bookings: "Schedule therapy sessions and manage your calendar",
+    projects: "Track treatment plans and client progress",
+    products: "Offer workshops, courses, or resource materials",
+    marketing: "Grow your practice through referrals and online presence",
+    team: "Manage associates, interns, or admin staff",
+    automations: "Auto-send session reminders and intake forms",
+    reporting: "Track session hours, revenue, and client outcomes",
+  }),
+  visibility: { hiddenModules: [], hiddenFeatures: [], hiddenAddons: [] },
+  defaultChannels: ["email", "sms"],
+};
+
 // ═══════════════════════════════════════════════════════════════════════════
 // CREATIVE & DESIGN
 // ═══════════════════════════════════════════════════════════════════════════
@@ -800,72 +815,6 @@ const onlineCourseCreator: PersonaQuestionConfig = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-// RETAIL & E-COMMERCE
-// ═══════════════════════════════════════════════════════════════════════════
-
-const retailVisibility = { hiddenModules: ["jobs-projects", "documents"] as string[], hiddenFeatures: [{ moduleId: "quotes-invoicing", featureId: "tipping" }, { moduleId: "quotes-invoicing", featureId: "travel-costs" }, { moduleId: "bookings-calendar", featureId: "group-class-booking" }], hiddenAddons: ["soap-notes", "before-after", "intake-forms", "client-portal"] as string[] };
-
-const onlineStore: PersonaQuestionConfig = {
-  personaId: "online-store",
-  questions: universalQuestions("os", {
-    bookings: "Schedule consultations, personal shopping sessions, or pickups",
-    projects: "Track custom orders, wholesale fulfillment, and seasonal campaigns",
-    products: "Manage your product catalog with categories, variants, and stock levels",
-    marketing: "Run email campaigns, social ads, and seasonal promotions",
-    team: "Manage pickers, packers, and customer service staff",
-    automations: "Auto-send order confirmations, shipping updates, and review requests",
-    reporting: "Track sales, average order value, and customer lifetime value",
-  }),
-  visibility: { ...retailVisibility, hiddenAddons: ["soap-notes", "before-after", "intake-forms", "client-portal", "memberships"] },
-  defaultChannels: ["email"],
-};
-
-const boutiqueShop: PersonaQuestionConfig = {
-  personaId: "boutique-shop",
-  questions: universalQuestions("bs", {
-    bookings: "Schedule personal styling sessions, VIP previews, and consultations",
-    projects: "Track custom orders, alterations, and seasonal collection launches",
-    products: "Manage your inventory with categories, sizes, and stock levels",
-    marketing: "Post new arrivals, run seasonal sales, and collect reviews",
-    team: "Manage sales staff, stylists, and their schedules",
-    automations: "Auto-send restock alerts, sale announcements, and loyalty rewards",
-    reporting: "Track sales by category, top-selling items, and customer retention",
-  }),
-  visibility: retailVisibility,
-  defaultChannels: ["email", "instagram-dms"],
-};
-
-const handmadeArtisan: PersonaQuestionConfig = {
-  personaId: "handmade-artisan",
-  questions: universalQuestions("ha", {
-    bookings: "Schedule market stalls, custom order consultations, and workshops",
-    projects: "Track custom orders, commission pieces, and workshop preparation",
-    products: "Manage your handmade catalog with materials, pricing, and stock levels",
-    marketing: "Share your making process, market schedules, and collect reviews",
-    team: "Manage workshop helpers, market staff, and their schedules",
-    automations: "Auto-send order updates, market reminders, and restock notifications",
-    reporting: "Track sales by product type, market vs online revenue, and material costs",
-  }),
-  visibility: { ...retailVisibility, hiddenAddons: ["soap-notes", "before-after", "intake-forms", "client-portal", "memberships"] },
-  defaultChannels: ["email", "instagram-dms"],
-};
-
-const foodBeverage: PersonaQuestionConfig = {
-  personaId: "food-beverage",
-  questions: universalQuestions("fb", {
-    bookings: "Schedule tastings, catering consultations, and market appearances",
-    projects: "Track wholesale orders, catering gigs, and seasonal product launches",
-    products: "Manage your food catalog with categories, allergens, and stock levels",
-    marketing: "Share food photography, seasonal launches, and collect reviews",
-    team: "Manage kitchen staff, delivery drivers, and their schedules",
-    automations: "Auto-send order confirmations, delivery updates, and reorder reminders",
-    reporting: "Track sales by product, wholesale vs direct revenue, and seasonal trends",
-  }),
-  visibility: retailVisibility,
-  defaultChannels: ["email", "instagram-dms"],
-};
-
-// ═══════════════════════════════════════════════════════════════════════════
 // MASTER MAP & EXPORTS
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -898,6 +847,7 @@ export const PERSONA_QUESTIONS: PersonaQuestionsMap = {
   "yoga-pilates-studio": yogaPilatesStudio,
   "physio-chiro": physioChiro,
   "nutritionist": nutritionist,
+  "therapist": therapist,
   // Creative & Design
   "photographer": photographer,
   "graphic-designer": graphicDesigner,
@@ -916,11 +866,6 @@ export const PERSONA_QUESTIONS: PersonaQuestionsMap = {
   "music-teacher": musicTeacher,
   "driving-instructor": drivingInstructor,
   "online-course-creator": onlineCourseCreator,
-  // Retail & E-commerce
-  "online-store": onlineStore,
-  "boutique-shop": boutiqueShop,
-  "handmade-artisan": handmadeArtisan,
-  "food-beverage": foodBeverage,
 };
 
 // ── Industry-agnostic fallback questions ──
@@ -1029,7 +974,6 @@ export function getIndustryFallbackQuestions(industryId: string): PersonaQuestio
     "creative-services": "photographer",
     "hospitality-events": "wedding-planner",
     "education-coaching": "tutor",
-    "retail-ecommerce": "online-store",
   };
   const fallbackPersona = fallbackMap[industryId];
   return fallbackPersona ? PERSONA_QUESTIONS[fallbackPersona] ?? null : null;

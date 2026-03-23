@@ -119,4 +119,37 @@ export const healthFitnessPersonaOverrides: Record<string, IndustryAdaptiveOverr
       addClient: "Add Member",
     },
   },
+  "therapist": {
+    vocabulary: {
+      client: "Client",
+      clients: "Clients",
+      addClient: "Add Client",
+      booking: "Session",
+      bookings: "Sessions",
+      addBooking: "Schedule Session",
+      job: "Treatment Plan",
+      jobs: "Treatment Plans",
+      addJob: "New Treatment Plan",
+      lead: "Referral",
+      leads: "Referrals",
+      addLead: "Add Referral",
+    },
+    bookingMode: {
+      defaultMode: "appointment" as const,
+      defaultServices: [
+        { id: "initial-consult", name: "Initial Consultation", duration: 60, price: 150, category: "Consultations" },
+        { id: "standard-session", name: "Standard Session", duration: 50, price: 120, category: "Sessions" },
+        { id: "extended-session", name: "Extended Session", duration: 80, price: 180, category: "Sessions" },
+        { id: "couples-session", name: "Couples Session", duration: 75, price: 200, category: "Sessions" },
+      ],
+    },
+    customFields: {
+      clients: [
+        { id: "referral-source", label: "Referral Source", type: "text" as const, group: "Clinical" },
+        { id: "presenting-concerns", label: "Presenting Concerns", type: "textarea" as const, group: "Clinical" },
+        { id: "gp-details", label: "GP / Doctor Details", type: "text" as const, group: "Clinical" },
+        { id: "mental-health-plan", label: "Mental Health Plan", type: "text" as const, placeholder: "e.g. Medicare plan number", group: "Clinical" },
+      ],
+    },
+  },
 };

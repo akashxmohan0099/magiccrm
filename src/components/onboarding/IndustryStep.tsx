@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, ArrowRight, Check,
   Scissors, Wrench, Briefcase, Dumbbell, PenTool,
-  UtensilsCrossed, GraduationCap, ShoppingBag, Layers,
+  UtensilsCrossed, GraduationCap, Layers,
 } from "lucide-react";
 import { useOnboardingStore } from "@/store/onboarding";
 import { INDUSTRY_CONFIGS } from "@/types/onboarding";
@@ -21,7 +21,6 @@ const INDUSTRY_ICONS: Record<string, {
   "creative-services":     { icon: PenTool,          bg: "bg-violet-50",  color: "text-violet-500" },
   "hospitality-events":    { icon: UtensilsCrossed,  bg: "bg-orange-50",  color: "text-orange-500" },
   "education-coaching":    { icon: GraduationCap,    bg: "bg-emerald-50", color: "text-emerald-600" },
-  "retail-ecommerce":      { icon: ShoppingBag,      bg: "bg-cyan-50",    color: "text-cyan-600" },
   "other":                 { icon: Layers,           bg: "bg-gray-50",    color: "text-gray-500" },
 };
 

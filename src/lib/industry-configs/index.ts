@@ -7,7 +7,6 @@ import { healthFitnessConfig, healthFitnessPersonaOverrides } from "./health-fit
 import { creativeServicesConfig, creativePersonaOverrides } from "./creative-services";
 import { hospitalityEventsConfig, hospitalityPersonaOverrides } from "./hospitality-events";
 import { educationCoachingConfig, educationPersonaOverrides } from "./education-coaching";
-import { retailEcommerceConfig, retailPersonaOverrides } from "./retail-ecommerce";
 
 /** Registry mapping industry IDs → configs */
 const INDUSTRY_CONFIG_MAP: Record<string, IndustryAdaptiveConfig> = {
@@ -18,7 +17,6 @@ const INDUSTRY_CONFIG_MAP: Record<string, IndustryAdaptiveConfig> = {
   "creative-services": creativeServicesConfig,
   "hospitality-events": hospitalityEventsConfig,
   "education-coaching": educationCoachingConfig,
-  "retail-ecommerce": retailEcommerceConfig,
 };
 
 /** Registry mapping industry IDs → persona override maps */
@@ -30,7 +28,6 @@ const PERSONA_OVERRIDE_MAP: Record<string, Record<string, IndustryAdaptiveOverri
   "health-fitness": healthFitnessPersonaOverrides,
   "trades-construction": tradesPersonaOverrides,
   "education-coaching": educationPersonaOverrides,
-  "retail-ecommerce": retailPersonaOverrides,
 };
 
 /** Deep-merge a partial override onto a full config */
