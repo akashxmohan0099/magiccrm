@@ -1,9 +1,29 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ArrowRight, Check } from "lucide-react";
+import {
+  ArrowLeft, ArrowRight, Check,
+  Sparkles, Wrench, Briefcase, Heart, Palette,
+  UtensilsCrossed, GraduationCap, ShoppingBag, Rocket,
+} from "lucide-react";
 import { useOnboardingStore } from "@/store/onboarding";
 import { INDUSTRY_CONFIGS } from "@/types/onboarding";
+
+const INDUSTRY_ICONS: Record<string, {
+  icon: React.ComponentType<{ className?: string }>;
+  bg: string;
+  color: string;
+}> = {
+  "beauty-wellness":       { icon: Sparkles,         bg: "bg-pink-50",    color: "text-pink-500" },
+  "trades-construction":   { icon: Wrench,           bg: "bg-amber-50",   color: "text-amber-600" },
+  "professional-services": { icon: Briefcase,        bg: "bg-blue-50",    color: "text-blue-500" },
+  "health-fitness":        { icon: Heart,            bg: "bg-rose-50",    color: "text-rose-500" },
+  "creative-services":     { icon: Palette,          bg: "bg-violet-50",  color: "text-violet-500" },
+  "hospitality-events":    { icon: UtensilsCrossed,  bg: "bg-orange-50",  color: "text-orange-500" },
+  "education-coaching":    { icon: GraduationCap,    bg: "bg-emerald-50", color: "text-emerald-600" },
+  "retail-ecommerce":      { icon: ShoppingBag,      bg: "bg-cyan-50",    color: "text-cyan-600" },
+  "other":                 { icon: Rocket,           bg: "bg-purple-50",  color: "text-purple-500" },
+};
 
 export function IndustryStep() {
   const {
@@ -23,10 +43,6 @@ export function IndustryStep() {
   const handleSelectIndustry = (id: string) => {
     setSelectedIndustry(id);
     setSelectedPersona("");
-  };
-
-  const handleSelectPersona = (id: string) => {
-    setSelectedPersona(id);
   };
 
   const handleContinue = () => {
@@ -75,6 +91,8 @@ export function IndustryStep() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-10">
               {INDUSTRY_CONFIGS.map((config, i) => {
+                const iconConfig = INDUSTRY_ICONS[config.id] || INDUSTRY_ICONS["other"];
+                const IconComp = iconConfig.icon;
                 const isSelected = selectedIndustry === config.id;
                 return (
                   <motion.button
@@ -85,9 +103,9 @@ export function IndustryStep() {
                     whileHover={{ y: -2 }}
                     whileTap={{ scale: 0.97 }}
                     onClick={() => handleSelectIndustry(config.id)}
-                    className={`relative text-left p-5 rounded-2xl transition-all duration-200 cursor-pointer w-full group ${
+                    className={`relative text-left p-5 rounded-2xl transition-all duration-200 cursor-pointer w-full ${
                       isSelected
-                        ? "bg-foreground text-white shadow-lg shadow-foreground/10"
+                        ? "bg-foreground text-white shadow-lg"
                         : "bg-card-bg border border-border-light hover:border-foreground/20 hover:shadow-md"
                     }`}
                   >
@@ -100,7 +118,11 @@ export function IndustryStep() {
                         <Check className="w-3 h-3 text-foreground" />
                       </motion.div>
                     )}
-                    <span className="text-[24px] block mb-2.5">{config.emoji}</span>
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${
+                      isSelected ? "bg-white/15" : iconConfig.bg
+                    }`}>
+                      <IconComp className={`w-5 h-5 ${isSelected ? "text-white" : iconConfig.color}`} />
+                    </div>
                     <p className={`font-semibold text-[14px] tracking-tight mb-1 ${
                       isSelected ? "text-white" : "text-foreground"
                     }`}>
@@ -121,7 +143,7 @@ export function IndustryStep() {
               disabled={!canContinue}
               className={`w-full py-4 rounded-2xl text-[15px] font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
                 canContinue
-                  ? "bg-foreground text-white hover:opacity-90 cursor-pointer shadow-lg shadow-foreground/10"
+                  ? "bg-foreground text-white hover:opacity-90 cursor-pointer shadow-lg"
                   : "bg-border-light text-text-tertiary cursor-not-allowed"
               }`}
             >
@@ -144,10 +166,16 @@ export function IndustryStep() {
             </button>
 
             <div className="text-center mb-10">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-surface rounded-full mb-4">
-                <span className="text-[16px]">{currentIndustry?.emoji}</span>
-                <span className="text-[12px] font-medium text-text-secondary">{currentIndustry?.label}</span>
-              </div>
+              {(() => {
+                const iconConfig = INDUSTRY_ICONS[currentIndustry?.id || ""] || INDUSTRY_ICONS["other"];
+                const IconComp = iconConfig.icon;
+                return (
+                  <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full mb-4 ${iconConfig.bg}`}>
+                    <IconComp className={`w-4 h-4 ${iconConfig.color}`} />
+                    <span className="text-[12px] font-semibold text-foreground">{currentIndustry?.label}</span>
+                  </div>
+                );
+              })()}
               <h2 className="text-[28px] font-bold text-foreground tracking-tight mb-2">
                 What best describes you?
               </h2>
@@ -167,10 +195,10 @@ export function IndustryStep() {
                     transition={{ delay: i * 0.04 }}
                     whileHover={{ y: -2 }}
                     whileTap={{ scale: 0.97 }}
-                    onClick={() => handleSelectPersona(persona.id)}
-                    className={`w-full text-left px-5 py-4.5 rounded-2xl transition-all duration-200 cursor-pointer flex items-center gap-4 ${
+                    onClick={() => setSelectedPersona(persona.id)}
+                    className={`w-full text-left px-5 py-4 rounded-2xl transition-all duration-200 cursor-pointer flex items-center gap-4 ${
                       isSelected
-                        ? "bg-foreground text-white shadow-lg shadow-foreground/10"
+                        ? "bg-foreground text-white shadow-lg"
                         : "bg-card-bg border border-border-light hover:border-foreground/20 hover:shadow-md"
                     }`}
                   >
@@ -205,7 +233,7 @@ export function IndustryStep() {
               disabled={!selectedPersona}
               className={`w-full py-4 rounded-2xl text-[15px] font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
                 selectedPersona
-                  ? "bg-foreground text-white hover:opacity-90 cursor-pointer shadow-lg shadow-foreground/10"
+                  ? "bg-foreground text-white hover:opacity-90 cursor-pointer shadow-lg"
                   : "bg-border-light text-text-tertiary cursor-not-allowed"
               }`}
             >
