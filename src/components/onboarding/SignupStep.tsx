@@ -12,20 +12,28 @@ export function SignupStep() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const isValid = email.trim() && password.length >= 6;
+  const passwordsMatch = password === confirmPassword;
+  const isValid = email.trim() && password.length >= 6 && passwordsMatch && agreedToTerms;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isValid) return;
+
+    if (!passwordsMatch) {
+      setError("Passwords don't match");
+      return;
+    }
+
     setError("");
     setLoading(true);
 
     try {
-      // 1. Create account via server API (auto-confirm, no email verification)
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -39,7 +47,6 @@ export function SignupStep() {
         return;
       }
 
-      // 2. Sign in immediately
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
@@ -51,7 +58,6 @@ export function SignupStep() {
         return;
       }
 
-      // 3. Create workspace + member
       const { data: workspace } = await supabase
         .from("workspaces")
         .insert({ name: businessContext.businessName || "My Workspace" })
@@ -73,7 +79,6 @@ export function SignupStep() {
         });
       }
 
-      // 4. Continue onboarding (now authenticated)
       nextStep();
     } catch (_err) {
       setError("Something went wrong. Please try again.");
@@ -105,8 +110,8 @@ export function SignupStep() {
           Create your account
         </h2>
         <p className="text-text-secondary text-[15px]">
-          Save your progress and finish setting up
-          {businessContext.businessName ? ` ${businessContext.businessName}` : ""}.
+          Save your progress and launch
+          {businessContext.businessName ? ` ${businessContext.businessName}` : " your workspace"}.
         </p>
       </div>
 
@@ -118,9 +123,7 @@ export function SignupStep() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-[13px] font-medium text-foreground mb-1.5">
-            Email
-          </label>
+          <label className="block text-[13px] font-medium text-foreground mb-1.5">Email</label>
           <input
             type="email"
             value={email}
@@ -132,9 +135,7 @@ export function SignupStep() {
         </div>
 
         <div>
-          <label className="block text-[13px] font-medium text-foreground mb-1.5">
-            Password
-          </label>
+          <label className="block text-[13px] font-medium text-foreground mb-1.5">Password</label>
           <div className="relative">
             <input
               type={showPassword ? "text" : "password"}
@@ -154,10 +155,57 @@ export function SignupStep() {
           </div>
         </div>
 
+        <div>
+          <label className="block text-[13px] font-medium text-foreground mb-1.5">Confirm password</label>
+          <input
+            type={showPassword ? "text" : "password"}
+            value={confirmPassword}
+            onChange={(e) => { setConfirmPassword(e.target.value); setError(""); }}
+            placeholder="Re-enter your password"
+            className={`${inputClass} ${confirmPassword && !passwordsMatch ? "border-red-300 focus:border-red-400 focus:ring-red-100" : ""}`}
+          />
+          {confirmPassword && !passwordsMatch && (
+            <p className="text-[12px] text-red-500 mt-1.5">Passwords don&apos;t match</p>
+          )}
+        </div>
+
+        {/* Terms & Conditions */}
+        <div className="pt-2">
+          <label className="flex items-start gap-3 cursor-pointer group">
+            <div className="pt-0.5">
+              <button
+                type="button"
+                onClick={() => setAgreedToTerms(!agreedToTerms)}
+                className={`w-5 h-5 rounded-md flex items-center justify-center transition-all flex-shrink-0 ${
+                  agreedToTerms
+                    ? "bg-foreground"
+                    : "border-2 border-border-light group-hover:border-foreground/30"
+                }`}
+              >
+                {agreedToTerms && (
+                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </button>
+            </div>
+            <span className="text-[13px] text-text-secondary leading-relaxed">
+              I agree to the{" "}
+              <a href="/terms" target="_blank" className="text-foreground font-medium underline underline-offset-2 hover:no-underline">
+                Terms of Service
+              </a>{" "}
+              and{" "}
+              <a href="/privacy" target="_blank" className="text-foreground font-medium underline underline-offset-2 hover:no-underline">
+                Privacy Policy
+              </a>
+            </span>
+          </label>
+        </div>
+
         <button
           type="submit"
           disabled={!isValid || loading}
-          className={`w-full py-4 rounded-2xl text-[15px] font-semibold transition-all duration-200 flex items-center justify-center gap-2 mt-6 ${
+          className={`w-full py-4 rounded-2xl text-[15px] font-semibold transition-all duration-200 flex items-center justify-center gap-2 mt-2 ${
             isValid && !loading
               ? "bg-foreground text-white hover:opacity-90 cursor-pointer shadow-lg"
               : "bg-border-light text-text-tertiary cursor-not-allowed"
@@ -179,9 +227,7 @@ export function SignupStep() {
 
       <p className="text-center text-[12px] text-text-tertiary mt-6">
         Already have an account?{" "}
-        <a href="/login" className="text-foreground font-medium hover:underline">
-          Log in
-        </a>
+        <a href="/login" className="text-foreground font-medium hover:underline">Log in</a>
       </p>
     </motion.div>
   );
