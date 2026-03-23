@@ -215,9 +215,9 @@ export function FeatureSelectionStep() {
   });
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex flex-col max-w-lg mx-auto">
-      {/* Top bar */}
-      <div className="pt-6 px-4">
+    <div className="min-h-[calc(100vh-4rem)] flex flex-col">
+      {/* Top bar — full width */}
+      <div className="pt-6 px-6 lg:px-20">
         <div className="flex items-center gap-4 mb-4">
           <button
             onClick={handleBack}

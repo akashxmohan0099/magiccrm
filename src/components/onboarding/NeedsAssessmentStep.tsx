@@ -4,13 +4,30 @@ import { useState, useCallback, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, ThumbsUp, ThumbsDown } from "lucide-react";
 import { useOnboardingStore } from "@/store/onboarding";
+import { FEATURE_CATEGORIES, NeedsAssessment } from "@/types/onboarding";
 import { getPersonaQuestions, getIndustryFallbackQuestions } from "@/lib/persona-questions";
+import { getAddonModules } from "@/lib/module-registry";
+import { useAddonsStore } from "@/store/addons";
+
+const MODULE_TO_NEED: Record<string, keyof NeedsAssessment> = {
+  "client-database": "manageCustomers",
+  "leads-pipeline": "receiveInquiries",
+  "communication": "communicateClients",
+  "bookings-calendar": "acceptBookings",
+  "quotes-invoicing": "sendInvoices",
+  "jobs-projects": "manageProjects",
+  "marketing": "runMarketing",
+};
+const NEED_TO_MODULE: Record<string, string> = Object.fromEntries(
+  Object.entries(MODULE_TO_NEED).map(([mod, need]) => [need, mod])
+);
 
 export function NeedsAssessmentStep() {
   const {
     selectedPersona,
     discoveryAnswers,
     setDiscoveryAnswer,
+    setFeatureSelections,
     nextStep,
     prevStep,
   } = useOnboardingStore();
@@ -19,47 +36,70 @@ export function NeedsAssessmentStep() {
   const setNeed = useOnboardingStore((s) => s.setNeed);
 
   const questions = useMemo(() => {
-    if (selectedPersona) {
-      return getPersonaQuestions(selectedPersona).questions;
-    }
+    if (selectedPersona) return getPersonaQuestions(selectedPersona).questions;
     const fallback = getIndustryFallbackQuestions(selectedIndustry);
     return fallback?.questions ?? getPersonaQuestions("hair-salon").questions;
   }, [selectedPersona, selectedIndustry]);
 
   const totalQuestions = questions.length;
-
-  // Start at question 0 immediately — no intro screen
   const [quizIndex, setQuizIndex] = useState(0);
   const [direction, setDirection] = useState(1);
+
+  // When all questions are done: enable ALL features for every module, then go to summary
+  const finishQuestions = useCallback(() => {
+    // Enable ALL sub-features for every FEATURE_CATEGORY (module gets everything)
+    for (const cat of FEATURE_CATEGORIES) {
+      const moduleId = NEED_TO_MODULE[cat.id];
+      const allOn = cat.features.map((f) => ({
+        id: f.id, label: f.label, description: f.description, selected: true,
+      }));
+      setFeatureSelections(cat.id, allOn);
+      if (moduleId) setFeatureSelections(moduleId, allOn);
+    }
+
+    // Enable add-ons activated by discovery answers
+    const answers = useOnboardingStore.getState().discoveryAnswers;
+    const addonModules = getAddonModules();
+    const addonIds = new Set(addonModules.map((m) => m.id));
+    const addonsStore = useAddonsStore.getState();
+    for (const q of questions) {
+      if (answers[q.id] === true) {
+        for (const modId of q.activatesModules) {
+          if (addonIds.has(modId)) {
+            const def = addonModules.find((m) => m.id === modId);
+            if (def && !addonsStore.isAddonEnabled(modId)) {
+              addonsStore.enableAddon(modId, def.name);
+            }
+          }
+        }
+      }
+    }
+
+    nextStep();
+  }, [questions, setFeatureSelections, nextStep]);
 
   const handleAnswer = useCallback(
     (questionId: string, value: boolean) => {
       setDiscoveryAnswer(questionId, value);
-
       const question = questions.find((q) => q.id === questionId);
-      if (question?.needsKey) {
-        setNeed(question.needsKey, value);
-      }
+      if (question?.needsKey) setNeed(question.needsKey, value);
 
       setDirection(1);
       setTimeout(() => {
         if (quizIndex < totalQuestions - 1) {
           setQuizIndex((prev) => prev + 1);
         } else {
-          nextStep();
+          finishQuestions();
         }
       }, 250);
     },
-    [quizIndex, totalQuestions, questions, setDiscoveryAnswer, setNeed, nextStep]
+    [quizIndex, totalQuestions, questions, setDiscoveryAnswer, setNeed, finishQuestions]
   );
 
   const handleBack = useCallback(() => {
     setDirection(-1);
-    if (quizIndex <= 0) {
-      prevStep();
-    } else {
-      setQuizIndex((prev) => prev - 1);
-    }
+    if (quizIndex <= 0) prevStep();
+    else setQuizIndex((prev) => prev - 1);
   }, [quizIndex, prevStep]);
 
   useEffect(() => {
@@ -83,15 +123,15 @@ export function NeedsAssessmentStep() {
   const progress = ((quizIndex + 1) / totalQuestions) * 100;
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex flex-col max-w-lg mx-auto">
-      {/* Top bar: back + progress */}
-      <div className="pt-6 px-4">
+    <div className="min-h-[calc(100vh-4rem)] flex flex-col">
+      {/* Progress bar — full width */}
+      <div className="pt-6 px-6 lg:px-20">
         <div className="flex items-center gap-4 mb-4">
           <button
             onClick={handleBack}
-            className="flex items-center gap-1.5 text-[13px] text-text-tertiary hover:text-foreground transition-colors cursor-pointer"
+            className="flex items-center text-text-tertiary hover:text-foreground transition-colors cursor-pointer"
           >
-            <ArrowLeft className="w-3.5 h-3.5" />
+            <ArrowLeft className="w-4 h-4" />
           </button>
           <div className="flex-1 h-1.5 bg-border-light rounded-full overflow-hidden">
             <motion.div
@@ -119,14 +159,14 @@ export function NeedsAssessmentStep() {
             transition={{ duration: 0.2 }}
             className="text-center w-full"
           >
-            <h2 className="text-[28px] font-bold text-foreground tracking-tight mb-4 leading-[1.2] max-w-md mx-auto">
+            <h2 className="text-[28px] font-bold text-foreground tracking-tight mb-4 leading-[1.2] max-w-xl mx-auto">
               {currentQ.text}
             </h2>
-            <p className="text-[15px] text-text-tertiary mb-16 max-w-sm mx-auto leading-relaxed">
+            <p className="text-[15px] text-text-tertiary mb-16 max-w-md mx-auto leading-relaxed">
               {currentQ.subtitle}
             </p>
 
-            <div className="flex gap-4 max-w-sm mx-auto">
+            <div className="flex gap-4 max-w-md mx-auto">
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.96 }}
@@ -161,21 +201,15 @@ export function NeedsAssessmentStep() {
       {/* Keyboard hints */}
       <div className="pb-8 flex items-center justify-center gap-4 text-[12px] text-text-tertiary select-none">
         <span className="flex items-center gap-1.5">
-          <kbd className="inline-flex items-center justify-center min-w-[24px] h-[24px] px-1.5 rounded-lg bg-card-bg border border-border-light text-[11px] font-mono text-text-secondary">
-            Y
-          </kbd>
+          <kbd className="inline-flex items-center justify-center min-w-[24px] h-[24px] px-1.5 rounded-lg bg-card-bg border border-border-light text-[11px] font-mono text-text-secondary">Y</kbd>
           yes
         </span>
         <span className="flex items-center gap-1.5">
-          <kbd className="inline-flex items-center justify-center min-w-[24px] h-[24px] px-1.5 rounded-lg bg-card-bg border border-border-light text-[11px] font-mono text-text-secondary">
-            N
-          </kbd>
+          <kbd className="inline-flex items-center justify-center min-w-[24px] h-[24px] px-1.5 rounded-lg bg-card-bg border border-border-light text-[11px] font-mono text-text-secondary">N</kbd>
           no
         </span>
         <span className="flex items-center gap-1.5">
-          <kbd className="inline-flex items-center justify-center min-w-[24px] h-[24px] px-1.5 rounded-lg bg-card-bg border border-border-light text-[11px] font-mono text-text-secondary">
-            &larr;
-          </kbd>
+          <kbd className="inline-flex items-center justify-center min-w-[24px] h-[24px] px-1.5 rounded-lg bg-card-bg border border-border-light text-[11px] font-mono text-text-secondary">&larr;</kbd>
           back
         </span>
       </div>

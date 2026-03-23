@@ -9,7 +9,6 @@ import { BusinessContextStep } from "@/components/onboarding/BusinessContextStep
 import { SetupMethodStep } from "@/components/onboarding/SetupMethodStep";
 import { SelfServeStep } from "@/components/onboarding/SelfServeStep";
 import { NeedsAssessmentStep } from "@/components/onboarding/NeedsAssessmentStep";
-import { FeatureSelectionStep } from "@/components/onboarding/FeatureSelectionStep";
 import { SummaryStep } from "@/components/onboarding/SummaryStep";
 import { BuildingScreen } from "@/components/onboarding/BuildingScreen";
 
@@ -38,15 +37,16 @@ function OnboardingContent() {
   // 2 = Business Context
   // 3 = SetupMethodStep (fork: guided vs self-serve)
   // 4 = self-serve ? SelfServeStep : NeedsAssessmentStep (yes/no module questions)
-  // 5 = self-serve ? SummaryStep : FeatureSelectionStep (toggle sub-features)
-  // 6 = SummaryStep (guided only)
+  // 5 = SummaryStep (both paths)
+  //
+  // When a module is enabled, ALL its sub-features are ON by default.
+  // Users can toggle individual features off later from dashboard settings.
   const renderStep = () => {
     if (step === 0) return <WelcomeStep />;
     if (step === 1) return <IndustryStep />;
     if (step === 2) return <BusinessContextStep />;
     if (step === 3) return <SetupMethodStep />;
     if (step === 4) return setupMethod === "self-serve" ? <SelfServeStep /> : <NeedsAssessmentStep />;
-    if (step === 5) return setupMethod === "self-serve" ? <SummaryStep /> : <FeatureSelectionStep />;
     return <SummaryStep />;
   };
 
