@@ -73,10 +73,10 @@ function TestContent() {
   return (
     <div className="min-h-screen bg-background">
       {/* Test mode banner */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-amber-400 text-amber-900 text-center py-1.5 text-[12px] font-semibold">
-        Onboarding Test Mode — no account created, resets each visit
+      <div className="bg-amber-400 text-amber-900 text-center py-1.5 text-[12px] font-semibold">
+        Test Mode — no account created, resets each visit
       </div>
-      <div className="pt-8">
+      <div>
         <AnimatePresence mode="wait">
           <div key={step}>
             {renderStep()}
