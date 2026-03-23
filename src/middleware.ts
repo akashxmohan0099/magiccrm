@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 /**
  * Public route prefixes that don't require authentication.
  */
-const PUBLIC_ROUTES = ["/", "/login", "/signup", "/onboarding", "/proposal", "/api", "/auth"];
+const PUBLIC_ROUTES = ["/", "/login", "/signup", "/proposal", "/api", "/auth"];
 
 function isPublicRoute(pathname: string) {
   if (pathname === "/") return true;

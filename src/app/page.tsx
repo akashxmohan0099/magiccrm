@@ -142,7 +142,7 @@ export default function LandingPage() {
           <Link href="/login" className="text-[13px] text-text-secondary hover:text-foreground transition-colors font-medium">
             Log in
           </Link>
-          <Link href="/onboarding">
+          <Link href="/signup">
             <Button size="sm">Start free</Button>
           </Link>
         </div>
@@ -189,7 +189,7 @@ export default function LandingPage() {
             transition={{ delay: 0.3, duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
             className="flex flex-col items-center gap-4"
           >
-            <Link href="/onboarding">
+            <Link href="/signup">
               <Button size="lg" className="px-10">
                 Build my workspace <ArrowRight className="w-5 h-5" />
               </Button>
@@ -976,7 +976,7 @@ export default function LandingPage() {
               whileInView="visible"
               viewport={viewportConfig}
             >
-              <Link href="/onboarding">
+              <Link href="/signup">
                 <Button size="lg" className="w-full cta-glow">
                   Start building <ArrowRight className="w-5 h-5" />
                 </Button>
@@ -1023,7 +1023,7 @@ export default function LandingPage() {
             whileInView="visible"
             viewport={viewportConfig}
           >
-            <Link href="/onboarding">
+            <Link href="/signup">
               <Button size="lg" className="px-10 bg-primary text-foreground hover:bg-primary-hover shadow-none hover:shadow-none cta-glow">
                 Build my workspace <ArrowRight className="w-5 h-5" />
               </Button>
