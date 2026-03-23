@@ -1,26 +1,9 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  ArrowLeft, Check,
-  Sparkles, Wrench, Briefcase, Heart, Palette,
-  UtensilsCrossed, GraduationCap, ShoppingBag, Rocket,
-} from "lucide-react";
-import { Button } from "@/components/ui/Button";
+import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 import { useOnboardingStore } from "@/store/onboarding";
 import { INDUSTRY_CONFIGS } from "@/types/onboarding";
-
-const INDUSTRY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  "beauty-wellness": Sparkles,
-  "trades-construction": Wrench,
-  "professional-services": Briefcase,
-  "health-fitness": Heart,
-  "creative-services": Palette,
-  "hospitality-events": UtensilsCrossed,
-  "education-coaching": GraduationCap,
-  "retail-ecommerce": ShoppingBag,
-  "other": Rocket,
-};
 
 export function IndustryStep() {
   const {
@@ -82,7 +65,7 @@ export function IndustryStep() {
             </button>
 
             <div className="text-center mb-10">
-              <h2 className="text-[26px] font-bold text-foreground tracking-tight mb-2">
+              <h2 className="text-[28px] font-bold text-foreground tracking-tight mb-2">
                 What kind of business do you run?
               </h2>
               <p className="text-text-secondary text-[15px]">
@@ -90,57 +73,60 @@ export function IndustryStep() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-10">
               {INDUSTRY_CONFIGS.map((config, i) => {
-                const IconComp = INDUSTRY_ICONS[config.id];
                 const isSelected = selectedIndustry === config.id;
                 return (
                   <motion.button
                     key={config.id}
-                    initial={{ opacity: 0, y: 8 }}
+                    initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.05 + i * 0.03 }}
+                    whileHover={{ y: -2 }}
+                    whileTap={{ scale: 0.97 }}
                     onClick={() => handleSelectIndustry(config.id)}
-                    className={`relative text-left p-5 rounded-3xl transition-all duration-200 cursor-pointer w-full ${
+                    className={`relative text-left p-5 rounded-2xl transition-all duration-200 cursor-pointer w-full group ${
                       isSelected
-                        ? "bg-primary-muted border-2 border-primary"
-                        : "bg-card-bg border border-border-light hover:border-foreground/15"
+                        ? "bg-foreground text-white shadow-lg shadow-foreground/10"
+                        : "bg-card-bg border border-border-light hover:border-foreground/20 hover:shadow-md"
                     }`}
                   >
-                    <div className="flex items-start gap-3">
-                      <div
-                        className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                          isSelected ? "bg-primary" : "bg-surface"
-                        }`}
+                    {isSelected && (
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="absolute top-3 right-3 w-5 h-5 bg-primary rounded-full flex items-center justify-center"
                       >
-                        {IconComp && (
-                          <IconComp
-                            className={`w-4 h-4 ${isSelected ? "text-foreground" : "text-text-secondary"}`}
-                          />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-[14px] tracking-tight mb-0.5 text-foreground">
-                          {config.label}
-                        </p>
-                        <p className="text-[11px] leading-snug text-text-tertiary">
-                          {config.description}
-                        </p>
-                      </div>
-                    </div>
+                        <Check className="w-3 h-3 text-foreground" />
+                      </motion.div>
+                    )}
+                    <span className="text-[24px] block mb-2.5">{config.emoji}</span>
+                    <p className={`font-semibold text-[14px] tracking-tight mb-1 ${
+                      isSelected ? "text-white" : "text-foreground"
+                    }`}>
+                      {config.label}
+                    </p>
+                    <p className={`text-[12px] leading-relaxed ${
+                      isSelected ? "text-white/60" : "text-text-tertiary"
+                    }`}>
+                      {config.description}
+                    </p>
                   </motion.button>
                 );
               })}
             </div>
 
-            <Button
-              size="lg"
+            <button
               onClick={handleContinue}
               disabled={!canContinue}
-              className="w-full"
+              className={`w-full py-4 rounded-2xl text-[15px] font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
+                canContinue
+                  ? "bg-foreground text-white hover:opacity-90 cursor-pointer shadow-lg shadow-foreground/10"
+                  : "bg-border-light text-text-tertiary cursor-not-allowed"
+              }`}
             >
-              Continue
-            </Button>
+              Continue <ArrowRight className="w-4 h-4" />
+            </button>
           </motion.div>
         ) : (
           <motion.div
@@ -158,35 +144,45 @@ export function IndustryStep() {
             </button>
 
             <div className="text-center mb-10">
-              <h2 className="text-[26px] font-bold text-foreground tracking-tight mb-2">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-surface rounded-full mb-4">
+                <span className="text-[16px]">{currentIndustry?.emoji}</span>
+                <span className="text-[12px] font-medium text-text-secondary">{currentIndustry?.label}</span>
+              </div>
+              <h2 className="text-[28px] font-bold text-foreground tracking-tight mb-2">
                 What best describes you?
               </h2>
               <p className="text-text-secondary text-[15px]">
-                This helps us set the right defaults.
+                This helps us set the right defaults and vocabulary.
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-10">
               {currentIndustry?.personas?.map((persona, i) => {
                 const isSelected = selectedPersona === persona.id;
                 return (
                   <motion.button
                     key={persona.id}
-                    initial={{ opacity: 0, y: 8 }}
+                    initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.03 }}
+                    transition={{ delay: i * 0.04 }}
+                    whileHover={{ y: -2 }}
+                    whileTap={{ scale: 0.97 }}
                     onClick={() => handleSelectPersona(persona.id)}
-                    className={`w-full text-left px-5 py-4 rounded-2xl transition-all duration-200 cursor-pointer flex items-center gap-3.5 ${
+                    className={`w-full text-left px-5 py-4.5 rounded-2xl transition-all duration-200 cursor-pointer flex items-center gap-4 ${
                       isSelected
-                        ? "bg-primary-muted border-2 border-primary"
-                        : "bg-card-bg border border-border-light hover:border-foreground/15"
+                        ? "bg-foreground text-white shadow-lg shadow-foreground/10"
+                        : "bg-card-bg border border-border-light hover:border-foreground/20 hover:shadow-md"
                     }`}
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-[14px] tracking-tight text-foreground">
+                      <p className={`font-semibold text-[14px] tracking-tight ${
+                        isSelected ? "text-white" : "text-foreground"
+                      }`}>
                         {persona.label}
                       </p>
-                      <p className="text-[12px] mt-0.5 text-text-tertiary">
+                      <p className={`text-[12px] mt-0.5 ${
+                        isSelected ? "text-white/60" : "text-text-tertiary"
+                      }`}>
                         {persona.description}
                       </p>
                     </div>
@@ -204,14 +200,17 @@ export function IndustryStep() {
               })}
             </div>
 
-            <Button
-              size="lg"
+            <button
               onClick={handleContinue}
               disabled={!selectedPersona}
-              className="w-full"
+              className={`w-full py-4 rounded-2xl text-[15px] font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
+                selectedPersona
+                  ? "bg-foreground text-white hover:opacity-90 cursor-pointer shadow-lg shadow-foreground/10"
+                  : "bg-border-light text-text-tertiary cursor-not-allowed"
+              }`}
             >
-              Continue
-            </Button>
+              Continue <ArrowRight className="w-4 h-4" />
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
