@@ -745,8 +745,6 @@ export const FEATURE_CATEGORIES: FeatureCategory[] = [
     description: "Get the word out and bring them back.",
     features: [
       { id: "audience-segmentation", label: "Audience Segmentation", description: "Target specific groups", selected: false },
-      { id: "social-scheduling", label: "Social Media Scheduling", description: "Schedule and publish posts", selected: false },
-      { id: "review-collection", label: "Review Collection", description: "Ask clients for reviews", selected: false },
       { id: "coupon-codes", label: "Coupon & Discount Codes", description: "Promotional offers", selected: false },
       { id: "email-sequences", label: "Email Sequences", description: "Multi-step drip campaigns", selected: false },
       { id: "campaign-analytics", label: "Campaign Performance", description: "Track opens, clicks, conversions", selected: false },

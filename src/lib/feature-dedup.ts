@@ -206,7 +206,6 @@ const RELATED_FEATURES_MAP: Record<string, RelatedFeature[]> = {
   ],
   "marketing": [
     { featureId: "client-tags", featureLabel: "Tags & Categories", description: "Segment clients for targeted campaigns", livesIn: "client-database", livesInLabel: "Clients", canMirror: true },
-    { featureId: "review-collection", featureLabel: "Review Collection", description: "Request and manage client reviews", livesIn: "marketing", livesInLabel: "Marketing", canMirror: false },
   ],
   "documents": [
     { featureId: "file-attachments", featureLabel: "Job File Attachments", description: "Files attached to jobs appear in Documents", livesIn: "jobs-projects", livesInLabel: "Projects", canMirror: true },

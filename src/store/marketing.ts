@@ -9,7 +9,6 @@ import {
   fetchReviewRequests, dbCreateReviewRequest, dbUpdateReviewRequest, dbDeleteReviewRequest, dbUpsertReviewRequests, mapReviewRequestFromDB,
   fetchCoupons, dbCreateCoupon, dbUpdateCoupon, dbDeleteCoupon, dbUpsertCoupons, mapCouponFromDB,
   fetchSequences, dbCreateSequence, dbUpdateSequence, dbDeleteSequence, dbUpsertSequences, mapSequenceFromDB,
-  fetchSocialPosts, dbCreateSocialPost, dbDeleteSocialPost, dbUpsertSocialPosts, mapSocialPostFromDB,
 } from "@/lib/db/marketing";
 
 export interface EmailSequence {
@@ -33,7 +32,6 @@ interface MarketingStore {
   reviewRequests: ReviewRequest[];
   coupons: Coupon[];
   sequences: EmailSequence[];
-  socialPosts: ScheduledPost[];
 
   addCampaign: (data: Omit<Campaign, "id" | "createdAt">, workspaceId?: string) => Campaign;
   updateCampaign: (id: string, data: Partial<Campaign>, workspaceId?: string) => void;
@@ -51,9 +49,6 @@ interface MarketingStore {
   toggleSequenceStatus: (id: string, workspaceId?: string) => void;
   deleteSequence: (id: string, workspaceId?: string) => void;
 
-  addSocialPost: (data: Omit<ScheduledPost, "id">, workspaceId?: string) => void;
-  deleteSocialPost: (id: string, workspaceId?: string) => void;
-
   // Supabase sync
   syncToSupabase: (workspaceId: string) => Promise<void>;
   loadFromSupabase: (workspaceId: string) => Promise<void>;
@@ -66,7 +61,6 @@ export const useMarketingStore = create<MarketingStore>()(
       reviewRequests: [],
       coupons: [],
       sequences: [],
-      socialPosts: [],
 
       addCampaign: (data, workspaceId?) => {
         const campaign: Campaign = { ...data, id: generateId(), createdAt: new Date().toISOString() };
@@ -216,42 +210,18 @@ export const useMarketingStore = create<MarketingStore>()(
         }
       },
 
-      addSocialPost: (data, workspaceId?) => {
-        const post: ScheduledPost = { ...data, id: generateId() };
-        set((s) => ({ socialPosts: [...s.socialPosts, post] }));
-        logActivity("create", "marketing", "Scheduled social post");
-        toast("Post scheduled");
-
-        if (workspaceId) {
-          dbCreateSocialPost(workspaceId, post).catch((err) =>
-            console.error("[marketing] dbCreateSocialPost failed:", err)
-          );
-        }
-      },
-      deleteSocialPost: (id, workspaceId?) => {
-        set((s) => ({ socialPosts: s.socialPosts.filter((p) => p.id !== id) }));
-        toast("Post deleted", "info");
-
-        if (workspaceId) {
-          dbDeleteSocialPost(workspaceId, id).catch((err) =>
-            console.error("[marketing] dbDeleteSocialPost failed:", err)
-          );
-        }
-      },
-
       // ---------------------------------------------------------------
       // Supabase sync
       // ---------------------------------------------------------------
 
       syncToSupabase: async (workspaceId: string) => {
         try {
-          const { campaigns, reviewRequests, coupons, sequences, socialPosts } = get();
+          const { campaigns, reviewRequests, coupons, sequences } = get();
           await Promise.all([
             dbUpsertCampaigns(workspaceId, campaigns),
             dbUpsertReviewRequests(workspaceId, reviewRequests),
             dbUpsertCoupons(workspaceId, coupons),
             dbUpsertSequences(workspaceId, sequences),
-            dbUpsertSocialPosts(workspaceId, socialPosts),
           ]);
         } catch (err) {
           console.error("[marketing] syncToSupabase failed:", err);
@@ -260,12 +230,11 @@ export const useMarketingStore = create<MarketingStore>()(
 
       loadFromSupabase: async (workspaceId: string) => {
         try {
-          const [campRows, rrRows, couponRows, seqRows, postRows] = await Promise.all([
+          const [campRows, rrRows, couponRows, seqRows] = await Promise.all([
             fetchCampaigns(workspaceId),
             fetchReviewRequests(workspaceId),
             fetchCoupons(workspaceId),
             fetchSequences(workspaceId),
-            fetchSocialPosts(workspaceId),
           ]);
 
           set({
@@ -273,7 +242,6 @@ export const useMarketingStore = create<MarketingStore>()(
             reviewRequests: (rrRows ?? []).map((r: Record<string, unknown>) => mapReviewRequestFromDB(r)),
             coupons: (couponRows ?? []).map((r: Record<string, unknown>) => mapCouponFromDB(r)),
             sequences: (seqRows ?? []).map((r: Record<string, unknown>) => mapSequenceFromDB(r)),
-            socialPosts: (postRows ?? []).map((r: Record<string, unknown>) => mapSocialPostFromDB(r)),
           });
         } catch (err) {
           console.error("[marketing] loadFromSupabase failed:", err);

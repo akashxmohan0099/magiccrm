@@ -58,10 +58,7 @@ function universalQuestions(prefix: string, subs: UniversalSubtitles): Discovery
       subtitle: subs.marketing,
       needsKey: "runMarketing",
       activatesModules: ["marketing"],
-      defaultOnFeatures: [
-        { moduleId: "marketing", featureId: "social-scheduling" },
-        { moduleId: "marketing", featureId: "review-collection" },
-      ],
+      defaultOnFeatures: [],
     },
     {
       id: `${prefix}-team`,
@@ -893,10 +890,7 @@ const FALLBACK_QUESTIONS: DiscoveryQuestion[] = [
     subtitle: "Campaigns, social media, reviews, and referrals.",
     needsKey: "runMarketing",
     activatesModules: ["marketing"],
-    defaultOnFeatures: [
-      { moduleId: "marketing", featureId: "social-scheduling" },
-      { moduleId: "marketing", featureId: "review-collection" },
-    ],
+    defaultOnFeatures: [],
   },
   {
     id: "fallback-team",

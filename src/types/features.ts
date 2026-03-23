@@ -231,8 +231,6 @@ export const FEATURE_BLOCKS: FeatureBlock[] = [
     ],
     subFeatures: [
       { id: "audience-segmentation", label: "Audience Segmentation", description: "Target campaigns to specific client groups", defaultOn: false },
-      { id: "social-scheduling", label: "Social Media Scheduling", description: "Schedule posts to Instagram, Facebook, etc.", defaultOn: false },
-      { id: "review-collection", label: "Review Collection", description: "Request and manage client reviews", defaultOn: false },
       { id: "coupon-codes", label: "Coupon & Discount Codes", description: "Create promotional offers for clients", defaultOn: false },
       { id: "email-sequences", label: "Email Sequences", description: "Multi-step drip campaigns triggered by events", defaultOn: false },
       { id: "unsubscribe-management", label: "Unsubscribe Management", description: "Handle opt-outs and stay compliant automatically", defaultOn: true },
