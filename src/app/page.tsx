@@ -697,6 +697,14 @@ export default function LandingPage() {
                     </div>
                   </div>
                 ))}
+                <div className="flex items-center gap-4 mt-6 pt-4 border-t border-border-light">
+                  <span className="text-[11px] text-text-tertiary">Powered by</span>
+                  <div className="flex items-center gap-4">
+                    <img src="/logos/claude.png" alt="Claude" className="h-4 opacity-60 hover:opacity-100 transition-opacity" />
+                    <img src="/logos/openai.png" alt="OpenAI" className="h-4 opacity-60 hover:opacity-100 transition-opacity" />
+                    <img src="/logos/kimi.svg" alt="Kimi" className="h-4 opacity-60 hover:opacity-100 transition-opacity rounded" />
+                  </div>
+                </div>
               </div>
             </motion.div>
 
