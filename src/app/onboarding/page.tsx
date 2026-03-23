@@ -8,9 +8,7 @@ import { WelcomeStep } from "@/components/onboarding/WelcomeStep";
 import { IndustryStep } from "@/components/onboarding/IndustryStep";
 import { BusinessContextStep } from "@/components/onboarding/BusinessContextStep";
 import { SignupStep } from "@/components/onboarding/SignupStep";
-import { SetupMethodStep } from "@/components/onboarding/SetupMethodStep";
-import { SelfServeStep } from "@/components/onboarding/SelfServeStep";
-import { NeedsAssessmentStep } from "@/components/onboarding/NeedsAssessmentStep";
+import { BubblesStep } from "@/components/onboarding/BubblesStep";
 import { SummaryStep } from "@/components/onboarding/SummaryStep";
 import { BuildingScreen } from "@/components/onboarding/BuildingScreen";
 
@@ -26,7 +24,6 @@ export default function OnboardingPage() {
 
 function OnboardingContent() {
   const step = useOnboardingStore((s) => s.step);
-  const setupMethod = useOnboardingStore((s) => s.setupMethod);
   const isBuilding = useOnboardingStore((s) => s.isBuilding);
   const { user, loading } = useAuth();
 
@@ -38,38 +35,33 @@ function OnboardingContent() {
   // 0 = Welcome (public)
   // 1 = Industry/Persona (public)
   // 2 = Business Context (public)
-  // 3 = Signup (if not authenticated — creates account, then continues)
-  // 4 = Setup Method (fork: guided vs self-serve)
-  // 5 = Discovery questions OR SelfServe module picker
-  // 6 = Summary → Launch
+  // 3 = Signup (if not authenticated)
+  // 4 = Bubbles — tap what you do day-to-day
+  // 5 = Summary → Launch
   const renderStep = () => {
     if (step === 0) return <WelcomeStep />;
     if (step === 1) return <IndustryStep />;
     if (step === 2) return <BusinessContextStep />;
 
-    // Step 3: signup gate — skip if already authenticated
+    // Step 3: signup gate
     if (step === 3) {
       if (loading) return <div className="min-h-screen bg-background" />;
       if (!user) return <SignupStep />;
-      // Already logged in — auto-advance
       useOnboardingStore.getState().nextStep();
       return null;
     }
 
-    if (step === 4) return <SetupMethodStep />;
-    if (step === 5) return setupMethod === "self-serve" ? <SelfServeStep /> : <NeedsAssessmentStep />;
+    if (step === 4) return <BubblesStep />;
     return <SummaryStep />;
   };
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-3xl mx-auto px-6 py-8">
-        <AnimatePresence mode="wait">
-          <div key={step}>
-            {renderStep()}
-          </div>
-        </AnimatePresence>
-      </div>
+      <AnimatePresence mode="wait">
+        <div key={step}>
+          {renderStep()}
+        </div>
+      </AnimatePresence>
     </div>
   );
 }
