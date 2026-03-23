@@ -20,14 +20,16 @@ interface Chip {
 }
 
 const CHIPS: Chip[] = [
-  { id: "appointments", label: "I book appointments", icon: "📅", activates: ["bookings-calendar"], needsKeys: ["acceptBookings"], followUp: "booking-style" },
-  { id: "projects", label: "I run projects or jobs", icon: "📋", activates: ["jobs-projects"], needsKeys: ["manageProjects"], followUp: "project-style" },
-  { id: "quotes", label: "I send quotes & invoices", icon: "💰", activates: ["quotes-invoicing"], needsKeys: ["sendInvoices"], followUp: "billing-style" },
-  { id: "marketing", label: "I market my business", icon: "📣", activates: ["marketing"], needsKeys: ["runMarketing"], followUp: "marketing-channels" },
-  { id: "team", label: "I have a team", icon: "👥", activates: ["team"], needsKeys: [], followUp: "team-size" },
-  { id: "onsite", label: "I work on-site or travel", icon: "🚗", activates: ["jobs-projects", "bookings-calendar"], needsKeys: ["manageProjects", "acceptBookings"] },
-  { id: "products", label: "I sell products or services", icon: "🏷️", activates: ["products"], needsKeys: [] },
-  { id: "contracts", label: "I use contracts", icon: "📝", activates: ["documents"], needsKeys: [] },
+  { id: "clients-book", label: "Clients book appointments with me", icon: "", activates: ["bookings-calendar"], needsKeys: ["acceptBookings"], followUp: "booking-style" },
+  { id: "visit-clients", label: "I visit clients at their location", icon: "", activates: ["bookings-calendar", "jobs-projects"], needsKeys: ["acceptBookings", "manageProjects"] },
+  { id: "deposits", label: "I take deposits or upfront payments", icon: "", activates: ["quotes-invoicing", "bookings-calendar"], needsKeys: ["sendInvoices"] },
+  { id: "proposals", label: "I send proposals or quotes before starting", icon: "", activates: ["quotes-invoicing"], needsKeys: ["sendInvoices"] },
+  { id: "track-time", label: "I bill by the hour or track time", icon: "", activates: ["jobs-projects"], needsKeys: ["manageProjects"] },
+  { id: "recurring", label: "I have recurring or repeat clients", icon: "", activates: ["bookings-calendar", "automations"], needsKeys: ["acceptBookings"] },
+  { id: "team", label: "I have employees or contractors", icon: "", activates: ["team"], needsKeys: [], followUp: "team-size" },
+  { id: "social-clients", label: "Clients find me through social media", icon: "", activates: ["marketing"], needsKeys: ["runMarketing"], followUp: "marketing-channels" },
+  { id: "reviews-matter", label: "Online reviews are important for me", icon: "", activates: ["marketing"], needsKeys: ["runMarketing"] },
+  { id: "contracts", label: "I use contracts or terms of service", icon: "", activates: ["documents"], needsKeys: [] },
 ];
 
 // ── Screen 2: Conditional follow-ups ──────────────────────────────
