@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { ArrowRight, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { LocationAutocomplete } from "@/components/ui/LocationAutocomplete";
 import { useOnboardingStore } from "@/store/onboarding";
 
 export function BusinessContextStep() {
@@ -84,11 +85,10 @@ export function BusinessContextStep() {
           <label className="block text-[13px] font-medium text-foreground mb-1.5">
             Where are you based?
           </label>
-          <input
-            type="text"
+          <LocationAutocomplete
             value={businessContext.location}
-            onChange={(e) => setBusinessContext({ location: e.target.value })}
-            placeholder="City or region"
+            onChange={(val) => setBusinessContext({ location: val })}
+            placeholder="Start typing your address..."
             className={inputClass}
           />
         </div>
