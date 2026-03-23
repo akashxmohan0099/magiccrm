@@ -1,304 +1,287 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ArrowLeft, Check } from "lucide-react";
 import { useOnboardingStore } from "@/store/onboarding";
 import { FEATURE_CATEGORIES, NeedsAssessment } from "@/types/onboarding";
 import { getAddonModules } from "@/lib/module-registry";
 import { useAddonsStore } from "@/store/addons";
 
-interface BubbleData {
+// ── Screen 1: High-signal activity chips ──────────────────────────
+interface Chip {
   id: string;
   label: string;
+  icon: string;
   activates: string[];
   needsKeys: (keyof NeedsAssessment)[];
+  // Which follow-up questions to show if selected
+  followUp?: string;
 }
 
-const BUBBLES: BubbleData[] = [
-  { id: "appointments", label: "I take\nappointments", activates: ["bookings-calendar"], needsKeys: ["acceptBookings"] },
-  { id: "online-booking", label: "Clients book\nonline", activates: ["bookings-calendar"], needsKeys: ["acceptBookings"] },
-  { id: "home-visits", label: "I do\nhome visits", activates: ["bookings-calendar", "jobs-projects"], needsKeys: ["acceptBookings", "manageProjects"] },
-  { id: "projects", label: "I run\nprojects", activates: ["jobs-projects"], needsKeys: ["manageProjects"] },
-  { id: "deadlines", label: "I work to\ndeadlines", activates: ["jobs-projects"], needsKeys: ["manageProjects"] },
-  { id: "site-work", label: "I work\non-site", activates: ["jobs-projects"], needsKeys: ["manageProjects"] },
-  { id: "quotes", label: "I send\nquotes", activates: ["quotes-invoicing"], needsKeys: ["sendInvoices"] },
-  { id: "invoices", label: "I send\ninvoices", activates: ["quotes-invoicing"], needsKeys: ["sendInvoices"] },
-  { id: "deposits", label: "I take\ndeposits", activates: ["quotes-invoicing", "bookings-calendar"], needsKeys: ["sendInvoices"] },
-  { id: "proposals", label: "I send\nproposals", activates: ["quotes-invoicing"], needsKeys: ["sendInvoices"] },
-  { id: "social", label: "I market on\nsocial media", activates: ["marketing"], needsKeys: ["runMarketing"] },
-  { id: "reviews", label: "I ask for\nreviews", activates: ["marketing"], needsKeys: ["runMarketing"] },
-  { id: "referrals", label: "I get\nreferrals", activates: ["marketing"], needsKeys: ["runMarketing"] },
-  { id: "email-marketing", label: "I send email\ncampaigns", activates: ["marketing"], needsKeys: ["runMarketing"] },
-  { id: "team", label: "I have\nstaff", activates: ["team"], needsKeys: [] },
-  { id: "rosters", label: "I manage\nrosters", activates: ["team"], needsKeys: [] },
-  { id: "services", label: "I sell\nservices", activates: ["products"], needsKeys: [] },
-  { id: "products", label: "I sell\nproducts", activates: ["products"], needsKeys: [] },
-  { id: "reminders", label: "I send\nreminders", activates: ["automations", "bookings-calendar"], needsKeys: ["acceptBookings"] },
-  { id: "follow-ups", label: "I do\nfollow-ups", activates: ["automations", "communication"], needsKeys: ["communicateClients"] },
-  { id: "contracts", label: "I use\ncontracts", activates: ["documents"], needsKeys: [] },
-  { id: "reports", label: "I need\nreports", activates: ["reporting"], needsKeys: [] },
+const CHIPS: Chip[] = [
+  { id: "appointments", label: "I book appointments", icon: "📅", activates: ["bookings-calendar"], needsKeys: ["acceptBookings"], followUp: "booking-style" },
+  { id: "projects", label: "I run projects or jobs", icon: "📋", activates: ["jobs-projects"], needsKeys: ["manageProjects"] },
+  { id: "quotes", label: "I send quotes & invoices", icon: "💰", activates: ["quotes-invoicing"], needsKeys: ["sendInvoices"] },
+  { id: "marketing", label: "I market my business", icon: "📣", activates: ["marketing"], needsKeys: ["runMarketing"] },
+  { id: "team", label: "I have a team", icon: "👥", activates: ["team"], needsKeys: [], followUp: "team-size" },
+  { id: "onsite", label: "I work on-site or travel", icon: "🚗", activates: ["jobs-projects", "bookings-calendar"], needsKeys: ["manageProjects", "acceptBookings"] },
+  { id: "products", label: "I sell products or services", icon: "🏷️", activates: ["products"], needsKeys: [] },
+  { id: "contracts", label: "I use contracts", icon: "📝", activates: ["documents"], needsKeys: [] },
 ];
 
-const R = 62;
+// ── Screen 2: Conditional follow-ups ──────────────────────────────
+interface FollowUp {
+  id: string;
+  question: string;
+  options: { label: string; value: string }[];
+}
 
-interface Body { x: number; y: number; vx: number; vy: number }
+const FOLLOW_UPS: Record<string, FollowUp> = {
+  "booking-style": {
+    id: "booking-style",
+    question: "How do clients book with you?",
+    options: [
+      { label: "They book online", value: "online" },
+      { label: "I manage it manually", value: "manual" },
+      { label: "Both", value: "both" },
+    ],
+  },
+  "team-size": {
+    id: "team-size",
+    question: "How big is your team?",
+    options: [
+      { label: "2-5 people", value: "2-5" },
+      { label: "6-15 people", value: "6-15" },
+      { label: "16+ people", value: "16+" },
+    ],
+  },
+};
 
 export function BubblesStep() {
-  const { nextStep, prevStep } = useOnboardingStore();
+  const { nextStep, prevStep, setTeamSize } = useOnboardingStore();
   const setNeed = useOnboardingStore((s) => s.setNeed);
   const setFeatureSelections = useOnboardingStore((s) => s.setFeatureSelections);
 
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [hovered, setHovered] = useState<string | null>(null);
-  const bodiesRef = useRef<Body[]>([]);
-  const rafRef = useRef(0);
-  const [pos, setPos] = useState<{ x: number; y: number }[]>([]);
-  const [ready, setReady] = useState(false);
+  const [selectedChips, setSelectedChips] = useState<Set<string>>(new Set());
+  const [screen, setScreen] = useState<"chips" | "followups">("chips");
+  const [followUpAnswers, setFollowUpAnswers] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    const w = window.innerWidth;
-    const h = window.innerHeight;
-    const count = BUBBLES.length;
-    const cols = Math.ceil(Math.sqrt(count * (w / h)));
-    const rows = Math.ceil(count / cols);
-    const cellW = (w - 60) / cols;
-    const cellH = (h - 220) / rows;
+  // Which follow-ups are needed based on selections
+  const neededFollowUps = CHIPS
+    .filter(c => selectedChips.has(c.id) && c.followUp)
+    .map(c => FOLLOW_UPS[c.followUp!])
+    .filter(Boolean);
 
-    bodiesRef.current = BUBBLES.map((_, i) => {
-      const col = i % cols;
-      const row = Math.floor(i / cols);
-      return {
-        x: 30 + cellW * (col + 0.5) + (Math.random() - 0.5) * cellW * 0.25,
-        y: 110 + cellH * (row + 0.5) + (Math.random() - 0.5) * cellH * 0.25,
-        vx: 0, vy: 0,
-      };
+  const allFollowUpsAnswered = neededFollowUps.every(fu => followUpAnswers[fu.id]);
+
+  const toggleChip = useCallback((id: string) => {
+    setSelectedChips(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
     });
-    setReady(true);
-
-    const tick = () => {
-      const bs = bodiesRef.current;
-      for (let i = 0; i < bs.length; i++) {
-        const a = bs[i];
-        for (let j = i + 1; j < bs.length; j++) {
-          const b = bs[j];
-          const dx = b.x - a.x, dy = b.y - a.y;
-          const d = Math.sqrt(dx * dx + dy * dy) || 1;
-          const min = R * 2 + 12;
-          if (d < min) {
-            const nx = dx / d, ny = dy / d, push = (min - d) * 0.2;
-            a.x -= nx * push; a.y -= ny * push;
-            b.x += nx * push; b.y += ny * push;
-          }
-        }
-        if (a.x < R + 15) a.x = R + 15;
-        if (a.x > w - R - 15) a.x = w - R - 15;
-        if (a.y < R + 100) a.y = R + 100;
-        if (a.y > h - R - 100) a.y = h - R - 100;
-        a.x += a.vx; a.y += a.vy;
-        a.vx *= 0.9; a.vy *= 0.9;
-        a.vx += (Math.random() - 0.5) * 0.015;
-        a.vy += (Math.random() - 0.5) * 0.015;
-      }
-      setPos(bs.map(b => ({ x: b.x, y: b.y })));
-      rafRef.current = requestAnimationFrame(tick);
-    };
-    rafRef.current = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafRef.current);
   }, []);
 
-  const toggle = useCallback((id: string) => {
-    setSelected(p => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; });
-  }, []);
+  const handleChipsContinue = () => {
+    if (neededFollowUps.length > 0) {
+      setScreen("followups");
+    } else {
+      finalize();
+    }
+  };
 
-  const handleContinue = () => {
+  const finalize = () => {
+    // Set needs
     const mods = new Set<string>(), needs = new Set<keyof NeedsAssessment>();
-    for (const b of BUBBLES) if (selected.has(b.id)) { b.activates.forEach(m => mods.add(m)); b.needsKeys.forEach(n => needs.add(n)); }
+    for (const chip of CHIPS) {
+      if (selectedChips.has(chip.id)) {
+        chip.activates.forEach(m => mods.add(m));
+        chip.needsKeys.forEach(n => needs.add(n));
+      }
+    }
+    // Always-on
     (["manageCustomers", "receiveInquiries", "communicateClients", "sendInvoices"] as const).forEach(n => needs.add(n));
     needs.forEach(n => setNeed(n, true));
+
+    // Apply follow-up data
+    if (followUpAnswers["team-size"]) {
+      const sizeMap: Record<string, "2-5" | "6-15" | "16+"> = { "2-5": "2-5", "6-15": "6-15", "16+": "16+" };
+      setTeamSize(sizeMap[followUpAnswers["team-size"]] || "2-5");
+    }
+
+    // Enable all features for all categories
     const M2N: Record<string, string> = { "client-database": "manageCustomers", "leads-pipeline": "receiveInquiries", "communication": "communicateClients", "bookings-calendar": "acceptBookings", "quotes-invoicing": "sendInvoices", "jobs-projects": "manageProjects", "marketing": "runMarketing" };
     const N2M = Object.fromEntries(Object.entries(M2N).map(([m, n]) => [n, m]));
-    for (const cat of FEATURE_CATEGORIES) { const mid = N2M[cat.id]; const all = cat.features.map(f => ({ ...f, selected: true })); setFeatureSelections(cat.id, all); if (mid) setFeatureSelections(mid, all); }
+    for (const cat of FEATURE_CATEGORIES) {
+      const mid = N2M[cat.id];
+      const all = cat.features.map(f => ({ ...f, selected: true }));
+      setFeatureSelections(cat.id, all);
+      if (mid) setFeatureSelections(mid, all);
+    }
+
+    // Enable add-ons
     const addons = getAddonModules(), ais = new Set(addons.map(m => m.id)), as2 = useAddonsStore.getState();
-    mods.forEach(id => { if (ais.has(id)) { const d = addons.find(m => m.id === id); if (d && !as2.isAddonEnabled(id)) as2.enableAddon(id, d.name); } });
+    mods.forEach(id => {
+      if (ais.has(id)) {
+        const d = addons.find(m => m.id === id);
+        if (d && !as2.isAddonEnabled(id)) as2.enableAddon(id, d.name);
+      }
+    });
+
     nextStep();
   };
 
   return (
-    <div className="fixed inset-0 overflow-hidden" style={{ background: "linear-gradient(160deg, #F0FDF4 0%, #FAFAFA 30%, #F5F3FF 60%, #FAFAFA 100%)" }}>
-      {/* Animated mesh gradient blobs */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {/* Large green wash — slowly drifts */}
-        <motion.div
-          animate={{ x: [0, 60, -40, 0], y: [0, -40, 50, 0], scale: [1, 1.1, 0.95, 1] }}
-          transition={{ duration: 30, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -top-20 -left-20 w-[700px] h-[700px] rounded-full"
-          style={{ background: "radial-gradient(circle, rgba(52,211,153,0.12) 0%, rgba(52,211,153,0.04) 40%, transparent 70%)", filter: "blur(40px)" }}
-        />
-        {/* Purple accent — opposite corner */}
-        <motion.div
-          animate={{ x: [0, -50, 30, 0], y: [0, 30, -50, 0], scale: [1, 0.95, 1.05, 1] }}
-          transition={{ duration: 35, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -bottom-32 -right-32 w-[600px] h-[600px] rounded-full"
-          style={{ background: "radial-gradient(circle, rgba(139,92,246,0.08) 0%, rgba(139,92,246,0.02) 40%, transparent 70%)", filter: "blur(40px)" }}
-        />
-        {/* Warm accent — drifts through center */}
-        <motion.div
-          animate={{ x: [-60, 80, -40, -60], y: [20, -60, 40, 20] }}
-          transition={{ duration: 40, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-1/3 left-1/3 w-[500px] h-[500px] rounded-full"
-          style={{ background: "radial-gradient(circle, rgba(52,211,153,0.07) 0%, transparent 60%)", filter: "blur(50px)" }}
-        />
-        {/* Subtle teal — bottom left */}
-        <motion.div
-          animate={{ x: [0, 40, -20, 0], y: [0, -30, 40, 0] }}
-          transition={{ duration: 28, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute bottom-1/4 -left-20 w-[400px] h-[400px] rounded-full"
-          style={{ background: "radial-gradient(circle, rgba(20,184,166,0.06) 0%, transparent 60%)", filter: "blur(30px)" }}
-        />
+    <div className="fixed inset-0 overflow-hidden" style={{ background: "linear-gradient(160deg, #F0FDF4 0%, #FAFAFA 35%, #F5F3FF 65%, #FAFAFA 100%)" }}>
+      {/* Ambient blobs */}
+      <div className="absolute inset-0 pointer-events-none">
+        <motion.div animate={{ x: [0, 50, -30, 0], y: [0, -30, 40, 0], scale: [1, 1.1, 0.95, 1] }} transition={{ duration: 30, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute -top-20 -left-20 w-[600px] h-[600px] rounded-full" style={{ background: "radial-gradient(circle, rgba(52,211,153,0.1) 0%, transparent 70%)", filter: "blur(40px)" }} />
+        <motion.div animate={{ x: [0, -40, 25, 0], y: [0, 25, -40, 0], scale: [1, 0.95, 1.05, 1] }} transition={{ duration: 35, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute -bottom-32 -right-32 w-[500px] h-[500px] rounded-full" style={{ background: "radial-gradient(circle, rgba(139,92,246,0.07) 0%, transparent 70%)", filter: "blur(40px)" }} />
+        <motion.div animate={{ x: [-40, 60, -30, -40], y: [10, -40, 30, 10] }} transition={{ duration: 38, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-1/3 left-1/3 w-[400px] h-[400px] rounded-full" style={{ background: "radial-gradient(circle, rgba(52,211,153,0.06) 0%, transparent 60%)", filter: "blur(50px)" }} />
       </div>
 
-      {/* Bubbles */}
-      <div className="absolute inset-0">
-        <AnimatePresence>
-          {ready && pos.map((p, i) => {
-            const b = BUBBLES[i];
-            const on = selected.has(b.id);
-            const isHovered = hovered === b.id;
-            return (
-              <motion.div
-                key={b.id}
-                className="absolute"
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{
-                  scale: 1,
-                  opacity: 1,
-                  x: p.x - R - 6,
-                  y: p.y - R - 6,
-                }}
-                transition={{
-                  scale: { delay: i * 0.02, type: "spring", stiffness: 200, damping: 16 },
-                  opacity: { delay: i * 0.02, duration: 0.4 },
-                  x: { duration: 0 }, y: { duration: 0 },
-                }}
-                style={{ width: (R + 6) * 2, height: (R + 6) * 2 }}
-              >
-                {/* Outer glow ring — visible on hover and selected */}
-                <motion.div
-                  className="absolute inset-0 rounded-full"
-                  initial={false}
-                  animate={{
-                    opacity: on ? 1 : isHovered ? 0.6 : 0,
-                    scale: on ? 1 : isHovered ? 1 : 0.9,
-                  }}
-                  transition={{ duration: 0.3 }}
-                  style={{
-                    background: "transparent",
-                    border: "2px solid rgba(52, 211, 153, 0.4)",
-                    boxShadow: on
-                      ? "0 0 20px rgba(52,211,153,0.25), inset 0 0 20px rgba(52,211,153,0.08)"
-                      : "0 0 15px rgba(52,211,153,0.15)",
-                  }}
-                />
+      <AnimatePresence mode="wait">
+        {screen === "chips" ? (
+          <motion.div key="chips" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, x: -40 }} className="relative z-10 h-full flex flex-col">
+            {/* Header */}
+            <div className="pt-8 pb-4 px-6 text-center">
+              <h2 className="text-[28px] font-bold text-foreground tracking-tight mb-2">
+                What do you do day-to-day?
+              </h2>
+              <p className="text-[15px] text-text-secondary max-w-md mx-auto">
+                Pick everything that applies. This takes 10 seconds.
+              </p>
+            </div>
 
-                {/* Spinning orbit dot — on selected */}
-                {on && (
-                  <motion.div
-                    className="absolute w-2 h-2 rounded-full"
-                    style={{
-                      background: "var(--primary)",
-                      boxShadow: "0 0 8px var(--primary), 0 0 16px rgba(52,211,153,0.3)",
-                      top: 0, left: "50%", marginLeft: -4, marginTop: -1,
-                      transformOrigin: `4px ${R + 6}px`,
-                    }}
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
-                  />
-                )}
+            {/* Chips grid */}
+            <div className="flex-1 flex items-center justify-center px-6">
+              <div className="grid grid-cols-2 gap-3 max-w-lg w-full">
+                {CHIPS.map((chip, i) => {
+                  const on = selectedChips.has(chip.id);
+                  return (
+                    <motion.button
+                      key={chip.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.04, type: "spring", stiffness: 200, damping: 18 }}
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.96 }}
+                      onClick={() => toggleChip(chip.id)}
+                      className={`relative flex items-center gap-3 px-5 py-4 rounded-2xl text-left transition-all duration-200 cursor-pointer ${
+                        on
+                          ? "bg-primary text-white shadow-lg shadow-primary/20"
+                          : "bg-white/90 border border-border-light hover:border-primary/30 hover:shadow-md"
+                      }`}
+                    >
+                      {on && (
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="absolute top-2 right-2 w-5 h-5 bg-white/25 rounded-full flex items-center justify-center"
+                        >
+                          <Check className="w-3 h-3 text-white" />
+                        </motion.div>
+                      )}
+                      <span className={`text-[14px] font-semibold leading-tight ${on ? "text-white" : "text-foreground"}`}>
+                        {chip.label}
+                      </span>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </div>
 
-                {/* The bubble itself */}
-                <motion.button
-                  className="absolute cursor-pointer select-none flex items-center justify-center"
-                  style={{
-                    top: 6, left: 6, width: R * 2, height: R * 2, borderRadius: "50%",
-                    background: on
-                      ? "linear-gradient(145deg, #34D399 0%, #059669 100%)"
-                      : "rgba(255,255,255,0.92)",
-                    border: on ? "none" : "1px solid rgba(0,0,0,0.06)",
-                    boxShadow: on
-                      ? "0 8px 32px rgba(52,211,153,0.35), inset 0 1px 0 rgba(255,255,255,0.25), inset 0 -2px 4px rgba(0,0,0,0.05)"
-                      : "0 2px 12px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.8)",
-                    transition: "box-shadow 0.3s",
-                  }}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.92 }}
-                  onClick={() => toggle(b.id)}
-                  onHoverStart={() => setHovered(b.id)}
-                  onHoverEnd={() => setHovered(null)}
+            {/* Footer */}
+            <div className="px-6 pb-6 pt-4">
+              <div className="max-w-lg mx-auto flex gap-3">
+                <button onClick={prevStep} className="px-6 py-3.5 rounded-2xl text-[14px] font-medium text-text-tertiary hover:text-foreground cursor-pointer transition-colors">
+                  Back
+                </button>
+                <button
+                  onClick={handleChipsContinue}
+                  disabled={selectedChips.size < 2}
+                  className={`flex-1 py-3.5 rounded-2xl text-[15px] font-semibold transition-all flex items-center justify-center gap-2 ${
+                    selectedChips.size >= 2 ? "bg-foreground text-white hover:opacity-90 cursor-pointer shadow-lg" : "bg-foreground/15 text-text-tertiary cursor-not-allowed"
+                  }`}
                 >
-                  {/* Inner pulse on selected */}
-                  {on && (
-                    <motion.div
-                      className="absolute inset-0 rounded-full"
-                      style={{ background: "rgba(255,255,255,0.15)" }}
-                      animate={{ scale: [1, 1.04, 1], opacity: [0.2, 0, 0.2] }}
-                      transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
-                    />
-                  )}
+                  {selectedChips.size < 2 ? `Pick at least ${2 - selectedChips.size} more` : "Continue"}
+                  {selectedChips.size >= 2 && <ArrowRight className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div key="followups" initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="relative z-10 h-full flex flex-col">
+            {/* Header */}
+            <div className="pt-8 pb-4 px-6 text-center">
+              <h2 className="text-[28px] font-bold text-foreground tracking-tight mb-2">
+                A couple more details
+              </h2>
+              <p className="text-[15px] text-text-secondary">
+                This helps us get the setup right.
+              </p>
+            </div>
 
-                  <span className="relative z-10 text-center leading-[1.15] font-semibold whitespace-pre-line px-2" style={{
-                    fontSize: 13,
-                    color: on ? "#fff" : "#111",
-                    textShadow: on ? "0 1px 3px rgba(0,0,0,0.15)" : "none",
-                  }}>
-                    {b.label}
-                  </span>
-                </motion.button>
-              </motion.div>
-            );
-          })}
-        </AnimatePresence>
-      </div>
+            {/* Follow-up questions */}
+            <div className="flex-1 flex items-center justify-center px-6">
+              <div className="max-w-md w-full space-y-8">
+                {neededFollowUps.map((fu, fi) => (
+                  <motion.div
+                    key={fu.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: fi * 0.1 }}
+                  >
+                    <p className="text-[16px] font-semibold text-foreground mb-3">{fu.question}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {fu.options.map(opt => {
+                        const isSelected = followUpAnswers[fu.id] === opt.value;
+                        return (
+                          <motion.button
+                            key={opt.value}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => setFollowUpAnswers(prev => ({ ...prev, [fu.id]: opt.value }))}
+                            className={`px-5 py-3 rounded-xl text-[14px] font-medium transition-all cursor-pointer ${
+                              isSelected
+                                ? "bg-primary text-white shadow-md"
+                                : "bg-white border border-border-light hover:border-primary/30 text-foreground"
+                            }`}
+                          >
+                            {opt.label}
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
 
-      {/* Header */}
-      <div className="absolute top-0 left-0 right-0 z-20 pt-6 pb-8 text-center pointer-events-none" style={{ background: "linear-gradient(to bottom, #FAFAFA 55%, transparent)" }}>
-        <h2 className="text-[28px] font-bold text-foreground tracking-tight mb-1.5">
-          What do you do day-to-day?
-        </h2>
-        <p className="text-[15px] text-text-secondary">
-          Tap everything that applies
-          {selected.size > 0 && (
-            <motion.span
-              initial={{ opacity: 0, y: -5 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-primary font-bold"
-            >
-              {" "}&middot; {selected.size} selected
-            </motion.span>
-          )}
-        </p>
-      </div>
-
-      {/* Footer */}
-      <div className="absolute bottom-0 left-0 right-0 z-20 px-6 pb-6 pt-20 pointer-events-none" style={{ background: "linear-gradient(to top, #FAFAFA 50%, transparent)" }}>
-        <div className="max-w-md mx-auto flex gap-3 pointer-events-auto">
-          <button onClick={prevStep} className="px-6 py-3.5 rounded-2xl text-[14px] font-medium text-text-tertiary hover:text-foreground hover:bg-white/80 transition-all cursor-pointer">
-            Back
-          </button>
-          <motion.button
-            onClick={handleContinue}
-            disabled={selected.size < 3}
-            animate={selected.size >= 3 ? { boxShadow: ["0 4px 20px rgba(0,0,0,0.15)", "0 4px 30px rgba(0,0,0,0.25)", "0 4px 20px rgba(0,0,0,0.15)"] } : {}}
-            transition={selected.size >= 3 ? { duration: 2, repeat: Infinity } : {}}
-            className={`flex-1 py-3.5 rounded-2xl text-[15px] font-semibold transition-all flex items-center justify-center gap-2 ${
-              selected.size >= 3 ? "bg-foreground text-white hover:opacity-90 cursor-pointer" : "bg-foreground/15 text-text-tertiary cursor-not-allowed"
-            }`}
-          >
-            {selected.size < 3 ? `Pick at least ${3 - selected.size} more` : "Continue"}
-            {selected.size >= 3 && <ArrowRight className="w-4 h-4" />}
-          </motion.button>
-        </div>
-      </div>
+            {/* Footer */}
+            <div className="px-6 pb-6 pt-4">
+              <div className="max-w-md mx-auto flex gap-3">
+                <button onClick={() => setScreen("chips")} className="px-6 py-3.5 rounded-2xl text-[14px] font-medium text-text-tertiary hover:text-foreground cursor-pointer transition-colors flex items-center gap-1.5">
+                  <ArrowLeft className="w-3.5 h-3.5" /> Back
+                </button>
+                <button
+                  onClick={finalize}
+                  disabled={!allFollowUpsAnswered}
+                  className={`flex-1 py-3.5 rounded-2xl text-[15px] font-semibold transition-all flex items-center justify-center gap-2 ${
+                    allFollowUpsAnswered ? "bg-foreground text-white hover:opacity-90 cursor-pointer shadow-lg" : "bg-foreground/15 text-text-tertiary cursor-not-allowed"
+                  }`}
+                >
+                  Continue <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
