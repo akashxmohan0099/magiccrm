@@ -63,12 +63,16 @@ const MODULE_TO_NEED: Record<string, string> = {
 export function useEnabledModules(): ModuleDefinition[] {
   const featureSelections = useOnboardingStore((s) => s.featureSelections);
   const needs = useOnboardingStore((s) => s.needs);
+  const discoveryAnswers = useOnboardingStore((s) => s.discoveryAnswers);
   return useMemo(() => {
     return MODULE_REGISTRY.filter((mod) => {
       if (mod.kind === "addon") return false;
 
       // Always-on modules are enabled for every user
       if (ALWAYS_ON_MODULES.has(mod.id)) return true;
+
+      // Check if module was directly activated by chip selections
+      if (discoveryAnswers[`module:${mod.id}`] === true) return true;
 
       // Check direct feature selections (by module ID)
       const features = featureSelections[mod.id];
@@ -91,7 +95,7 @@ export function useEnabledModules(): ModuleDefinition[] {
 
       return false;
     });
-  }, [featureSelections, needs]);
+  }, [featureSelections, needs, discoveryAnswers]);
 }
 
 /** Returns add-on modules that the user has enabled */

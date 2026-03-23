@@ -25,7 +25,7 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
   { id: "products", slug: "products", name: "Products", icon: "Package", description: "Your product and service catalog.", group: "business" },
 
   // ── Grow ──
-  { id: "marketing", slug: "marketing", name: "Marketing", icon: "Megaphone", description: "Campaigns, social, and reviews.", group: "grow" },
+  { id: "marketing", slug: "marketing", name: "Marketing", icon: "Megaphone", description: "Campaigns, coupons, and referrals.", group: "grow" },
   { id: "team", slug: "team", name: "Team", icon: "UsersRound", description: "Manage your team, roles, and permissions.", group: "grow" },
   { id: "client-portal", slug: "portal", name: "Client Portal", icon: "Globe", description: "Self-service hub where clients view bookings, invoices, and docs.", group: "grow" },
 

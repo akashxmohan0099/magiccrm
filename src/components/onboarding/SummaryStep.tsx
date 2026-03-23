@@ -59,8 +59,8 @@ const MODULE_DISPLAY: Record<string, {
   },
   "marketing": {
     icon: Megaphone, bg: "bg-pink-500/10", color: "text-pink-500", gradient: "#EC4899", hoverBorder: "hover:border-pink-200",
-    tagline: "Campaigns, reviews, and promotions",
-    preview: [{ label: "Summer promo", detail: "Active" }, { label: "Review requests", detail: "Auto" }],
+    tagline: "Campaigns, coupons, and referrals",
+    preview: [{ label: "Summer promo", detail: "Active" }, { label: "Referral code", detail: "FRIEND10" }],
   },
   "team": {
     icon: UsersRound, bg: "bg-rose-500/10", color: "text-rose-500", gradient: "#F43F5E", hoverBorder: "hover:border-rose-200",
@@ -92,7 +92,6 @@ const INDUSTRY_ICONS: Record<string, React.ComponentType<{ className?: string }>
 
 export function SummaryStep() {
   const { businessContext, prevStep, setIsBuilding, getIndustryConfig, needs } = useOnboardingStore();
-  const setNeed = useOnboardingStore((s) => s.setNeed);
   const config = getIndustryConfig();
 
   const ALWAYS_ON = new Set(["client-database", "leads-pipeline", "communication", "quotes-invoicing"]);
@@ -101,7 +100,7 @@ export function SummaryStep() {
 
   const [manuallyToggled, setManuallyToggled] = useState<Record<string, boolean>>({});
 
-  const { enabledModules, disabledModules } = useMemo(() => {
+  const { enabledModules, disabledModules, enabledAddons } = useMemo(() => {
     const enabled = new Set<string>(ALWAYS_ON);
 
     // Add modules from needs (needsKey-based questions)
@@ -135,9 +134,11 @@ export function SummaryStep() {
     for (const id of ALWAYS_ON) enabled.add(id);
 
     const coreModules = MODULE_REGISTRY.filter((m) => m.kind !== "addon");
+    const addonModules = MODULE_REGISTRY.filter((m) => m.kind === "addon");
     return {
       enabledModules: coreModules.filter((m) => enabled.has(m.id)),
       disabledModules: coreModules.filter((m) => !enabled.has(m.id)),
+      enabledAddons: addonModules.filter((m) => enabled.has(m.id)),
     };
   }, [needs, discoveryAnswers, manuallyToggled]);
 
@@ -164,7 +165,7 @@ export function SummaryStep() {
             {businessContext.businessName ? `${businessContext.businessName} is ready` : "Your workspace is ready"}
           </h2>
           <p className="text-[15px] text-text-secondary max-w-lg mx-auto">
-            {enabledModules.length} modules configured for you. Everything is customizable from your dashboard.
+            {enabledModules.length + enabledAddons.length} modules configured for you. Everything is customizable from your dashboard.
           </p>
         </motion.div>
 
@@ -218,6 +219,32 @@ export function SummaryStep() {
             );
           })}
         </div>
+
+        {/* Enabled add-ons */}
+        {enabledAddons.length > 0 && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }} className="mb-8">
+            <p className="text-[13px] text-text-tertiary mb-4 text-center">Add-ons enabled based on your selections</p>
+            <div className="flex flex-wrap justify-center gap-4">
+              {enabledAddons.map((mod) => {
+                const d = MODULE_DISPLAY[mod.id];
+                const IconComp = d?.icon || Zap;
+                const bg = d?.bg || "bg-gray-100";
+                const color = d?.color || "text-gray-500";
+                return (
+                  <div key={mod.id} className="flex items-center gap-3 px-5 py-3.5 rounded-2xl bg-card-bg border border-border-light">
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${bg}`}>
+                      <IconComp className={`w-4.5 h-4.5 ${color}`} />
+                    </div>
+                    <div>
+                      <p className="text-[13px] font-semibold text-foreground">{mod.name}</p>
+                      <p className="text-[11px] text-text-tertiary">{mod.description}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
 
         {/* Disabled modules */}
         {disabledModules.length > 0 && (

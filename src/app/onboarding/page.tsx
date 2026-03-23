@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { AnimatePresence } from "framer-motion";
 import { useOnboardingStore } from "@/store/onboarding";
 import { useHydration } from "@/hooks/useHydration";
@@ -27,6 +28,13 @@ function OnboardingContent() {
   const isBuilding = useOnboardingStore((s) => s.isBuilding);
   const { user, loading } = useAuth();
 
+  // Auto-skip signup step if already authenticated
+  useEffect(() => {
+    if (step === 3 && !loading && user) {
+      useOnboardingStore.getState().nextStep();
+    }
+  }, [step, loading, user]);
+
   if (isBuilding) {
     return <BuildingScreen />;
   }
@@ -35,22 +43,19 @@ function OnboardingContent() {
   // 0 = Welcome (public)
   // 1 = Industry/Persona (public)
   // 2 = Business Context (public)
-  // 3 = Signup (if not authenticated)
-  // 4 = Bubbles — tap what you do day-to-day
+  // 3 = Signup (if not authenticated — auto-skips if logged in)
+  // 4 = Activity Chips (4 slides)
   // 5 = Summary → Launch
   const renderStep = () => {
     if (step === 0) return <WelcomeStep />;
     if (step === 1) return <IndustryStep />;
     if (step === 2) return <BusinessContextStep />;
-
-    // Step 3: signup gate
     if (step === 3) {
       if (loading) return <div className="min-h-screen bg-background" />;
       if (!user) return <SignupStep />;
-      useOnboardingStore.getState().nextStep();
-      return null;
+      // useEffect above handles the auto-advance
+      return <div className="min-h-screen bg-background" />;
     }
-
     if (step === 4) return <BubblesStep />;
     return <SummaryStep />;
   };
