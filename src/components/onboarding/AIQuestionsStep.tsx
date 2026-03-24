@@ -66,7 +66,7 @@ export function AIQuestionsStep() {
 
         const data = await res.json();
         if (data.categories && data.categories.length > 0) {
-          setCategories(data.categories.slice(0, 2));
+          setCategories(data.categories.slice(0, 3));
         } else {
           setError(true);
         }

@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
 
     const message = await anthropic.messages.create({
       model: "claude-sonnet-4-20250514",
-      max_tokens: 800,
+      max_tokens: 1024,
       messages: [
         {
           role: "user",
@@ -29,18 +29,34 @@ Here is what we know about this user:
 - Location: ${location || "Not provided"}
 - Activities they selected: ${chipLabels || "None selected"}
 
-Generate 6 yes/no questions organized into 2 categories (3 questions each). These should help us understand what ELSE this business needs that wasn't covered by their chip selections.
+Generate 9 yes/no questions organized into 3 categories (3 questions each). These should help us understand what ELSE this business needs that wasn't covered by their chip selections.
 
-Category 1: "Day-to-day operations" — questions about their daily workflows, tools, and habits
-Category 2: "Growth & client experience" — questions about how they want to grow and improve client experience
+Category 1: "Day-to-day operations" — questions about their daily workflows and tools
+Category 2: "Client experience" — questions about how they interact with and serve clients
+Category 3: "Business growth" — questions about scaling, efficiency, and tracking
+
+IMPORTANT — Do NOT ask about:
+- Social media posting or scheduling (we don't have that feature)
+- Review collection (we don't have that feature)
+- Anything related to posting content online
+- Things the user already selected in their chip answers
+
+DO ask about real features we have:
+- scheduling: appointments, calendar, online booking, reminders, waitlist
+- projects: job tracking, tasks, milestones, time tracking
+- billing: invoices, quotes, deposits, recurring billing, proposals
+- team: staff management, rosters, permissions
+- automations: auto-reminders, follow-ups, status updates
+- reporting: revenue tracking, dashboards, performance reports
+- products: service catalog, pricing, inventory
+- documents: contracts, agreements, e-signatures
+- communication: email, SMS, WhatsApp, unified inbox
+- marketing: email campaigns, referral codes, coupons (NOT social media posting)
 
 Rules:
 - Each question must be specific to their industry and persona
-- Don't ask about things they already selected
-- Focus on gaps — features they might need but didn't think to select
 - Keep questions under 15 words each
-- Make them conversational and easy to understand, not technical
-- Each question should map to one of these modules: scheduling, projects, billing, marketing, team, automations, reporting, products, documents, communication
+- Make them conversational, not technical
 - Include a short friendly subtitle for each category (under 10 words)
 
 Return ONLY valid JSON with this exact structure:
@@ -56,8 +72,17 @@ Return ONLY valid JSON with this exact structure:
       ]
     },
     {
-      "title": "Growth & client experience",
-      "subtitle": "How you want to grow and delight clients",
+      "title": "Client experience",
+      "subtitle": "How you serve and communicate with clients",
+      "questions": [
+        {"question": "...", "module": "..."},
+        {"question": "...", "module": "..."},
+        {"question": "...", "module": "..."}
+      ]
+    },
+    {
+      "title": "Business growth",
+      "subtitle": "How you want to scale and improve",
       "questions": [
         {"question": "...", "module": "..."},
         {"question": "...", "module": "..."},
