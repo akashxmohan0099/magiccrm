@@ -26,7 +26,7 @@ export function BusinessContextStep() {
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -40 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className="max-w-lg mx-auto"
+      className="max-w-lg mx-auto min-h-[calc(100vh-4rem)] flex flex-col justify-center"
     >
       <div className="mb-10">
         <button
