@@ -42,9 +42,33 @@ export function AIQuestionsStep() {
   const [catIndex, setCatIndex] = useState(0);
   const [direction, setDirection] = useState(1);
 
-  const selectedChips = Object.entries(discoveryAnswers)
+  // Map chip IDs to readable labels for the AI
+  const CHIP_LABELS: Record<string, string> = {
+    "clients-book": "Clients book appointments with me",
+    "inquiries": "Clients send inquiries or requests",
+    "walk-ins": "Clients walk in or call directly",
+    "online-booking": "I want an online booking page",
+    "messaging": "Clients message me on WhatsApp/Instagram",
+    "at-my-place": "Clients come to my location",
+    "visit-clients": "I go to the client's location",
+    "projects": "I track my work from start to finish",
+    "recurring-clients": "I see the same clients regularly",
+    "track-time": "I track how long things take",
+    "invoices": "I send invoices after the work",
+    "deposits": "I collect deposits upfront",
+    "proposals": "I send quotes or proposals first",
+    "recurring-billing": "I have recurring or subscription billing",
+    "contracts": "I use contracts or agreements",
+    "team": "I have staff or contractors",
+    "automate": "I want to automate repetitive tasks",
+    "reports": "I want to see revenue and reports",
+    "products": "I sell products alongside services",
+    "client-portal": "I want clients to have a self-service portal",
+  };
+
+  const selectedChipLabels = Object.entries(discoveryAnswers)
     .filter(([key, val]) => val === true && !key.startsWith("module:"))
-    .map(([key]) => key);
+    .map(([key]) => CHIP_LABELS[key] || key);
 
   const persona = getPersonaConfig();
 
@@ -60,7 +84,7 @@ export function AIQuestionsStep() {
             businessName: businessContext.businessName,
             businessDescription: businessContext.businessDescription,
             location: businessContext.location,
-            selectedChips,
+            selectedChips: selectedChipLabels,
           }),
         });
 
