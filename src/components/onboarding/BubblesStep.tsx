@@ -39,9 +39,9 @@ const SLIDES: Slide[] = [
     chips: [
       { id: "at-my-place", label: "Clients come to me", activates: ["bookings-calendar"], needsKeys: ["acceptBookings"] },
       { id: "visit-clients", label: "I go to the client", activates: ["bookings-calendar", "jobs-projects"], needsKeys: ["acceptBookings", "manageProjects"] },
-      { id: "projects", label: "I track my work from start to finish", activates: ["jobs-projects"], needsKeys: ["manageProjects"] },
+      { id: "projects", label: "I manage jobs or projects with tasks", activates: ["jobs-projects"], needsKeys: ["manageProjects"] },
       { id: "recurring-clients", label: "I see the same clients regularly", activates: ["bookings-calendar", "automations"], needsKeys: ["acceptBookings"] },
-      { id: "track-time", label: "I track how long things take", activates: ["jobs-projects"], needsKeys: ["manageProjects"] },
+      { id: "track-time", label: "I bill clients by the hour", activates: ["jobs-projects", "quotes-invoicing"], needsKeys: ["manageProjects", "sendInvoices"] },
     ],
   },
   {
