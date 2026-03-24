@@ -280,6 +280,11 @@ export function SummaryStep() {
           </motion.div>
         )}
 
+        {/* Add-ons hint */}
+        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }} className="text-center text-[13px] text-text-tertiary mb-8">
+          There are many more add-ons you can enable later from your dashboard — memberships, loyalty programs, intake forms, and more.
+        </motion.p>
+
         {/* CTA */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="max-w-md mx-auto text-center">
           <button
