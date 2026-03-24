@@ -10,6 +10,7 @@ import { IndustryStep } from "@/components/onboarding/IndustryStep";
 import { BusinessContextStep } from "@/components/onboarding/BusinessContextStep";
 import { SignupStep } from "@/components/onboarding/SignupStep";
 import { BubblesStep } from "@/components/onboarding/BubblesStep";
+import { AIQuestionsStep } from "@/components/onboarding/AIQuestionsStep";
 import { SummaryStep } from "@/components/onboarding/SummaryStep";
 import { BuildingScreen } from "@/components/onboarding/BuildingScreen";
 
@@ -50,7 +51,8 @@ function OnboardingContent() {
   // 2 = Business Context (public)
   // 3 = Signup (if not authenticated — auto-skips if logged in)
   // 4 = Activity Chips (4 slides)
-  // 5 = Summary → Launch
+  // 5 = AI-generated personalized questions (gap analysis)
+  // 6 = Summary → Launch
   const renderStep = () => {
     if (step === 0) return <WelcomeStep />;
     if (step === 1) return <IndustryStep />;
@@ -58,10 +60,10 @@ function OnboardingContent() {
     if (step === 3) {
       if (loading) return <div className="min-h-screen bg-background" />;
       if (!user) return <SignupStep />;
-      // useEffect above handles the auto-advance
       return <div className="min-h-screen bg-background" />;
     }
     if (step === 4) return <BubblesStep />;
+    if (step === 5) return <AIQuestionsStep />;
     return <SummaryStep />;
   };
 
