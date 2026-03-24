@@ -28,12 +28,9 @@ function OnboardingContent() {
   const isBuilding = useOnboardingStore((s) => s.isBuilding);
   const { user, loading } = useAuth();
 
-  // Auto-skip signup step if user was already authenticated before reaching step 3
-  // (e.g., they logged in separately and came back to onboarding)
-  const shouldSkipSignup = step === 3 && !loading && user;
+  // Auto-skip signup step if user was already authenticated
   useEffect(() => {
-    if (shouldSkipSignup) {
-      // Small delay to avoid race with SignupStep's own nextStep() call
+    if (step === 3 && !loading && user) {
       const t = setTimeout(() => {
         if (useOnboardingStore.getState().step === 3) {
           useOnboardingStore.getState().nextStep();
@@ -41,7 +38,7 @@ function OnboardingContent() {
       }, 100);
       return () => clearTimeout(t);
     }
-  }, [shouldSkipSignup]);
+  }, [step, loading, user]);
 
   if (isBuilding) {
     return <BuildingScreen />;
