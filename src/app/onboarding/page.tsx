@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { AnimatePresence } from "framer-motion";
 import { useOnboardingStore } from "@/store/onboarding";
 import { useHydration } from "@/hooks/useHydration";
@@ -27,43 +28,48 @@ function OnboardingContent() {
   const step = useOnboardingStore((s) => s.step);
   const isBuilding = useOnboardingStore((s) => s.isBuilding);
   const { user, loading } = useAuth();
+  const skipDone = useRef(false);
+
+  // Skip signup step if already logged in — only once
+  useEffect(() => {
+    if (step === 3 && !loading && user && !skipDone.current) {
+      skipDone.current = true;
+      // Use setStep to jump directly to 4, not nextStep which could race
+      useOnboardingStore.getState().setStep(4);
+    }
+  }, [step, loading, user]);
 
   if (isBuilding) {
     return <BuildingScreen />;
-  }
-
-  // Compute effective step — skip signup if already authenticated
-  // This avoids useEffect race conditions entirely
-  let effectiveStep = step;
-  if (step === 3 && !loading && user) {
-    effectiveStep = 4; // Skip signup, go straight to chips
   }
 
   // Steps:
   // 0 = Welcome (public)
   // 1 = Industry/Persona (public)
   // 2 = Business Context (public)
-  // 3 = Signup (if not authenticated — rendered as step 4 if already logged in)
+  // 3 = Signup (if not authenticated)
   // 4 = Activity Chips (4 slides)
   // 5 = AI-generated personalized questions
   // 6 = Summary → Launch
   const renderStep = () => {
-    if (effectiveStep === 0) return <WelcomeStep />;
-    if (effectiveStep === 1) return <IndustryStep />;
-    if (effectiveStep === 2) return <BusinessContextStep />;
-    if (effectiveStep === 3) {
+    if (step === 0) return <WelcomeStep />;
+    if (step === 1) return <IndustryStep />;
+    if (step === 2) return <BusinessContextStep />;
+    if (step === 3) {
       if (loading) return <div className="min-h-screen bg-background" />;
-      return <SignupStep />;
+      if (!user) return <SignupStep />;
+      // Waiting for useEffect to advance to step 4
+      return <div className="min-h-screen bg-background" />;
     }
-    if (effectiveStep === 4) return <BubblesStep />;
-    if (effectiveStep === 5) return <AIQuestionsStep />;
+    if (step === 4) return <BubblesStep />;
+    if (step === 5) return <AIQuestionsStep />;
     return <SummaryStep />;
   };
 
   return (
     <div className="min-h-screen bg-background">
       <AnimatePresence mode="wait">
-        <div key={effectiveStep}>
+        <div key={step}>
           {renderStep()}
         </div>
       </AnimatePresence>
