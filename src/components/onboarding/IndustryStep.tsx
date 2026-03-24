@@ -61,7 +61,7 @@ export function IndustryStep() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="max-w-2xl mx-auto"
+      className="max-w-2xl mx-auto min-h-[calc(100vh-4rem)] flex flex-col justify-center py-8"
     >
       <AnimatePresence mode="wait">
         {!showPersonas ? (

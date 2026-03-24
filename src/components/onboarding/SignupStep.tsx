@@ -96,7 +96,7 @@ export function SignupStep() {
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -40 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className="max-w-md mx-auto"
+      className="max-w-md mx-auto min-h-[calc(100vh-4rem)] flex flex-col justify-center py-8"
     >
       <button
         onClick={prevStep}
