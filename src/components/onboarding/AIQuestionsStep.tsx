@@ -132,15 +132,68 @@ export function AIQuestionsStep() {
   const handleSkip = () => nextStep();
 
   if (loading) {
+    const steps = [
+      { label: "Reading your business profile", delay: 0 },
+      { label: "Analyzing your workflow", delay: 0.8 },
+      { label: "Finding what you might be missing", delay: 1.6 },
+      { label: "Generating personalized questions", delay: 2.4 },
+    ];
+
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-background">
-        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center">
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-5" style={{ backgroundColor: "var(--logo-green)" }}>
-            <Sparkles className="w-7 h-7 text-white" />
+      <div className="fixed inset-0 flex items-center justify-center" style={{ background: "linear-gradient(160deg, #F0FDF4 0%, #FAFAFA 40%, #F5F3FF 70%, #FAFAFA 100%)" }}>
+        {/* Ambient blobs */}
+        <div className="absolute inset-0 pointer-events-none">
+          <motion.div animate={{ scale: [1, 1.15, 1], opacity: [0.06, 0.1, 0.06] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute top-1/4 left-1/4 w-[400px] h-[400px] rounded-full" style={{ background: "radial-gradient(circle, rgba(52,211,153,0.15) 0%, transparent 70%)", filter: "blur(50px)" }} />
+          <motion.div animate={{ scale: [1, 1.1, 1], opacity: [0.04, 0.08, 0.04] }} transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+            className="absolute bottom-1/4 right-1/4 w-[350px] h-[350px] rounded-full" style={{ background: "radial-gradient(circle, rgba(139,92,246,0.1) 0%, transparent 70%)", filter: "blur(50px)" }} />
+        </div>
+
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center relative z-10 max-w-sm mx-auto px-6">
+          {/* Pulsing logo */}
+          <motion.div
+            animate={{ scale: [1, 1.05, 1] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-8"
+            style={{ backgroundColor: "var(--logo-green)", boxShadow: "0 0 40px rgba(124,254,157,0.3)" }}
+          >
+            <Sparkles className="w-8 h-8 text-white" />
+          </motion.div>
+
+          <h3 className="text-[20px] font-bold text-foreground mb-2">
+            Personalizing for {businessContext.businessName || "you"}
+          </h3>
+          <p className="text-[14px] text-text-tertiary mb-8">
+            Our AI is analyzing your business to ask the right questions
+          </p>
+
+          {/* Animated progress steps */}
+          <div className="space-y-3 text-left">
+            {steps.map((s, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: s.delay, duration: 0.4 }}
+                className="flex items-center gap-3"
+              >
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: s.delay + 0.2, type: "spring", stiffness: 300 }}
+                  className="w-5 h-5 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0"
+                >
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: s.delay + 0.5 }}
+                    className="w-2 h-2 rounded-full bg-primary"
+                  />
+                </motion.div>
+                <span className="text-[13px] text-text-secondary">{s.label}</span>
+              </motion.div>
+            ))}
           </div>
-          <Loader2 className="w-5 h-5 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-[16px] font-medium text-foreground">Personalizing your experience...</p>
-          <p className="text-[13px] text-text-tertiary mt-1.5">This takes a few seconds</p>
         </motion.div>
       </div>
     );
@@ -194,9 +247,9 @@ export function AIQuestionsStep() {
             >
               {/* Category header */}
               <div className="text-center mb-8">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/8 rounded-full mb-4">
-                  <Sparkles className="w-3 h-3 text-primary" />
-                  <span className="text-[11px] font-semibold text-primary uppercase tracking-wide">Personalized for {businessContext.businessName || "you"}</span>
+                <div className="flex items-center justify-center gap-2 mb-4">
+                  <Sparkles className="w-3.5 h-3.5 text-primary" />
+                  <span className="text-[12px] font-medium text-text-tertiary">Personalized for {businessContext.businessName || "you"}</span>
                 </div>
                 <h2 className="text-[26px] font-bold text-foreground tracking-tight mb-1.5">
                   {currentCat.title}
