@@ -28,14 +28,27 @@ function OnboardingContent() {
   const step = useOnboardingStore((s) => s.step);
   const isBuilding = useOnboardingStore((s) => s.isBuilding);
   const { user, loading } = useAuth();
-  const skipDone = useRef(false);
+  const prevUserRef = useRef(user);
 
-  // Skip signup step if already logged in — only once
+  // Detect when user FIRST becomes authenticated while on step 3
+  // This handles both: fresh signup AND already-logged-in user
   useEffect(() => {
-    if (step === 3 && !loading && user && !skipDone.current) {
-      skipDone.current = true;
-      // Use setStep to jump directly to 4, not nextStep which could race
-      useOnboardingStore.getState().setStep(4);
+    const wasNull = prevUserRef.current === null || prevUserRef.current === undefined;
+    const isNowAuth = !!user;
+    prevUserRef.current = user;
+
+    // Only advance if we're on step 3 and user just became authenticated
+    // OR if user was already authenticated when we arrived at step 3
+    if (step === 3 && !loading && isNowAuth) {
+      // Wait a beat to ensure SignupStep's workspace creation finishes
+      const t = setTimeout(() => {
+        const currentStep = useOnboardingStore.getState().step;
+        // Only advance if still on step 3 (SignupStep might have already advanced)
+        if (currentStep === 3) {
+          useOnboardingStore.getState().setStep(4);
+        }
+      }, wasNull ? 1500 : 50); // 1.5s after fresh signup (workspace creation), 50ms if already logged in
+      return () => clearTimeout(t);
     }
   }, [step, loading, user]);
 
@@ -44,12 +57,12 @@ function OnboardingContent() {
   }
 
   // Steps:
-  // 0 = Welcome (public)
-  // 1 = Industry/Persona (public)
-  // 2 = Business Context (public)
-  // 3 = Signup (if not authenticated)
+  // 0 = Welcome
+  // 1 = Industry/Persona
+  // 2 = Business Context
+  // 3 = Signup
   // 4 = Activity Chips (4 slides)
-  // 5 = AI-generated personalized questions
+  // 5 = AI Questions (2 categories)
   // 6 = Summary → Launch
   const renderStep = () => {
     if (step === 0) return <WelcomeStep />;
@@ -58,7 +71,6 @@ function OnboardingContent() {
     if (step === 3) {
       if (loading) return <div className="min-h-screen bg-background" />;
       if (!user) return <SignupStep />;
-      // Waiting for useEffect to advance to step 4
       return <div className="min-h-screen bg-background" />;
     }
     if (step === 4) return <BubblesStep />;

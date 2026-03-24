@@ -79,7 +79,8 @@ export function SignupStep() {
         });
       }
 
-      nextStep();
+      // Don't call nextStep() here — the parent detects auth state change
+      // and advances to step 4 after workspace creation completes
     } catch (_err) {
       setError("Something went wrong. Please try again.");
     } finally {
