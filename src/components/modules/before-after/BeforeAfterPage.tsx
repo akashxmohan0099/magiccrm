@@ -40,7 +40,7 @@ export function BeforeAfterPage() {
         />
       ) : (
         <div className="bg-card-bg rounded-xl border border-border-light overflow-hidden">
-          <DataTable<BeforeAfterRecord> columns={columns} data={records} keyExtractor={(r) => r.id} />
+          <DataTable<BeforeAfterRecord> storageKey="magic-crm-beforeafter-columns" columns={columns} data={records} keyExtractor={(r) => r.id} />
         </div>
       )}
       <FeatureSection moduleId="before-after" featureId="client-consent-toggle" featureLabel="Client Consent">

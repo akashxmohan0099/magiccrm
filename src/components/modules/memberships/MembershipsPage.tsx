@@ -66,7 +66,7 @@ export function MembershipsPage() {
         />
       ) : (
         <div className="bg-card-bg rounded-xl border border-border-light overflow-hidden">
-          <DataTable<MembershipPlan> columns={planColumns} data={plans} keyExtractor={(p) => p.id} />
+          <DataTable<MembershipPlan> storageKey="magic-crm-memberships-columns" columns={planColumns} data={plans} keyExtractor={(p) => p.id} />
         </div>
       )}
       <FeatureSection moduleId="memberships" featureId="freeze-pause" featureLabel="Freeze / Pause">

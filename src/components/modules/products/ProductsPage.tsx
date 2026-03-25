@@ -89,6 +89,7 @@ export function ProductsPage() {
       ) : (
         <div className="bg-card-bg rounded-xl border border-border-light overflow-hidden">
           <DataTable<Product>
+            storageKey="magic-crm-products-columns"
             columns={columns}
             data={products}
             keyExtractor={(p) => p.id}

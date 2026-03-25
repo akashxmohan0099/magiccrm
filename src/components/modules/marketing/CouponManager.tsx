@@ -153,6 +153,7 @@ export function CouponManager() {
         ) : (
           <div className="bg-card-bg rounded-xl border border-border-light overflow-hidden">
             <DataTable<Coupon>
+              storageKey="magic-crm-coupons-columns"
               columns={columns}
               data={coupons}
               keyExtractor={(c) => c.id}

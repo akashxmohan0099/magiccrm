@@ -110,6 +110,7 @@ export function DocumentsPage() {
       ) : (
         <div className="bg-card-bg rounded-xl border border-border-light overflow-hidden">
           <DataTable
+            storageKey="magic-crm-documents-columns"
             columns={columns}
             data={filtered}
             onRowClick={(doc) => setPreviewDocId(doc.id)}

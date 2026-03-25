@@ -50,6 +50,16 @@ export function ModulePickerDemo() {
   const moduleRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [cursorPos, setCursorPos] = useState({ x: 160, y: 200 });
   const [cursorVisible, setCursorVisible] = useState(true);
+  const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Resume animation after 5s of no interaction
+  const scheduleResume = useCallback(() => {
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    idleTimerRef.current = setTimeout(() => {
+      setPaused(false);
+      setCursorVisible(true);
+    }, 5000);
+  }, []);
 
   // Auto-cycle through persona presets
   useEffect(() => {
@@ -66,8 +76,10 @@ export function ModulePickerDemo() {
 
   const selectPreset = (index: number) => {
     setPaused(true);
+    setCursorVisible(false);
     setActivePreset(index);
     setEnabledSet(new Set(PERSONA_PRESETS[index].modules));
+    scheduleResume();
   };
 
   const setModuleRef = useCallback((name: string) => (el: HTMLDivElement | null) => {
@@ -124,6 +136,7 @@ export function ModulePickerDemo() {
       if (next.has(name)) next.delete(name); else next.add(name);
       return next;
     });
+    scheduleResume();
   };
 
   const activeCount = enabledSet.size;
@@ -177,13 +190,13 @@ export function ModulePickerDemo() {
               </div>
               <div>
                 <p className="text-[12px] font-semibold text-foreground leading-tight">{PERSONA_PRESETS[activePreset].label}</p>
-                <p className="text-[10px] text-text-tertiary">{PERSONA_PRESETS[activePreset].role}</p>
+                <p className="text-[11px] text-text-tertiary">{PERSONA_PRESETS[activePreset].role}</p>
               </div>
             </div>
-            <p className="text-[11px] text-text-secondary leading-relaxed">
+            <p className="text-[12px] text-text-secondary leading-relaxed">
               {PERSONA_PRESETS[activePreset].context}
             </p>
-            <p className="text-[10px] text-primary font-medium mt-2">
+            <p className="text-[12px] text-primary font-medium mt-2">
               AI suggested {PERSONA_PRESETS[activePreset].modules.length} modules
             </p>
           </motion.div>
@@ -191,20 +204,20 @@ export function ModulePickerDemo() {
 
         {/* Right hint — what you can do */}
         <div className="hidden xl:block absolute -right-52 top-12 w-44">
-          <p className="text-[11px] text-text-tertiary leading-relaxed mb-3">
+          <p className="text-[12px] text-text-tertiary leading-relaxed mb-3">
             <span className="text-foreground font-semibold">Toggle freely.</span> Turn any module on or off at any time — your data stays safe.
           </p>
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <div className="w-4 h-2 bg-primary rounded-full" />
-              <span className="text-[10px] text-text-secondary">On — shows in your sidebar</span>
+              <span className="text-[12px] text-text-secondary">On — shows in your sidebar</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-2 bg-border-light rounded-full" />
-              <span className="text-[10px] text-text-secondary">Off — hidden, data preserved</span>
+              <span className="text-[12px] text-text-secondary">Off — hidden, data preserved</span>
             </div>
           </div>
-          <p className="text-[10px] text-text-tertiary mt-3">$49/mo flat. All modules included. No per-feature fees.</p>
+          <p className="text-[12px] text-text-tertiary mt-3">$49/mo flat. All modules included. No per-feature fees.</p>
         </div>
 
         {/* Mobile fallback */}
@@ -215,8 +228,8 @@ export function ModulePickerDemo() {
         <div
           ref={containerRef}
           className="relative rounded-2xl border border-border-light overflow-hidden shadow-xl bg-white hidden md:block"
-          onMouseEnter={() => { setPaused(true); setCursorVisible(false); }}
-          onMouseLeave={() => { setPaused(false); setCursorVisible(true); }}
+          onMouseEnter={() => { setPaused(true); setCursorVisible(false); if (idleTimerRef.current) clearTimeout(idleTimerRef.current); }}
+          onMouseLeave={() => { setPaused(false); setCursorVisible(true); if (idleTimerRef.current) clearTimeout(idleTimerRef.current); }}
         >
           {/* Fake cursor */}
           {cursorVisible && !paused && (
@@ -398,6 +411,15 @@ export function FeatureCustomizeDemo() {
   const featureRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [cursorPos2, setCursorPos2] = useState({ x: 700, y: 200 });
   const [cursorVisible2, setCursorVisible2] = useState(true);
+  const idleTimerRef2 = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const scheduleResume2 = useCallback(() => {
+    if (idleTimerRef2.current) clearTimeout(idleTimerRef2.current);
+    idleTimerRef2.current = setTimeout(() => {
+      setPaused(false);
+      setCursorVisible2(true);
+    }, 5000);
+  }, []);
 
   const setFeatureRef = useCallback((name: string) => (el: HTMLDivElement | null) => {
     featureRefs.current[name] = el;
@@ -449,12 +471,14 @@ export function FeatureCustomizeDemo() {
     setPaused(true);
     setCursorVisible2(false);
     setFeatureStates((prev) => ({ ...prev, [name]: !prev[name] }));
+    scheduleResume2();
   };
 
   const selectModule = (name: string) => {
     setPaused(true);
     setCursorVisible2(false);
     setActiveModule(name);
+    scheduleResume2();
   };
 
   const demo = MODULE_DEMOS[activeModule];
@@ -545,8 +569,8 @@ export function FeatureCustomizeDemo() {
         <div
           ref={containerRef2}
           className="relative rounded-2xl border border-border-light overflow-hidden shadow-2xl bg-background hidden md:block"
-          onMouseEnter={() => { setPaused(true); setCursorVisible2(false); }}
-          onMouseLeave={() => { setPaused(false); setCursorVisible2(true); }}
+          onMouseEnter={() => { setPaused(true); setCursorVisible2(false); if (idleTimerRef2.current) clearTimeout(idleTimerRef2.current); }}
+          onMouseLeave={() => { setPaused(false); setCursorVisible2(true); if (idleTimerRef2.current) clearTimeout(idleTimerRef2.current); }}
         >
           {/* Fake cursor */}
           {cursorVisible2 && !paused && (
@@ -654,7 +678,7 @@ export function FeatureCustomizeDemo() {
         </div>
 
         {/* Bottom note */}
-        <p className="text-center text-[12px] text-text-tertiary mt-6 max-w-lg mx-auto leading-relaxed">
+        <p className="text-center text-[13px] text-text-tertiary mt-6 max-w-lg mx-auto leading-relaxed">
           This is a preview of how the platform works — representing a fraction of the 200+ features available. Your actual workspace will be tailored to your industry and business needs.
         </p>
       </div>

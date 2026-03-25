@@ -77,6 +77,7 @@ export function CampaignList({ onEdit }: CampaignListProps) {
 
       <div className="bg-card-bg rounded-xl border border-border-light overflow-hidden">
         <DataTable<Campaign>
+          storageKey="magic-crm-campaigns-columns"
           columns={columns}
           data={filtered}
           keyExtractor={(c) => c.id}

@@ -101,7 +101,7 @@ export function SOAPNotesPage() {
         />
       ) : (
         <div className="bg-card-bg rounded-xl border border-border-light overflow-hidden">
-          <DataTable<SOAPNote> columns={columns} data={notes} keyExtractor={(n) => n.id} />
+          <DataTable<SOAPNote> storageKey="magic-crm-soapnotes-columns" columns={columns} data={notes} keyExtractor={(n) => n.id} />
         </div>
       )}
       <FeatureSection moduleId="soap-notes" featureId="auto-link-booking" featureLabel="Auto-Link to Booking">

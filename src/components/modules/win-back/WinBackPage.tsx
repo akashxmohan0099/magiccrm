@@ -60,7 +60,7 @@ export function WinBackPage() {
         />
       ) : (
         <div className="bg-card-bg rounded-xl border border-border-light overflow-hidden">
-          <DataTable<WinBackRule> columns={ruleColumns} data={rules} keyExtractor={(r) => r.id} />
+          <DataTable<WinBackRule> storageKey="magic-crm-winback-columns" columns={ruleColumns} data={rules} keyExtractor={(r) => r.id} />
         </div>
       )}
       <WinBackRuleForm open={formOpen} onClose={() => setFormOpen(false)} />

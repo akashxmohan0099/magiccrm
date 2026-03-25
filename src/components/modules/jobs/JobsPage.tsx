@@ -237,6 +237,7 @@ export function JobsPage() {
       ) : view === "list" ? (
         <div className="bg-card-bg rounded-xl border border-border-light overflow-hidden">
           <DataTable
+            storageKey="magic-crm-jobs-columns"
             columns={columns}
             data={filtered}
             keyExtractor={(j) => j.id}

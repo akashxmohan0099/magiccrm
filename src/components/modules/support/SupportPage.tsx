@@ -126,6 +126,7 @@ export function SupportPage() {
           ) : (
             <div className="bg-card-bg rounded-xl border border-border-light overflow-hidden">
               <DataTable
+                storageKey="magic-crm-support-columns"
                 columns={columns}
                 data={filtered}
                 keyExtractor={(t) => t.id}

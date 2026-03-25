@@ -6,7 +6,7 @@ import {
   ArrowRight, Check, Star,
   Zap, Crown, Camera, FileInput,
   ClipboardList, Gift, UserCheck, Store, Lightbulb, Puzzle, Sparkles, NotebookPen,
-  Ticket, CalendarRange, Building2, ScrollText, ListOrdered,
+  Ticket, CalendarRange, Building2, ScrollText, ListOrdered, BrainCircuit, TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import Link from "next/link";
@@ -194,7 +194,7 @@ export default function LandingPage() {
                 Build my workspace <ArrowRight className="w-5 h-5" />
               </Button>
             </Link>
-            <p className="text-[13px] text-text-tertiary">
+            <p className="text-[14px] text-text-tertiary">
               Free to set up. $49/mo when you&apos;re ready.
             </p>
           </motion.div>
@@ -217,7 +217,7 @@ export default function LandingPage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={viewportConfig}
             transition={{ duration: 0.5 }}
-            className="text-center text-[13px] text-text-tertiary mb-4 font-medium"
+            className="text-center text-[14px] text-text-tertiary mb-4 font-medium"
           >
             Trusted across industries
           </motion.p>
@@ -229,13 +229,13 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, y: 0, scale: 1 }}
                 viewport={viewportConfig}
                 transition={{ delay: 0.4 + i * 0.04, duration: 0.4 }}
-                className="px-3.5 py-1.5 bg-surface border border-border-light rounded-full text-[12px] font-medium text-text-secondary"
+                className="px-4 py-2 bg-surface border border-border-light rounded-full text-[13px] font-medium text-text-secondary"
               >
                 {industry}
               </motion.span>
             ))}
           </div>
-          <p className="text-center text-[12px] text-text-tertiary mt-4 max-w-md mx-auto">
+          <p className="text-center text-[13px] text-text-tertiary mt-4 max-w-md mx-auto">
             Not built for one industry — built for anyone who wants to manage their business, their way.
           </p>
         </div>
@@ -999,113 +999,127 @@ export default function LandingPage() {
         </div>
       </motion.section>
 
-      {/* Final CTA */}
-      <motion.section
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={viewportConfig}
-        transition={{ duration: 0.5 }}
-        className="py-12 sm:py-16 bg-foreground"
-      >
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
+      {/* Closing section */}
+      <footer className="relative overflow-hidden" style={{ backgroundColor: "#0e0e0e" }}>
+        {/* Ambient glow behind CTA */}
+        <div className="absolute top-[-100px] left-1/2 -translate-x-1/2 w-[600px] h-[500px] pointer-events-none" style={{ background: "radial-gradient(ellipse at center, rgba(124,254,157,0.06), transparent 65%)" }} />
+
+        {/* CTA */}
+        <div className="relative max-w-3xl mx-auto px-4 sm:px-6 pt-20 pb-16 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={viewportConfig}
+            transition={{ duration: 0.5 }}
+            className="mb-5"
+          >
+            <span className="text-[13px] font-medium" style={{ color: "#7CFE9D" }}>Your business is unique</span>
+          </motion.div>
           <motion.h2
             variants={sectionHeadingVariants}
             initial="hidden"
             whileInView="visible"
             viewport={viewportConfig}
             transition={sectionTransition}
-            className="text-[1.5rem] sm:text-[2rem] font-bold text-white mb-4 leading-tight"
+            className="text-[1.75rem] sm:text-[2.5rem] font-bold mb-5 leading-[1.1]"
+            style={{ color: "#fff" }}
           >
-            Stop paying for features you don&apos;t use.
+            Your software should be too.
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={viewportConfig}
             transition={{ delay: 0.1, ...sectionTransition }}
-            className="text-white/50 mb-8 text-[15px]"
+            className="mb-10 text-[15px] max-w-md mx-auto"
+            style={{ color: "#888" }}
           >
-            Build a workspace that actually fits your business in under 2 minutes.
+            Tell us what you do. We&apos;ll build the workspace. You&apos;ll wonder how you worked without it.
           </motion.p>
-          <motion.div
-            variants={ctaPulseVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={viewportConfig}
-          >
+          <motion.div variants={ctaPulseVariants} initial="hidden" whileInView="visible" viewport={viewportConfig}>
             <Link href="/onboarding">
               <Button size="lg" className="px-10 bg-primary text-foreground hover:bg-primary-hover shadow-none hover:shadow-none cta-glow">
-                Build my workspace <ArrowRight className="w-5 h-5" />
+                Get started free <ArrowRight className="w-5 h-5" />
               </Button>
             </Link>
           </motion.div>
         </div>
-      </motion.section>
 
-      {/* Footer */}
-      <footer className="border-t border-border-light bg-surface/50">
-        <div className="max-w-6xl mx-auto px-6 py-16">
-          {/* Top section */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-14">
-            {/* Brand + description */}
-            <div className="md:col-span-1">
-              <div className="flex items-center gap-2.5 mb-4">
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: "var(--logo-green)" }}>
-                  <div className="w-3 h-3 bg-white rounded-sm" />
-                </div>
-                <span className="font-bold text-foreground text-[15px]">Magic</span>
-              </div>
-              <p className="text-[13px] text-text-secondary leading-relaxed">
-                The modular CRM that adapts to how you actually work. Pick your modules, configure your features, and run your business your way.
-              </p>
+        {/* Intelligence strip */}
+        <div className="relative max-w-5xl mx-auto px-6 pb-8">
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={viewportConfig}
+            transition={{ duration: 0.6 }}
+            className="border-t border-white/[0.06] pt-10 pb-8"
+          >
+            {/* Animated pipeline */}
+            <div className="relative flex items-center justify-center gap-3 sm:gap-4 mb-6">
+              {[
+                { icon: Zap, label: "Collects" },
+                { icon: Lightbulb, label: "Learns" },
+                { icon: TrendingUp, label: "Predicts" },
+                { icon: Sparkles, label: "Acts" },
+              ].map((node, i) => (
+                <motion.div
+                  key={node.label}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={viewportConfig}
+                  transition={{ delay: 0.1 + i * 0.08, duration: 0.3 }}
+                  className="flex items-center gap-3 sm:gap-4"
+                >
+                  {i > 0 && (
+                    <div className="w-6 sm:w-10 h-px relative overflow-hidden" style={{ backgroundColor: "rgba(255,255,255,0.06)" }}>
+                      <motion.div
+                        className="absolute inset-y-0 w-4"
+                        style={{ background: "linear-gradient(90deg, transparent, #7CFE9D, transparent)" }}
+                        animate={{ left: ["-16px", "calc(100% + 16px)"] }}
+                        transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.3, ease: "linear" }}
+                      />
+                    </div>
+                  )}
+                  <motion.div
+                    animate={{ boxShadow: ["0 0 0 0 rgba(124,254,157,0)", "0 0 14px 2px rgba(124,254,157,0.1)", "0 0 0 0 rgba(124,254,157,0)"] }}
+                    transition={{ duration: 2.5, repeat: Infinity, delay: i * 0.5 }}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg border"
+                    style={{ backgroundColor: "rgba(255,255,255,0.03)", borderColor: "rgba(255,255,255,0.08)" }}
+                  >
+                    <node.icon className="w-3.5 h-3.5" style={{ color: "#7CFE9D" }} />
+                    <span className="text-[13px] font-medium" style={{ color: "#ccc" }}>{node.label}</span>
+                  </motion.div>
+                </motion.div>
+              ))}
             </div>
 
-            {/* Platform */}
-            <div>
-              <h4 className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider mb-4">Platform</h4>
-              <ul className="space-y-2.5">
-                <li><span className="text-[13px] text-text-secondary hover:text-foreground transition-colors cursor-pointer">Clients & Leads</span></li>
-                <li><span className="text-[13px] text-text-secondary hover:text-foreground transition-colors cursor-pointer">Scheduling & Bookings</span></li>
-                <li><span className="text-[13px] text-text-secondary hover:text-foreground transition-colors cursor-pointer">Invoicing & Payments</span></li>
-                <li><span className="text-[13px] text-text-secondary hover:text-foreground transition-colors cursor-pointer">Projects & Jobs</span></li>
-                <li><span className="text-[13px] text-text-secondary hover:text-foreground transition-colors cursor-pointer">Marketing & Campaigns</span></li>
-                <li><span className="text-[13px] text-text-secondary hover:text-foreground transition-colors cursor-pointer">Team Management</span></li>
-              </ul>
-            </div>
-
-            {/* Integrations & AI */}
-            <div>
-              <h4 className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider mb-4">Powered by</h4>
-              <ul className="space-y-2.5">
-                <li><span className="text-[13px] text-text-secondary">AI-Powered Onboarding</span></li>
-                <li><span className="text-[13px] text-text-secondary">Smart Feature Recommendations</span></li>
-                <li><span className="text-[13px] text-text-secondary">Google Calendar Sync</span></li>
-                <li><span className="text-[13px] text-text-secondary">Stripe Payments</span></li>
-                <li><span className="text-[13px] text-text-secondary">WhatsApp & SMS</span></li>
-                <li><span className="text-[13px] text-text-secondary">Unified Inbox</span></li>
-              </ul>
-            </div>
-
-            {/* Resources */}
-            <div>
-              <h4 className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider mb-4">Resources</h4>
-              <ul className="space-y-2.5">
-                <li><Link href="/onboarding" className="text-[13px] text-text-secondary hover:text-foreground transition-colors">Get Started</Link></li>
-                <li><Link href="/pricing" className="text-[13px] text-text-secondary hover:text-foreground transition-colors">Pricing</Link></li>
-                <li><Link href="/privacy" className="text-[13px] text-text-secondary hover:text-foreground transition-colors">Privacy Policy</Link></li>
-                <li><Link href="/terms" className="text-[13px] text-text-secondary hover:text-foreground transition-colors">Terms of Service</Link></li>
-              </ul>
-            </div>
-          </div>
+            {/* ML line */}
+            <p className="text-center text-[15px] mb-1.5" style={{ color: "#777" }}>
+              Built on machine learning that adapts to how <span className="italic">you</span> work.
+            </p>
+            <p className="text-center text-[15px]" style={{ color: "#777" }}>
+              The more you use it, the smarter it gets — <span className="font-semibold" style={{ color: "#7CFE9D" }}>automatically</span>.
+            </p>
+          </motion.div>
 
           {/* Bottom bar */}
-          <div className="pt-8 border-t border-border-light flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-[12px] text-text-tertiary">
-              &copy; {new Date().getFullYear()} Magic. All rights reserved.
-            </p>
-            <p className="text-[12px] text-text-tertiary">
-              Built for service businesses. Powered by AI.
-            </p>
+          <div className="border-t border-white/[0.06] py-6 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ backgroundColor: "#7CFE9D" }}>
+                <div className="w-2.5 h-2.5 bg-white rounded-sm" />
+              </div>
+              <span className="text-[14px] font-semibold" style={{ color: "#777" }}>Magic</span>
+            </div>
+            <div className="flex items-center gap-2.5">
+              <span className="text-[13px]" style={{ color: "#555" }}>Powered by</span>
+              {["Anthropic", "OpenAI", "Kimi"].map((name, i) => (
+                <span key={name} className="flex items-center gap-2.5">
+                  {i > 0 && <span className="text-[13px]" style={{ color: "#444" }}>&middot;</span>}
+                  <span className="text-[14px] font-semibold" style={{ color: "#888" }}>{name}</span>
+                </span>
+              ))}
+            </div>
+            <p className="text-[12px]" style={{ color: "#555" }}>&copy; {new Date().getFullYear()} Magic</p>
           </div>
         </div>
       </footer>

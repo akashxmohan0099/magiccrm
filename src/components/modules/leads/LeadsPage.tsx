@@ -174,6 +174,7 @@ export function LeadsPage() {
       ) : view === "list" ? (
         <div className="bg-card-bg rounded-xl border border-border-light overflow-hidden">
           <DataTable<Lead>
+            storageKey="magic-crm-leads-columns"
             columns={columns}
             data={filtered}
             keyExtractor={(l) => l.id}

@@ -105,7 +105,7 @@ export function ClientPortalPage() {
               <UserCheck className="w-4 h-4 text-text-secondary" />
               <h3 className="text-[14px] font-semibold text-foreground">Client Access ({accessList.length})</h3>
             </div>
-            <DataTable<PortalAccess> columns={accessColumns} data={accessList} keyExtractor={(a) => a.id} />
+            <DataTable<PortalAccess> storageKey="magic-crm-portal-access-columns" columns={accessColumns} data={accessList} keyExtractor={(a) => a.id} />
           </div>
         )}
       </div>

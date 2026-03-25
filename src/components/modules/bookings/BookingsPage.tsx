@@ -204,6 +204,7 @@ export function BookingsPage() {
       ) : view === "list" ? (
         <div className="bg-card-bg rounded-xl border border-border-light overflow-hidden">
           <DataTable<Booking>
+            storageKey="magic-crm-bookings-columns"
             columns={columns}
             data={filtered}
             keyExtractor={(b) => b.id}

@@ -172,6 +172,7 @@ export function VendorManagementPage() {
         />
       ) : (
         <DataTable<Vendor>
+          storageKey="magic-crm-vendors-columns"
           columns={columns}
           data={vendors}
           keyExtractor={(v) => v.id}

@@ -74,7 +74,7 @@ export function LoyaltyPage() {
               <div className="px-5 py-3 border-b border-border-light">
                 <h3 className="text-[14px] font-semibold text-foreground">Referral Codes</h3>
               </div>
-              <DataTable<ReferralCode> columns={codeColumns} data={referralCodes} keyExtractor={(c) => c.id} />
+              <DataTable<ReferralCode> storageKey="magic-crm-referrals-columns" columns={codeColumns} data={referralCodes} keyExtractor={(c) => c.id} />
             </div>
           )}
         </div>

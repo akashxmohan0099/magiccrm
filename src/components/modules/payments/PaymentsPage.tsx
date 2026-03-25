@@ -131,6 +131,7 @@ export function PaymentsPage() {
       ) : (
         <div className="bg-card-bg rounded-xl border border-border-light overflow-hidden">
           <DataTable<Payment>
+            storageKey="magic-crm-payments-columns"
             columns={columns}
             data={payments}
             keyExtractor={(p) => p.id}

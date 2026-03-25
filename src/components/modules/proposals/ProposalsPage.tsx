@@ -74,6 +74,7 @@ export function ProposalsPage() {
       ) : (
         <div className="bg-card-bg rounded-xl border border-border-light overflow-hidden">
           <DataTable<Proposal>
+            storageKey="magic-crm-proposals-columns"
             columns={proposalColumns}
             data={proposals}
             keyExtractor={(proposal) => proposal.id}

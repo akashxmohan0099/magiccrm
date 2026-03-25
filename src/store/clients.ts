@@ -72,7 +72,7 @@ export const useClientsStore = create<ClientsStore>()(
       // Pagination state
       // ---------------------------------------------------------------
       page: 1,
-      pageSize: 25,
+      pageSize: 20,
       totalCount: 0,
 
       setPage: (n: number) => set({ page: n }),

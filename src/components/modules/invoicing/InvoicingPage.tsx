@@ -215,6 +215,7 @@ export function InvoicingPage() {
           ) : (
             <div className="bg-card-bg rounded-xl border border-border-light overflow-hidden">
               <DataTable<Invoice>
+                storageKey="magic-crm-invoices-columns"
                 columns={invoiceColumns}
                 data={invoices}
                 keyExtractor={(inv) => inv.id}
@@ -238,6 +239,7 @@ export function InvoicingPage() {
           ) : (
             <div className="bg-card-bg rounded-xl border border-border-light overflow-hidden">
               <DataTable<Quote>
+                storageKey="magic-crm-quotes-columns"
                 columns={quoteColumns}
                 data={quotes}
                 keyExtractor={(q) => q.id}
@@ -261,6 +263,7 @@ export function InvoicingPage() {
           ) : (
             <div className="bg-card-bg rounded-xl border border-border-light overflow-hidden">
               <DataTable<Proposal>
+                storageKey="magic-crm-billing-proposals-columns"
                 columns={proposalColumns}
                 data={proposals}
                 keyExtractor={(p) => p.id}

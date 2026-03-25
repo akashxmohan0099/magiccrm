@@ -196,6 +196,7 @@ export function GiftCardsPage() {
         />
       ) : (
         <DataTable<GiftCard>
+          storageKey="magic-crm-giftcards-columns"
           columns={columns}
           data={giftCards}
           keyExtractor={(c) => c.id}

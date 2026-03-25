@@ -144,7 +144,7 @@ export function TeamPage() {
         />
       ) : (
         <div className="bg-card-bg rounded-xl border border-border-light overflow-hidden">
-          <DataTable<TeamMember> columns={columns} data={members} keyExtractor={(m) => m.id} onRowClick={handleRowClick} />
+          <DataTable<TeamMember> storageKey="magic-crm-team-columns" columns={columns} data={members} keyExtractor={(m) => m.id} onRowClick={handleRowClick} />
         </div>
       )}
 

@@ -47,7 +47,7 @@ export function IntakeFormsPage() {
         />
       ) : (
         <div className="bg-card-bg rounded-xl border border-border-light overflow-hidden">
-          <DataTable<IntakeForm> columns={columns} data={forms} keyExtractor={(f) => f.id} />
+          <DataTable<IntakeForm> storageKey="magic-crm-intakeforms-columns" columns={columns} data={forms} keyExtractor={(f) => f.id} />
         </div>
       )}
       <FeatureSection moduleId="intake-forms" featureId="conditional-fields" featureLabel="Conditional Fields">
