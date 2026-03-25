@@ -1,4 +1,6 @@
 import type { VocabularyMap } from "@/types/industry-config";
+import type { NeedsAssessment } from "@/types/onboarding";
+import { FEATURE_BLOCKS } from "@/types/features";
 
 export interface ModuleDefinition {
   id: string;
@@ -87,4 +89,69 @@ export function getCoreModules(): ModuleDefinition[] {
 
 export function getAddonModules(): ModuleDefinition[] {
   return MODULE_REGISTRY.filter((m) => m.kind === "addon");
+}
+
+// ── Shared module enablement logic ──────────────────────────────
+// Single source of truth used by SummaryStep, BuildingScreen, dashboard hooks, etc.
+
+export const ALWAYS_ON_MODULES = new Set([
+  "client-database",
+  "leads-pipeline",
+  "communication",
+  "quotes-invoicing",
+]);
+
+/** Maps module IDs to their NeedsAssessment trigger keys */
+export const MODULE_TO_NEED: Record<string, keyof NeedsAssessment> = {
+  "client-database": "manageCustomers",
+  "leads-pipeline": "receiveInquiries",
+  "communication": "communicateClients",
+  "bookings-calendar": "acceptBookings",
+  "quotes-invoicing": "sendInvoices",
+  "jobs-projects": "manageProjects",
+  "marketing": "runMarketing",
+};
+
+/**
+ * Pure function: computes the set of enabled core module IDs from onboarding state.
+ * Does NOT include add-ons (those live in the addons store).
+ *
+ * discoveryAnswers convention:
+ *   "module:{id}" === true  → explicitly enabled
+ *   "module:{id}" === false → explicitly disabled (user removed it on Summary)
+ */
+export function computeEnabledModuleIds(
+  needs: NeedsAssessment,
+  discoveryAnswers: Record<string, boolean>,
+): Set<string> {
+  const enabled = new Set<string>(ALWAYS_ON_MODULES);
+
+  // 1. Needs-gated modules
+  for (const [moduleId, needKey] of Object.entries(MODULE_TO_NEED)) {
+    if (needs[needKey]) enabled.add(moduleId);
+  }
+
+  // 2. Direct discovery answers from AI questions
+  for (const [key, val] of Object.entries(discoveryAnswers)) {
+    if (key.startsWith("module:") && val === true) {
+      enabled.add(key.replace("module:", ""));
+    }
+  }
+
+  // 3. FEATURE_BLOCKS auto-enable rules (only question-gated needs)
+  for (const block of FEATURE_BLOCKS) {
+    if (block.autoEnabledBy?.some((trigger) => needs[trigger])) {
+      enabled.add(block.id);
+    }
+  }
+
+  // 4. Respect explicit disables (user removed module on Summary)
+  for (const [key, val] of Object.entries(discoveryAnswers)) {
+    if (key.startsWith("module:") && val === false) {
+      const id = key.replace("module:", "");
+      if (!ALWAYS_ON_MODULES.has(id)) enabled.delete(id);
+    }
+  }
+
+  return enabled;
 }

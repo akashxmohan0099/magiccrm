@@ -7,6 +7,8 @@ import { toast } from "@/components/ui/Toast";
 import { cleanupClientRecords } from "@/lib/cascade-delete";
 import {
   fetchClients,
+  fetchClientsPage,
+  fetchDuplicateClients,
   dbCreateClient,
   dbUpdateClient,
   dbDeleteClient,
@@ -14,8 +16,33 @@ import {
   mapClientFromDB,
 } from "@/lib/db/clients";
 
+export interface DuplicateMatch {
+  client: Client;
+  matchedOn: ("name" | "email" | "phone")[];
+}
+
 interface ClientsStore {
   clients: Client[];
+
+  // Pagination
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  setPage: (n: number) => void;
+  setPageSize: (n: number) => void;
+  loadPage: (workspaceId: string, page?: number, pageSize?: number) => Promise<void>;
+
+  // Duplicate detection
+  checkDuplicates: (
+    name: string,
+    email: string,
+    phone: string,
+    workspaceId?: string
+  ) => Promise<DuplicateMatch[]>;
+
+  // CSV export
+  exportCSV: () => string;
+
   addClient: (
     data: Omit<Client, "id" | "createdAt" | "updatedAt">,
     workspaceId?: string
@@ -41,6 +68,139 @@ export const useClientsStore = create<ClientsStore>()(
     (set, get) => ({
       clients: [],
 
+      // ---------------------------------------------------------------
+      // Pagination state
+      // ---------------------------------------------------------------
+      page: 1,
+      pageSize: 25,
+      totalCount: 0,
+
+      setPage: (n: number) => set({ page: n }),
+      setPageSize: (n: number) => set({ pageSize: n, page: 1 }),
+
+      loadPage: async (workspaceId: string, page?: number, pageSize?: number) => {
+        const currentPage = page ?? get().page;
+        const currentPageSize = pageSize ?? get().pageSize;
+        try {
+          const { data, totalCount } = await fetchClientsPage(
+            workspaceId,
+            currentPage,
+            currentPageSize
+          );
+          const mappedClients = data.map((row) => mapClientFromDB(row));
+          set({
+            clients: mappedClients,
+            page: currentPage,
+            pageSize: currentPageSize,
+            totalCount,
+          });
+        } catch (err) {
+          import("@/lib/sync-error-handler").then((m) =>
+            m.handleSyncError(err, { context: "loading clients page" })
+          );
+        }
+      },
+
+      // ---------------------------------------------------------------
+      // Duplicate detection
+      // ---------------------------------------------------------------
+      checkDuplicates: async (
+        name: string,
+        email: string,
+        phone: string,
+        workspaceId?: string
+      ): Promise<DuplicateMatch[]> => {
+        // First check in-memory (local store)
+        const localClients = get().clients;
+        const matches: DuplicateMatch[] = [];
+
+        const normName = name.trim().toLowerCase();
+        const normEmail = email.trim().toLowerCase();
+        const normPhone = phone.trim();
+
+        for (const c of localClients) {
+          const matchedOn: ("name" | "email" | "phone")[] = [];
+          if (normEmail && c.email.toLowerCase() === normEmail) matchedOn.push("email");
+          if (normName && c.name.toLowerCase() === normName) matchedOn.push("name");
+          if (normPhone && c.phone && c.phone === normPhone) matchedOn.push("phone");
+          if (matchedOn.length > 0) {
+            matches.push({ client: c, matchedOn });
+          }
+        }
+
+        // If we have a workspaceId, also check the DB for matches not yet in local store
+        if (workspaceId) {
+          try {
+            const dbRows = await fetchDuplicateClients(workspaceId, name, email, phone);
+            const localIds = new Set(localClients.map((c) => c.id));
+            for (const row of dbRows) {
+              const client = mapClientFromDB(row);
+              if (localIds.has(client.id)) continue; // already matched locally
+              const matchedOn: ("name" | "email" | "phone")[] = [];
+              if (normEmail && client.email.toLowerCase() === normEmail) matchedOn.push("email");
+              if (normName && client.name.toLowerCase() === normName) matchedOn.push("name");
+              if (normPhone && client.phone && client.phone === normPhone) matchedOn.push("phone");
+              if (matchedOn.length > 0) {
+                matches.push({ client, matchedOn });
+              }
+            }
+          } catch {
+            // Silently fall back to local-only duplicate check
+          }
+        }
+
+        return matches;
+      },
+
+      // ---------------------------------------------------------------
+      // CSV export
+      // ---------------------------------------------------------------
+      exportCSV: (): string => {
+        const clients = get().clients;
+        const headers = [
+          "Name",
+          "Email",
+          "Phone",
+          "Company",
+          "Address",
+          "Status",
+          "Source",
+          "Tags",
+          "Notes",
+          "Created At",
+          "Updated At",
+        ];
+
+        const escapeCSV = (value: string): string => {
+          if (
+            value.includes(",") ||
+            value.includes('"') ||
+            value.includes("\n")
+          ) {
+            return `"${value.replace(/"/g, '""')}"`;
+          }
+          return value;
+        };
+
+        const rows = clients.map((c) =>
+          [
+            escapeCSV(c.name),
+            escapeCSV(c.email),
+            escapeCSV(c.phone || ""),
+            escapeCSV(c.company || ""),
+            escapeCSV(c.address || ""),
+            escapeCSV(c.status),
+            escapeCSV(c.source || ""),
+            escapeCSV(c.tags.join("; ")),
+            escapeCSV(c.notes || ""),
+            escapeCSV(c.createdAt),
+            escapeCSV(c.updatedAt),
+          ].join(",")
+        );
+
+        return [headers.join(","), ...rows].join("\n");
+      },
+
       addClient: (data, workspaceId?) => {
         const client: Client = {
           ...data,
@@ -54,9 +214,9 @@ export const useClientsStore = create<ClientsStore>()(
 
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
-          dbCreateClient(workspaceId, client).catch((err) =>
-            console.error("[clients] dbCreateClient failed:", err)
-          );
+          dbCreateClient(workspaceId, client).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving client" }));
+          });
         }
 
         return client;
@@ -74,9 +234,9 @@ export const useClientsStore = create<ClientsStore>()(
 
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
-          dbUpdateClient(workspaceId, id, updatedData).catch((err) =>
-            console.error("[clients] dbUpdateClient failed:", err)
-          );
+          dbUpdateClient(workspaceId, id, updatedData).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving client" }));
+          });
         }
       },
 
@@ -91,9 +251,9 @@ export const useClientsStore = create<ClientsStore>()(
 
           // Sync to Supabase if workspaceId available
           if (workspaceId) {
-            dbDeleteClient(workspaceId, id).catch((err) =>
-              console.error("[clients] dbDeleteClient failed:", err)
-            );
+            dbDeleteClient(workspaceId, id).catch((err) => {
+              import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting client" }));
+            });
           }
         }
       },
@@ -126,7 +286,7 @@ export const useClientsStore = create<ClientsStore>()(
           const { clients } = get();
           await dbUpsertClients(workspaceId, clients);
         } catch (err) {
-          console.error("[clients] syncToSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing clients" }));
         }
       },
 
@@ -138,7 +298,7 @@ export const useClientsStore = create<ClientsStore>()(
           );
           set({ clients: mappedClients });
         } catch (err) {
-          console.error("[clients] loadFromSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing clients" }));
         }
       },
     }),

@@ -16,6 +16,7 @@ export default function AIBuilderPage() {
   const { credits, prompt, setPrompt, buildRequests, createBuildRequest, updateBuildRequest, useCredits: consumeCredits } =
     useBuilderStore();
   const businessContext = useOnboardingStore((s) => s.businessContext);
+  const selectedPersona = useOnboardingStore((s) => s.selectedPersona);
   const [submitting, setSubmitting] = useState(false);
   const requests = buildRequests.filter((request) => request.source === "ai-builder");
 
@@ -40,7 +41,7 @@ export default function AIBuilderPage() {
     setSubmitting(true);
 
     try {
-      const result = await requestBuilderBrief({ prompt: trimmedPrompt, businessContext });
+      const result = await requestBuilderBrief({ prompt: trimmedPrompt, businessContext, selectedPersona });
       updateBuildRequest(request.id, { status: "review-ready", result, error: undefined });
       toast("Implementation brief generated");
     } catch (error) {

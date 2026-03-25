@@ -64,9 +64,9 @@ export const useJobsStore = create<JobsStore>()(
 
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
-          dbCreateJob(workspaceId, job).catch((err) =>
-            console.error("[jobs] dbCreateJob failed:", err)
-          );
+          dbCreateJob(workspaceId, job).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving job" }));
+          });
         }
 
         return job;
@@ -84,9 +84,9 @@ export const useJobsStore = create<JobsStore>()(
 
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
-          dbUpdateJob(workspaceId, id, updatedData).catch((err) =>
-            console.error("[jobs] dbUpdateJob failed:", err)
-          );
+          dbUpdateJob(workspaceId, id, updatedData).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving job" }));
+          });
         }
       },
 
@@ -99,9 +99,9 @@ export const useJobsStore = create<JobsStore>()(
 
           // Sync to Supabase if workspaceId available
           if (workspaceId) {
-            dbDeleteJob(workspaceId, id).catch((err) =>
-              console.error("[jobs] dbDeleteJob failed:", err)
-            );
+            dbDeleteJob(workspaceId, id).catch((err) => {
+              import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting job" }));
+            });
           }
         }
       },
@@ -116,9 +116,9 @@ export const useJobsStore = create<JobsStore>()(
 
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
-          dbUpdateJob(workspaceId, id, { stage, updatedAt } as Partial<Job>).catch((err) =>
-            console.error("[jobs] dbUpdateJob (moveJob) failed:", err)
-          );
+          dbUpdateJob(workspaceId, id, { stage, updatedAt } as Partial<Job>).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving job" }));
+          });
         }
       },
 
@@ -132,9 +132,9 @@ export const useJobsStore = create<JobsStore>()(
 
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
-          dbCreateTask(jobId, task).catch((err) =>
-            console.error("[jobs] dbCreateTask failed:", err)
-          );
+          dbCreateTask(jobId, task).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving job" }));
+          });
         }
       },
 
@@ -155,9 +155,9 @@ export const useJobsStore = create<JobsStore>()(
 
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
-          dbUpdateTask(taskId, data).catch((err) =>
-            console.error("[jobs] dbUpdateTask failed:", err)
-          );
+          dbUpdateTask(taskId, data).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving job" }));
+          });
         }
       },
 
@@ -182,9 +182,9 @@ export const useJobsStore = create<JobsStore>()(
 
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
-          dbUpdateTask(taskId, { completed: newCompleted }).catch((err) =>
-            console.error("[jobs] dbUpdateTask (toggle) failed:", err)
-          );
+          dbUpdateTask(taskId, { completed: newCompleted }).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving job" }));
+          });
         }
       },
 
@@ -199,9 +199,9 @@ export const useJobsStore = create<JobsStore>()(
 
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
-          dbDeleteTask(taskId).catch((err) =>
-            console.error("[jobs] dbDeleteTask failed:", err)
-          );
+          dbDeleteTask(taskId).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting job" }));
+          });
         }
       },
 
@@ -217,9 +217,9 @@ export const useJobsStore = create<JobsStore>()(
 
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
-          dbCreateTimeEntry(jobId, timeEntry).catch((err) =>
-            console.error("[jobs] dbCreateTimeEntry failed:", err)
-          );
+          dbCreateTimeEntry(jobId, timeEntry).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving job" }));
+          });
         }
       },
 
@@ -234,9 +234,9 @@ export const useJobsStore = create<JobsStore>()(
 
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
-          dbDeleteTimeEntry(entryId).catch((err) =>
-            console.error("[jobs] dbDeleteTimeEntry failed:", err)
-          );
+          dbDeleteTimeEntry(entryId).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting job" }));
+          });
         }
       },
 
@@ -285,9 +285,9 @@ export const useJobsStore = create<JobsStore>()(
 
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
-          dbUpdateJob(workspaceId, id, ratingData as Partial<Job>).catch((err) =>
-            console.error("[jobs] dbUpdateJob (rating) failed:", err)
-          );
+          dbUpdateJob(workspaceId, id, ratingData as Partial<Job>).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving job" }));
+          });
         }
       },
 
@@ -300,7 +300,7 @@ export const useJobsStore = create<JobsStore>()(
           const { jobs } = get();
           await dbUpsertJobs(workspaceId, jobs);
         } catch (err) {
-          console.error("[jobs] syncToSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing jobs" }));
         }
       },
 
@@ -309,7 +309,7 @@ export const useJobsStore = create<JobsStore>()(
           const jobs = await fetchJobs(workspaceId);
           set({ jobs: jobs ?? [] });
         } catch (err) {
-          console.error("[jobs] loadFromSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing jobs" }));
         }
       },
     }),

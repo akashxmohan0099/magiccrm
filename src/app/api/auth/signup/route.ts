@@ -1,11 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase-server";
+import { bootstrapWorkspaceForUser } from "@/lib/auth/bootstrap-workspace";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
-  try {
-    const { email, password } = await req.json();
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const { allowed } = rateLimit(`signup:${ip}`, 5, 300_000);
+  if (!allowed) {
+    return NextResponse.json({ error: "Too many signup attempts. Please try again in a few minutes." }, { status: 429 });
+  }
 
-    if (!email || !password) {
+  let createdUserId: string | null = null;
+
+  try {
+    const {
+      email,
+      password,
+      workspaceName,
+      industry,
+      persona,
+    } = await req.json();
+
+    const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
+    const normalizedWorkspaceName =
+      typeof workspaceName === "string" && workspaceName.trim()
+        ? workspaceName.trim()
+        : "My Workspace";
+
+    if (!normalizedEmail || !password) {
       return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
     }
 
@@ -17,7 +39,7 @@ export async function POST(req: NextRequest) {
 
     // Create user with auto-confirm (admin API bypasses email verification)
     const { data: userData, error: userError } = await admin.auth.admin.createUser({
-      email: email.trim(),
+      email: normalizedEmail,
       password,
       email_confirm: true,
     });
@@ -26,9 +48,37 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: userError.message }, { status: 400 });
     }
 
-    return NextResponse.json({ success: true, userId: userData.user.id });
+    createdUserId = userData.user.id;
+
+    const bootstrapResult = await bootstrapWorkspaceForUser({
+      authUserId: createdUserId,
+      email: normalizedEmail,
+      workspaceName: normalizedWorkspaceName,
+      industry,
+      persona,
+    });
+
+    if (!bootstrapResult.success || !bootstrapResult.workspaceId) {
+      throw new Error(bootstrapResult.error || "Failed to create workspace");
+    }
+
+    return NextResponse.json({
+      success: true,
+      userId: createdUserId,
+      workspaceId: bootstrapResult.workspaceId,
+    });
   } catch (err) {
     console.error("Signup error:", err);
+
+    if (createdUserId) {
+      const admin = await createAdminClient();
+      const { error: cleanupUserError } = await admin.auth.admin.deleteUser(createdUserId);
+
+      if (cleanupUserError) {
+        console.error("Failed to clean up user after signup error:", cleanupUserError);
+      }
+    }
+
     return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 });
   }
 }

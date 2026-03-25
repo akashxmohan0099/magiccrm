@@ -24,6 +24,8 @@ import { useDashboardStore, DashboardWidget } from "@/store/dashboard";
 import { useVocabulary } from "@/hooks/useVocabulary";
 import { useIndustryConfig } from "@/hooks/useIndustryConfig";
 import { useModuleEnabled } from "@/hooks/useFeature";
+import { computeEnabledModuleIds } from "@/lib/module-registry";
+import { RecommendedSetupCard } from "@/components/dashboard/RecommendedSetupCard";
 import { Button } from "@/components/ui/Button";
 import { requestBuilderBrief } from "@/lib/builder-requests";
 import { toast } from "@/components/ui/Toast";
@@ -43,20 +45,13 @@ interface SetupTask {
 }
 
 function buildSetupTasks(
-  featureSelections: Record<string, { id: string; selected: boolean }[]>,
+  enabledModuleIds: Set<string>,
   teamSize: string,
   vocab: VocabularyMap,
   config: IndustryAdaptiveConfig,
 ): SetupTask[] {
   const tasks: SetupTask[] = [];
-  const has = (blockId: string) => {
-    const f = featureSelections[blockId];
-    return f && f.some((feat) => feat.selected);
-  };
-  const hasChannel = (channelId: string) => {
-    const f = featureSelections["communication"];
-    return f?.some((feat) => feat.id === channelId && feat.selected);
-  };
+  const has = (moduleId: string) => enabledModuleIds.has(moduleId);
 
   tasks.push({ id: "brand", label: "Set up your brand", description: "Logo, colors, and business details", icon: Palette, href: "/dashboard/settings" });
 
@@ -73,15 +68,8 @@ function buildSetupTasks(
     tasks.push({ id: "availability", label: "Set your availability", description: "Working hours and days off", icon: Clock, href: "/dashboard/bookings" });
   }
 
-  if (hasChannel("email")) {
+  if (has("communication")) {
     tasks.push({ id: "email", label: "Connect your email", description: "Send and receive from the platform", icon: Mail, href: "/dashboard/settings" });
-  }
-
-  const socialChannels = ["instagram-dms", "whatsapp", "facebook-messenger", "linkedin"];
-  const selectedSocials = socialChannels.filter(hasChannel);
-  if (selectedSocials.length > 0) {
-    const names: Record<string, string> = { "instagram-dms": "Instagram", whatsapp: "WhatsApp", "facebook-messenger": "Messenger", linkedin: "LinkedIn" };
-    tasks.push({ id: "social", label: "Link your social accounts", description: `Connect ${selectedSocials.map((id) => names[id]).join(", ")}`, icon: Instagram, href: "/dashboard/settings" });
   }
 
   if (has("quotes-invoicing")) {
@@ -419,6 +407,7 @@ function WidgetPanel({ open, onClose, onAdd, onRemove, existingTypes, activeWidg
 }) {
   const [aiPrompt, setAiPrompt] = useState("");
   const businessContext = useOnboardingStore((s) => s.businessContext);
+  const selectedPersona = useOnboardingStore((s) => s.selectedPersona);
   const credits = useBuilderStore((s) => s.credits);
   const createBuildRequest = useBuilderStore((s) => s.createBuildRequest);
   const updateBuildRequest = useBuilderStore((s) => s.updateBuildRequest);
@@ -464,7 +453,7 @@ function WidgetPanel({ open, onClose, onAdd, onRemove, existingTypes, activeWidg
     setSubmittingPrompt(true);
 
     try {
-      const result = await requestBuilderBrief({ prompt: trimmedPrompt, businessContext });
+      const result = await requestBuilderBrief({ prompt: trimmedPrompt, businessContext, selectedPersona });
       updateBuildRequest(request.id, { status: "review-ready", result, error: undefined });
       toast("Widget brief generated and saved to Builder");
     } catch (error) {
@@ -730,7 +719,8 @@ function WidgetPreview({ type }: { type: string }) {
 
 export default function DashboardPage() {
   const businessContext = useOnboardingStore((s) => s.businessContext);
-  const featureSelections = useOnboardingStore((s) => s.featureSelections);
+  const needs = useOnboardingStore((s) => s.needs);
+  const discoveryAnswers = useOnboardingStore((s) => s.discoveryAnswers);
   const teamSize = useOnboardingStore((s) => s.teamSize);
   const vocab = useVocabulary();
   const config = useIndustryConfig();
@@ -762,7 +752,8 @@ export default function DashboardPage() {
     return () => window.removeEventListener("dashboard:toggle-edit", handler);
   }, [isEditing]);
 
-  const allTasks = buildSetupTasks(featureSelections, teamSize, vocab, config);
+  const enabledModuleIds = useMemo(() => computeEnabledModuleIds(needs, discoveryAnswers), [needs, discoveryAnswers]);
+  const allTasks = buildSetupTasks(enabledModuleIds, teamSize, vocab, config);
   const completedCount = completedIds.size;
   const totalCount = allTasks.length;
   const setupDone = completedCount >= totalCount || setupDismissed;
@@ -886,6 +877,9 @@ export default function DashboardPage() {
           )}
         </motion.div>
       )}
+
+      {/* ── RECOMMENDED SETUP ── from deep-dive onboarding */}
+      <RecommendedSetupCard />
 
       {/* ── WIDGET DASHBOARD ── only shows when setup is done */}
       {setupDone && (

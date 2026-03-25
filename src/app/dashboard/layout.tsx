@@ -1,7 +1,7 @@
 "use client";
 
-import { ReactNode, useState, useMemo } from "react";
-import { usePathname } from "next/navigation";
+import { ReactNode, useState, useMemo, useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -12,7 +12,7 @@ import {
   Crown, Camera, FileInput, ClipboardList, Gift, UserCheck,
   Store, Globe, Lightbulb, Puzzle, UsersRound,
   Ticket, CalendarRange, Building2, ScrollText, Wrench, Banknote, ImagePlus, ListOrdered,
-  NotebookPen, LogOut,
+  NotebookPen, LogOut, Loader2,
 } from "lucide-react";
 import { useOnboardingStore } from "@/store/onboarding";
 import { useBuilderStore } from "@/store/builder";
@@ -25,6 +25,7 @@ import { getModuleDisplayName, getModuleBySlug, GROUP_LABELS } from "@/lib/modul
 import { ModuleConfigurator } from "@/components/ui/ModuleConfigurator";
 import { ToastContainer } from "@/components/ui/Toast";
 import { DashboardSkeleton } from "@/components/ui/Skeleton";
+import { AppPreloader } from "@/components/ui/AppPreloader";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { CommandPalette } from "@/components/ui/CommandPalette";
 
@@ -42,7 +43,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const hydrated = useHydration();
 
   if (!hydrated) {
-    return <DashboardSkeleton />;
+    return <AppPreloader />;
   }
 
   return (
@@ -54,26 +55,130 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 }
 
 function DashboardShell({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const { syncing } = useSupabaseSync();
   const pathname = usePathname();
   const businessContext = useOnboardingStore((s) => s.businessContext);
+  const selectedPersona = useOnboardingStore((s) => s.selectedPersona);
   const enabledModules = useEnabledModules();
   const enabledAddons = useEnabledAddons();
   const vocab = useVocabulary();
   const builderCredits = useBuilderStore((s) => s.credits);
   const allCustomFeatures = useBuilderStore((s) => s.customFeatures);
   const customFeatures = useMemo(() => allCustomFeatures.filter((f) => f.status === "ready"), [allCustomFeatures]);
-  const { user, signOut } = useAuth();
+  const { user, workspaceId, loading: authLoading, signOut } = useAuth();
   const [searchFocused, setSearchFocused] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
+  const [repairingWorkspace, setRepairingWorkspace] = useState(false);
+  const [repairWorkspaceError, setRepairWorkspaceError] = useState("");
   const teamSize = useOnboardingStore((s) => s.teamSize);
   const isSolo = teamSize === "Just me";
 
-  // Show skeleton while Supabase data is loading
-  if (syncing) {
-    return <DashboardSkeleton />;
+  const handleWorkspaceRepair = async () => {
+    if (repairingWorkspace) return;
+
+    setRepairWorkspaceError("");
+    setRepairingWorkspace(true);
+
+    try {
+      const res = await fetch("/api/auth/bootstrap-workspace", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          workspaceName: businessContext.businessName,
+          industry: businessContext.industry,
+          persona: selectedPersona,
+        }),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        setRepairWorkspaceError(result.error || "Failed to finish workspace setup.");
+        return;
+      }
+
+      router.refresh();
+    } catch (_error) {
+      setRepairWorkspaceError("Failed to finish workspace setup.");
+    } finally {
+      setRepairingWorkspace(false);
+    }
+  };
+
+  // Grace period: don't show "Workspace not found" for 4 seconds after mount.
+  // This covers auth init + member fetch retries without flashing the error screen.
+  const [graceExpired, setGraceExpired] = useState(false);
+  useEffect(() => {
+    if (workspaceId) return; // No grace needed if workspace already found
+    const t = setTimeout(() => setGraceExpired(true), 4000);
+    return () => clearTimeout(t);
+  }, [workspaceId]);
+
+  // Show preloader while anything is still resolving
+  if (syncing || authLoading || (!workspaceId && !graceExpired)) {
+    return <AppPreloader />;
+  }
+
+  // If user has no workspace after grace period, show setup prompt
+  if (!workspaceId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center max-w-sm">
+          <h2 className="text-lg font-semibold text-foreground mb-2">Workspace not found</h2>
+          <p className="text-sm text-text-secondary mb-6">
+            {user
+              ? "Your workspace hasn't been set up yet. Let's fix that."
+              : "Sign in or complete onboarding to access your workspace."}
+          </p>
+          {repairWorkspaceError && (
+            <p className="text-sm text-red-600 mb-4">{repairWorkspaceError}</p>
+          )}
+          {user && (
+            <div className="space-y-3">
+              <button
+                onClick={handleWorkspaceRepair}
+                disabled={repairingWorkspace}
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-foreground text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-70 disabled:cursor-not-allowed w-full"
+              >
+                {repairingWorkspace ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Finishing setup...
+                  </>
+                ) : (
+                  "Finish setting up workspace"
+                )}
+              </button>
+              <a
+                href="/onboarding"
+                className="inline-flex items-center justify-center px-6 py-3 border border-border-light rounded-xl text-sm font-medium text-foreground hover:bg-surface transition-colors w-full"
+              >
+                Start fresh with onboarding
+              </a>
+              <button
+                onClick={async () => {
+                  await signOut();
+                }}
+                className="text-sm text-text-tertiary hover:text-foreground transition-colors cursor-pointer"
+              >
+                Sign out and try a different account
+              </button>
+            </div>
+          )}
+          {!user && (
+            <a
+              href="/login"
+              className="text-sm text-text-secondary hover:text-foreground transition-colors"
+            >
+              Go to login
+            </a>
+          )}
+        </div>
+      </div>
+    );
   }
 
   // Modules to collapse into their parent (not shown as separate sidebar items)

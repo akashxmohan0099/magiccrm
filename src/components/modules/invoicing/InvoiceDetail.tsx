@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import { Pencil, Trash2, CheckCircle } from "lucide-react";
-import { useInvoicesStore } from "@/store/invoices";
+import { Pencil, Trash2, CheckCircle, Send, FileDown } from "lucide-react";
+import { useInvoicesStore, calculateInvoiceTotal } from "@/store/invoices";
 import { useClientsStore } from "@/store/clients";
+import { useAuth } from "@/hooks/useAuth";
 import { Invoice } from "@/types/models";
 import { useVocabulary } from "@/hooks/useVocabulary";
 import { SlideOver } from "@/components/ui/SlideOver";
@@ -20,11 +21,13 @@ interface InvoiceDetailProps {
 }
 
 export function InvoiceDetail({ open, onClose, invoiceId, onEdit }: InvoiceDetailProps) {
-  const { invoices, updateInvoice, deleteInvoice } = useInvoicesStore();
+  const { invoices, updateInvoice, deleteInvoice, sendInvoice } = useInvoicesStore();
   const { clients } = useClientsStore();
+  const { workspaceId } = useAuth();
   const vocab = useVocabulary();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [tipAmount, setTipAmount] = useState(0);
+  const [sending, setSending] = useState(false);
 
   const invoice = invoices.find((inv) => inv.id === invoiceId);
 
@@ -37,7 +40,7 @@ export function InvoiceDetail({ open, onClose, invoiceId, onEdit }: InvoiceDetai
   }
 
   const client = clients.find((c) => c.id === invoice.clientId);
-  const total = invoice.lineItems.reduce((sum, li) => sum + li.quantity * li.unitPrice, 0);
+  const { subtotal, taxAmount, total } = calculateInvoiceTotal(invoice);
 
   const handleMarkPaid = () => {
     updateInvoice(invoice.id, { status: "paid", updatedAt: new Date().toISOString() });
@@ -46,6 +49,19 @@ export function InvoiceDetail({ open, onClose, invoiceId, onEdit }: InvoiceDetai
   const handleDelete = () => {
     deleteInvoice(invoice.id);
     onClose();
+  };
+
+  const handleSend = async () => {
+    if (!workspaceId || sending) return;
+    setSending(true);
+    await sendInvoice(invoice.id, workspaceId);
+    setSending(false);
+  };
+
+  const handleDownloadPdf = () => {
+    if (!workspaceId) return;
+    const url = `/api/invoices/pdf?invoiceId=${encodeURIComponent(invoice.id)}&workspaceId=${encodeURIComponent(workspaceId)}`;
+    window.open(url, "_blank");
   };
 
   return (
@@ -92,6 +108,15 @@ export function InvoiceDetail({ open, onClose, invoiceId, onEdit }: InvoiceDetai
             </div>
           </div>
 
+          {/* Recurring badge */}
+          {invoice.recurringSchedule && (
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                Recurring: {invoice.recurringSchedule}
+              </span>
+            </div>
+          )}
+
           {/* Line items table */}
           <div>
             <p className="text-sm font-medium text-foreground mb-2">Line Items</p>
@@ -119,8 +144,18 @@ export function InvoiceDetail({ open, onClose, invoiceId, onEdit }: InvoiceDetai
                 </tbody>
               </table>
             </div>
-            <div className="flex justify-end mt-3">
-              <div className="text-lg font-semibold text-foreground">Total: ${total.toFixed(2)}</div>
+
+            {/* Totals with tax breakdown */}
+            <div className="flex flex-col items-end mt-3 gap-1">
+              {invoice.taxRate && invoice.taxRate > 0 ? (
+                <>
+                  <div className="text-sm text-text-secondary">Subtotal: ${subtotal.toFixed(2)}</div>
+                  <div className="text-sm text-text-secondary">Tax ({invoice.taxRate}%): ${taxAmount.toFixed(2)}</div>
+                  <div className="text-lg font-semibold text-foreground">Total: ${total.toFixed(2)}</div>
+                </>
+              ) : (
+                <div className="text-lg font-semibold text-foreground">Total: ${total.toFixed(2)}</div>
+              )}
             </div>
 
             <FeatureSection moduleId="quotes-invoicing" featureId="tipping" featureLabel="Tipping">
@@ -190,10 +225,23 @@ export function InvoiceDetail({ open, onClose, invoiceId, onEdit }: InvoiceDetai
           )}
 
           {/* Actions */}
-          <div className="flex items-center gap-2 pt-4 border-t border-border-light">
-            {invoice.status !== "paid" && (
+          <div className="flex flex-wrap items-center gap-2 pt-4 border-t border-border-light">
+            {invoice.status === "draft" && (
+              <Button variant="primary" size="sm" onClick={handleSend} loading={sending}>
+                <Send className="w-4 h-4" /> Send to Client
+              </Button>
+            )}
+            {invoice.status !== "paid" && invoice.status !== "draft" && (
               <Button variant="primary" size="sm" onClick={handleMarkPaid}>
                 <CheckCircle className="w-4 h-4" /> Mark as Paid
+              </Button>
+            )}
+            <Button variant="secondary" size="sm" onClick={handleDownloadPdf}>
+              <FileDown className="w-4 h-4" /> PDF
+            </Button>
+            {invoice.status !== "draft" && invoice.status !== "paid" && (
+              <Button variant="secondary" size="sm" onClick={handleSend} loading={sending}>
+                <Send className="w-4 h-4" /> Resend
               </Button>
             )}
             {onEdit && (

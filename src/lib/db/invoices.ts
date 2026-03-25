@@ -28,6 +28,9 @@ export function mapInvoiceFromDB(
     paidAmount: (row.paid_amount as number) ?? undefined,
     lastReminderSentAt: (row.last_reminder_sent_at as string) || undefined,
     reminderCount: (row.reminder_count as number) ?? undefined,
+    taxRate: (row.tax_rate as number) ?? undefined,
+    recurringSchedule: (row.recurring_schedule as Invoice["recurringSchedule"]) || undefined,
+    lastRecurringDate: (row.last_recurring_date as string) || undefined,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };
@@ -127,6 +130,9 @@ export async function dbCreateInvoice(
     paid_amount: invoice.paidAmount ?? null,
     last_reminder_sent_at: invoice.lastReminderSentAt || null,
     reminder_count: invoice.reminderCount ?? null,
+    tax_rate: invoice.taxRate ?? null,
+    recurring_schedule: invoice.recurringSchedule || null,
+    last_recurring_date: invoice.lastRecurringDate || null,
     created_at: invoice.createdAt,
     updated_at: invoice.updatedAt,
   });
@@ -175,6 +181,9 @@ export async function dbUpdateInvoice(
   if (updates.paidAmount !== undefined) row.paid_amount = updates.paidAmount ?? null;
   if (updates.lastReminderSentAt !== undefined) row.last_reminder_sent_at = updates.lastReminderSentAt || null;
   if (updates.reminderCount !== undefined) row.reminder_count = updates.reminderCount ?? null;
+  if (updates.taxRate !== undefined) row.tax_rate = updates.taxRate ?? null;
+  if (updates.recurringSchedule !== undefined) row.recurring_schedule = updates.recurringSchedule || null;
+  if (updates.lastRecurringDate !== undefined) row.last_recurring_date = updates.lastRecurringDate || null;
   if (updates.updatedAt !== undefined) row.updated_at = updates.updatedAt;
 
   if (Object.keys(row).length > 0) {
@@ -255,6 +264,9 @@ export async function dbUpsertInvoices(
     paid_amount: inv.paidAmount ?? null,
     last_reminder_sent_at: inv.lastReminderSentAt || null,
     reminder_count: inv.reminderCount ?? null,
+    tax_rate: inv.taxRate ?? null,
+    recurring_schedule: inv.recurringSchedule || null,
+    last_recurring_date: inv.lastRecurringDate || null,
     created_at: inv.createdAt,
     updated_at: inv.updatedAt,
   }));

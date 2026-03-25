@@ -50,9 +50,9 @@ export const useLeadsStore = create<LeadsStore>()(
 
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
-          dbCreateLead(workspaceId, lead).catch((err) =>
-            console.error("[leads] dbCreateLead failed:", err)
-          );
+          dbCreateLead(workspaceId, lead).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving lead" }));
+          });
         }
 
         return lead;
@@ -70,9 +70,9 @@ export const useLeadsStore = create<LeadsStore>()(
 
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
-          dbUpdateLead(workspaceId, id, updatedData).catch((err) =>
-            console.error("[leads] dbUpdateLead failed:", err)
-          );
+          dbUpdateLead(workspaceId, id, updatedData).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving lead" }));
+          });
         }
       },
 
@@ -85,9 +85,9 @@ export const useLeadsStore = create<LeadsStore>()(
 
           // Sync to Supabase if workspaceId available
           if (workspaceId) {
-            dbDeleteLead(workspaceId, id).catch((err) =>
-              console.error("[leads] dbDeleteLead failed:", err)
-            );
+            dbDeleteLead(workspaceId, id).catch((err) => {
+              import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting lead" }));
+            });
           }
         }
       },
@@ -107,9 +107,9 @@ export const useLeadsStore = create<LeadsStore>()(
 
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
-          dbUpdateLead(workspaceId, id, updatedData).catch((err) =>
-            console.error("[leads] dbUpdateLead (moveLead) failed:", err)
-          );
+          dbUpdateLead(workspaceId, id, updatedData).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving lead" }));
+          });
         }
       },
 
@@ -144,9 +144,9 @@ export const useLeadsStore = create<LeadsStore>()(
 
         // Sync the lead update to Supabase
         if (workspaceId) {
-          dbUpdateLead(workspaceId, id, updatedData).catch((err) =>
-            console.error("[leads] dbUpdateLead (convertToClient) failed:", err)
-          );
+          dbUpdateLead(workspaceId, id, updatedData).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving lead" }));
+          });
         }
 
         return client.id;
@@ -163,7 +163,7 @@ export const useLeadsStore = create<LeadsStore>()(
           const { leads } = get();
           await dbUpsertLeads(workspaceId, leads);
         } catch (err) {
-          console.error("[leads] syncToSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing leads" }));
         }
       },
 
@@ -175,7 +175,7 @@ export const useLeadsStore = create<LeadsStore>()(
           );
           set({ leads: mappedLeads });
         } catch (err) {
-          console.error("[leads] loadFromSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing leads" }));
         }
       },
     }),

@@ -74,9 +74,9 @@ export const useBookingsStore = create<BookingsStore>()(
 
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
-          dbCreateBooking(workspaceId, booking).catch((err) =>
-            console.error("[bookings] dbCreateBooking failed:", err)
-          );
+          dbCreateBooking(workspaceId, booking).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving booking" }));
+          });
         }
 
         return booking;
@@ -104,9 +104,9 @@ export const useBookingsStore = create<BookingsStore>()(
           if ((data.startTime || data.endTime) && !data.date && existing) {
             (dbUpdates as Record<string, unknown>).date = existing.date;
           }
-          dbUpdateBooking(workspaceId, id, dbUpdates).catch((err) =>
-            console.error("[bookings] dbUpdateBooking failed:", err)
-          );
+          dbUpdateBooking(workspaceId, id, dbUpdates).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving booking" }));
+          });
         }
       },
 
@@ -121,9 +121,9 @@ export const useBookingsStore = create<BookingsStore>()(
 
           // Sync to Supabase if workspaceId available
           if (workspaceId) {
-            dbDeleteBooking(workspaceId, id).catch((err) =>
-              console.error("[bookings] dbDeleteBooking failed:", err)
-            );
+            dbDeleteBooking(workspaceId, id).catch((err) => {
+              import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting booking" }));
+            });
           }
         }
       },
@@ -141,9 +141,9 @@ export const useBookingsStore = create<BookingsStore>()(
           saveBookingSettings(workspaceId, {
             availability: slots,
             cancellationPolicy,
-          }).catch((err) =>
-            console.error("[bookings] saveBookingSettings (availability) failed:", err)
-          );
+          }).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving booking" }));
+          });
         }
       },
 
@@ -156,9 +156,9 @@ export const useBookingsStore = create<BookingsStore>()(
           saveBookingSettings(workspaceId, {
             availability,
             cancellationPolicy: text,
-          }).catch((err) =>
-            console.error("[bookings] saveBookingSettings (policy) failed:", err)
-          );
+          }).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving booking" }));
+          });
         }
       },
 
@@ -186,9 +186,9 @@ export const useBookingsStore = create<BookingsStore>()(
 
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
-          dbUpdateBooking(workspaceId, id, ratingData).catch((err) =>
-            console.error("[bookings] dbUpdateBooking (rating) failed:", err)
-          );
+          dbUpdateBooking(workspaceId, id, ratingData).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving booking" }));
+          });
         }
       },
 
@@ -218,7 +218,7 @@ export const useBookingsStore = create<BookingsStore>()(
             saveBookingSettings(workspaceId, { availability, cancellationPolicy }),
           ]);
         } catch (err) {
-          console.error("[bookings] syncToSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing bookings" }));
         }
       },
 
@@ -246,7 +246,7 @@ export const useBookingsStore = create<BookingsStore>()(
 
           set(updates);
         } catch (err) {
-          console.error("[bookings] loadFromSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing bookings" }));
         }
       },
     }),

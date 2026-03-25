@@ -59,6 +59,7 @@ export function useSupabaseSync() {
 
     if (!workspaceId) {
       syncedForWorkspace.current = null;
+      setSyncing(false);
       return;
     }
 

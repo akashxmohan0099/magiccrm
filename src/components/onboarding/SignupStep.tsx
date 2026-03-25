@@ -7,7 +7,7 @@ import { useOnboardingStore } from "@/store/onboarding";
 import { createClient } from "@/lib/supabase";
 
 export function SignupStep() {
-  const { prevStep, nextStep, businessContext } = useOnboardingStore();
+  const { prevStep, businessContext, selectedPersona } = useOnboardingStore();
   const supabase = createClient();
 
   const [email, setEmail] = useState("");
@@ -37,7 +37,13 @@ export function SignupStep() {
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), password }),
+        body: JSON.stringify({
+          email: email.trim(),
+          password,
+          workspaceName: businessContext.businessName,
+          industry: businessContext.industry,
+          persona: selectedPersona,
+        }),
       });
 
       const result = await res.json();
@@ -56,27 +62,6 @@ export function SignupStep() {
         setError(signInError.message);
         setLoading(false);
         return;
-      }
-
-      const { data: workspace } = await supabase
-        .from("workspaces")
-        .insert({ name: businessContext.businessName || "My Workspace" })
-        .select("id")
-        .single();
-
-      if (workspace) {
-        await supabase.from("workspace_members").insert({
-          auth_user_id: result.userId,
-          workspace_id: workspace.id,
-          name: email.trim().split("@")[0],
-          email: email.trim(),
-          role: "owner",
-          status: "active",
-        });
-
-        await supabase.from("workspace_settings").insert({
-          workspace_id: workspace.id,
-        });
       }
 
       // Don't call nextStep() here — the parent detects auth state change

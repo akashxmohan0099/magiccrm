@@ -1,32 +1,71 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, ArrowLeft, Loader2, Sparkles } from "lucide-react";
+import { ArrowRight, ArrowLeft, Sparkles } from "lucide-react";
 import { useOnboardingStore } from "@/store/onboarding";
+import { getLocalFollowUps, type LocalFollowUpQuestion } from "@/lib/local-followup-questions";
+import { getProfileForAIPrompt } from "@/lib/persona-profiles";
+import { OnboardingLoader } from "@/components/onboarding/OnboardingLoader";
 
 interface AIQuestion {
   question: string;
   module: string;
 }
 
-interface AICategory {
+interface Category {
   title: string;
   subtitle: string;
   questions: AIQuestion[];
+  isLocal?: boolean;
 }
 
+// Maps AI module keys → store module IDs and optional needs keys.
+// billing and communication are excluded — they're always-on and never asked about.
 const MODULE_MAP: Record<string, { needsKey?: string; moduleId: string }> = {
   scheduling: { needsKey: "acceptBookings", moduleId: "bookings-calendar" },
   projects: { needsKey: "manageProjects", moduleId: "jobs-projects" },
-  billing: { needsKey: "sendInvoices", moduleId: "quotes-invoicing" },
   marketing: { needsKey: "runMarketing", moduleId: "marketing" },
   team: { moduleId: "team" },
   automations: { moduleId: "automations" },
   reporting: { moduleId: "reporting" },
   products: { moduleId: "products" },
+  "client-portal": { moduleId: "client-portal" },
   documents: { moduleId: "documents" },
-  communication: { needsKey: "communicateClients", moduleId: "communication" },
+  waitlist: { moduleId: "waitlist-manager" },
+  proposals: { moduleId: "proposals" },
+};
+
+// Map chip IDs → readable labels for the AI prompt.
+// Includes both base chips and industry-specific additions.
+const CHIP_LABELS: Record<string, string> = {
+  // Base chips
+  "clients-book": "Clients book appointments or sessions",
+  "walk-ins": "Clients walk in or call directly",
+  "online-booking": "I want an online booking page",
+  "inquiries": "Clients request quotes or send project briefs",
+  "referrals": "Most clients come from referrals",
+  "at-my-place": "Clients visit my location",
+  "visit-clients": "I travel to the client",
+  "group-classes": "I run group classes or workshops",
+  "projects": "I manage multi-step jobs or projects",
+  "recurring-clients": "I see the same clients regularly",
+  "hourly-billing": "I bill by the hour or track time",
+  "memberships": "I sell packages, memberships, or subscriptions",
+  "products": "I sell products alongside my services",
+  "campaigns": "I run promotions, campaigns, or offers",
+  "referral-program": "I want a referral or loyalty program",
+  "team": "I have staff or contractors",
+  "automate": "I want to automate reminders and follow-ups",
+  "reports": "I want to track revenue and performance",
+  "contracts": "I use contracts or agreements",
+  "client-portal": "I want clients to have a self-service portal",
+  // Industry-specific chips
+  "messaging": "Clients message me on WhatsApp or Instagram",
+  "multiple-jobs": "I run multiple jobs at the same time",
+  "remote-collab": "I collaborate with clients remotely",
+  "deposits": "I collect deposits before starting work",
+  "resources": "I share worksheets or learning materials",
 };
 
 export function AIQuestionsStep() {
@@ -34,45 +73,68 @@ export function AIQuestionsStep() {
   const setNeed = useOnboardingStore((s) => s.setNeed);
   const setDiscoveryAnswer = useOnboardingStore((s) => s.setDiscoveryAnswer);
   const getPersonaConfig = useOnboardingStore((s) => s.getPersonaConfig);
+  const persistedCategories = useOnboardingStore((s) => s.aiCategories);
+  const persistedAnswers = useOnboardingStore((s) => s.aiAnswers);
+  const setAICategories = useOnboardingStore((s) => s.setAICategories);
+  const setAIAnswer = useOnboardingStore((s) => s.setAIAnswer);
+  const chipSelections = useOnboardingStore((s) => s.chipSelections);
 
-  const [categories, setCategories] = useState<AICategory[]>([]);
-  const [answers, setAnswers] = useState<Record<string, boolean>>({});
-  const [loading, setLoading] = useState(true);
+  // ── Local follow-up questions (deterministic, triggered by chips) ──
+  const localFollowUps = useMemo(
+    () => getLocalFollowUps(chipSelections),
+    [chipSelections],
+  );
+
+  // Build local category if there are any triggered questions
+  const localCategory: Category | null = useMemo(() => {
+    if (localFollowUps.length === 0) return null;
+    return {
+      title: "A few quick follow-ups",
+      subtitle: "Based on what you told us",
+      isLocal: true,
+      questions: localFollowUps.map((q) => ({
+        question: q.question,
+        module: q.moduleId,
+      })),
+    };
+  }, [localFollowUps]);
+
+  // ── AI-generated questions ──
+  const [aiCategories, setAiCats] = useState<Category[]>(persistedCategories);
+  const answers = persistedAnswers;
+  const [loading, setLoading] = useState(persistedCategories.length === 0);
   const [error, setError] = useState(false);
   const [catIndex, setCatIndex] = useState(0);
   const [direction, setDirection] = useState(1);
 
-  // Map chip IDs to readable labels for the AI
-  const CHIP_LABELS: Record<string, string> = {
-    "clients-book": "Clients book appointments with me",
-    "inquiries": "Clients send inquiries or requests",
-    "walk-ins": "Clients walk in or call directly",
-    "online-booking": "I want an online booking page",
-    "messaging": "Clients message me on WhatsApp/Instagram",
-    "at-my-place": "Clients come to my location",
-    "visit-clients": "I go to the client's location",
-    "projects": "I manage jobs or projects with tasks",
-    "recurring-clients": "I see the same clients regularly",
-    "track-time": "I bill clients by the hour",
-    "invoices": "I send invoices after the work",
-    "deposits": "I collect deposits upfront",
-    "proposals": "I send quotes or proposals first",
-    "recurring-billing": "I have recurring or subscription billing",
-    "contracts": "I use contracts or agreements",
-    "team": "I have staff or contractors",
-    "automate": "I want to automate repetitive tasks",
-    "reports": "I want to see revenue and reports",
-    "products": "I sell products alongside services",
-    "client-portal": "I want clients to have a self-service portal",
-  };
+  // Convert chip selections to readable labels for the AI
+  const selectedChipLabels = chipSelections.map((id) => CHIP_LABELS[id] || id);
 
-  const selectedChipLabels = Object.entries(discoveryAnswers)
-    .filter(([key, val]) => val === true && !key.startsWith("module:"))
-    .map(([key]) => CHIP_LABELS[key] || key);
+  // Extract already-activated module IDs so the AI knows what to skip
+  const activatedModules = Object.entries(discoveryAnswers)
+    .filter(([key, val]) => key.startsWith("module:") && val === true)
+    .map(([key]) => key.replace("module:", ""));
+
+  // Extract explicitly-declined modules (user saw chip but didn't select it)
+  const declinedModules = Object.entries(discoveryAnswers)
+    .filter(([key, val]) => key.startsWith("module:") && val === false)
+    .map(([key]) => key.replace("module:", ""));
 
   const persona = getPersonaConfig();
+  const personaProfile = getProfileForAIPrompt(selectedPersona);
 
+  // Topics already covered by local questions — AI should not duplicate
+  const localQuestionTopics = localFollowUps.map((q) => q.question);
+
+  // Fetch AI questions
+  const chipsKey = chipSelections.slice().sort().join(",");
   useEffect(() => {
+    if (persistedCategories.length > 0) {
+      setAiCats(persistedCategories);
+      setLoading(false);
+      return;
+    }
+
     async function fetchQuestions() {
       try {
         const res = await fetch("/api/onboarding/ai-questions", {
@@ -85,12 +147,18 @@ export function AIQuestionsStep() {
             businessDescription: businessContext.businessDescription,
             location: businessContext.location,
             selectedChips: selectedChipLabels,
+            activatedModules,
+            declinedModules,
+            localQuestionTopics,
+            personaProfile,
           }),
         });
 
         const data = await res.json();
         if (data.categories && data.categories.length > 0) {
-          setCategories(data.categories.slice(0, 3));
+          const cats = data.categories.slice(0, 2);
+          setAiCats(cats);
+          setAICategories(cats); // Persist to store
         } else {
           setError(true);
         }
@@ -102,18 +170,43 @@ export function AIQuestionsStep() {
     }
     fetchQuestions();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [chipsKey]);
 
-  const handleAnswer = useCallback((qKey: string, value: boolean) => {
-    setAnswers(prev => ({ ...prev, [qKey]: value }));
-  }, []);
+  // ── Merge local + AI categories ──
+  const allCategories = useMemo(() => {
+    const cats: Category[] = [];
+    if (localCategory) cats.push(localCategory);
+    cats.push(...aiCategories);
+    return cats;
+  }, [localCategory, aiCategories]);
 
-  const currentCat = categories[catIndex];
-  const isLastCat = catIndex === categories.length - 1;
+  // ── Answer keys ──
+  // Local questions use "local-{id}" keys, AI questions use "{catIndex}-{qIndex}" keys.
+  // catIndex is relative to allCategories, so AI categories shift by 1 when local exists.
+
+  const getAnswerKey = (catIdx: number, qIdx: number): string => {
+    const cat = allCategories[catIdx];
+    if (cat?.isLocal) {
+      return `local-${localFollowUps[qIdx]?.id || qIdx}`;
+    }
+    // AI category: use the AI-relative index for backward compat
+    const aiIdx = localCategory ? catIdx - 1 : catIdx;
+    return `${aiIdx}-${qIdx}`;
+  };
+
+  const handleAnswer = useCallback(
+    (qKey: string, value: boolean) => {
+      setAIAnswer(qKey, value);
+    },
+    [setAIAnswer],
+  );
+
+  const currentCat = allCategories[catIndex];
+  const isLastCat = catIndex === allCategories.length - 1;
 
   // Count answered in current category
   const currentCatAnswered = currentCat
-    ? currentCat.questions.filter((_, i) => `${catIndex}-${i}` in answers).length
+    ? currentCat.questions.filter((_, i) => getAnswerKey(catIndex, i) in answers).length
     : 0;
 
   const handleNext = () => {
@@ -121,7 +214,7 @@ export function AIQuestionsStep() {
       finalize();
     } else {
       setDirection(1);
-      setCatIndex(i => i + 1);
+      setCatIndex((i) => i + 1);
     }
   };
 
@@ -130,20 +223,49 @@ export function AIQuestionsStep() {
       prevStep();
     } else {
       setDirection(-1);
-      setCatIndex(i => i - 1);
+      setCatIndex((i) => i - 1);
     }
   };
 
   const finalize = () => {
-    for (const cat of categories) {
+    const currentAnswers = useOnboardingStore.getState().discoveryAnswers;
+
+    // ── Process local follow-up answers ──
+    for (const lq of localFollowUps) {
+      const localKey = `local-${lq.id}`;
+      if (answers[localKey] === true) {
+        for (const enable of lq.enables) {
+          setDiscoveryAnswer(`feature:${enable.featureId}`, true);
+        }
+        // Process follow-up
+        if (lq.followUp) {
+          const followUpKey = `local-${lq.id}:followup`;
+          if (answers[followUpKey] === true) {
+            for (const enable of lq.followUp.enables) {
+              setDiscoveryAnswer(`feature:${enable.featureId}`, true);
+            }
+            if (lq.followUp.metaKey) {
+              setDiscoveryAnswer(lq.followUp.metaKey, true);
+            }
+          }
+        }
+      }
+    }
+
+    // ── Process AI question answers ──
+    for (const cat of aiCategories) {
       for (let i = 0; i < cat.questions.length; i++) {
-        const key = `${categories.indexOf(cat)}-${i}`;
+        const aiCatIdx = aiCategories.indexOf(cat);
+        const key = `${aiCatIdx}-${i}`;
         if (answers[key] === true) {
           const q = cat.questions[i];
           const mapping = MODULE_MAP[q.module];
           if (mapping) {
-            setDiscoveryAnswer(`module:${mapping.moduleId}`, true);
-            if (mapping.needsKey) {
+            const moduleKey = `module:${mapping.moduleId}`;
+            if (currentAnswers[moduleKey] !== false) {
+              setDiscoveryAnswer(moduleKey, true);
+            }
+            if (mapping.needsKey && currentAnswers[moduleKey] !== false) {
               setNeed(mapping.needsKey as keyof import("@/types/onboarding").NeedsAssessment, true);
             }
           }
@@ -155,80 +277,39 @@ export function AIQuestionsStep() {
 
   const handleSkip = () => nextStep();
 
+  // ── Loading state ──
   if (loading) {
-    const steps = [
-      { label: "Reading your business profile", delay: 0 },
-      { label: "Analyzing your workflow", delay: 0.8 },
-      { label: "Finding what you might be missing", delay: 1.6 },
-      { label: "Generating personalized questions", delay: 2.4 },
-    ];
-
-    return (
-      <div className="fixed inset-0 flex items-center justify-center" style={{ background: "linear-gradient(160deg, #F0FDF4 0%, #FAFAFA 40%, #F5F3FF 70%, #FAFAFA 100%)" }}>
-        {/* Ambient blobs */}
-        <div className="absolute inset-0 pointer-events-none">
-          <motion.div animate={{ scale: [1, 1.15, 1], opacity: [0.06, 0.1, 0.06] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute top-1/4 left-1/4 w-[400px] h-[400px] rounded-full" style={{ background: "radial-gradient(circle, rgba(52,211,153,0.15) 0%, transparent 70%)", filter: "blur(50px)" }} />
-          <motion.div animate={{ scale: [1, 1.1, 1], opacity: [0.04, 0.08, 0.04] }} transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-            className="absolute bottom-1/4 right-1/4 w-[350px] h-[350px] rounded-full" style={{ background: "radial-gradient(circle, rgba(139,92,246,0.1) 0%, transparent 70%)", filter: "blur(50px)" }} />
-        </div>
-
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center relative z-10 max-w-sm mx-auto px-6">
-          {/* Pulsing logo */}
-          <motion.div
-            animate={{ scale: [1, 1.05, 1] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-            className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-8"
-            style={{ backgroundColor: "var(--logo-green)", boxShadow: "0 0 40px rgba(124,254,157,0.3)" }}
-          >
-            <Sparkles className="w-8 h-8 text-white" />
-          </motion.div>
-
-          <h3 className="text-[20px] font-bold text-foreground mb-2">
-            Personalizing for {businessContext.businessName || "you"}
-          </h3>
-          <p className="text-[14px] text-text-tertiary mb-8">
-            Our AI is analyzing your business to ask the right questions
-          </p>
-
-          {/* Animated progress steps */}
-          <div className="space-y-3 text-left">
-            {steps.map((s, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: s.delay, duration: 0.4 }}
-                className="flex items-center gap-3"
-              >
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: s.delay + 0.2, type: "spring", stiffness: 300 }}
-                  className="w-5 h-5 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0"
-                >
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: s.delay + 0.5 }}
-                    className="w-2 h-2 rounded-full bg-primary"
-                  />
-                </motion.div>
-                <span className="text-[13px] text-text-secondary">{s.label}</span>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
-      </div>
-    );
+    // If we have local questions, show them immediately while AI loads
+    if (localCategory && catIndex === 0) {
+      // Fall through to the main render — local questions don't need AI
+    } else {
+      return (
+        <OnboardingLoader
+          title={`Personalizing for ${businessContext.businessName || "you"}`}
+          subtitle="Analyzing your workflow to ask the right questions"
+          step={5}
+          totalSteps={7}
+          detail="This only takes a few seconds"
+        />
+      );
+    }
   }
 
-  if (error || categories.length === 0) {
+  // If AI failed and no local questions either, skip
+  if (!loading && (error || aiCategories.length === 0) && !localCategory) {
     handleSkip();
     return null;
   }
 
-  const progress = ((catIndex + 1) / categories.length) * 100;
+  // Build the effective list of categories to show right now
+  // If AI is still loading, only show local category
+  const displayCategories = loading ? (localCategory ? [localCategory] : []) : allCategories;
+  const displayCat = displayCategories[catIndex];
+  if (!displayCat) return null;
+
+  const isLastDisplay = catIndex === displayCategories.length - 1;
+  const progress = ((catIndex + 1) / displayCategories.length) * 100;
+  const isLocalSlide = displayCat.isLocal === true;
 
   return (
     <div className="fixed inset-0 overflow-hidden" style={{ background: "linear-gradient(160deg, #F0FDF4 0%, #FAFAFA 35%, #F5F3FF 65%, #FAFAFA 100%)" }}>
@@ -250,10 +331,12 @@ export function AIQuestionsStep() {
             <div className="flex-1 h-1.5 bg-white/60 rounded-full overflow-hidden">
               <motion.div className="h-full bg-primary rounded-full" animate={{ width: `${progress}%` }} transition={{ duration: 0.4, ease: "easeOut" }} />
             </div>
-            <div className="flex items-center gap-1.5">
-              <Sparkles className="w-3 h-3 text-primary" />
-              <span className="text-[11px] text-primary font-semibold">AI</span>
-            </div>
+            {!isLocalSlide && (
+              <div className="flex items-center gap-1.5">
+                <Sparkles className="w-3 h-3 text-primary" />
+                <span className="text-[11px] text-primary font-semibold">AI</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -271,56 +354,100 @@ export function AIQuestionsStep() {
             >
               {/* Category header */}
               <div className="text-center mb-8">
-                <div className="flex items-center justify-center gap-2 mb-4">
-                  <Sparkles className="w-3.5 h-3.5 text-primary" />
-                  <span className="text-[12px] font-medium text-text-tertiary">Personalized for {businessContext.businessName || "you"}</span>
-                </div>
+                {!isLocalSlide && (
+                  <div className="flex items-center justify-center gap-2 mb-4">
+                    <Sparkles className="w-3.5 h-3.5 text-primary" />
+                    <span className="text-[12px] font-medium text-text-tertiary">Personalized for {businessContext.businessName || "you"}</span>
+                  </div>
+                )}
                 <h2 className="text-[26px] font-bold text-foreground tracking-tight mb-1.5">
-                  {currentCat.title}
+                  {displayCat.title}
                 </h2>
                 <p className="text-[14px] text-text-secondary">
-                  {currentCat.subtitle}
+                  {displayCat.subtitle}
                 </p>
               </div>
 
               {/* Questions */}
               <div className="space-y-3">
-                {currentCat.questions.map((q, i) => {
-                  const key = `${catIndex}-${i}`;
+                {displayCat.questions.map((q, i) => {
+                  const key = getAnswerKey(catIndex, i);
                   const isYes = answers[key] === true;
                   const isNo = answers[key] === false;
                   const isAnswered = key in answers;
 
+                  // Check if this local question has a follow-up
+                  const localQ = isLocalSlide ? localFollowUps[i] : null;
+                  const showFollowUp = isLocalSlide && localQ?.followUp && isYes;
+                  const followUpKey = localQ ? `local-${localQ.id}:followup` : "";
+                  const followUpIsYes = answers[followUpKey] === true;
+                  const followUpIsNo = answers[followUpKey] === false;
+
                   return (
-                    <motion.div
-                      key={key}
-                      initial={{ opacity: 0, y: 15 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.08, type: "spring", stiffness: 200, damping: 20 }}
-                      className={`p-5 rounded-2xl border transition-all ${
-                        isAnswered ? "bg-white/80 border-border-light" : "bg-white border-primary/15 shadow-sm"
-                      }`}
-                    >
-                      <p className="text-[15px] font-medium text-foreground mb-3">{q.question}</p>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleAnswer(key, true)}
-                          className={`flex-1 py-2.5 rounded-xl text-[14px] font-medium transition-all cursor-pointer ${
-                            isYes ? "bg-primary text-white shadow-sm" : "bg-surface border border-border-light text-foreground hover:border-primary/30"
-                          }`}
-                        >
-                          Yes
-                        </button>
-                        <button
-                          onClick={() => handleAnswer(key, false)}
-                          className={`flex-1 py-2.5 rounded-xl text-[14px] font-medium transition-all cursor-pointer ${
-                            isNo ? "bg-foreground text-white" : "bg-surface border border-border-light text-foreground hover:border-foreground/20"
-                          }`}
-                        >
-                          No
-                        </button>
-                      </div>
-                    </motion.div>
+                    <div key={key}>
+                      <motion.div
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.08, type: "spring", stiffness: 200, damping: 20 }}
+                        className={`p-5 rounded-2xl border transition-all ${
+                          isAnswered ? "bg-white/80 border-border-light" : "bg-white border-primary/15 shadow-sm"
+                        }`}
+                      >
+                        <p className="text-[15px] font-medium text-foreground mb-3">{q.question}</p>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleAnswer(key, true)}
+                            className={`flex-1 py-2.5 rounded-xl text-[14px] font-medium transition-all cursor-pointer ${
+                              isYes ? "bg-primary text-white shadow-sm" : "bg-surface border border-border-light text-foreground hover:border-primary/30"
+                            }`}
+                          >
+                            Yes
+                          </button>
+                          <button
+                            onClick={() => handleAnswer(key, false)}
+                            className={`flex-1 py-2.5 rounded-xl text-[14px] font-medium transition-all cursor-pointer ${
+                              isNo ? "bg-foreground text-white" : "bg-surface border border-border-light text-foreground hover:border-foreground/20"
+                            }`}
+                          >
+                            No
+                          </button>
+                        </div>
+                      </motion.div>
+
+                      {/* Conditional follow-up for local questions */}
+                      <AnimatePresence>
+                        {showFollowUp && localQ?.followUp && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                            animate={{ opacity: 1, height: "auto", marginTop: 8 }}
+                            exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                          >
+                            <div className="p-5 rounded-2xl bg-white/60 border border-border-light ml-4">
+                              <p className="text-[14px] font-medium text-foreground mb-3">{localQ.followUp.question}</p>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => handleAnswer(followUpKey, true)}
+                                  className={`flex-1 py-2 rounded-xl text-[13px] font-medium transition-all cursor-pointer ${
+                                    followUpIsYes ? "bg-primary text-white shadow-sm" : "bg-surface border border-border-light text-foreground hover:border-primary/30"
+                                  }`}
+                                >
+                                  Yes
+                                </button>
+                                <button
+                                  onClick={() => handleAnswer(followUpKey, false)}
+                                  className={`flex-1 py-2 rounded-xl text-[13px] font-medium transition-all cursor-pointer ${
+                                    followUpIsNo ? "bg-foreground text-white" : "bg-surface border border-border-light text-foreground hover:border-foreground/20"
+                                  }`}
+                                >
+                                  No
+                                </button>
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
                   );
                 })}
               </div>
@@ -333,10 +460,12 @@ export function AIQuestionsStep() {
                 className="text-center text-[12px] text-text-tertiary mt-5"
               >
                 {currentCatAnswered === 0
-                  ? "These are tailored to your business — answer what feels right"
-                  : currentCatAnswered < currentCat.questions.length
-                  ? `${currentCat.questions.length - currentCatAnswered} more to go`
-                  : isLastCat ? "All done — let\u2019s see your workspace" : "Nice — one more category"}
+                  ? isLocalSlide
+                    ? "These follow from your earlier answers"
+                    : "These are tailored to your business — answer what feels right"
+                  : currentCatAnswered < displayCat.questions.length
+                  ? `${displayCat.questions.length - currentCatAnswered} more to go`
+                  : isLastDisplay ? "All done — let\u2019s see your workspace" : "Nice — one more category"}
               </motion.p>
             </motion.div>
           </AnimatePresence>
@@ -349,10 +478,18 @@ export function AIQuestionsStep() {
               Skip
             </button>
             <button
-              onClick={handleNext}
+              onClick={() => {
+                if (isLastDisplay && loading) {
+                  // Local questions done, but AI still loading — advance to next cat (will show loader)
+                  setDirection(1);
+                  setCatIndex((i) => i + 1);
+                } else {
+                  handleNext();
+                }
+              }}
               className="flex-1 py-3.5 rounded-2xl text-[15px] font-semibold transition-all flex items-center justify-center gap-2 bg-foreground text-white hover:opacity-90 cursor-pointer shadow-lg"
             >
-              {isLastCat ? "See my workspace" : "Next"}
+              {isLastDisplay && !loading ? "See my workspace" : "Next"}
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>

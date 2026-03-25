@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 import { useOnboardingStore } from "@/store/onboarding";
 import { useClientsStore } from "@/store/clients";
 import { useBookingsStore } from "@/store/bookings";
@@ -18,28 +18,44 @@ const CRITICAL_STORES = [
   useLeadsStore,
 ];
 
-function subscribe(callback: () => void) {
-  const unsubs = CRITICAL_STORES.map((store) =>
-    store.persist.onFinishHydration(callback)
-  );
-  return () => {
-    unsubs.forEach((unsub) => {
-      if (typeof unsub === "function") unsub();
-    });
-  };
-}
-
-function getSnapshot() {
-  if (typeof window === "undefined") return false;
-  return CRITICAL_STORES.every((store) =>
-    store.persist.hasHydrated()
-  );
-}
-
-function getServerSnapshot() {
-  return false;
-}
-
+/**
+ * Returns true once all critical Zustand stores have hydrated from localStorage.
+ * Includes a 3-second safety timeout to prevent infinite skeleton states.
+ */
 export function useHydration() {
-  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    // Check if already hydrated
+    const check = () => CRITICAL_STORES.every((store) => store.persist.hasHydrated());
+
+    if (check()) {
+      setHydrated(true);
+      return;
+    }
+
+    // Listen for hydration completion
+    const unsubs = CRITICAL_STORES.map((store) =>
+      store.persist.onFinishHydration(() => {
+        if (check()) setHydrated(true);
+      })
+    );
+
+    // Safety timeout — don't hang forever if a store fails to hydrate
+    const timeout = setTimeout(() => {
+      if (!check()) {
+        console.warn("[useHydration] Timeout — forcing hydration after 3s");
+      }
+      setHydrated(true);
+    }, 3000);
+
+    return () => {
+      unsubs.forEach((unsub) => {
+        if (typeof unsub === "function") unsub();
+      });
+      clearTimeout(timeout);
+    };
+  }, []);
+
+  return hydrated;
 }

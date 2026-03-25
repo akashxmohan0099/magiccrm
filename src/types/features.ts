@@ -235,6 +235,9 @@ export const FEATURE_BLOCKS: FeatureBlock[] = [
       { id: "email-sequences", label: "Email Sequences", description: "Multi-step drip campaigns triggered by events", defaultOn: false },
       { id: "unsubscribe-management", label: "Unsubscribe Management", description: "Handle opt-outs and stay compliant automatically", defaultOn: true },
       { id: "referral-program", label: "Referral Program", description: "Clients share a link — when someone books, both get a reward", defaultOn: false },
+      { id: "ab-subject-lines", label: "A/B Subject Lines", description: "Test different subject lines to optimize open rates", defaultOn: false },
+      { id: "bounce-tracking", label: "Bounce Tracking", description: "Track bounced emails and clean your contact list", defaultOn: false },
+      { id: "send-time-optimization", label: "Smart Send Time", description: "Automatically send at the time each client is most likely to open", defaultOn: false },
     ],
   },
   {
@@ -287,9 +290,7 @@ export const FEATURE_BLOCKS: FeatureBlock[] = [
     name: "Products & Services",
     icon: "Package",
     description: "Your product and service catalog.",
-    // Only auto-enable for booking-based businesses (service menu)
-    // Invoice-only users (lawyers, accountants) don't need a product catalog
-    autoEnabledBy: ["acceptBookings"],
+    // No auto-enable — only enabled via AI questions or manual toggle
     coreFeatures: [
       { id: "product-catalog", label: "Product Catalog", description: "Products and services with name, description, and price" },
       { id: "product-categories", label: "Categories", description: "Group products and services into categories" },
@@ -335,7 +336,7 @@ export const FEATURE_BLOCKS: FeatureBlock[] = [
     name: "Client Portal",
     icon: "Globe",
     description: "Self-service hub for your clients.",
-    triggeredBy: "manageCustomers",
+    // No auto-enable — only enabled via AI questions or manual toggle
     coreFeatures: [
       { id: "portal-access", label: "Portal Access Management", description: "Invite clients and manage their portal access" },
     ],
@@ -343,9 +344,11 @@ export const FEATURE_BLOCKS: FeatureBlock[] = [
       { id: "portal-bookings", label: "Show Bookings", description: "Clients can view and manage their bookings", defaultOn: true },
       { id: "portal-invoices", label: "Show Invoices", description: "Clients can view and pay invoices", defaultOn: true },
       { id: "portal-documents", label: "Show Documents", description: "Clients can access shared documents", defaultOn: false },
-      { id: "portal-messages", label: "Show Messages", description: "Clients can send and receive messages", defaultOn: false },
+      { id: "portal-messaging", label: "Show Messages", description: "Clients can send and receive messages", defaultOn: false },
       { id: "portal-job-progress", label: "Show Job Progress", description: "Clients can track their project status", defaultOn: false },
       { id: "portal-branding", label: "Custom Branding", description: "Match portal colors and logo to your brand", defaultOn: false },
+      { id: "self-service-rebooking", label: "Self-Service Rebooking", description: "Let clients rebook directly from the portal", defaultOn: false },
+      { id: "pay-from-portal", label: "Pay from Portal", description: "Clients can view and pay invoices through the portal", defaultOn: false },
     ],
   },
   {
@@ -353,7 +356,7 @@ export const FEATURE_BLOCKS: FeatureBlock[] = [
     name: "Automations",
     icon: "Zap",
     description: "Let your workspace do the boring stuff.",
-    autoEnabledBy: ["acceptBookings", "sendInvoices", "manageProjects"],
+    autoEnabledBy: ["acceptBookings", "manageProjects"],
     coreFeatures: [
       { id: "auto-status", label: "Auto Status Updates", description: "Move items through stages automatically" },
       { id: "trigger-actions", label: "Trigger Actions", description: "When X happens, automatically do Y" },
@@ -375,7 +378,7 @@ export const FEATURE_BLOCKS: FeatureBlock[] = [
     name: "Reporting",
     icon: "BarChart3",
     description: "See how your business is actually doing.",
-    autoEnabledBy: ["sendInvoices", "manageProjects"],
+    autoEnabledBy: ["manageProjects"],
     coreFeatures: [
       { id: "overview-dashboard", label: "Overview Dashboard", description: "Key metrics and activity at a glance" },
       { id: "activity-feed", label: "Activity Feed", description: "Real-time log of all actions across your platform" },
@@ -393,6 +396,8 @@ export const FEATURE_BLOCKS: FeatureBlock[] = [
       { id: "client-retention-report", label: "Client Retention Report", description: "Retention rate, churn rate, and average client lifespan", defaultOn: false, category: "Growth" },
       { id: "booking-utilization-report", label: "Booking Utilisation", description: "Percentage of available slots filled per member or service", defaultOn: false, category: "Growth" },
       { id: "pipeline-value-report", label: "Pipeline Value Report", description: "Total estimated value of leads in each pipeline stage", defaultOn: false, category: "Growth" },
+      { id: "comparison-periods", label: "Comparison Periods", description: "Compare metrics across different time ranges", defaultOn: false },
+      { id: "scheduled-reports", label: "Scheduled Reports", description: "Auto-email reports on a weekly or monthly schedule", defaultOn: false },
     ],
   },
 ];
@@ -413,6 +418,7 @@ export const ADDON_FEATURE_BLOCKS: AddonFeatureBlock[] = [
       { id: "freeze-pause", label: "Freeze / Pause", description: "Members pause without cancelling", defaultOn: false },
       { id: "expiry-alerts", label: "Expiry Alerts", description: "Auto-notify before a plan or pack expires", defaultOn: true },
       { id: "membership-revenue-report", label: "Membership Revenue Report", description: "Recurring revenue, churn, and active member count", defaultOn: false },
+      { id: "upgrade-downgrade", label: "Upgrade / Downgrade", description: "Let members switch between membership tiers", defaultOn: false },
     ],
   },
   {
@@ -463,6 +469,7 @@ export const ADDON_FEATURE_BLOCKS: AddonFeatureBlock[] = [
       { id: "churn-risk-score", label: "Churn Risk Score", description: "Red, yellow, green flag for clients likely to leave", defaultOn: false },
       { id: "weekly-digest", label: "Weekly Digest", description: "Auto-generated summary of your week's activity", defaultOn: true },
       { id: "client-lifetime-value", label: "Client Lifetime Value", description: "Calculate and display estimated lifetime value per client", defaultOn: false },
+      { id: "anomaly-alerts", label: "Anomaly Alerts", description: "Get notified when metrics deviate from normal patterns", defaultOn: false },
     ],
   },
   {

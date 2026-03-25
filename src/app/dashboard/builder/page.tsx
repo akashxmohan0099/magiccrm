@@ -34,6 +34,7 @@ export default function BuilderPage() {
     useCredits: consumeCredits,
   } = useBuilderStore();
   const businessContext = useOnboardingStore((s) => s.businessContext);
+  const selectedPersona = useOnboardingStore((s) => s.selectedPersona);
   const [submitting, setSubmitting] = useState(false);
 
   const readyFeatures = customFeatures.filter((f) => f.status === "ready");
@@ -60,7 +61,7 @@ export default function BuilderPage() {
     setSubmitting(true);
 
     try {
-      const result = await requestBuilderBrief({ prompt: trimmedPrompt, businessContext });
+      const result = await requestBuilderBrief({ prompt: trimmedPrompt, businessContext, selectedPersona });
       updateBuildRequest(request.id, { status: "review-ready", result, error: undefined });
       toast("Custom feature brief generated");
     } catch (error) {

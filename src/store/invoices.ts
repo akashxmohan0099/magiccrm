@@ -33,6 +33,10 @@ interface InvoicesStore {
   deleteQuote: (id: string, workspaceId?: string) => void;
   convertQuoteToInvoice: (quoteId: string, workspaceId?: string) => Invoice | null;
 
+  // Invoice actions
+  sendInvoice: (id: string, workspaceId: string) => Promise<{ success: boolean; error?: string }>;
+  generateRecurringInvoices: (workspaceId: string) => void;
+
   // Supabase sync
   syncToSupabase: (workspaceId: string) => Promise<void>;
   loadFromSupabase: (workspaceId: string) => Promise<void>;
@@ -49,6 +53,44 @@ function deriveNextInvoiceNum(invoices: Invoice[]): number {
     }
   }
   return max + 1;
+}
+
+/** Calculate the total for an invoice, including tax. */
+export function calculateInvoiceTotal(invoice: Invoice): {
+  subtotal: number;
+  taxAmount: number;
+  total: number;
+} {
+  const subtotal = invoice.lineItems.reduce((sum, li) => {
+    const lineTotal = li.quantity * li.unitPrice - (li.discount ?? 0);
+    return sum + lineTotal;
+  }, 0);
+  const taxRate = invoice.taxRate ?? 0;
+  const taxAmount = taxRate > 0 ? subtotal * (taxRate / 100) : 0;
+  return { subtotal, taxAmount, total: subtotal + taxAmount };
+}
+
+/** Compute the next due date for a recurring invoice schedule. */
+function getNextRecurringDate(
+  fromDate: string,
+  schedule: NonNullable<Invoice["recurringSchedule"]>
+): string {
+  const d = new Date(fromDate);
+  switch (schedule) {
+    case "weekly":
+      d.setDate(d.getDate() + 7);
+      break;
+    case "fortnightly":
+      d.setDate(d.getDate() + 14);
+      break;
+    case "monthly":
+      d.setMonth(d.getMonth() + 1);
+      break;
+    case "quarterly":
+      d.setMonth(d.getMonth() + 3);
+      break;
+  }
+  return d.toISOString();
 }
 
 function deriveNextQuoteNum(quotes: Quote[]): number {
@@ -98,9 +140,9 @@ export const useInvoicesStore = create<InvoicesStore>()(
 
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
-          dbCreateInvoice(workspaceId, invoice).catch((err) =>
-            console.error("[invoices] dbCreateInvoice failed:", err)
-          );
+          dbCreateInvoice(workspaceId, invoice).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving invoice" }));
+          });
         }
 
         return invoice;
@@ -117,9 +159,9 @@ export const useInvoicesStore = create<InvoicesStore>()(
         toast("Invoice updated");
 
         if (workspaceId) {
-          dbUpdateInvoice(workspaceId, id, updatedData).catch((err) =>
-            console.error("[invoices] dbUpdateInvoice failed:", err)
-          );
+          dbUpdateInvoice(workspaceId, id, updatedData).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving invoice" }));
+          });
         }
       },
 
@@ -131,9 +173,9 @@ export const useInvoicesStore = create<InvoicesStore>()(
           toast(`Invoice ${inv.number} deleted`, "info");
 
           if (workspaceId) {
-            dbDeleteInvoice(workspaceId, id).catch((err) =>
-              console.error("[invoices] dbDeleteInvoice failed:", err)
-            );
+            dbDeleteInvoice(workspaceId, id).catch((err) => {
+              import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting invoice" }));
+            });
           }
         }
       },
@@ -155,9 +197,9 @@ export const useInvoicesStore = create<InvoicesStore>()(
         toast(`Created quote ${quote.number}`);
 
         if (workspaceId) {
-          dbCreateQuote(workspaceId, quote).catch((err) =>
-            console.error("[invoices] dbCreateQuote failed:", err)
-          );
+          dbCreateQuote(workspaceId, quote).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving invoice" }));
+          });
         }
 
         return quote;
@@ -174,9 +216,9 @@ export const useInvoicesStore = create<InvoicesStore>()(
         toast("Quote updated");
 
         if (workspaceId) {
-          dbUpdateQuote(workspaceId, id, updatedData).catch((err) =>
-            console.error("[invoices] dbUpdateQuote failed:", err)
-          );
+          dbUpdateQuote(workspaceId, id, updatedData).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving invoice" }));
+          });
         }
       },
 
@@ -188,9 +230,9 @@ export const useInvoicesStore = create<InvoicesStore>()(
           toast(`Quote ${quote.number} deleted`, "info");
 
           if (workspaceId) {
-            dbDeleteQuote(workspaceId, id).catch((err) =>
-              console.error("[invoices] dbDeleteQuote failed:", err)
-            );
+            dbDeleteQuote(workspaceId, id).catch((err) => {
+              import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting invoice" }));
+            });
           }
         }
       },
@@ -217,9 +259,9 @@ export const useInvoicesStore = create<InvoicesStore>()(
         }));
 
         if (workspaceId) {
-          dbUpdateQuote(workspaceId, quoteId, updatedData).catch((err) =>
-            console.error("[invoices] dbUpdateQuote (convert) failed:", err)
-          );
+          dbUpdateQuote(workspaceId, quoteId, updatedData).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving invoice" }));
+          });
         }
 
         if (invoice) {
@@ -227,6 +269,107 @@ export const useInvoicesStore = create<InvoicesStore>()(
           toast(`Converted ${quote.number} to invoice ${invoice.number}`);
         }
         return invoice;
+      },
+
+      // ---------------------------------------------------------------
+      // Invoice actions
+      // ---------------------------------------------------------------
+
+      sendInvoice: async (id: string, workspaceId: string) => {
+        const invoice = get().invoices.find((inv) => inv.id === id);
+        if (!invoice) return { success: false, error: "Invoice not found" };
+
+        try {
+          const res = await fetch("/api/invoices/send", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ workspaceId, invoiceId: id }),
+          });
+
+          const data = await res.json();
+
+          if (!res.ok) {
+            toast(data.error || "Failed to send invoice", "error");
+            return { success: false, error: data.error };
+          }
+
+          // Update local state to "sent"
+          set((s) => ({
+            invoices: s.invoices.map((inv) =>
+              inv.id === id ? { ...inv, status: "sent" as const, updatedAt: new Date().toISOString() } : inv
+            ),
+          }));
+
+          logActivity("send", "invoicing", `Sent invoice ${invoice.number} to ${data.sentTo}`);
+          toast(`Invoice ${invoice.number} sent${data.emailSent ? ` to ${data.sentTo}` : " (logged)"}`);
+          return { success: true };
+        } catch (err) {
+          const message = err instanceof Error ? err.message : "Network error";
+          toast(`Failed to send invoice: ${message}`, "error");
+          return { success: false, error: message };
+        }
+      },
+
+      generateRecurringInvoices: (workspaceId: string) => {
+        const now = new Date();
+        const { invoices } = get();
+
+        const recurringInvoices = invoices.filter(
+          (inv) => inv.recurringSchedule && inv.status !== "cancelled"
+        );
+
+        let created = 0;
+
+        for (const source of recurringInvoices) {
+          // Determine the reference date for when the next invoice should be created
+          const lastDate = source.lastRecurringDate || source.createdAt;
+          const nextDate = getNextRecurringDate(lastDate, source.recurringSchedule!);
+
+          if (new Date(nextDate) > now) continue; // Not due yet
+
+          // Compute new due date relative to the original interval
+          let newDueDate: string | undefined;
+          if (source.dueDate) {
+            const originalCreated = new Date(source.createdAt).getTime();
+            const originalDue = new Date(source.dueDate).getTime();
+            const daysBetween = Math.round((originalDue - originalCreated) / (1000 * 60 * 60 * 24));
+            const due = new Date(now);
+            due.setDate(due.getDate() + daysBetween);
+            newDueDate = due.toISOString().split("T")[0];
+          }
+
+          // Create the new invoice copy
+          const newInvoice = get().addInvoice(
+            {
+              clientId: source.clientId,
+              jobId: source.jobId,
+              lineItems: source.lineItems.map((li) => ({ ...li, id: generateId() })),
+              status: "draft",
+              dueDate: newDueDate,
+              notes: source.notes,
+              taxRate: source.taxRate,
+              paymentSchedule: source.paymentSchedule,
+              depositPercent: source.depositPercent,
+              recurringSchedule: source.recurringSchedule,
+            },
+            workspaceId
+          );
+
+          if (newInvoice) {
+            created++;
+            // Mark the source invoice with the latest recurring date
+            get().updateInvoice(
+              source.id,
+              { lastRecurringDate: now.toISOString() },
+              workspaceId
+            );
+          }
+        }
+
+        if (created > 0) {
+          logActivity("create", "invoicing", `Generated ${created} recurring invoice${created > 1 ? "s" : ""}`);
+          toast(`Generated ${created} recurring invoice${created > 1 ? "s" : ""}`);
+        }
       },
 
       // ---------------------------------------------------------------
@@ -241,7 +384,7 @@ export const useInvoicesStore = create<InvoicesStore>()(
             dbUpsertQuotes(workspaceId, quotes),
           ]);
         } catch (err) {
-          console.error("[invoices] syncToSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing invoices" }));
         }
       },
 
@@ -264,7 +407,7 @@ export const useInvoicesStore = create<InvoicesStore>()(
 
           set(updates);
         } catch (err) {
-          console.error("[invoices] loadFromSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing invoices" }));
         }
       },
     }),

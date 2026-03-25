@@ -4,6 +4,8 @@ import { useEffect, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useOnboardingStore } from "@/store/onboarding";
+import { computeEnabledModuleIds, getModuleById, getModuleDisplayName } from "@/lib/module-registry";
+import { useVocabulary } from "@/hooks/useVocabulary";
 import {
   Users, Inbox, MessageCircle, Calendar, Receipt, FolderKanban,
   Megaphone, Headphones, FileText, CreditCard, Zap, BarChart3,
@@ -97,24 +99,16 @@ export function BuildingScreen() {
   const [progress, setProgress] = useState(0);
   const [revealedModules, setRevealedModules] = useState(0);
   const [showComplete, setShowComplete] = useState(false);
+  const [fadeOut, setFadeOut] = useState(false);
   const router = useRouter();
-  const { businessContext, getIndustryConfig, featureSelections } = useOnboardingStore();
+  const { businessContext, getIndustryConfig, needs, discoveryAnswers } = useOnboardingStore();
+  const vocab = useVocabulary();
 
   const config = getIndustryConfig();
 
-  // Get selected module IDs, deduplicated by label (dual-write stores same module under both needs key and module ID)
   const selectedModules = useMemo(() => {
-    const all = Object.entries(featureSelections)
-      .filter(([, features]) => features.some((f) => f.selected))
-      .map(([id]) => id);
-    const seen = new Set<string>();
-    return all.filter((id) => {
-      const label = CATEGORY_LABELS[id] || id;
-      if (seen.has(label)) return false;
-      seen.add(label);
-      return true;
-    });
-  }, [featureSelections]);
+    return Array.from(computeEnabledModuleIds(needs, discoveryAnswers));
+  }, [needs, discoveryAnswers]);
 
   const moduleCount = selectedModules.length;
 
@@ -166,8 +160,14 @@ export function BuildingScreen() {
       setShowComplete(true);
     }, totalDuration - 500);
 
-    // Navigate to dashboard
+    // Fade out, then navigate to dashboard
+    const fadeTimer = setTimeout(() => {
+      setFadeOut(true);
+    }, totalDuration + 500);
+
     const finishTimer = setTimeout(() => {
+      useOnboardingStore.getState().setBuildComplete(true);
+      useOnboardingStore.getState().setIsBuilding(false);
       router.push("/dashboard");
     }, totalDuration + 1000);
 
@@ -176,6 +176,7 @@ export function BuildingScreen() {
       clearInterval(stepInterval);
       moduleTimers.forEach(clearTimeout);
       clearTimeout(completeTimer);
+      clearTimeout(fadeTimer);
       clearTimeout(finishTimer);
     };
   }, [router, moduleCount, selectedModules]);
@@ -183,7 +184,11 @@ export function BuildingScreen() {
   const businessName = businessContext.businessName;
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center overflow-hidden relative">
+    <motion.div
+      className="min-h-screen bg-background flex items-center justify-center overflow-hidden relative"
+      animate={{ opacity: fadeOut ? 0 : 1 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+    >
       {/* Floating particles */}
       {particles.map((p, i) => (
         <FloatingParticle key={i} {...p} />
@@ -267,7 +272,8 @@ export function BuildingScreen() {
           <div className="flex flex-wrap justify-center gap-2 mb-10 max-w-sm mx-auto">
             {selectedModules.map((modId, i) => {
               const Icon = ICON_MAP[modId] || Package;
-              const label = CATEGORY_LABELS[modId] || modId;
+              const mod = getModuleById(modId);
+              const label = mod ? getModuleDisplayName(mod, vocab) : (CATEGORY_LABELS[modId] || modId);
               const isRevealed = i < revealedModules;
 
               return (
@@ -343,6 +349,6 @@ export function BuildingScreen() {
           </AnimatePresence>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

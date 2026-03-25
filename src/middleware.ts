@@ -40,7 +40,12 @@ export async function middleware(request: NextRequest) {
   // Refresh the session — this is critical for keeping auth tokens alive
   const {
     data: { user },
+    error: authError,
   } = await supabase.auth.getUser();
+
+  if (authError) {
+    console.error("[middleware] getUser error:", authError.message);
+  }
 
   const { pathname } = request.nextUrl;
 
@@ -49,14 +54,26 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("redirect", pathname);
-    return NextResponse.redirect(url);
+    const redirectResponse = NextResponse.redirect(url);
+    // Copy refreshed auth cookies to the redirect response
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie.name, cookie.value, cookie);
+    });
+    return redirectResponse;
   }
 
-  // If user IS authenticated and visiting login/signup → redirect to dashboard
-  if (user && (pathname === "/login" || pathname === "/signup")) {
+  // If user IS authenticated and visiting login → redirect to dashboard
+  // Note: /signup redirects to /onboarding client-side, so we only gate /login
+  // to avoid trapping users who need to redo onboarding
+  if (user && pathname === "/login") {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
-    return NextResponse.redirect(url);
+    const redirectResponse = NextResponse.redirect(url);
+    // Copy refreshed auth cookies to the redirect response
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie.name, cookie.value, cookie);
+    });
+    return redirectResponse;
   }
 
   return supabaseResponse;

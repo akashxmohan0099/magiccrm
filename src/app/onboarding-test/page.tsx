@@ -8,6 +8,8 @@ import { WelcomeStep } from "@/components/onboarding/WelcomeStep";
 import { IndustryStep } from "@/components/onboarding/IndustryStep";
 import { BusinessContextStep } from "@/components/onboarding/BusinessContextStep";
 import { BubblesStep } from "@/components/onboarding/BubblesStep";
+import { AIQuestionsStep } from "@/components/onboarding/AIQuestionsStep";
+import { ConfigureStep } from "@/components/onboarding/ConfigureStep";
 import { SummaryStep } from "@/components/onboarding/SummaryStep";
 
 export default function OnboardingTestPage() {
@@ -17,7 +19,6 @@ export default function OnboardingTestPage() {
     if (hydrated) {
       const store = useOnboardingStore.getState();
       store.setStep(0);
-      store.setSetupMethod("guided" as "guided" | "self-serve");
       store.setSelectedIndustry("");
       store.setSelectedPersona("");
       store.setBusinessContext({
@@ -49,12 +50,17 @@ function TestContent() {
     }
   }, [step]);
 
+  // Steps match main flow:
+  // 0 = Welcome, 1 = Industry, 2 = BusinessContext, 3 = Signup (auto-skipped),
+  // 4 = Activity Chips, 5 = AI Questions, 6 = Configure, 7 = Summary
   const renderStep = () => {
     if (step === 0) return <WelcomeStep />;
     if (step === 1) return <IndustryStep />;
     if (step === 2) return <BusinessContextStep />;
     if (step === 3) return <div className="min-h-screen bg-background" />;
     if (step === 4) return <BubblesStep />;
+    if (step === 5) return <AIQuestionsStep />;
+    if (step === 6) return <ConfigureStep />;
     return <SummaryStep />;
   };
 

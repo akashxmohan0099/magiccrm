@@ -79,6 +79,12 @@ export function WelcomeStep() {
           <p className="text-[12px] text-text-tertiary mt-5">
             Free to set up. No credit card needed.
           </p>
+          <p className="text-[13px] text-text-tertiary mt-3">
+            Already have an account?{" "}
+            <a href="/login" className="text-foreground font-medium hover:underline">
+              Log in
+            </a>
+          </p>
         </motion.div>
       </div>
     </motion.div>

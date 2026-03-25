@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, FileText, Receipt, ScrollText } from "lucide-react";
-import { useInvoicesStore } from "@/store/invoices";
+import { Plus, FileText, Receipt, ScrollText, RefreshCw } from "lucide-react";
+import { useInvoicesStore, calculateInvoiceTotal } from "@/store/invoices";
+import { useAuth } from "@/hooks/useAuth";
 import { useProposalsStore } from "@/store/proposals";
 import { useClientsStore } from "@/store/clients";
 import { Invoice, Quote, Proposal } from "@/types/models";
@@ -24,7 +25,8 @@ import { FeatureSection } from "@/components/modules/FeatureSection";
 import { useFeature } from "@/hooks/useFeature";
 
 export function InvoicingPage() {
-  const { invoices, quotes } = useInvoicesStore();
+  const { invoices, quotes, generateRecurringInvoices } = useInvoicesStore();
+  const { workspaceId } = useAuth();
   const { proposals } = useProposalsStore();
   const { clients } = useClientsStore();
   const vocab = useVocabulary();
@@ -57,6 +59,14 @@ export function InvoicingPage() {
   const getTotal = (lineItems: { quantity: number; unitPrice: number }[]) =>
     lineItems.reduce((sum, li) => sum + li.quantity * li.unitPrice, 0);
 
+  const handleGenerateRecurring = () => {
+    if (workspaceId) {
+      generateRecurringInvoices(workspaceId);
+    }
+  };
+
+  const hasRecurring = invoices.some((inv) => inv.recurringSchedule);
+
   const invoiceColumns: Column<Invoice>[] = [
     { key: "number", label: "Invoice #", sortable: true },
     {
@@ -75,7 +85,7 @@ export function InvoicingPage() {
       key: "total",
       label: "Total",
       sortable: false,
-      render: (inv) => `$${getTotal(inv.lineItems).toFixed(2)}`,
+      render: (inv) => `$${calculateInvoiceTotal(inv).total.toFixed(2)}`,
     },
     {
       key: "dueDate",
@@ -169,6 +179,11 @@ export function InvoicingPage() {
         description={`Create and manage ${vocab.quotes.toLowerCase()} and ${vocab.invoices.toLowerCase()} for your ${vocab.clients.toLowerCase()}.`}
         actions={
           <div className="flex items-center gap-2">
+            {hasRecurring && (
+              <Button variant="secondary" size="sm" onClick={handleGenerateRecurring}>
+                <RefreshCw className="w-4 h-4" /> Generate Recurring
+              </Button>
+            )}
             {proposalsEnabled && (
               <Button variant="secondary" size="sm" onClick={handleNewProposal}>
                 <ScrollText className="w-4 h-4" /> New Proposal

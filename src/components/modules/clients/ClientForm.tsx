@@ -18,6 +18,8 @@ interface ClientFormProps {
   open: boolean;
   onClose: () => void;
   client?: Client;
+  /** Called before creating a new client. Return false to prevent creation (e.g. for duplicate warning). */
+  onBeforeCreate?: (data: Omit<Client, "id" | "createdAt" | "updatedAt">) => Promise<boolean>;
 }
 
 const SOURCE_OPTIONS = [
@@ -30,8 +32,10 @@ const SOURCE_OPTIONS = [
 
 const STATUS_OPTIONS = [
   { value: "active", label: "Active" },
-  { value: "inactive", label: "Inactive" },
   { value: "prospect", label: "Prospect" },
+  { value: "inactive", label: "Inactive" },
+  { value: "vip", label: "VIP" },
+  { value: "churned", label: "Churned" },
 ];
 
 function getInitialState(client?: Client) {
@@ -52,7 +56,7 @@ function getInitialState(client?: Client) {
   };
 }
 
-export function ClientForm({ open, onClose, client }: ClientFormProps) {
+export function ClientForm({ open, onClose, client, onBeforeCreate }: ClientFormProps) {
   const { addClient, updateClient } = useClientsStore();
   const { workspaceId } = useAuth();
   const vocab = useVocabulary();
@@ -91,7 +95,7 @@ export function ClientForm({ open, onClose, client }: ClientFormProps) {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (saving) return;
     if (!validate()) return;
 
@@ -118,6 +122,15 @@ export function ClientForm({ open, onClose, client }: ClientFormProps) {
     if (client) {
       updateClient(client.id, data, workspaceId ?? undefined);
     } else {
+      // Run duplicate check before creating
+      if (onBeforeCreate) {
+        const shouldProceed = await onBeforeCreate(data);
+        if (!shouldProceed) {
+          setSaving(false);
+          onClose();
+          return;
+        }
+      }
       addClient(data, workspaceId ?? undefined);
     }
     onClose();

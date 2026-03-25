@@ -6,6 +6,7 @@ import {
   toggleWorkspaceModule,
   fetchWorkspaceModules,
 } from "@/lib/db/workspace-settings";
+import { FEATURE_BLOCKS } from "@/types/features";
 
 interface AddonsStore {
   enabledAddons: string[]; // module IDs
@@ -28,10 +29,28 @@ export const useAddonsStore = create<AddonsStore>()(
         logActivity("create", "addons", `Enabled add-on "${name}"`);
         toast(`${name} enabled`);
 
+        // Seed default feature selections so useFeature() works for this addon
+        const block = FEATURE_BLOCKS.find((b) => b.id === id);
+        if (block) {
+          const { useOnboardingStore } = require("@/store/onboarding");
+          const store = useOnboardingStore.getState();
+          if (!store.featureSelections[id]) {
+            store.setFeatureSelections(
+              id,
+              block.subFeatures.map((sf) => ({
+                id: sf.id,
+                label: sf.label,
+                description: sf.description,
+                selected: sf.defaultOn,
+              })),
+            );
+          }
+        }
+
         // Fire-and-forget Supabase write
         if (workspaceId) {
           toggleWorkspaceModule(workspaceId, id, true).catch((err) =>
-            console.error("[addons] enableAddon sync failed:", err)
+            { import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "enabling add-on" })); }
           );
         }
       },
@@ -44,7 +63,7 @@ export const useAddonsStore = create<AddonsStore>()(
         // Fire-and-forget Supabase write
         if (workspaceId) {
           toggleWorkspaceModule(workspaceId, id, false).catch((err) =>
-            console.error("[addons] disableAddon sync failed:", err)
+            { import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "disabling add-on" })); }
           );
         }
       },

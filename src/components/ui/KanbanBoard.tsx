@@ -15,6 +15,10 @@ interface KanbanBoardProps<T> {
   keyExtractor: (item: T) => string;
   renderCard: (item: T) => ReactNode;
   onMove: (itemId: string, toColumnId: string) => void;
+  /** Optional custom column header. Falls back to a default header with dot + label + count. */
+  renderColumnHeader?: (col: KanbanColumn<T>) => ReactNode;
+  /** Optional empty-state renderer shown when a column has zero items. */
+  renderEmpty?: () => ReactNode;
 }
 
 export function KanbanBoard<T>({
@@ -22,6 +26,8 @@ export function KanbanBoard<T>({
   keyExtractor,
   renderCard,
   onMove,
+  renderColumnHeader,
+  renderEmpty,
 }: KanbanBoardProps<T>) {
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -62,31 +68,41 @@ export function KanbanBoard<T>({
           onDragLeave={() => setDragOverCol(null)}
           onDrop={(e) => handleDrop(e, col.id)}
         >
-          <div className="flex items-center gap-2 mb-3 px-1">
-            <div className={`w-2.5 h-2.5 rounded-full ${col.color}`} />
-            <span className="text-sm font-semibold text-foreground tracking-tight">{col.label}</span>
-            <span className="ml-auto inline-flex items-center justify-center w-5 h-5 rounded-full bg-background text-[11px] font-semibold text-text-secondary">
-              {col.items.length}
-            </span>
+          <div className="mb-3">
+            {renderColumnHeader ? (
+              renderColumnHeader(col)
+            ) : (
+              <div className="flex items-center gap-2 px-1">
+                <div className={`w-2.5 h-2.5 rounded-full ${col.color}`} />
+                <span className="text-sm font-semibold text-foreground tracking-tight">{col.label}</span>
+                <span className="ml-auto inline-flex items-center justify-center w-5 h-5 rounded-full bg-background text-[11px] font-semibold text-text-secondary">
+                  {col.items.length}
+                </span>
+              </div>
+            )}
           </div>
           <div className="space-y-2 min-h-[80px]">
-            {col.items.map((item, idx) => (
-              <motion.div
-                key={keyExtractor(item)}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{
-                  opacity: draggingId === keyExtractor(item) ? 0.5 : 1,
-                  scale: draggingId === keyExtractor(item) ? 0.95 : 1,
-                }}
-                transition={{ delay: idx * 0.03, duration: 0.2 }}
-                draggable
-                onDragStart={(e) => handleDragStart(e as unknown as DragEvent, keyExtractor(item))}
-                onDragEnd={handleDragEnd}
-                className="cursor-grab active:cursor-grabbing"
-              >
-                {renderCard(item)}
-              </motion.div>
-            ))}
+            {col.items.length === 0 && renderEmpty ? (
+              renderEmpty()
+            ) : (
+              col.items.map((item, idx) => (
+                <motion.div
+                  key={keyExtractor(item)}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{
+                    opacity: draggingId === keyExtractor(item) ? 0.5 : 1,
+                    scale: draggingId === keyExtractor(item) ? 0.95 : 1,
+                  }}
+                  transition={{ delay: idx * 0.03, duration: 0.2 }}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e as unknown as DragEvent, keyExtractor(item))}
+                  onDragEnd={handleDragEnd}
+                  className="cursor-grab active:cursor-grabbing"
+                >
+                  {renderCard(item)}
+                </motion.div>
+              ))
+            )}
           </div>
         </motion.div>
       ))}

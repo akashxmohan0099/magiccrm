@@ -69,7 +69,9 @@ export function InvoiceForm({ open, onClose, invoice }: InvoiceFormProps) {
         setDepositPercent(inv.depositPercent ?? 50);
         setMilestones(inv.milestones ?? []);
         setInvoiceNumber(invoice.number ?? "");
-        setRecurring(inv.recurring ?? "");
+        setRecurring(invoice.recurringSchedule ?? inv.recurring ?? "");
+        setApplyTax((invoice.taxRate ?? 0) > 0);
+        setTaxRate(String(invoice.taxRate ?? 10));
       } else {
         setClientId("");
         setDueDate("");
@@ -81,6 +83,8 @@ export function InvoiceForm({ open, onClose, invoice }: InvoiceFormProps) {
         setMilestones([]);
         setInvoiceNumber("");
         setRecurring("");
+        setApplyTax(false);
+        setTaxRate("10");
       }
     }
   }, [open, invoice, config.invoiceMode.defaultMode]);
@@ -119,6 +123,7 @@ export function InvoiceForm({ open, onClose, invoice }: InvoiceFormProps) {
     }
 
     const taxField = applyTax ? parseFloat(taxRate) || 0 : 0;
+    const recurringSchedule = recurring || undefined;
 
     if (invoice) {
       updateInvoice(invoice.id, {
@@ -129,6 +134,7 @@ export function InvoiceForm({ open, onClose, invoice }: InvoiceFormProps) {
         lineItems,
         updatedAt: now,
         taxRate: taxField,
+        recurringSchedule: recurringSchedule as Invoice["recurringSchedule"],
         ...extraFields,
       });
     } else {
@@ -139,6 +145,7 @@ export function InvoiceForm({ open, onClose, invoice }: InvoiceFormProps) {
         dueDate: dueDate || undefined,
         notes,
         taxRate: taxField,
+        recurringSchedule: recurringSchedule as Invoice["recurringSchedule"],
         ...(invoiceNumber.trim() ? { customNumber: invoiceNumber.trim() } : {}),
         ...extraFields,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -299,8 +306,20 @@ export function InvoiceForm({ open, onClose, invoice }: InvoiceFormProps) {
         </FormField>
 
         <div className="flex items-center justify-between pt-4 border-t border-border-light">
-          <div className="text-lg font-semibold text-foreground">
-            Total: ${total.toFixed(2)}
+          <div>
+            {applyTax && parseFloat(taxRate) > 0 ? (
+              <div className="space-y-0.5">
+                <div className="text-sm text-text-secondary">Subtotal: ${total.toFixed(2)}</div>
+                <div className="text-sm text-text-secondary">Tax ({taxRate}%): ${(total * (parseFloat(taxRate) || 0) / 100).toFixed(2)}</div>
+                <div className="text-lg font-semibold text-foreground">
+                  Total: ${(total + total * (parseFloat(taxRate) || 0) / 100).toFixed(2)}
+                </div>
+              </div>
+            ) : (
+              <div className="text-lg font-semibold text-foreground">
+                Total: ${total.toFixed(2)}
+              </div>
+            )}
           </div>
           <div className="flex gap-2">
             <Button variant="ghost" onClick={onClose}>Cancel</Button>

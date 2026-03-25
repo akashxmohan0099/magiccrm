@@ -90,9 +90,9 @@ export const useCommunicationStore = create<CommunicationStore>()(
             connectedChannels,
             channelConfigs,
             automationSettings,
-          }).catch((err) =>
-            console.error("[communication] saveCommunicationConfig (connect) failed:", err)
-          );
+          }).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing messages" }));
+          });
         }
       },
 
@@ -111,9 +111,9 @@ export const useCommunicationStore = create<CommunicationStore>()(
             connectedChannels,
             channelConfigs,
             automationSettings,
-          }).catch((err) =>
-            console.error("[communication] saveCommunicationConfig (disconnect) failed:", err)
-          );
+          }).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing messages" }));
+          });
         }
       },
 
@@ -161,9 +161,9 @@ export const useCommunicationStore = create<CommunicationStore>()(
             connectedChannels,
             channelConfigs,
             automationSettings,
-          }).catch((err) =>
-            console.error("[communication] saveCommunicationConfig (saveChannelConfig) failed:", err)
-          );
+          }).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing messages" }));
+          });
         }
 
         return savedConfig;
@@ -191,9 +191,9 @@ export const useCommunicationStore = create<CommunicationStore>()(
             connectedChannels,
             channelConfigs,
             automationSettings,
-          }).catch((err) =>
-            console.error("[communication] saveCommunicationConfig (updateChannelConfig) failed:", err)
-          );
+          }).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing messages" }));
+          });
         }
       },
 
@@ -212,9 +212,9 @@ export const useCommunicationStore = create<CommunicationStore>()(
             connectedChannels,
             channelConfigs,
             automationSettings,
-          }).catch((err) =>
-            console.error("[communication] saveCommunicationConfig (automationSettings) failed:", err)
-          );
+          }).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing messages" }));
+          });
         }
       },
 
@@ -232,9 +232,9 @@ export const useCommunicationStore = create<CommunicationStore>()(
 
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
-          dbCreateConversation(workspaceId, conversation).catch((err) =>
-            console.error("[communication] dbCreateConversation failed:", err)
-          );
+          dbCreateConversation(workspaceId, conversation).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving message" }));
+          });
         }
 
         return conversation;
@@ -257,15 +257,15 @@ export const useCommunicationStore = create<CommunicationStore>()(
 
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
-          dbCreateMessage(conversationId, message).catch((err) =>
-            console.error("[communication] dbCreateMessage failed:", err)
-          );
+          dbCreateMessage(conversationId, message).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving message" }));
+          });
           // Also update last_message_at on the conversation
           dbUpdateConversation(workspaceId, conversationId, {
             lastMessageAt: message.timestamp,
-          }).catch((err) =>
-            console.error("[communication] dbUpdateConversation (lastMessageAt) failed:", err)
-          );
+          }).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving message" }));
+          });
         }
       },
 
@@ -278,9 +278,9 @@ export const useCommunicationStore = create<CommunicationStore>()(
 
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
-          dbUpdateConversation(workspaceId, id, data).catch((err) =>
-            console.error("[communication] dbUpdateConversation failed:", err)
-          );
+          dbUpdateConversation(workspaceId, id, data).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving message" }));
+          });
         }
       },
 
@@ -291,9 +291,9 @@ export const useCommunicationStore = create<CommunicationStore>()(
 
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
-          dbDeleteConversation(workspaceId, id).catch((err) =>
-            console.error("[communication] dbDeleteConversation failed:", err)
-          );
+          dbDeleteConversation(workspaceId, id).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving message" }));
+          });
         }
       },
 
@@ -316,7 +316,7 @@ export const useCommunicationStore = create<CommunicationStore>()(
             }),
           ]);
         } catch (err) {
-          console.error("[communication] syncToSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing messages" }));
         }
       },
 
@@ -343,7 +343,7 @@ export const useCommunicationStore = create<CommunicationStore>()(
 
           set(updates);
         } catch (err) {
-          console.error("[communication] loadFromSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing messages" }));
         }
       },
     }),

@@ -1,37 +1,48 @@
 "use client";
 
+// Soft, muted palette — easy on the eyes, uses the dot for color signaling
+// instead of loud saturated backgrounds
 const COLORS: Record<string, { bg: string; text: string; dot: string }> = {
-  active: { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500" },
-  inactive: { bg: "bg-gray-50", text: "text-gray-600", dot: "bg-gray-400" },
-  prospect: { bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500" },
-  new: { bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500" },
-  contacted: { bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-500" },
-  qualified: { bg: "bg-purple-50", text: "text-purple-700", dot: "bg-purple-500" },
-  proposal: { bg: "bg-orange-50", text: "text-orange-700", dot: "bg-orange-500" },
-  won: { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500" },
-  lost: { bg: "bg-red-50", text: "text-red-700", dot: "bg-red-500" },
-  draft: { bg: "bg-gray-50", text: "text-gray-600", dot: "bg-gray-400" },
-  sent: { bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500" },
-  paid: { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500" },
-  overdue: { bg: "bg-red-50", text: "text-red-700", dot: "bg-red-500" },
-  cancelled: { bg: "bg-red-50", text: "text-red-600", dot: "bg-red-400" },
-  confirmed: { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500" },
-  pending: { bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-500" },
-  completed: { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500" },
-  accepted: { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500" },
-  declined: { bg: "bg-red-50", text: "text-red-700", dot: "bg-red-500" },
-  expired: { bg: "bg-gray-50", text: "text-gray-600", dot: "bg-gray-400" },
-  open: { bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500" },
-  "in-progress": { bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-500" },
-  "not-started": { bg: "bg-gray-50", text: "text-gray-600", dot: "bg-gray-400" },
-  review: { bg: "bg-purple-50", text: "text-purple-700", dot: "bg-purple-500" },
-  waiting: { bg: "bg-orange-50", text: "text-orange-700", dot: "bg-orange-500" },
-  resolved: { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500" },
-  closed: { bg: "bg-gray-50", text: "text-gray-600", dot: "bg-gray-400" },
-  scheduled: { bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500" },
+  // ── Positive / active states ──
+  active:      { bg: "bg-stone-50", text: "text-stone-600", dot: "bg-emerald-400" },
+  confirmed:   { bg: "bg-stone-50", text: "text-stone-600", dot: "bg-emerald-400" },
+  completed:   { bg: "bg-stone-50", text: "text-stone-600", dot: "bg-emerald-400" },
+  paid:        { bg: "bg-stone-50", text: "text-stone-600", dot: "bg-emerald-400" },
+  won:         { bg: "bg-stone-50", text: "text-stone-600", dot: "bg-emerald-400" },
+  accepted:    { bg: "bg-stone-50", text: "text-stone-600", dot: "bg-emerald-400" },
+  resolved:    { bg: "bg-stone-50", text: "text-stone-600", dot: "bg-emerald-400" },
+
+  // ── Neutral / in-progress states ──
+  new:           { bg: "bg-stone-50", text: "text-stone-600", dot: "bg-blue-400" },
+  open:          { bg: "bg-stone-50", text: "text-stone-600", dot: "bg-blue-400" },
+  sent:          { bg: "bg-stone-50", text: "text-stone-600", dot: "bg-blue-400" },
+  contacted:     { bg: "bg-stone-50", text: "text-stone-600", dot: "bg-amber-400" },
+  pending:       { bg: "bg-stone-50", text: "text-stone-600", dot: "bg-amber-400" },
+  "in-progress": { bg: "bg-stone-50", text: "text-stone-600", dot: "bg-amber-400" },
+  waiting:       { bg: "bg-stone-50", text: "text-stone-600", dot: "bg-amber-400" },
+  scheduled:     { bg: "bg-stone-50", text: "text-stone-600", dot: "bg-blue-400" },
+  qualified:     { bg: "bg-stone-50", text: "text-stone-600", dot: "bg-violet-400" },
+  proposal:      { bg: "bg-stone-50", text: "text-stone-600", dot: "bg-violet-400" },
+  review:        { bg: "bg-stone-50", text: "text-stone-600", dot: "bg-violet-400" },
+  prospect:      { bg: "bg-stone-50", text: "text-stone-600", dot: "bg-blue-400" },
+  vip:           { bg: "bg-stone-50", text: "text-stone-600", dot: "bg-violet-400" },
+
+  // ── Inactive / closed states ──
+  inactive:      { bg: "bg-stone-50", text: "text-stone-400", dot: "bg-stone-300" },
+  draft:         { bg: "bg-stone-50", text: "text-stone-400", dot: "bg-stone-300" },
+  expired:       { bg: "bg-stone-50", text: "text-stone-400", dot: "bg-stone-300" },
+  "not-started": { bg: "bg-stone-50", text: "text-stone-400", dot: "bg-stone-300" },
+  closed:        { bg: "bg-stone-50", text: "text-stone-400", dot: "bg-stone-300" },
+
+  // ── Warning / negative states ──
+  overdue:   { bg: "bg-red-50/60", text: "text-red-500", dot: "bg-red-400" },
+  cancelled: { bg: "bg-stone-50", text: "text-stone-400", dot: "bg-red-300" },
+  declined:  { bg: "bg-stone-50", text: "text-stone-400", dot: "bg-red-300" },
+  lost:      { bg: "bg-stone-50", text: "text-stone-400", dot: "bg-red-300" },
+  churned:   { bg: "bg-stone-50", text: "text-stone-400", dot: "bg-red-300" },
 };
 
-const DEFAULT = { bg: "bg-gray-50", text: "text-gray-600", dot: "bg-gray-400" };
+const DEFAULT = { bg: "bg-stone-50", text: "text-stone-500", dot: "bg-stone-300" };
 
 interface StatusBadgeProps {
   status: string;

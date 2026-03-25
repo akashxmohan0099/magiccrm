@@ -1043,17 +1043,70 @@ export default function LandingPage() {
       </motion.section>
 
       {/* Footer */}
-      <footer className="border-t border-border-light py-8">
-        <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ backgroundColor: "var(--logo-green)" }}>
-              <div className="w-2.5 h-2.5 bg-white rounded-sm" />
+      <footer className="border-t border-border-light bg-surface/50">
+        <div className="max-w-6xl mx-auto px-6 py-16">
+          {/* Top section */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-14">
+            {/* Brand + description */}
+            <div className="md:col-span-1">
+              <div className="flex items-center gap-2.5 mb-4">
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: "var(--logo-green)" }}>
+                  <div className="w-3 h-3 bg-white rounded-sm" />
+                </div>
+                <span className="font-bold text-foreground text-[15px]">Magic</span>
+              </div>
+              <p className="text-[13px] text-text-secondary leading-relaxed">
+                The modular CRM that adapts to how you actually work. Pick your modules, configure your features, and run your business your way.
+              </p>
             </div>
-            <span className="font-semibold text-foreground text-[13px]">Magic</span>
+
+            {/* Platform */}
+            <div>
+              <h4 className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider mb-4">Platform</h4>
+              <ul className="space-y-2.5">
+                <li><span className="text-[13px] text-text-secondary hover:text-foreground transition-colors cursor-pointer">Clients & Leads</span></li>
+                <li><span className="text-[13px] text-text-secondary hover:text-foreground transition-colors cursor-pointer">Scheduling & Bookings</span></li>
+                <li><span className="text-[13px] text-text-secondary hover:text-foreground transition-colors cursor-pointer">Invoicing & Payments</span></li>
+                <li><span className="text-[13px] text-text-secondary hover:text-foreground transition-colors cursor-pointer">Projects & Jobs</span></li>
+                <li><span className="text-[13px] text-text-secondary hover:text-foreground transition-colors cursor-pointer">Marketing & Campaigns</span></li>
+                <li><span className="text-[13px] text-text-secondary hover:text-foreground transition-colors cursor-pointer">Team Management</span></li>
+              </ul>
+            </div>
+
+            {/* Integrations & AI */}
+            <div>
+              <h4 className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider mb-4">Powered by</h4>
+              <ul className="space-y-2.5">
+                <li><span className="text-[13px] text-text-secondary">AI-Powered Onboarding</span></li>
+                <li><span className="text-[13px] text-text-secondary">Smart Feature Recommendations</span></li>
+                <li><span className="text-[13px] text-text-secondary">Google Calendar Sync</span></li>
+                <li><span className="text-[13px] text-text-secondary">Stripe Payments</span></li>
+                <li><span className="text-[13px] text-text-secondary">WhatsApp & SMS</span></li>
+                <li><span className="text-[13px] text-text-secondary">Unified Inbox</span></li>
+              </ul>
+            </div>
+
+            {/* Resources */}
+            <div>
+              <h4 className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider mb-4">Resources</h4>
+              <ul className="space-y-2.5">
+                <li><Link href="/onboarding" className="text-[13px] text-text-secondary hover:text-foreground transition-colors">Get Started</Link></li>
+                <li><Link href="/pricing" className="text-[13px] text-text-secondary hover:text-foreground transition-colors">Pricing</Link></li>
+                <li><Link href="/privacy" className="text-[13px] text-text-secondary hover:text-foreground transition-colors">Privacy Policy</Link></li>
+                <li><Link href="/terms" className="text-[13px] text-text-secondary hover:text-foreground transition-colors">Terms of Service</Link></li>
+              </ul>
+            </div>
           </div>
-          <p className="text-[12px] text-text-tertiary">
-            &copy; {new Date().getFullYear()} Magic. All rights reserved.
-          </p>
+
+          {/* Bottom bar */}
+          <div className="pt-8 border-t border-border-light flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-[12px] text-text-tertiary">
+              &copy; {new Date().getFullYear()} Magic. All rights reserved.
+            </p>
+            <p className="text-[12px] text-text-tertiary">
+              Built for service businesses. Powered by AI.
+            </p>
+          </div>
         </div>
       </footer>
     </div>

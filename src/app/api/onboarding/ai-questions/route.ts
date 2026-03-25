@@ -1,17 +1,39 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { rateLimit } from "@/lib/rate-limit";
 
 const anthropic = new Anthropic();
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const { allowed } = rateLimit(`ai-questions:${ip}`, 10, 60_000);
+  if (!allowed) {
+    return NextResponse.json({ error: "Too many requests. Please try again shortly." }, { status: 429 });
+  }
+
   try {
-    const { industry, persona, businessName, businessDescription, location, selectedChips } = await req.json();
+    const {
+      industry,
+      persona,
+      businessName,
+      businessDescription,
+      location,
+      selectedChips,
+      activatedModules,
+      declinedModules,
+      localQuestionTopics,
+      personaProfile,
+    } = await req.json();
 
     if (!industry || !persona) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
     const chipLabels = (selectedChips || []).join(", ");
+    const activeModules = (activatedModules || []).join(", ");
+    const declined = (declinedModules || []).join(", ");
+    const localTopics = (localQuestionTopics || []).join("\n- ");
+    const profileContext = personaProfile || "";
 
     const message = await anthropic.messages.create({
       model: "claude-sonnet-4-20250514",
@@ -19,72 +41,77 @@ export async function POST(req: NextRequest) {
       messages: [
         {
           role: "user",
-          content: `You are helping personalize a business software platform during onboarding.
+          content: `You are helping personalize a CRM platform during onboarding. The user just answered activity-based questions and some deterministic follow-ups. Now generate 4 smart questions to uncover what they STILL missed.
 
-Here is what we know about this user:
+ABOUT THIS USER:
 - Industry: ${industry}
-- Business type: ${persona}
-- Business name: ${businessName || "Not provided"}
-- What they do: ${businessDescription || "Not provided"}
+- Role: ${persona}
+- Business: ${businessName || "Not provided"}
+- Description: ${businessDescription || "Not provided"}
 - Location: ${location || "Not provided"}
-- Activities they selected: ${chipLabels || "None selected"}
+${profileContext ? `\nHOW THIS PERSONA TYPICALLY OPERATES:\n${profileContext}` : ""}
 
-Generate 9 yes/no questions organized into 3 categories (3 questions each). These should help us understand what ELSE this business needs that wasn't covered by their chip selections.
+WHAT THEY ALREADY TOLD US (do NOT repeat these topics):
+${chipLabels || "Nothing selected"}
 
-Category 1: "Day-to-day operations" — questions about their daily workflows and tools
-Category 2: "Client experience" — questions about how they interact with and serve clients
-Category 3: "Business growth" — questions about scaling, efficiency, and tracking
+MODULES ALREADY ACTIVATED (do NOT ask about these):
+${activeModules || "None"}
 
-IMPORTANT — Do NOT ask about:
-- Social media posting or scheduling (we don't have that feature)
-- Review collection (we don't have that feature)
-- Anything related to posting content online
-- Things the user already selected in their chip answers
+MODULES THE USER EXPLICITLY DECLINED (do NOT ask about these either):
+${declined || "None"}
+${localTopics ? `\nLOCAL FOLLOW-UP QUESTIONS ALREADY BEING ASKED (do NOT cover these topics):\n- ${localTopics}` : ""}
 
-DO ask about real features we have:
-- scheduling: appointments, calendar, online booking, reminders, waitlist
+Generate exactly 4 yes/no questions in 2 categories (2 each).
+
+Category 1: "A few more about your workflow"
+Category 2: "Things you might find useful"
+
+AVAILABLE MODULE KEYS — use exactly one per question:
+Core modules (prioritize these if not already activated):
+- scheduling: appointments, calendar, availability, reminders
 - projects: job tracking, tasks, milestones, time tracking
-- billing: invoices, quotes, deposits, recurring billing, proposals
-- team: staff management, rosters, permissions
-- automations: auto-reminders, follow-ups, status updates
-- reporting: revenue tracking, dashboards, performance reports
+- marketing: campaigns, referral codes, coupons, email blasts
 - products: service catalog, pricing, inventory
+- team: staff management, roles, permissions, rosters
+- automations: auto-reminders, follow-ups, recurring tasks
+- reporting: revenue tracking, dashboards, performance reports
+- client-portal: self-service hub for clients to view bookings, invoices, history
+
+Add-ons (only ask if highly relevant to this persona):
 - documents: contracts, agreements, e-signatures
-- communication: email, SMS, WhatsApp, unified inbox
-- marketing: email campaigns, referral codes, coupons (NOT social media posting)
+- waitlist: walk-in queues, auto-notify when spots open
+- proposals: branded proposal pages with interactive pricing
 
-Rules:
-- Each question must be specific to their industry and persona
-- Keep questions under 15 words each
-- Make them conversational, not technical
-- Include a short friendly subtitle for each category (under 10 words)
+STRICT RULES:
+- NEVER ask about modules already activated (listed above)
+- NEVER ask about modules the user explicitly declined (listed above)
+- NEVER ask about features the user already selected in their chip answers
+- NEVER ask about topics already covered by local follow-up questions (listed above)
+- NEVER ask about social media posting, review collection, or content publishing
+- NEVER ask about billing, invoicing, or payment — everyone gets that
+- NEVER ask about messaging or communication channels — everyone gets that
+- NEVER ask about travel or travel charges — already handled locally
+- Each question must feel natural for a ${persona} in ${industry}
+- Questions must be under 12 words, conversational, not technical
+- Ask about real business needs, not granular settings
+- Prioritize core module gaps over add-ons
+- If a module is already activated, skip it entirely — find a DIFFERENT gap
 
-Return ONLY valid JSON with this exact structure:
+Return ONLY valid JSON:
 {
   "categories": [
     {
-      "title": "Day-to-day operations",
-      "subtitle": "How you run things behind the scenes",
+      "title": "A few more about your workflow",
+      "subtitle": "...",
       "questions": [
-        {"question": "...", "module": "..."},
         {"question": "...", "module": "..."},
         {"question": "...", "module": "..."}
       ]
     },
     {
-      "title": "Client experience",
-      "subtitle": "How you serve and communicate with clients",
+      "title": "Things you might find useful",
+      "subtitle": "...",
       "questions": [
-        {"question": "...", "module": "..."},
-        {"question": "...", "module": "..."},
-        {"question": "...", "module": "..."}
-      ]
-    },
-    {
-      "title": "Business growth",
-      "subtitle": "How you want to scale and improve",
-      "questions": [
-        {"question": "...", "module": "..."},
         {"question": "...", "module": "..."},
         {"question": "...", "module": "..."}
       ]

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { motion } from "framer-motion";
 import {
   Users, Inbox, Calendar, Receipt, FolderKanban,
@@ -11,7 +11,10 @@ import {
   Check, Plus,
 } from "lucide-react";
 import { useOnboardingStore } from "@/store/onboarding";
-import { MODULE_REGISTRY } from "@/lib/module-registry";
+import { useAuth } from "@/hooks/useAuth";
+import { useVocabulary } from "@/hooks/useVocabulary";
+import { MODULE_REGISTRY, ALWAYS_ON_MODULES, computeEnabledModuleIds, getModuleDisplayName } from "@/lib/module-registry";
+import type { VocabularyMap } from "@/types/industry-config";
 
 const MODULE_DISPLAY: Record<string, {
   icon: React.ComponentType<{ className?: string }>;
@@ -84,6 +87,13 @@ const MODULE_DISPLAY: Record<string, {
   },
 };
 
+/** Replace "clients"/"client" with the user's vocab in taglines */
+function vocabTagline(tagline: string, vocab: VocabularyMap): string {
+  return tagline
+    .replace(/\bclients\b/g, vocab.clients.toLowerCase())
+    .replace(/\bclient\b/g, vocab.client.toLowerCase());
+}
+
 const INDUSTRY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   "beauty-wellness": Scissors, "trades-construction": Wrench, "professional-services": Briefcase,
   "health-fitness": Dumbbell, "creative-services": PenTool, "hospitality-events": CalendarDays,
@@ -91,48 +101,15 @@ const INDUSTRY_ICONS: Record<string, React.ComponentType<{ className?: string }>
 };
 
 export function SummaryStep() {
-  const { businessContext, prevStep, setIsBuilding, getIndustryConfig, needs } = useOnboardingStore();
+  const { businessContext, prevStep, setIsBuilding, getIndustryConfig, needs, setDiscoveryAnswer, syncToSupabase } = useOnboardingStore();
+  const { workspaceId } = useAuth();
+  const vocab = useVocabulary();
   const config = getIndustryConfig();
-
-  const ALWAYS_ON = new Set(["client-database", "leads-pipeline", "communication", "quotes-invoicing"]);
 
   const discoveryAnswers = useOnboardingStore((s) => s.discoveryAnswers);
 
-  const [manuallyToggled, setManuallyToggled] = useState<Record<string, boolean>>({});
-
   const { enabledModules, disabledModules, enabledAddons } = useMemo(() => {
-    const enabled = new Set<string>(ALWAYS_ON);
-
-    // Add modules from needs (needsKey-based questions)
-    const NEED_TO_MODULE: Record<string, string> = {
-      acceptBookings: "bookings-calendar", manageProjects: "jobs-projects", runMarketing: "marketing",
-    };
-    for (const [needKey, moduleId] of Object.entries(NEED_TO_MODULE)) {
-      if (needs[needKey as keyof typeof needs]) enabled.add(moduleId);
-    }
-
-    // Add modules directly activated by chip selections
-    // The BubblesStep stores "module:{moduleId}" = true in discoveryAnswers
-    for (const [key, val] of Object.entries(discoveryAnswers)) {
-      if (key.startsWith("module:") && val === true) {
-        enabled.add(key.replace("module:", ""));
-      }
-    }
-
-    // Auto-enable rules
-    if (needs.acceptBookings) enabled.add("products");
-    if (needs.manageProjects || needs.acceptBookings) enabled.add("automations");
-    if (needs.manageProjects || needs.sendInvoices) enabled.add("reporting");
-
-    // Apply manual toggles
-    for (const [id, val] of Object.entries(manuallyToggled)) {
-      if (val) enabled.add(id);
-      else enabled.delete(id);
-    }
-
-    // Never remove always-on
-    for (const id of ALWAYS_ON) enabled.add(id);
-
+    const enabled = computeEnabledModuleIds(needs, discoveryAnswers);
     const coreModules = MODULE_REGISTRY.filter((m) => m.kind !== "addon");
     const addonModules = MODULE_REGISTRY.filter((m) => m.kind === "addon");
     return {
@@ -140,12 +117,13 @@ export function SummaryStep() {
       disabledModules: coreModules.filter((m) => !enabled.has(m.id)),
       enabledAddons: addonModules.filter((m) => enabled.has(m.id)),
     };
-  }, [needs, discoveryAnswers, manuallyToggled]);
+  }, [needs, discoveryAnswers]);
 
   const toggleModule = (moduleId: string) => {
-    if (ALWAYS_ON.has(moduleId)) return; // Can't toggle always-on
+    if (ALWAYS_ON_MODULES.has(moduleId)) return;
     const isCurrentlyEnabled = enabledModules.some((m) => m.id === moduleId);
-    setManuallyToggled((prev) => ({ ...prev, [moduleId]: !isCurrentlyEnabled }));
+    // Persist immediately to discoveryAnswers (survives back/refresh)
+    setDiscoveryAnswer(`module:${moduleId}`, !isCurrentlyEnabled);
   };
 
   const IndustryIcon = config ? INDUSTRY_ICONS[config.id] : null;
@@ -185,7 +163,7 @@ export function SummaryStep() {
               >
                 <div className="absolute top-0 left-0 right-0 h-24 opacity-[0.05] group-hover:opacity-[0.08] transition-opacity" style={{ background: `linear-gradient(to bottom, ${d.gradient}, transparent)` }} />
                 <div className="absolute top-3 right-3">
-                  {ALWAYS_ON.has(mod.id) ? (
+                  {ALWAYS_ON_MODULES.has(mod.id) ? (
                     <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
                       <Check className="w-3 h-3 text-white" />
                     </div>
@@ -204,8 +182,8 @@ export function SummaryStep() {
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${d.bg} mb-3`}>
                     <IconComp className={`w-5 h-5 ${d.color}`} />
                   </div>
-                  <h3 className="text-[15px] font-bold text-foreground">{mod.name}</h3>
-                  <p className="text-[12px] text-text-secondary mt-1">{d.tagline}</p>
+                  <h3 className="text-[15px] font-bold text-foreground">{getModuleDisplayName(mod, vocab)}</h3>
+                  <p className="text-[12px] text-text-secondary mt-1">{vocabTagline(d.tagline, vocab)}</p>
                 </div>
                 <div className="relative px-5 pb-5 space-y-1.5">
                   {d.preview.map((row, j) => (
@@ -236,7 +214,7 @@ export function SummaryStep() {
                       <IconComp className={`w-4.5 h-4.5 ${color}`} />
                     </div>
                     <div>
-                      <p className="text-[13px] font-semibold text-foreground">{mod.name}</p>
+                      <p className="text-[13px] font-semibold text-foreground">{getModuleDisplayName(mod, vocab)}</p>
                       <p className="text-[11px] text-text-tertiary">{mod.description}</p>
                     </div>
                   </div>
@@ -269,8 +247,8 @@ export function SummaryStep() {
                       <IconComp className={`w-5 h-5 ${d.color}`} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-semibold text-text-secondary group-hover:text-foreground transition-colors">{mod.name}</p>
-                      <p className="text-[11px] text-text-tertiary leading-snug">{d.tagline}</p>
+                      <p className="text-[13px] font-semibold text-text-secondary group-hover:text-foreground transition-colors">{getModuleDisplayName(mod, vocab)}</p>
+                      <p className="text-[11px] text-text-tertiary leading-snug">{vocabTagline(d.tagline, vocab)}</p>
                     </div>
                     <Plus className="w-4 h-4 text-text-tertiary group-hover:text-foreground transition-colors flex-shrink-0" />
                   </motion.button>
@@ -288,7 +266,14 @@ export function SummaryStep() {
         {/* CTA */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="max-w-md mx-auto text-center">
           <button
-            onClick={() => setIsBuilding(true)}
+            onClick={() => {
+              // Toggles are already persisted to discoveryAnswers on every click.
+              // Just sync to Supabase and launch.
+              if (workspaceId) {
+                syncToSupabase(workspaceId);
+              }
+              setIsBuilding(true);
+            }}
             className="w-full py-4 bg-foreground text-white rounded-2xl text-[16px] font-semibold cursor-pointer hover:opacity-90 transition-all flex items-center justify-center gap-2.5 shadow-lg"
           >
             Launch my workspace <ArrowRight className="w-5 h-5" />

@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ArrowLeft } from "lucide-react";
 import { useOnboardingStore } from "@/store/onboarding";
-import { FEATURE_CATEGORIES, NeedsAssessment } from "@/types/onboarding";
+import { NeedsAssessment } from "@/types/onboarding";
 import { getAddonModules } from "@/lib/module-registry";
 import { useAddonsStore } from "@/store/addons";
+import { useVocabulary } from "@/hooks/useVocabulary";
+import type { VocabularyMap } from "@/types/industry-config";
 
 interface Chip {
   id: string;
@@ -27,32 +29,32 @@ const SLIDES: Slide[] = [
     subtitle: "Select all that apply",
     chips: [
       { id: "clients-book", label: "They book appointments or sessions", activates: ["bookings-calendar"], needsKeys: ["acceptBookings"] },
-      { id: "inquiries", label: "They send inquiries or requests", activates: ["leads-pipeline"], needsKeys: ["receiveInquiries"] },
       { id: "walk-ins", label: "They walk in or call directly", activates: ["bookings-calendar"], needsKeys: ["acceptBookings"] },
       { id: "online-booking", label: "I want an online booking page", activates: ["bookings-calendar"], needsKeys: ["acceptBookings"] },
-      { id: "messaging", label: "They message me on WhatsApp, Instagram, etc.", activates: ["communication"], needsKeys: ["communicateClients"] },
+      { id: "inquiries", label: "They request quotes or send project briefs", activates: ["jobs-projects"], needsKeys: ["manageProjects"] },
+      { id: "referrals", label: "Most of my clients come from referrals", activates: ["marketing"], needsKeys: ["runMarketing"] },
     ],
   },
   {
     title: "How do you deliver your work?",
     subtitle: "Select all that apply",
     chips: [
-      { id: "at-my-place", label: "Clients come to me", activates: ["bookings-calendar"], needsKeys: ["acceptBookings"] },
-      { id: "visit-clients", label: "I go to the client", activates: ["bookings-calendar", "jobs-projects"], needsKeys: ["acceptBookings", "manageProjects"] },
-      { id: "projects", label: "I manage jobs or projects with tasks", activates: ["jobs-projects"], needsKeys: ["manageProjects"] },
+      { id: "at-my-place", label: "Clients visit my location", activates: ["bookings-calendar"], needsKeys: ["acceptBookings"] },
+      { id: "visit-clients", label: "I travel to the client", activates: ["bookings-calendar", "jobs-projects", "quotes-invoicing"], needsKeys: ["acceptBookings", "manageProjects"] },
+      { id: "group-classes", label: "I run group classes or workshops", activates: ["bookings-calendar"], needsKeys: ["acceptBookings"] },
+      { id: "projects", label: "I manage multi-step jobs or projects", activates: ["jobs-projects"], needsKeys: ["manageProjects"] },
       { id: "recurring-clients", label: "I see the same clients regularly", activates: ["bookings-calendar", "automations"], needsKeys: ["acceptBookings"] },
-      { id: "track-time", label: "I bill clients by the hour", activates: ["jobs-projects", "quotes-invoicing"], needsKeys: ["manageProjects", "sendInvoices"] },
     ],
   },
   {
-    title: "How do you handle payments?",
+    title: "How do you get paid and grow?",
     subtitle: "Select all that apply",
     chips: [
-      { id: "invoices", label: "I send invoices after the work", activates: ["quotes-invoicing"], needsKeys: ["sendInvoices"] },
-      { id: "deposits", label: "I collect deposits upfront", activates: ["quotes-invoicing"], needsKeys: ["sendInvoices"] },
-      { id: "proposals", label: "I send quotes or proposals first", activates: ["quotes-invoicing"], needsKeys: ["sendInvoices"] },
-      { id: "recurring-billing", label: "I have recurring or subscription billing", activates: ["quotes-invoicing", "automations"], needsKeys: ["sendInvoices"] },
-      { id: "contracts", label: "I use contracts or agreements", activates: ["documents"], needsKeys: [] },
+      { id: "hourly-billing", label: "I bill clients by the hour or track time", activates: ["jobs-projects", "quotes-invoicing"], needsKeys: ["manageProjects", "sendInvoices"] },
+      { id: "memberships", label: "I sell packages, memberships, or subscriptions", activates: ["automations"], needsKeys: [] },
+      { id: "products", label: "I sell products alongside my services", activates: ["products"], needsKeys: [] },
+      { id: "campaigns", label: "I run promotions, campaigns, or offers", activates: ["marketing"], needsKeys: ["runMarketing"] },
+      { id: "referral-program", label: "I want a referral or loyalty program", activates: ["marketing"], needsKeys: ["runMarketing"] },
     ],
   },
   {
@@ -60,32 +62,200 @@ const SLIDES: Slide[] = [
     subtitle: "Select all that apply",
     chips: [
       { id: "team", label: "I have staff or contractors", activates: ["team"], needsKeys: [] },
-      { id: "automate", label: "I want to automate repetitive tasks", activates: ["automations"], needsKeys: [] },
-      { id: "reports", label: "I want to see revenue and reports", activates: ["reporting"], needsKeys: [] },
-      { id: "products", label: "I sell products alongside services", activates: ["products"], needsKeys: [] },
+      { id: "automate", label: "I want to automate reminders and follow-ups", activates: ["automations"], needsKeys: [] },
+      { id: "reports", label: "I want to track revenue and performance", activates: ["reporting"], needsKeys: [] },
+      { id: "contracts", label: "I use contracts or agreements", activates: ["documents"], needsKeys: [] },
       { id: "client-portal", label: "I want clients to have a self-service portal", activates: ["client-portal"], needsKeys: [] },
     ],
   },
 ];
 
-const ALL_CHIPS = SLIDES.flatMap(s => s.chips);
+// ── Industry-aware chip overrides ────────────────────────────────
+// hide: remove chips that don't apply
+// relabel: reword chips to match industry language
+// add: insert industry-specific chips into a slide (by index 0-3)
+
+interface IndustryChipConfig {
+  hide?: string[];
+  relabel?: Record<string, string>;
+  add?: { slide: number; chip: Chip }[];
+}
+
+const INDUSTRY_OVERRIDES: Record<string, IndustryChipConfig> = {
+  "beauty-wellness": {
+    hide: ["inquiries", "projects", "hourly-billing"],
+    relabel: {
+      "at-my-place": "Clients come to my salon or studio",
+      "visit-clients": "I offer mobile or home-visit services",
+      "group-classes": "I run group treatments or classes",
+      "recurring-clients": "I see the same clients every few weeks",
+      "team": "I have stylists or therapists working with me",
+    },
+    add: [
+      { slide: 0, chip: { id: "messaging", label: "They DM me on Instagram or WhatsApp", activates: ["marketing"], needsKeys: ["runMarketing"] } },
+    ],
+  },
+  "trades-construction": {
+    hide: ["walk-ins", "online-booking", "group-classes", "at-my-place", "referral-program", "referrals"],
+    relabel: {
+      "clients-book": "They book a callout or inspection",
+      "inquiries": "They call or email for a quote",
+      "projects": "I manage jobs with multiple stages",
+      "visit-clients": "I go to the job site",
+      "recurring-clients": "I do regular maintenance for the same clients",
+      "products": "I mark up parts or materials",
+      "team": "I have tradies or subcontractors",
+      "deposits": "I collect deposits before starting work",
+    },
+    add: [
+      { slide: 0, chip: { id: "messaging", label: "They text or WhatsApp me", activates: ["marketing"], needsKeys: ["runMarketing"] } },
+      { slide: 1, chip: { id: "multiple-jobs", label: "I run multiple jobs at the same time", activates: ["jobs-projects"], needsKeys: ["manageProjects"] } },
+      { slide: 2, chip: { id: "deposits", label: "I collect deposits before starting work", activates: ["automations"], needsKeys: [] } },
+    ],
+  },
+  "professional-services": {
+    hide: ["walk-ins", "group-classes", "referral-program", "products"],
+    relabel: {
+      "clients-book": "They book consultations or meetings",
+      "inquiries": "They reach out for a proposal or engagement",
+      "projects": "I manage client engagements with deliverables",
+      "recurring-clients": "I have ongoing retainer clients",
+      "memberships": "I charge retainers or recurring fees",
+    },
+    add: [
+      { slide: 2, chip: { id: "deposits", label: "I collect retainer deposits or upfront fees", activates: ["automations"], needsKeys: [] } },
+    ],
+  },
+  "health-fitness": {
+    hide: ["inquiries", "projects", "hourly-billing"],
+    relabel: {
+      "clients-book": "They book sessions or classes",
+      "at-my-place": "Clients come to my studio or clinic",
+      "visit-clients": "I do home visits or house calls",
+      "group-classes": "I run group classes or training sessions",
+      "recurring-clients": "I see the same clients every week",
+      "memberships": "I sell session packs or memberships",
+      "team": "I have trainers or practitioners on staff",
+    },
+    add: [
+      { slide: 0, chip: { id: "messaging", label: "They message me on WhatsApp or Instagram", activates: ["marketing"], needsKeys: ["runMarketing"] } },
+    ],
+  },
+  "creative-services": {
+    hide: ["walk-ins", "group-classes", "at-my-place"],
+    relabel: {
+      "clients-book": "They book shoots, sessions, or calls",
+      "inquiries": "They send project briefs or request quotes",
+      "projects": "I manage creative projects with stages",
+      "products": "I sell prints, presets, or digital products",
+      "recurring-clients": "I work with the same clients on repeat projects",
+    },
+    add: [
+      { slide: 1, chip: { id: "remote-collab", label: "I collaborate with clients remotely", activates: ["bookings-calendar"], needsKeys: ["acceptBookings"] } },
+      { slide: 2, chip: { id: "deposits", label: "I collect deposits before starting work", activates: ["automations"], needsKeys: [] } },
+    ],
+  },
+  "hospitality-events": {
+    hide: ["walk-ins", "group-classes", "hourly-billing"],
+    relabel: {
+      "clients-book": "They book events or consultations",
+      "inquiries": "They inquire about availability for events",
+      "projects": "I plan events with multiple moving parts",
+      "at-my-place": "Events happen at my venue",
+      "visit-clients": "I set up at the client's venue",
+      "products": "I sell add-ons like flowers, decor, or extras",
+      "memberships": "I sell event packages or bundles",
+    },
+    add: [
+      { slide: 2, chip: { id: "deposits", label: "I collect deposits to secure the date", activates: ["automations"], needsKeys: [] } },
+    ],
+  },
+  "education-coaching": {
+    hide: ["inquiries", "projects", "hourly-billing", "products"],
+    relabel: {
+      "clients-book": "Students book lessons or sessions",
+      "walk-ins": "Students or parents call to enroll",
+      "online-booking": "I want an online booking page for lessons",
+      "at-my-place": "Students come to my location",
+      "visit-clients": "I travel to the student's home",
+      "group-classes": "I teach group classes or workshops",
+      "recurring-clients": "I teach the same students regularly",
+      "memberships": "I sell term packages or course bundles",
+      "referrals": "Most students come from word of mouth",
+      "campaigns": "I promote courses or open days",
+      "team": "I have other instructors or tutors",
+    },
+    add: [
+      { slide: 2, chip: { id: "resources", label: "I share worksheets or learning materials", activates: ["documents"], needsKeys: [] } },
+    ],
+  },
+};
+
+/** Replace "Clients"/"clients"/"Client"/"client" with the user's vocab (Patients, Students, Members, etc.) */
+function applyVocab(label: string, vocab: VocabularyMap): string {
+  return label
+    .replace(/\bClients\b/g, vocab.clients)
+    .replace(/\bclients\b/g, vocab.clients.toLowerCase())
+    .replace(/\bClient\b/g, vocab.client)
+    .replace(/\bclient\b/g, vocab.client.toLowerCase());
+}
+
+/** Apply industry overrides + vocabulary to the base slides */
+function getSlidesForIndustry(industryId: string, vocab: VocabularyMap): Slide[] {
+  const config = INDUSTRY_OVERRIDES[industryId];
+  const base = config ? SLIDES : SLIDES;
+
+  const hideSet = new Set(config?.hide || []);
+  const relabel = config?.relabel || {};
+
+  const slides = base.map((slide, slideIdx) => {
+    let chips = slide.chips
+      .filter(c => !hideSet.has(c.id))
+      .map(c => relabel[c.id] ? { ...c, label: relabel[c.id] } : c);
+
+    // Add industry-specific chips
+    const extras = (config?.add || []).filter(a => a.slide === slideIdx);
+    if (extras.length > 0) {
+      chips = [...chips, ...extras.map(e => e.chip)];
+    }
+
+    // Apply vocabulary (Patients, Students, Members, etc.) to all labels
+    chips = chips.map(c => ({ ...c, label: applyVocab(c.label, vocab) }));
+
+    return {
+      ...slide,
+      title: applyVocab(slide.title, vocab),
+      subtitle: applyVocab(slide.subtitle, vocab),
+      chips,
+    };
+  });
+
+  return slides;
+}
 
 export function BubblesStep() {
   const { nextStep, prevStep } = useOnboardingStore();
+  const selectedIndustry = useOnboardingStore((s) => s.selectedIndustry);
   const setNeed = useOnboardingStore((s) => s.setNeed);
-  const setFeatureSelections = useOnboardingStore((s) => s.setFeatureSelections);
+  const persistedChips = useOnboardingStore((s) => s.chipSelections);
+  const toggleChipStore = useOnboardingStore((s) => s.toggleChip);
+  const vocab = useVocabulary();
 
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const slides = getSlidesForIndustry(selectedIndustry, vocab);
+  const allChips = slides.flatMap(s => s.chips);
+
+  // Derive selected set from persisted store (survives back/refresh)
+  const selected = useMemo(() => new Set(persistedChips), [persistedChips]);
   const [slideIndex, setSlideIndex] = useState(0);
   const [direction, setDirection] = useState(1);
 
-  const currentSlide = SLIDES[slideIndex];
-  const isLast = slideIndex === SLIDES.length - 1;
-  const progress = ((slideIndex + 1) / SLIDES.length) * 100;
+  const currentSlide = slides[slideIndex];
+  const isLast = slideIndex === slides.length - 1;
+  const progress = ((slideIndex + 1) / slides.length) * 100;
 
   const toggle = useCallback((id: string) => {
-    setSelected(p => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; });
-  }, []);
+    toggleChipStore(id); // Persists to Zustand immediately
+  }, [toggleChipStore]);
 
   const handleNext = () => {
     if (isLast) {
@@ -106,47 +276,50 @@ export function BubblesStep() {
   };
 
   const finalize = () => {
-    const mods = new Set<string>(), needs = new Set<keyof NeedsAssessment>();
-    for (const chip of ALL_CHIPS) {
+    // Collect activated modules and needs from selected chips only
+    const mods = new Set<string>();
+    const needsToSet = new Set<keyof NeedsAssessment>();
+    for (const chip of allChips) {
       if (selected.has(chip.id)) {
         chip.activates.forEach(m => mods.add(m));
-        chip.needsKeys.forEach(n => needs.add(n));
+        chip.needsKeys.forEach(n => needsToSet.add(n));
       }
     }
-    // Always-on
-    (["manageCustomers", "receiveInquiries", "communicateClients", "sendInvoices"] as const).forEach(n => needs.add(n));
-    needs.forEach(n => setNeed(n, true));
 
-    // Store activated modules in discoveryAnswers so Summary page can read them
-    // Key format: "module:{moduleId}" = true
+    // Always-on needs
+    (["manageCustomers", "receiveInquiries", "communicateClients", "sendInvoices"] as const)
+      .forEach(n => needsToSet.add(n));
+
+    // Reset ALL non-always-on needs to false first, then set only the selected ones.
+    // This clears stale smart defaults (handleSupport, manageDocuments) too.
+    (["acceptBookings", "manageProjects", "runMarketing", "handleSupport", "manageDocuments"] as const)
+      .forEach(n => setNeed(n, false));
+    needsToSet.forEach(n => setNeed(n, true));
+
+    // Clear ALL old chip + module discovery answers, then write fresh
     const store = useOnboardingStore.getState();
-    const answers: Record<string, boolean> = {};
-    for (const chip of ALL_CHIPS) {
+    store.setAICategories([]);
+    // Reset: mark all possible modules as false, then overwrite selected ones
+    for (const chip of allChips) {
+      store.setDiscoveryAnswer(chip.id, false);
+      chip.activates.forEach(m => store.setDiscoveryAnswer(`module:${m}`, false));
+    }
+    // Write selected chips and their module activations
+    for (const chip of allChips) {
       if (selected.has(chip.id)) {
-        answers[chip.id] = true;
-        // Also store module activations directly
-        chip.activates.forEach(m => { answers[`module:${m}`] = true; });
+        store.setDiscoveryAnswer(chip.id, true);
+        chip.activates.forEach(m => store.setDiscoveryAnswer(`module:${m}`, true));
       }
     }
-    // Write all at once
-    for (const [key, val] of Object.entries(answers)) {
-      store.setDiscoveryAnswer(key, val);
-    }
 
-    const M2N: Record<string, string> = { "client-database": "manageCustomers", "leads-pipeline": "receiveInquiries", "communication": "communicateClients", "bookings-calendar": "acceptBookings", "quotes-invoicing": "sendInvoices", "jobs-projects": "manageProjects", "marketing": "runMarketing" };
-    const N2M = Object.fromEntries(Object.entries(M2N).map(([m, n]) => [n, m]));
-    for (const cat of FEATURE_CATEGORIES) {
-      const mid = N2M[cat.id];
-      const all = cat.features.map(f => ({ ...f, selected: true }));
-      setFeatureSelections(cat.id, all);
-      if (mid) setFeatureSelections(mid, all);
-    }
-
-    const addons = getAddonModules(), ais = new Set(addons.map(m => m.id)), as2 = useAddonsStore.getState();
+    // Enable add-ons that were activated by chip selections
+    const addons = getAddonModules();
+    const addonIds = new Set(addons.map(m => m.id));
+    const addonsStore = useAddonsStore.getState();
     mods.forEach(id => {
-      if (ais.has(id)) {
-        const d = addons.find(m => m.id === id);
-        if (d && !as2.isAddonEnabled(id)) as2.enableAddon(id, d.name);
+      if (addonIds.has(id)) {
+        const def = addons.find(m => m.id === id);
+        if (def && !addonsStore.isAddonEnabled(id)) addonsStore.enableAddon(id, def.name);
       }
     });
 
@@ -180,7 +353,7 @@ export function BubblesStep() {
               />
             </div>
             <span className="text-[12px] text-text-tertiary font-medium tabular-nums">
-              {slideIndex + 1}/{SLIDES.length}
+              {slideIndex + 1}/{slides.length}
             </span>
           </div>
         </div>

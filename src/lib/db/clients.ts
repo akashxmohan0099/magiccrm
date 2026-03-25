@@ -67,6 +67,54 @@ export async function fetchClients(workspaceId: string) {
   return data;
 }
 
+/** Fetch a page of clients for a workspace with total count. */
+export async function fetchClientsPage(
+  workspaceId: string,
+  page: number,
+  pageSize: number
+): Promise<{ data: Record<string, unknown>[]; totalCount: number }> {
+  const supabase = createClient();
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  const { data, error, count } = await supabase
+    .from("clients")
+    .select("*", { count: "exact" })
+    .eq("workspace_id", workspaceId)
+    .order("created_at", { ascending: false })
+    .range(from, to);
+
+  if (error) throw error;
+  return { data: data ?? [], totalCount: count ?? 0 };
+}
+
+/** Search for potential duplicate clients by name, email, or phone. */
+export async function fetchDuplicateClients(
+  workspaceId: string,
+  name: string,
+  email: string,
+  phone: string
+): Promise<Record<string, unknown>[]> {
+  const supabase = createClient();
+
+  // Build an OR filter for any non-empty field
+  const conditions: string[] = [];
+  if (email.trim()) conditions.push(`email.ilike.%${email.trim()}%`);
+  if (name.trim()) conditions.push(`name.ilike.%${name.trim()}%`);
+  if (phone.trim()) conditions.push(`phone.ilike.%${phone.trim()}%`);
+
+  if (conditions.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from("clients")
+    .select("*")
+    .eq("workspace_id", workspaceId)
+    .or(conditions.join(","));
+
+  if (error) throw error;
+  return data ?? [];
+}
+
 /** Insert a new client row. */
 export async function dbCreateClient(
   workspaceId: string,

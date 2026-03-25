@@ -15,7 +15,7 @@ export interface Client {
   tags: string[];
   notes: string;
   source?: "referral" | "website" | "social" | "other";
-  status: "active" | "inactive" | "prospect";
+  status: "active" | "inactive" | "prospect" | "vip" | "churned";
   customData?: Record<string, unknown>;
   relationships?: ClientRelationship[];
   createdAt: string;
@@ -130,6 +130,8 @@ export interface Invoice {
   lastReminderSentAt?: string;
   reminderCount?: number;
   taxRate?: number;
+  recurringSchedule?: "weekly" | "fortnightly" | "monthly" | "quarterly";
+  lastRecurringDate?: string;
   createdAt: string;
   updatedAt: string;
 }

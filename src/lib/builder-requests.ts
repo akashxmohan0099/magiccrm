@@ -1,8 +1,10 @@
 import type { BusinessContext } from "@/types/onboarding";
+import { getProfileForAIPrompt } from "@/lib/persona-profiles";
 
 export async function requestBuilderBrief(args: {
   prompt: string;
   businessContext: BusinessContext;
+  selectedPersona?: string;
 }): Promise<string> {
   const response = await fetch("/api/ai-builder", {
     method: "POST",
@@ -16,6 +18,7 @@ export async function requestBuilderBrief(args: {
         industry: args.businessContext.industry,
         description: args.businessContext.businessDescription,
       },
+      personaProfile: args.selectedPersona ? getProfileForAIPrompt(args.selectedPersona) : undefined,
     }),
   });
 
