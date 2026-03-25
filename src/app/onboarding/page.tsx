@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useOnboardingStore, TOTAL_PROGRESS_STEPS } from "@/store/onboarding";
 import { useHydration } from "@/hooks/useHydration";
-import { useAuth } from "@/hooks/useAuth";
+import { AUTH_MEMBER_REFRESH_EVENT, useAuth } from "@/hooks/useAuth";
 import { WelcomeStep } from "@/components/onboarding/WelcomeStep";
 import { IndustryStep } from "@/components/onboarding/IndustryStep";
 import { BusinessContextStep } from "@/components/onboarding/BusinessContextStep";
@@ -37,8 +37,11 @@ function OnboardingContent() {
   const step = useOnboardingStore((s) => s.step);
   const isBuilding = useOnboardingStore((s) => s.isBuilding);
   const buildComplete = useOnboardingStore((s) => s.buildComplete);
+  const businessContext = useOnboardingStore((s) => s.businessContext);
+  const selectedPersona = useOnboardingStore((s) => s.selectedPersona);
   const { user, workspaceId, loading } = useAuth();
   const hasRedirected = useRef(false);
+  const [bootstrapFailed, setBootstrapFailed] = useState(false);
 
   // ── If onboarding was already completed, skip to dashboard ──
   // Uses buildComplete flag OR (authenticated + workspace exists + pre-auth step)
@@ -78,10 +81,10 @@ function OnboardingContent() {
   }, [loading, user, step]);
 
   // ── Auth advancement (step 3 → 4) ───────────────────────────
-  // When user becomes authenticated at step 3, advance to step 4.
-  // 800ms delay gives time for the "Account created" loader to feel intentional.
+  // When the authenticated user also has a workspace, advance to step 4.
+  // 800ms delay gives time for the transition loader to feel intentional.
   useEffect(() => {
-    if (step === 3 && !loading && !!user) {
+    if (step === 3 && !loading && !!user && !!workspaceId) {
       const t = setTimeout(() => {
         const currentStep = useOnboardingStore.getState().step;
         if (currentStep === 3) {
@@ -90,7 +93,68 @@ function OnboardingContent() {
       }, 800);
       return () => clearTimeout(t);
     }
-  }, [step, loading, user]);
+  }, [step, loading, user, workspaceId]);
+
+  // ── Recovery: if a session exists but the workspace row hasn't shown up yet,
+  // idempotently re-run bootstrap and ask auth consumers to refetch membership.
+  // Retries up to 3 times with increasing delays before showing a fallback.
+  useEffect(() => {
+    if (step !== 3 || loading || !user || workspaceId) {
+      setBootstrapFailed(false);
+      return;
+    }
+
+    let cancelled = false;
+    const RECOVERY_DELAYS = [1200, 2500, 4000];
+
+    const tryBootstrap = async (attempt: number) => {
+      if (cancelled || attempt >= RECOVERY_DELAYS.length) {
+        if (!cancelled) setBootstrapFailed(true);
+        return;
+      }
+
+      await new Promise((r) => setTimeout(r, RECOVERY_DELAYS[attempt]));
+      if (cancelled) return;
+
+      try {
+        const res = await fetch("/api/auth/bootstrap-workspace", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            workspaceName: businessContext.businessName,
+            industry: businessContext.industry,
+            persona: selectedPersona,
+          }),
+        });
+
+        if (cancelled) return;
+
+        if (!res.ok) {
+          const result = await res.json().catch(() => ({}));
+          console.warn(`[onboarding] workspace bootstrap attempt ${attempt + 1} failed:`, result.error || res.statusText);
+          return tryBootstrap(attempt + 1);
+        }
+
+        window.dispatchEvent(new Event(AUTH_MEMBER_REFRESH_EVENT));
+      } catch (error) {
+        if (cancelled) return;
+        console.warn(`[onboarding] workspace bootstrap attempt ${attempt + 1} failed:`, error);
+        return tryBootstrap(attempt + 1);
+      }
+    };
+
+    void tryBootstrap(0);
+
+    return () => { cancelled = true; };
+  }, [
+    businessContext.businessName,
+    businessContext.industry,
+    loading,
+    selectedPersona,
+    step,
+    user,
+    workspaceId,
+  ]);
 
   // ── Safety valve: isBuilding stuck + already completed → go to dashboard ──
   if (isBuilding && !loading && user && buildComplete) {
@@ -133,10 +197,38 @@ function OnboardingContent() {
     if (step === 2) return <BusinessContextStep />;
     if (step === 3) {
       if (!user) return <SignupStep />;
+      if (bootstrapFailed && !workspaceId) {
+        return (
+          <div className="min-h-screen flex items-center justify-center bg-background">
+            <div className="max-w-sm text-center space-y-4 px-6">
+              <h2 className="text-[22px] font-bold text-foreground">
+                Workspace setup didn&apos;t complete
+              </h2>
+              <p className="text-[14px] text-text-secondary leading-relaxed">
+                We couldn&apos;t finish creating your workspace. This is usually a temporary issue.
+              </p>
+              <div className="flex flex-col gap-2 pt-2">
+                <button
+                  onClick={() => setBootstrapFailed(false)}
+                  className="w-full py-3 bg-foreground text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity cursor-pointer"
+                >
+                  Try again
+                </button>
+                <a
+                  href="/onboarding"
+                  className="w-full py-3 text-sm text-text-tertiary hover:text-foreground transition-colors"
+                >
+                  Start fresh
+                </a>
+              </div>
+            </div>
+          </div>
+        );
+      }
       return (
         <OnboardingLoader
-          title="Account created"
-          subtitle="Now let's learn how you work"
+          title={workspaceId ? "Account created" : "Finishing your workspace setup"}
+          subtitle={workspaceId ? "Now let's learn how you work" : "This usually takes a few seconds"}
           step={3}
           totalSteps={7}
         />
@@ -145,7 +237,7 @@ function OnboardingContent() {
     if (step === 4) return <BubblesStep />;
     if (step === 5) return <AIQuestionsStep />;
     if (step === 6) return <ConfigureStep />;
-    return <SummaryStep />;
+    return <SummaryStep workspaceId={workspaceId} />;
   };
 
   // Global progress: steps 1-7

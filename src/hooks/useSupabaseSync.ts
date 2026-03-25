@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
 import { useOnboardingStore } from "@/store/onboarding";
 import { useDashboardStore } from "@/store/dashboard";
 import { useAddonsStore } from "@/store/addons";
@@ -43,12 +42,17 @@ import { useClientPortalStore } from "@/store/client-portal";
  * Loads workspace data from Supabase once auth is ready.
  * Call this at the top of the dashboard layout.
  *
- * - Waits for `useAuth().loading === false`
+ * - Waits for auth loading to finish
  * - On first load with a valid workspaceId, hydrates all stores
  * - Retries failed loads instead of permanently marking the workspace as synced
  */
-export function useSupabaseSync() {
-  const { workspaceId, loading: authLoading } = useAuth();
+export function useSupabaseSync({
+  workspaceId,
+  authLoading,
+}: {
+  workspaceId: string | null;
+  authLoading: boolean;
+}) {
   const syncedForWorkspace = useRef<string | null>(null);
   const retryTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [syncing, setSyncing] = useState(true);
@@ -59,8 +63,8 @@ export function useSupabaseSync() {
 
     if (!workspaceId) {
       syncedForWorkspace.current = null;
-      setSyncing(false);
-      return;
+      const timeout = setTimeout(() => setSyncing(false), 0);
+      return () => clearTimeout(timeout);
     }
 
     if (syncedForWorkspace.current === workspaceId) return;

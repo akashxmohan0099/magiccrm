@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Loader2, Eye, EyeOff } from "lucide-react";
@@ -30,6 +30,24 @@ function LoginContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const error = searchParams.get("error");
+    if (!error) return;
+
+    if (error === "auth_callback_failed") {
+      setErrors((prev) => ({
+        ...prev,
+        form: "We couldn't complete sign-in. Please try again from the login page.",
+      }));
+      return;
+    }
+
+    setErrors((prev) => ({
+      ...prev,
+      form: "We couldn't complete sign-in. Please try again.",
+    }));
+  }, [searchParams]);
 
   const inputClass =
     "w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30";
@@ -83,10 +101,12 @@ function LoginContent() {
     toast("Password reset is coming soon. Contact support for help.", "info");
   };
 
-  const clearError = (field: string) => {
+  const clearError = (...fields: string[]) => {
     setErrors((prev) => {
       const next = { ...prev };
-      delete next[field];
+      fields.forEach((field) => {
+        delete next[field];
+      });
       return next;
     });
   };
@@ -131,7 +151,7 @@ function LoginContent() {
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);
-                  clearError("email");
+                  clearError("email", "form");
                 }}
                 placeholder="sarah@business.com"
                 className={inputClass}
@@ -163,7 +183,7 @@ function LoginContent() {
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);
-                    clearError("password");
+                    clearError("password", "form");
                   }}
                   placeholder="Enter your password"
                   className={`${inputClass} pr-10`}

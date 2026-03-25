@@ -19,6 +19,7 @@ import { useBuilderStore } from "@/store/builder";
 import { useEnabledModules, useEnabledAddons } from "@/hooks/useFeature";
 import { useHydration } from "@/hooks/useHydration";
 import { useAuth } from "@/hooks/useAuth";
+import { createClient } from "@/lib/supabase";
 import { useSupabaseSync } from "@/hooks/useSupabaseSync";
 import { useVocabulary } from "@/hooks/useVocabulary";
 import { getModuleDisplayName, getModuleBySlug, GROUP_LABELS } from "@/lib/module-registry";
@@ -56,7 +57,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
 function DashboardShell({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const { syncing } = useSupabaseSync();
+  const supabase = createClient();
   const pathname = usePathname();
   const businessContext = useOnboardingStore((s) => s.businessContext);
   const selectedPersona = useOnboardingStore((s) => s.selectedPersona);
@@ -66,7 +67,8 @@ function DashboardShell({ children }: { children: ReactNode }) {
   const builderCredits = useBuilderStore((s) => s.credits);
   const allCustomFeatures = useBuilderStore((s) => s.customFeatures);
   const customFeatures = useMemo(() => allCustomFeatures.filter((f) => f.status === "ready"), [allCustomFeatures]);
-  const { user, workspaceId, loading: authLoading, signOut } = useAuth();
+  const { user, workspaceId, loading: authLoading, signOut, refreshMember } = useAuth();
+  const { syncing } = useSupabaseSync({ workspaceId, authLoading });
   const [searchFocused, setSearchFocused] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -100,6 +102,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
         return;
       }
 
+      await refreshMember();
       router.refresh();
     } catch (_error) {
       setRepairWorkspaceError("Failed to finish workspace setup.");
@@ -122,7 +125,9 @@ function DashboardShell({ children }: { children: ReactNode }) {
     return <AppPreloader />;
   }
 
-  // If user has no workspace after grace period, show setup prompt
+  // If user has no workspace after grace period, show setup prompt.
+  // All recovery actions use plain <a> tags or window.location to guarantee
+  // navigation even if React state is broken.
   if (!workspaceId) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -141,7 +146,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
               <button
                 onClick={handleWorkspaceRepair}
                 disabled={repairingWorkspace}
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-foreground text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-70 disabled:cursor-not-allowed w-full"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-foreground text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-70 disabled:cursor-not-allowed w-full cursor-pointer"
               >
                 {repairingWorkspace ? (
                   <>
@@ -159,8 +164,11 @@ function DashboardShell({ children }: { children: ReactNode }) {
                 Start fresh with onboarding
               </a>
               <button
-                onClick={async () => {
-                  await signOut();
+                onClick={() => {
+                  // Use direct navigation as fallback — signOut may fail if session is broken
+                  supabase.auth.signOut().finally(() => {
+                    window.location.href = "/login";
+                  });
                 }}
                 className="text-sm text-text-tertiary hover:text-foreground transition-colors cursor-pointer"
               >

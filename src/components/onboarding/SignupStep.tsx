@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Loader2, Eye, EyeOff } from "lucide-react";
 import { useOnboardingStore } from "@/store/onboarding";
+import { AUTH_MEMBER_REFRESH_EVENT } from "@/hooks/useAuth";
 import { createClient } from "@/lib/supabase";
 
 export function SignupStep() {
@@ -59,16 +60,20 @@ export function SignupStep() {
       });
 
       if (signInError) {
-        setError(signInError.message);
+        setError("Your account was created, but automatic sign-in failed. Log in with the email and password you just created.");
         setLoading(false);
         return;
       }
 
+      window.dispatchEvent(new Event(AUTH_MEMBER_REFRESH_EVENT));
+
       // Don't call nextStep() here — the parent detects auth state change
-      // and advances to step 4 after workspace creation completes
+      // and advances to step 4 after workspace creation completes.
+      // Keep loading=true so the button stays disabled until the parent swaps
+      // this component out for the OnboardingLoader.
+      return;
     } catch (_err) {
       setError("Something went wrong. Please try again.");
-    } finally {
       setLoading(false);
     }
   };

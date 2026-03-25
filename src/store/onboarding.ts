@@ -14,7 +14,7 @@ import {
   fetchWorkspaceSettings,
   saveWorkspaceModules,
 } from "@/lib/db/workspace-settings";
-import { computeEnabledModuleIds } from "@/lib/module-registry";
+import { computeEnabledModuleIds, getCoreModules, getModuleById } from "@/lib/module-registry";
 
 interface AIQuestionCategory {
   title: string;
@@ -71,7 +71,7 @@ interface OnboardingStore {
   addFeatureActivation: (activation: import("@/lib/deep-dive-analytics").FeatureActivation) => void;
 
   // Supabase sync
-  syncToSupabase: (workspaceId: string) => Promise<void>;
+  syncToSupabase: (workspaceId: string) => Promise<boolean>;
   loadFromSupabase: (workspaceId: string) => Promise<void>;
 }
 
@@ -270,18 +270,25 @@ export const useOnboardingStore = create<OnboardingStore>()(
           // Use computeEnabledModuleIds for the canonical set of enabled module IDs
           const { needs: currentNeeds, discoveryAnswers: currentDA, featureSelections } = get();
           const enabledIds = computeEnabledModuleIds(currentNeeds, currentDA);
-          const modules = Array.from(enabledIds).map((modId) => ({
+          const persistedModuleIds = new Set([
+            ...getCoreModules().map((mod) => mod.id),
+            ...Array.from(enabledIds).filter((modId) => getModuleById(modId)?.kind === "addon"),
+          ]);
+
+          const modules = Array.from(persistedModuleIds).map((modId) => ({
             moduleId: modId,
-            enabled: true,
+            enabled: enabledIds.has(modId),
             featureSelections: featureSelections[modId] ?? [],
           }));
 
           if (modules.length > 0) {
             await saveWorkspaceModules(workspaceId, modules);
           }
+          return true;
         } catch (err) {
           const { handleSyncError } = await import("@/lib/sync-error-handler");
           handleSyncError(err, { context: "saving workspace setup" });
+          return false;
         }
       },
 

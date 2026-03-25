@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ArrowLeft, Sparkles } from "lucide-react";
 import { useOnboardingStore } from "@/store/onboarding";
-import { getLocalFollowUps, type LocalFollowUpQuestion } from "@/lib/local-followup-questions";
+import { getLocalFollowUps } from "@/lib/local-followup-questions";
 import { getProfileForAIPrompt } from "@/lib/persona-profiles";
 import { OnboardingLoader } from "@/components/onboarding/OnboardingLoader";
 
@@ -275,7 +275,13 @@ export function AIQuestionsStep() {
     nextStep();
   };
 
-  const handleSkip = () => nextStep();
+  const handleSkip = useCallback(() => nextStep(), [nextStep]);
+
+  useEffect(() => {
+    if (!loading && (error || aiCategories.length === 0) && !localCategory) {
+      handleSkip();
+    }
+  }, [aiCategories.length, error, handleSkip, loading, localCategory]);
 
   // ── Loading state ──
   if (loading) {
@@ -297,7 +303,6 @@ export function AIQuestionsStep() {
 
   // If AI failed and no local questions either, skip
   if (!loading && (error || aiCategories.length === 0) && !localCategory) {
-    handleSkip();
     return null;
   }
 

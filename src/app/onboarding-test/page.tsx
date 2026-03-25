@@ -61,7 +61,7 @@ function TestContent() {
     if (step === 4) return <BubblesStep />;
     if (step === 5) return <AIQuestionsStep />;
     if (step === 6) return <ConfigureStep />;
-    return <SummaryStep />;
+    return <SummaryStep workspaceId={null} />;
   };
 
   return (

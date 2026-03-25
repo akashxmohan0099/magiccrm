@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Users, Inbox, Calendar, Receipt, FolderKanban,
@@ -11,7 +11,6 @@ import {
   Check, Plus,
 } from "lucide-react";
 import { useOnboardingStore } from "@/store/onboarding";
-import { useAuth } from "@/hooks/useAuth";
 import { useVocabulary } from "@/hooks/useVocabulary";
 import { MODULE_REGISTRY, ALWAYS_ON_MODULES, computeEnabledModuleIds, getModuleDisplayName } from "@/lib/module-registry";
 import type { VocabularyMap } from "@/types/industry-config";
@@ -100,11 +99,12 @@ const INDUSTRY_ICONS: Record<string, React.ComponentType<{ className?: string }>
   "education-coaching": GraduationCap,
 };
 
-export function SummaryStep() {
+export function SummaryStep({ workspaceId }: { workspaceId: string | null }) {
   const { businessContext, prevStep, setIsBuilding, getIndustryConfig, needs, setDiscoveryAnswer, syncToSupabase } = useOnboardingStore();
-  const { workspaceId } = useAuth();
   const vocab = useVocabulary();
   const config = getIndustryConfig();
+  const [launching, setLaunching] = useState(false);
+  const [launchError, setLaunchError] = useState("");
 
   const discoveryAnswers = useOnboardingStore((s) => s.discoveryAnswers);
 
@@ -127,6 +127,27 @@ export function SummaryStep() {
   };
 
   const IndustryIcon = config ? INDUSTRY_ICONS[config.id] : null;
+
+  const handleLaunch = async () => {
+    if (launching) return;
+
+    if (!workspaceId) {
+      setLaunchError("Your workspace is still finishing setup. Please wait a moment and try again.");
+      return;
+    }
+
+    setLaunchError("");
+    setLaunching(true);
+
+    const synced = await syncToSupabase(workspaceId);
+    if (synced) {
+      setIsBuilding(true);
+      return;
+    }
+
+    setLaunchError("We couldn't save your setup yet. Please try again.");
+    setLaunching(false);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -265,18 +286,17 @@ export function SummaryStep() {
 
         {/* CTA */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="max-w-md mx-auto text-center">
+          {launchError && (
+            <p className="mb-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] font-medium text-red-600">
+              {launchError}
+            </p>
+          )}
           <button
-            onClick={() => {
-              // Toggles are already persisted to discoveryAnswers on every click.
-              // Just sync to Supabase and launch.
-              if (workspaceId) {
-                syncToSupabase(workspaceId);
-              }
-              setIsBuilding(true);
-            }}
-            className="w-full py-4 bg-foreground text-white rounded-2xl text-[16px] font-semibold cursor-pointer hover:opacity-90 transition-all flex items-center justify-center gap-2.5 shadow-lg"
+            onClick={handleLaunch}
+            disabled={launching}
+            className="w-full py-4 bg-foreground text-white rounded-2xl text-[16px] font-semibold cursor-pointer hover:opacity-90 transition-all flex items-center justify-center gap-2.5 shadow-lg disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Launch my workspace <ArrowRight className="w-5 h-5" />
+            {launching ? "Saving your setup..." : "Launch my workspace"} <ArrowRight className="w-5 h-5" />
           </button>
           <button onClick={prevStep} className="w-full mt-3 py-3 text-[13px] text-text-tertiary hover:text-foreground transition-colors cursor-pointer">
             Go back and change answers
