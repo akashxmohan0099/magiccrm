@@ -1,11 +1,11 @@
 import type { WorkspaceBlueprint } from "@/types/workspace-blueprint";
 
-export const nailTechBlueprint: WorkspaceBlueprint = {
-  id: "beauty-wellness:nail-tech",
-  label: "Nail Tech",
-  description: "Booking-first workspace for nail technicians — appointments, service menu, and client nail profiles.",
+export const lashBrowTechBlueprint: WorkspaceBlueprint = {
+  id: "beauty-wellness:lash-brow-tech",
+  label: "Lash & Brow Tech",
+  description: "Booking-first workspace for lash and brow technicians — appointments, service menu, and client lash profiles.",
   industryId: "beauty-wellness",
-  personaId: "nail-tech",
+  personaId: "lash-brow-tech",
 
   functional: {
     workflowPattern: "booking-first",
@@ -46,7 +46,7 @@ export const nailTechBlueprint: WorkspaceBlueprint = {
     ],
     modulePresentation: {
       clients: {
-        defaultColumns: ["name", "email", "phone", "status", "tags", "field_skin-type", "field_nail-type"],
+        defaultColumns: ["name", "email", "phone", "status", "tags", "field_eye-shape", "field_lash-condition", "field_adhesive-used"],
       },
       bookings: {
         defaultColumns: ["title", "clientId", "date", "startTime", "assignedToName"],
@@ -57,7 +57,7 @@ export const nailTechBlueprint: WorkspaceBlueprint = {
   adjustableBlocks: [
     {
       id: "sell-products",
-      question: "Do you sell nail products or retail items?",
+      question: "Do you sell lash or brow products?",
       options: [
         {
           value: "yes",
@@ -106,6 +106,27 @@ export const nailTechBlueprint: WorkspaceBlueprint = {
         },
       ],
       default: "direct",
+    },
+    {
+      id: "track-formulas",
+      question: "Do you track lash specs (curl, diameter, length) per client?",
+      options: [
+        {
+          value: "yes",
+          label: "Yes, track lash specs",
+          description: "Curl/diameter/length field visible in client profiles",
+          presentationPatches: [
+            { op: "set-module-default-columns", moduleId: "clients", columnIds: ["name", "email", "phone", "status", "tags", "field_eye-shape", "field_lash-condition", "field_adhesive-used", "field_curl-diameter-length"] },
+          ],
+        },
+        {
+          value: "no",
+          label: "No, I don't need that",
+          description: "Simpler client columns without lash specs",
+          presentationPatches: [],
+        },
+      ],
+      default: "yes",
     },
   ],
 };

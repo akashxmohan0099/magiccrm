@@ -1,11 +1,10 @@
 import type { WorkspaceBlueprint } from "@/types/workspace-blueprint";
 
-export const nailTechBlueprint: WorkspaceBlueprint = {
-  id: "beauty-wellness:nail-tech",
-  label: "Nail Tech",
-  description: "Booking-first workspace for nail technicians — appointments, service menu, and client nail profiles.",
+export const beautyWellnessDefaultBlueprint: WorkspaceBlueprint = {
+  id: "beauty-wellness:default",
+  label: "Beauty & Wellness",
+  description: "Booking-first workspace for beauty and wellness professionals — appointments, service menu, and client profiles.",
   industryId: "beauty-wellness",
-  personaId: "nail-tech",
 
   functional: {
     workflowPattern: "booking-first",
@@ -46,7 +45,7 @@ export const nailTechBlueprint: WorkspaceBlueprint = {
     ],
     modulePresentation: {
       clients: {
-        defaultColumns: ["name", "email", "phone", "status", "tags", "field_skin-type", "field_nail-type"],
+        defaultColumns: ["name", "email", "phone", "status", "tags", "field_skin-type", "field_allergies"],
       },
       bookings: {
         defaultColumns: ["title", "clientId", "date", "startTime", "assignedToName"],
@@ -57,7 +56,7 @@ export const nailTechBlueprint: WorkspaceBlueprint = {
   adjustableBlocks: [
     {
       id: "sell-products",
-      question: "Do you sell nail products or retail items?",
+      question: "Do you sell beauty products or retail items?",
       options: [
         {
           value: "yes",

@@ -1,17 +1,16 @@
 import type { WorkspaceBlueprint } from "@/types/workspace-blueprint";
 
-export const nailTechBlueprint: WorkspaceBlueprint = {
-  id: "beauty-wellness:nail-tech",
-  label: "Nail Tech",
-  description: "Booking-first workspace for nail technicians — appointments, service menu, and client nail profiles.",
-  industryId: "beauty-wellness",
-  personaId: "nail-tech",
+export const healthDefaultBlueprint: WorkspaceBlueprint = {
+  id: "health-fitness:default",
+  label: "Health & Fitness",
+  description: "Booking-first workspace for health and fitness professionals — service menu, client health profiles, session packs, and rebooking prompts.",
+  industryId: "health-fitness",
+  personaId: "default",
 
   functional: {
     workflowPattern: "booking-first",
     enabledModules: [
       "bookings-calendar",
-      "products",
     ],
     enabledAddons: [],
     moduleBehaviors: [
@@ -24,10 +23,16 @@ export const nailTechBlueprint: WorkspaceBlueprint = {
         },
       },
       {
+        moduleId: "quotes-invoicing",
+        featureOverrides: {
+          "session-pack": true,
+        },
+      },
+      {
         moduleId: "client-database",
         featureOverrides: {
           "client-tags": true,
-          "follow-up-reminders": true,
+          "client-notes": true,
         },
       },
     ],
@@ -35,8 +40,8 @@ export const nailTechBlueprint: WorkspaceBlueprint = {
 
   presentation: {
     homePage: "bookings",
-    sidebarOrder: ["bookings", "clients", "invoicing", "products", "leads", "communication"],
-    primaryAction: { label: "Book Appointment", href: "/dashboard/bookings", icon: "Calendar" },
+    sidebarOrder: ["bookings", "clients", "invoicing", "leads", "communication"],
+    primaryAction: { label: "Book Session", href: "/dashboard/bookings", icon: "Calendar" },
     dashboardWidgets: [
       { instanceId: "w-setup", manifestId: "setup-checklist", x: 0, y: 0, w: 4, h: 2, config: {} },
       { instanceId: "w-upcoming", manifestId: "upcoming-bookings", x: 0, y: 2, w: 2, h: 2, config: {} },
@@ -46,51 +51,48 @@ export const nailTechBlueprint: WorkspaceBlueprint = {
     ],
     modulePresentation: {
       clients: {
-        defaultColumns: ["name", "email", "phone", "status", "tags", "field_skin-type", "field_nail-type"],
+        defaultColumns: ["name", "email", "phone", "status", "tags", "field_fitness-goals", "field_injuries"],
       },
       bookings: {
-        defaultColumns: ["title", "clientId", "date", "startTime", "assignedToName"],
+        defaultColumns: ["title", "clientId", "date", "startTime"],
       },
     },
   },
 
   adjustableBlocks: [
     {
-      id: "sell-products",
-      question: "Do you sell nail products or retail items?",
+      id: "session-packs",
+      question: "Do you sell session packs (e.g. 10 sessions)?",
       options: [
         {
           value: "yes",
-          label: "Yes, I sell products",
-          description: "Products module enabled with inventory tracking",
+          label: "Yes, session packs",
+          description: "Session-pack invoicing for bulk purchases.",
           presentationPatches: [],
         },
         {
           value: "no",
-          label: "No, services only",
-          description: "Products module hidden from sidebar",
-          functionalDelta: { removeModules: ["products"] },
-          presentationPatches: [
-            { op: "reorder-sidebar", itemIds: ["bookings", "clients", "invoicing", "leads", "communication"] },
-          ],
+          label: "No, pay per session",
+          description: "Simple per-session invoicing only.",
+          presentationPatches: [],
         },
       ],
       default: "yes",
     },
     {
       id: "accept-inquiries",
-      question: "Do clients inquire before booking, or book directly?",
+      question: "Do new clients inquire before booking?",
       options: [
         {
-          value: "direct",
-          label: "They book directly",
-          description: "Calendar-first experience, leads are secondary",
+          value: "no",
+          label: "No, they book directly",
+          description: "Calendar-first — clients book sessions directly.",
           presentationPatches: [],
         },
         {
-          value: "inquire-first",
-          label: "They inquire first",
-          description: "Leads become your primary entry point",
+          value: "yes",
+          label: "Yes, they inquire first",
+          description: "Leads pipeline becomes the primary entry point.",
           functionalDelta: { workflowPattern: "inquiry-first" },
           presentationPatches: [
             { op: "set-homepage", pageId: "leads" },
@@ -105,7 +107,7 @@ export const nailTechBlueprint: WorkspaceBlueprint = {
           ],
         },
       ],
-      default: "direct",
+      default: "no",
     },
   ],
 };

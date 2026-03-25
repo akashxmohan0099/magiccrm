@@ -1,11 +1,11 @@
 import type { WorkspaceBlueprint } from "@/types/workspace-blueprint";
 
-export const nailTechBlueprint: WorkspaceBlueprint = {
-  id: "beauty-wellness:nail-tech",
-  label: "Nail Tech",
-  description: "Booking-first workspace for nail technicians — appointments, service menu, and client nail profiles.",
+export const spaMassageBlueprint: WorkspaceBlueprint = {
+  id: "beauty-wellness:spa-massage",
+  label: "Spa & Massage",
+  description: "Booking-first workspace for spa and massage therapists — treatment menu, health profiles, and rebooking prompts.",
   industryId: "beauty-wellness",
-  personaId: "nail-tech",
+  personaId: "spa-massage",
 
   functional: {
     workflowPattern: "booking-first",
@@ -46,7 +46,7 @@ export const nailTechBlueprint: WorkspaceBlueprint = {
     ],
     modulePresentation: {
       clients: {
-        defaultColumns: ["name", "email", "phone", "status", "tags", "field_skin-type", "field_nail-type"],
+        defaultColumns: ["name", "email", "phone", "status", "tags", "field_pressure-preference", "field_injuries-conditions"],
       },
       bookings: {
         defaultColumns: ["title", "clientId", "date", "startTime", "assignedToName"],
@@ -57,7 +57,7 @@ export const nailTechBlueprint: WorkspaceBlueprint = {
   adjustableBlocks: [
     {
       id: "sell-products",
-      question: "Do you sell nail products or retail items?",
+      question: "Do you sell wellness products or retail items?",
       options: [
         {
           value: "yes",
@@ -67,7 +67,7 @@ export const nailTechBlueprint: WorkspaceBlueprint = {
         },
         {
           value: "no",
-          label: "No, services only",
+          label: "No, treatments only",
           description: "Products module hidden from sidebar",
           functionalDelta: { removeModules: ["products"] },
           presentationPatches: [
@@ -75,7 +75,7 @@ export const nailTechBlueprint: WorkspaceBlueprint = {
           ],
         },
       ],
-      default: "yes",
+      default: "no",
     },
     {
       id: "accept-inquiries",
@@ -106,6 +106,27 @@ export const nailTechBlueprint: WorkspaceBlueprint = {
         },
       ],
       default: "direct",
+    },
+    {
+      id: "track-health",
+      question: "Do you need to track client contraindications?",
+      options: [
+        {
+          value: "yes",
+          label: "Yes, track health details",
+          description: "Contraindications field visible in client profiles",
+          presentationPatches: [
+            { op: "set-module-default-columns", moduleId: "clients", columnIds: ["name", "email", "phone", "status", "tags", "field_pressure-preference", "field_injuries-conditions", "field_contraindications"] },
+          ],
+        },
+        {
+          value: "no",
+          label: "No, keep it simple",
+          description: "Standard client columns without contraindications",
+          presentationPatches: [],
+        },
+      ],
+      default: "yes",
     },
   ],
 };

@@ -1,17 +1,16 @@
 import type { WorkspaceBlueprint } from "@/types/workspace-blueprint";
 
-export const nailTechBlueprint: WorkspaceBlueprint = {
-  id: "beauty-wellness:nail-tech",
-  label: "Nail Tech",
-  description: "Booking-first workspace for nail technicians — appointments, service menu, and client nail profiles.",
+export const barberBlueprint: WorkspaceBlueprint = {
+  id: "beauty-wellness:barber",
+  label: "Barber",
+  description: "Booking-first workspace for barbers — simple service menu, quick appointments, and client management.",
   industryId: "beauty-wellness",
-  personaId: "nail-tech",
+  personaId: "barber",
 
   functional: {
     workflowPattern: "booking-first",
     enabledModules: [
       "bookings-calendar",
-      "products",
     ],
     enabledAddons: [],
     moduleBehaviors: [
@@ -19,7 +18,6 @@ export const nailTechBlueprint: WorkspaceBlueprint = {
         moduleId: "bookings-calendar",
         featureOverrides: {
           "service-menu": true,
-          "rebooking-prompts": true,
           "booking-reminders": true,
         },
       },
@@ -27,7 +25,6 @@ export const nailTechBlueprint: WorkspaceBlueprint = {
         moduleId: "client-database",
         featureOverrides: {
           "client-tags": true,
-          "follow-up-reminders": true,
         },
       },
     ],
@@ -35,7 +32,7 @@ export const nailTechBlueprint: WorkspaceBlueprint = {
 
   presentation: {
     homePage: "bookings",
-    sidebarOrder: ["bookings", "clients", "invoicing", "products", "leads", "communication"],
+    sidebarOrder: ["bookings", "clients", "invoicing", "leads", "communication"],
     primaryAction: { label: "Book Appointment", href: "/dashboard/bookings", icon: "Calendar" },
     dashboardWidgets: [
       { instanceId: "w-setup", manifestId: "setup-checklist", x: 0, y: 0, w: 4, h: 2, config: {} },
@@ -46,7 +43,7 @@ export const nailTechBlueprint: WorkspaceBlueprint = {
     ],
     modulePresentation: {
       clients: {
-        defaultColumns: ["name", "email", "phone", "status", "tags", "field_skin-type", "field_nail-type"],
+        defaultColumns: ["name", "email", "phone", "status", "tags"],
       },
       bookings: {
         defaultColumns: ["title", "clientId", "date", "startTime", "assignedToName"],
@@ -57,25 +54,25 @@ export const nailTechBlueprint: WorkspaceBlueprint = {
   adjustableBlocks: [
     {
       id: "sell-products",
-      question: "Do you sell nail products or retail items?",
+      question: "Do you sell grooming products?",
       options: [
         {
           value: "yes",
           label: "Yes, I sell products",
           description: "Products module enabled with inventory tracking",
-          presentationPatches: [],
+          functionalDelta: { addModules: ["products"] },
+          presentationPatches: [
+            { op: "reorder-sidebar", itemIds: ["bookings", "clients", "invoicing", "products", "leads", "communication"] },
+          ],
         },
         {
           value: "no",
           label: "No, services only",
-          description: "Products module hidden from sidebar",
-          functionalDelta: { removeModules: ["products"] },
-          presentationPatches: [
-            { op: "reorder-sidebar", itemIds: ["bookings", "clients", "invoicing", "leads", "communication"] },
-          ],
+          description: "Simple setup without products",
+          presentationPatches: [],
         },
       ],
-      default: "yes",
+      default: "no",
     },
     {
       id: "accept-inquiries",
