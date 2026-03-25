@@ -20,7 +20,8 @@ import { CSVImportWizard } from "@/components/modules/shared/CSVImportWizard";
 import {
   ClientBoardRow,
   AddRow,
-  ColumnPicker,
+  ColumnVisibilityPicker,
+  AddColumnDropdown,
   CLIENT_COLUMNS,
   DEFAULT_VISIBLE_COLUMNS,
   PAGE_SIZE_OPTIONS,
@@ -100,7 +101,6 @@ export function ClientsPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [detailClientId, setDetailClientId] = useState<string | null>(null);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [visibleColumns, setVisibleColumns] = useState<string[]>(loadVisibleColumns);
   const [customColumns, setCustomColumns] = useState<CustomColumnDef[]>(loadCustomColumns);
 
@@ -320,16 +320,18 @@ export function ClientsPage() {
                 ))}
                 {/* Actions header */}
                 <th className="w-[60px]" />
-                {/* Column picker */}
-                <th className="w-[40px] px-1 py-3">
-                  <ColumnPicker
-                    visibleColumns={visibleColumns}
-                    onToggle={handleToggleColumn}
-                    customColumns={customColumns}
-                    onAddCustomColumn={handleAddCustomColumn}
-                    onRemoveCustomColumn={handleRemoveCustomColumn}
-                    availableFields={industryFieldDefs}
-                  />
+                {/* Column controls */}
+                <th className="w-[80px] px-1 py-3">
+                  <div className="flex items-center gap-0.5 justify-end">
+                    <ColumnVisibilityPicker
+                      visibleColumns={visibleColumns}
+                      onToggle={handleToggleColumn}
+                      customColumns={customColumns}
+                      onRemoveCustomColumn={handleRemoveCustomColumn}
+                      availableFields={industryFieldDefs}
+                    />
+                    <AddColumnDropdown onAddCustomColumn={handleAddCustomColumn} />
+                  </div>
                 </th>
               </tr>
             </thead>
@@ -338,8 +340,6 @@ export function ClientsPage() {
                 <ClientBoardRow
                   key={client.id}
                   client={client}
-                  expanded={expandedId === client.id}
-                  onToggleExpand={() => setExpandedId(expandedId === client.id ? null : client.id)}
                   onUpdate={(field, value) => handleUpdate(client.id, field, value)}
                   onOpenDetail={() => setDetailClientId(client.id)}
                   visibleColumns={visibleColumns}

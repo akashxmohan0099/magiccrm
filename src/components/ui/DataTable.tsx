@@ -120,6 +120,58 @@ function InlineEditCell({ value, onSave, placeholder }: { value: string; onSave:
   );
 }
 
+// ── InlineSelectDropdown ─────────────────────────────────────
+
+function InlineSelectDropdown({ value, options, onChange, placeholder = "—" }: { value: string; options: string[]; onChange: (v: string) => void; placeholder?: string }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative" onClick={(e) => e.stopPropagation()}>
+      <button
+        onClick={() => setOpen(!open)}
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium cursor-pointer transition-all hover:ring-2 hover:ring-blue-300/50 ${
+          value ? "bg-stone-50 text-stone-600" : "bg-stone-50 text-stone-400 italic"
+        }`}
+      >
+        {value || placeholder}
+        <ChevronDown className="w-3 h-3 opacity-40" />
+      </button>
+
+      {open && (
+        <div className="absolute z-50 top-full mt-1 left-0 bg-card-bg border border-border-light rounded-xl shadow-lg py-1 min-w-[140px] max-h-[200px] overflow-y-auto animate-in fade-in slide-in-from-top-1 duration-150">
+          <button
+            onClick={() => { onChange(""); setOpen(false); }}
+            className={`w-full text-left px-3 py-1.5 text-xs flex items-center gap-2 hover:bg-surface transition-colors ${!value ? "font-semibold text-foreground" : "text-text-secondary"}`}
+          >
+            <Check className={`w-3 h-3 ${!value ? "opacity-100" : "opacity-0"}`} />
+            <span>{placeholder}</span>
+          </button>
+          {options.map((opt) => (
+            <button
+              key={opt}
+              onClick={() => { onChange(opt); setOpen(false); }}
+              className={`w-full text-left px-3 py-1.5 text-xs flex items-center gap-2 hover:bg-surface transition-colors ${opt === value ? "font-semibold text-foreground" : "text-text-secondary"}`}
+            >
+              <Check className={`w-3 h-3 ${opt === value ? "opacity-100" : "opacity-0"}`} />
+              <span>{opt}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── TableColumnPicker ────────────────────────────────────────
 
 function TableColumnPicker<T>({
@@ -201,8 +253,8 @@ function TableColumnPicker<T>({
       </button>
 
       {open && (
-        <div className="absolute z-50 top-full mt-1 right-0 bg-card-bg border border-border-light rounded-xl shadow-lg py-2 min-w-[260px] max-h-[480px] overflow-y-auto animate-in fade-in slide-in-from-top-1 duration-150">
-          <p className="px-3 pb-1.5 text-[11px] font-semibold text-text-secondary uppercase tracking-wider">Columns</p>
+        <div className="absolute z-50 top-full mt-1 right-0 bg-card-bg border border-border-light rounded-2xl shadow-xl py-3 w-[340px] max-h-[520px] overflow-y-auto animate-in fade-in slide-in-from-top-1 duration-150">
+          <p className="px-4 pb-2 text-[11px] font-semibold text-text-secondary uppercase tracking-wider">Columns</p>
           {columns.map((col) => {
             const visible = visibleKeys.includes(col.key);
             const removable = isRemovable(col);
@@ -211,10 +263,10 @@ function TableColumnPicker<T>({
                 key={col.key}
                 onClick={() => { if (removable) onToggle(col.key); }}
                 disabled={!removable}
-                className={`w-full text-left px-3 py-1.5 text-sm flex items-center gap-2.5 transition-colors ${removable ? "hover:bg-surface cursor-pointer" : "opacity-50 cursor-not-allowed"}`}
+                className={`w-full text-left px-4 py-2 text-[14px] flex items-center gap-3 transition-colors ${removable ? "hover:bg-surface cursor-pointer" : "opacity-50 cursor-not-allowed"}`}
               >
-                <span className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${visible ? "bg-foreground border-foreground" : "border-border-light"}`}>
-                  {visible && <Check className="w-3 h-3 text-white" />}
+                <span className={`w-5 h-5 rounded-md border flex items-center justify-center flex-shrink-0 transition-colors ${visible ? "bg-foreground border-foreground" : "border-border-light"}`}>
+                  {visible && <Check className="w-3.5 h-3.5 text-white" />}
                 </span>
                 <span className="text-foreground">{col.label}</span>
               </button>
@@ -225,23 +277,24 @@ function TableColumnPicker<T>({
           {customColumns.length > 0 && (
             <>
               <div className="border-t border-border-light my-2" />
-              <p className="px-3 pb-1.5 text-[11px] font-semibold text-text-secondary uppercase tracking-wider">Custom</p>
+              <p className="px-4 pb-2 text-[11px] font-semibold text-text-secondary uppercase tracking-wider">Custom</p>
               {customColumns.map((col) => {
                 const visible = visibleKeys.includes(col.id);
                 return (
-                  <div key={col.id} className="flex items-center gap-1 px-3 py-1.5 hover:bg-surface transition-colors group/custom">
+                  <div key={col.id} className="flex items-center gap-1 px-4 py-2 hover:bg-surface transition-colors group/custom">
                     <button
                       onClick={() => onToggle(col.id)}
-                      className="flex-1 text-left text-sm flex items-center gap-2.5 cursor-pointer"
+                      className="flex-1 text-left text-[14px] flex items-center gap-3 cursor-pointer"
                     >
-                      <span className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${visible ? "bg-foreground border-foreground" : "border-border-light"}`}>
-                        {visible && <Check className="w-3 h-3 text-white" />}
+                      <span className={`w-5 h-5 rounded-md border flex items-center justify-center flex-shrink-0 transition-colors ${visible ? "bg-foreground border-foreground" : "border-border-light"}`}>
+                        {visible && <Check className="w-3.5 h-3.5 text-white" />}
                       </span>
                       <span className="text-foreground">{col.label}</span>
+                      <span className="text-[11px] text-text-tertiary ml-auto">{col.type}</span>
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); onRemoveCustomColumn(col.id); }}
-                      className="opacity-0 group-hover/custom:opacity-100 text-text-tertiary hover:text-red-500 transition-all cursor-pointer p-0.5"
+                      className="opacity-0 group-hover/custom:opacity-100 text-text-tertiary hover:text-red-500 transition-all cursor-pointer p-1"
                       title="Remove column"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -258,51 +311,70 @@ function TableColumnPicker<T>({
               {!addingColumn ? (
                 <button
                   onClick={() => setAddingColumn(true)}
-                  className="w-full text-left px-3 py-1.5 text-sm flex items-center gap-2 text-primary hover:bg-surface transition-colors cursor-pointer font-medium"
+                  className="w-full text-left px-4 py-2 text-[14px] flex items-center gap-2 text-primary hover:bg-surface transition-colors cursor-pointer font-medium"
                 >
                   <Plus className="w-4 h-4" />
                   Add Column
                 </button>
               ) : (
-                <div className="px-3 pb-2 space-y-2">
-                  <input
-                    ref={nameInputRef}
-                    value={newColName}
-                    onChange={(e) => setNewColName(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") handleAddColumn(); if (e.key === "Escape") { setAddingColumn(false); setNewColName(""); } }}
-                    placeholder="Column name"
-                    className="w-full px-2.5 py-1.5 text-sm bg-surface border border-border-light rounded-lg outline-none focus:ring-2 focus:ring-primary/20 text-foreground placeholder:text-text-tertiary"
-                  />
-                  <select
-                    value={newColType}
-                    onChange={(e) => setNewColType(e.target.value as CustomColumnDef["type"])}
-                    className="w-full px-2.5 py-1.5 text-sm bg-surface border border-border-light rounded-lg outline-none focus:ring-2 focus:ring-primary/20 text-foreground cursor-pointer"
-                  >
-                    <option value="text">Text</option>
-                    <option value="dropdown">Dropdown</option>
-                    <option value="number">Number</option>
-                    <option value="date">Date</option>
-                  </select>
-                  {newColType === "dropdown" && (
+                <div className="px-4 pb-3 space-y-3">
+                  <div>
+                    <label className="text-[11px] font-medium text-text-secondary uppercase tracking-wider block mb-1.5">Column Name</label>
                     <input
-                      value={newColOptions}
-                      onChange={(e) => setNewColOptions(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === "Enter") handleAddColumn(); }}
-                      placeholder="Options (comma-separated)"
-                      className="w-full px-2.5 py-1.5 text-sm bg-surface border border-border-light rounded-lg outline-none focus:ring-2 focus:ring-primary/20 text-foreground placeholder:text-text-tertiary"
+                      ref={nameInputRef}
+                      value={newColName}
+                      onChange={(e) => setNewColName(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") handleAddColumn(); if (e.key === "Escape") { setAddingColumn(false); setNewColName(""); } }}
+                      placeholder="e.g. Priority, Category..."
+                      className="w-full px-3 py-2 text-sm bg-surface border border-border-light rounded-lg outline-none focus:ring-2 focus:ring-primary/20 text-foreground placeholder:text-text-tertiary"
                     />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-medium text-text-secondary uppercase tracking-wider block mb-1.5">Type</label>
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {([
+                        { value: "text", label: "Text" },
+                        { value: "dropdown", label: "Dropdown" },
+                        { value: "number", label: "Number" },
+                        { value: "date", label: "Date" },
+                      ] as const).map((t) => (
+                        <button
+                          key={t.value}
+                          onClick={() => setNewColType(t.value)}
+                          className={`px-2 py-1.5 text-[12px] font-medium rounded-lg border transition-all cursor-pointer ${
+                            newColType === t.value
+                              ? "bg-foreground text-white border-foreground"
+                              : "bg-surface text-text-secondary border-border-light hover:border-foreground/30"
+                          }`}
+                        >
+                          {t.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {newColType === "dropdown" && (
+                    <div>
+                      <label className="text-[11px] font-medium text-text-secondary uppercase tracking-wider block mb-1.5">Options</label>
+                      <input
+                        value={newColOptions}
+                        onChange={(e) => setNewColOptions(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") handleAddColumn(); }}
+                        placeholder="Option 1, Option 2, Option 3..."
+                        className="w-full px-3 py-2 text-sm bg-surface border border-border-light rounded-lg outline-none focus:ring-2 focus:ring-primary/20 text-foreground placeholder:text-text-tertiary"
+                      />
+                    </div>
                   )}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 pt-1">
                     <button
                       onClick={handleAddColumn}
                       disabled={!newColName.trim()}
-                      className="px-3 py-1.5 text-xs font-medium bg-foreground text-white rounded-lg hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="flex-1 px-3 py-2 text-sm font-medium bg-foreground text-white rounded-lg hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                      Add
+                      Add Column
                     </button>
                     <button
                       onClick={() => { setAddingColumn(false); setNewColName(""); setNewColType("text"); setNewColOptions(""); }}
-                      className="px-3 py-1.5 text-xs text-text-secondary hover:text-foreground transition-colors cursor-pointer"
+                      className="px-3 py-2 text-sm text-text-secondary hover:text-foreground transition-colors cursor-pointer"
                     >
                       Cancel
                     </button>
@@ -441,17 +513,13 @@ export function DataTable<T>({ columns, data, onRowClick, keyExtractor, storageK
     switch (col.type) {
       case "dropdown":
         return (
-          <select
+          <InlineSelectDropdown
             value={(value as string) || ""}
-            onClick={(e) => e.stopPropagation()}
-            onChange={(e) => {
-              onUpdateCustomData(itemKey, { ...itemData, [col.dataKey]: e.target.value || undefined });
+            options={col.options ?? []}
+            onChange={(v) => {
+              onUpdateCustomData(itemKey, { ...itemData, [col.dataKey]: v || undefined });
             }}
-            className="text-[13px] bg-transparent border-b border-transparent hover:border-border-light outline-none py-0.5 cursor-pointer text-foreground w-full"
-          >
-            <option value="">—</option>
-            {col.options?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-          </select>
+          />
         );
       case "date":
         return (

@@ -1,8 +1,35 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback, KeyboardEvent } from "react";
-import { ChevronDown, ChevronRight, Plus, X, Check, User, Trash2 } from "lucide-react";
+import { createPortal } from "react-dom";
+import { ChevronDown, ChevronRight, Plus, X, Check, User, Trash2, SlidersHorizontal } from "lucide-react";
 import { Client, TeamMember } from "@/types/models";
+
+// ── Portal dropdown helper ──────────────────────────────────
+
+function useDropdownPosition(triggerRef: React.RefObject<HTMLElement | null>, open: boolean) {
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+  useEffect(() => {
+    if (!open || !triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    setPos({ top: rect.bottom + 4, left: rect.right });
+  }, [open, triggerRef]);
+  return pos;
+}
+
+function PortalDropdown({ open, triggerRef, width, children }: { open: boolean; triggerRef: React.RefObject<HTMLElement | null>; width: number; children: React.ReactNode }) {
+  const pos = useDropdownPosition(triggerRef, open);
+  if (!open || typeof window === "undefined") return null;
+  return createPortal(
+    <div
+      className="fixed z-[9999] bg-card-bg border border-border-light rounded-2xl shadow-xl animate-in fade-in slide-in-from-top-1 duration-150"
+      style={{ top: pos.top, left: pos.left - width, width }}
+    >
+      {children}
+    </div>,
+    document.body,
+  );
+}
 
 // ── Column configuration ────────────────────────────────────
 
@@ -200,6 +227,65 @@ export function StatusDropdown({ status, onChange }: StatusDropdownProps) {
   );
 }
 
+// ── SelectDropdown ────────────────────────────────────────────
+
+interface SelectDropdownProps {
+  value: string;
+  options: string[];
+  onChange: (val: string) => void;
+  placeholder?: string;
+}
+
+export function SelectDropdown({ value, options, onChange, placeholder = "—" }: SelectDropdownProps) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium cursor-pointer transition-all hover:ring-2 hover:ring-blue-300/50 ${
+          value ? "bg-stone-50 text-stone-600" : "bg-stone-50 text-stone-400 italic"
+        }`}
+      >
+        {value || placeholder}
+        <ChevronDown className="w-3 h-3 opacity-40" />
+      </button>
+
+      {open && (
+        <div className="absolute z-50 top-full mt-1 left-0 bg-card-bg border border-border-light rounded-xl shadow-lg py-1 min-w-[140px] max-h-[200px] overflow-y-auto animate-in fade-in slide-in-from-top-1 duration-150">
+          <button
+            onClick={() => { onChange(""); setOpen(false); }}
+            className={`w-full text-left px-3 py-1.5 text-xs flex items-center gap-2 hover:bg-surface transition-colors ${!value ? "font-semibold text-foreground" : "text-text-secondary"}`}
+          >
+            <Check className={`w-3 h-3 ${!value ? "opacity-100" : "opacity-0"}`} />
+            <span>{placeholder}</span>
+          </button>
+          {options.map((opt) => (
+            <button
+              key={opt}
+              onClick={() => { onChange(opt); setOpen(false); }}
+              className={`w-full text-left px-3 py-1.5 text-xs flex items-center gap-2 hover:bg-surface transition-colors ${opt === value ? "font-semibold text-foreground" : "text-text-secondary"}`}
+            >
+              <Check className={`w-3 h-3 ${opt === value ? "opacity-100" : "opacity-0"}`} />
+              <span>{opt}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── TagChips ─────────────────────────────────────────────────
 
 interface TagChipsProps {
@@ -260,74 +346,46 @@ export function TagChips({ tags, onChange }: TagChipsProps) {
   );
 }
 
-// ── ColumnPicker ─────────────────────────────────────────────
+// ── ColumnVisibilityPicker ────────────────────────────────────
 
-interface ColumnPickerProps {
+interface ColumnVisibilityPickerProps {
   visibleColumns: string[];
   onToggle: (id: string) => void;
   customColumns: CustomColumnDef[];
-  onAddCustomColumn: (col: CustomColumnDef) => void;
   onRemoveCustomColumn: (id: string) => void;
   availableFields?: { id: string; label: string; type: string; options?: string[]; group?: string }[];
 }
 
-export function ColumnPicker({ visibleColumns, onToggle, customColumns, onAddCustomColumn, onRemoveCustomColumn, availableFields = [] }: ColumnPickerProps) {
+export function ColumnVisibilityPicker({ visibleColumns, onToggle, customColumns, onRemoveCustomColumn, availableFields = [] }: ColumnVisibilityPickerProps) {
   const [open, setOpen] = useState(false);
-  const [addingColumn, setAddingColumn] = useState(false);
-  const [newColName, setNewColName] = useState("");
-  const [newColType, setNewColType] = useState<CustomColumnDef["type"]>("text");
-  const [newColOptions, setNewColOptions] = useState("");
-  const ref = useRef<HTMLDivElement>(null);
-  const nameInputRef = useRef<HTMLInputElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-        setAddingColumn(false);
-      }
+      if (triggerRef.current?.contains(e.target as Node)) return;
+      if (dropdownRef.current?.contains(e.target as Node)) return;
+      setOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
-  useEffect(() => {
-    if (addingColumn) nameInputRef.current?.focus();
-  }, [addingColumn]);
-
-  const handleAddColumn = () => {
-    if (!newColName.trim()) return;
-    const id = `custom_${Date.now()}`;
-    const col: CustomColumnDef = {
-      id,
-      label: newColName.trim(),
-      type: newColType,
-      options: newColType === "dropdown" ? newColOptions.split(",").map(o => o.trim()).filter(Boolean) : undefined,
-      dataKey: id,
-      minWidth: 140,
-    };
-    onAddCustomColumn(col);
-    setNewColName("");
-    setNewColType("text");
-    setNewColOptions("");
-    setAddingColumn(false);
-  };
-
   return (
-    <div ref={ref} className="relative">
+    <>
       <button
+        ref={triggerRef}
         onClick={() => setOpen(!open)}
         className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-text-secondary hover:text-foreground hover:bg-surface transition-colors cursor-pointer"
-        title="Manage columns"
+        title="Show / hide columns"
       >
-        <Plus className="w-4 h-4" />
+        <SlidersHorizontal className="w-4 h-4" />
       </button>
 
-      {open && (
-        <div className="absolute z-50 top-full mt-1 right-0 bg-card-bg border border-border-light rounded-xl shadow-lg py-2 min-w-[260px] max-h-[480px] overflow-y-auto animate-in fade-in slide-in-from-top-1 duration-150">
-          {/* Built-in columns */}
-          <p className="px-3 pb-1.5 text-[11px] font-semibold text-text-secondary uppercase tracking-wider">Columns</p>
+      <PortalDropdown open={open} triggerRef={triggerRef} width={300}>
+        <div ref={dropdownRef} className="py-3 max-h-[480px] overflow-y-auto">
+          <p className="px-4 pb-2 text-[11px] font-semibold text-text-secondary uppercase tracking-wider">Show / Hide Columns</p>
           {CLIENT_COLUMNS.map((col) => {
             const visible = visibleColumns.includes(col.id);
             return (
@@ -335,21 +393,20 @@ export function ColumnPicker({ visibleColumns, onToggle, customColumns, onAddCus
                 key={col.id}
                 onClick={() => { if (col.removable) onToggle(col.id); }}
                 disabled={!col.removable}
-                className={`w-full text-left px-3 py-1.5 text-sm flex items-center gap-2.5 transition-colors ${col.removable ? "hover:bg-surface cursor-pointer" : "opacity-50 cursor-not-allowed"}`}
+                className={`w-full text-left px-4 py-2 text-[14px] flex items-center gap-3 transition-colors ${col.removable ? "hover:bg-surface cursor-pointer" : "opacity-50 cursor-not-allowed"}`}
               >
-                <span className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${visible ? "bg-foreground border-foreground" : "border-border-light"}`}>
-                  {visible && <Check className="w-3 h-3 text-white" />}
+                <span className={`w-5 h-5 rounded-md border flex items-center justify-center flex-shrink-0 transition-colors ${visible ? "bg-foreground border-foreground" : "border-border-light"}`}>
+                  {visible && <Check className="w-3.5 h-3.5 text-white" />}
                 </span>
                 <span className="text-foreground">{col.label}</span>
               </button>
             );
           })}
 
-          {/* Available fields from industry config */}
           {availableFields.length > 0 && (
             <>
               <div className="border-t border-border-light my-2" />
-              <p className="px-3 pb-1.5 text-[11px] font-semibold text-text-secondary uppercase tracking-wider">Available Fields</p>
+              <p className="px-4 pb-2 text-[11px] font-semibold text-text-secondary uppercase tracking-wider">Available Fields</p>
               {availableFields.map((field) => {
                 const colId = `field_${field.id}`;
                 const visible = visibleColumns.includes(colId);
@@ -357,10 +414,10 @@ export function ColumnPicker({ visibleColumns, onToggle, customColumns, onAddCus
                   <button
                     key={colId}
                     onClick={() => onToggle(colId)}
-                    className="w-full text-left px-3 py-1.5 text-sm flex items-center gap-2.5 hover:bg-surface transition-colors cursor-pointer"
+                    className="w-full text-left px-4 py-2 text-[14px] flex items-center gap-3 hover:bg-surface transition-colors cursor-pointer"
                   >
-                    <span className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${visible ? "bg-foreground border-foreground" : "border-border-light"}`}>
-                      {visible && <Check className="w-3 h-3 text-white" />}
+                    <span className={`w-5 h-5 rounded-md border flex items-center justify-center flex-shrink-0 transition-colors ${visible ? "bg-foreground border-foreground" : "border-border-light"}`}>
+                      {visible && <Check className="w-3.5 h-3.5 text-white" />}
                     </span>
                     <span className="text-foreground">{field.label}</span>
                   </button>
@@ -369,27 +426,27 @@ export function ColumnPicker({ visibleColumns, onToggle, customColumns, onAddCus
             </>
           )}
 
-          {/* Custom columns */}
           {customColumns.length > 0 && (
             <>
               <div className="border-t border-border-light my-2" />
-              <p className="px-3 pb-1.5 text-[11px] font-semibold text-text-secondary uppercase tracking-wider">Custom</p>
+              <p className="px-4 pb-2 text-[11px] font-semibold text-text-secondary uppercase tracking-wider">Custom</p>
               {customColumns.map((col) => {
                 const visible = visibleColumns.includes(col.id);
                 return (
-                  <div key={col.id} className="flex items-center gap-1 px-3 py-1.5 hover:bg-surface transition-colors group/custom">
+                  <div key={col.id} className="flex items-center gap-1 px-4 py-2 hover:bg-surface transition-colors group/custom">
                     <button
                       onClick={() => onToggle(col.id)}
-                      className="flex-1 text-left text-sm flex items-center gap-2.5 cursor-pointer"
+                      className="flex-1 text-left text-[14px] flex items-center gap-3 cursor-pointer"
                     >
-                      <span className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${visible ? "bg-foreground border-foreground" : "border-border-light"}`}>
-                        {visible && <Check className="w-3 h-3 text-white" />}
+                      <span className={`w-5 h-5 rounded-md border flex items-center justify-center flex-shrink-0 transition-colors ${visible ? "bg-foreground border-foreground" : "border-border-light"}`}>
+                        {visible && <Check className="w-3.5 h-3.5 text-white" />}
                       </span>
                       <span className="text-foreground">{col.label}</span>
+                      <span className="text-[11px] text-text-tertiary ml-auto">{col.type}</span>
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); onRemoveCustomColumn(col.id); }}
-                      className="opacity-0 group-hover/custom:opacity-100 text-text-tertiary hover:text-red-500 transition-all cursor-pointer p-0.5"
+                      className="opacity-0 group-hover/custom:opacity-100 text-text-tertiary hover:text-red-500 transition-all cursor-pointer p-1"
                       title="Remove column"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -399,67 +456,150 @@ export function ColumnPicker({ visibleColumns, onToggle, customColumns, onAddCus
               })}
             </>
           )}
+        </div>
+      </PortalDropdown>
+    </>
+  );
+}
 
-          {/* Add column */}
-          <div className="border-t border-border-light mt-2 pt-2">
-            {!addingColumn ? (
-              <button
-                onClick={() => setAddingColumn(true)}
-                className="w-full text-left px-3 py-1.5 text-sm flex items-center gap-2 text-primary hover:bg-surface transition-colors cursor-pointer font-medium"
-              >
-                <Plus className="w-4 h-4" />
-                Add Column
+// ── AddColumnDropdown ────────────────────────────────────────
+
+interface AddColumnDropdownProps {
+  onAddCustomColumn: (col: CustomColumnDef) => void;
+}
+
+export function AddColumnDropdown({ onAddCustomColumn }: AddColumnDropdownProps) {
+  const [open, setOpen] = useState(false);
+  const [newColName, setNewColName] = useState("");
+  const [newColType, setNewColType] = useState<CustomColumnDef["type"]>("text");
+  const [newColOptions, setNewColOptions] = useState("");
+  const nameInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (open) setTimeout(() => nameInputRef.current?.focus(), 50);
+  }, [open]);
+
+  const handleAdd = () => {
+    if (!newColName.trim()) return;
+    const id = `custom_${Date.now()}`;
+    onAddCustomColumn({
+      id,
+      label: newColName.trim(),
+      type: newColType,
+      options: newColType === "dropdown" ? newColOptions.split(",").map(o => o.trim()).filter(Boolean) : undefined,
+      dataKey: id,
+      minWidth: 140,
+    });
+    setNewColName("");
+    setNewColType("text");
+    setNewColOptions("");
+    setOpen(false);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+    setNewColName("");
+    setNewColType("text");
+    setNewColOptions("");
+  };
+
+  return (
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-text-secondary hover:text-foreground hover:bg-surface transition-colors cursor-pointer"
+        title="Add custom column"
+      >
+        <Plus className="w-4 h-4" />
+      </button>
+
+      {open && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/30" onClick={handleClose} />
+
+          {/* Modal */}
+          <div className="relative bg-card-bg border border-border-light rounded-2xl shadow-2xl w-[400px] p-6 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-[16px] font-semibold text-foreground">Add Custom Column</h3>
+              <button onClick={handleClose} className="text-text-tertiary hover:text-foreground transition-colors cursor-pointer p-1">
+                <X className="w-4 h-4" />
               </button>
-            ) : (
-              <div className="px-3 pb-2 space-y-2">
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-[12px] font-medium text-text-secondary block mb-1.5">Column Name</label>
                 <input
                   ref={nameInputRef}
                   value={newColName}
                   onChange={(e) => setNewColName(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") handleAddColumn(); if (e.key === "Escape") { setAddingColumn(false); setNewColName(""); } }}
-                  placeholder="Column name"
-                  className="w-full px-2.5 py-1.5 text-sm bg-surface border border-border-light rounded-lg outline-none focus:ring-2 focus:ring-primary/20 text-foreground placeholder:text-text-tertiary"
+                  onKeyDown={(e) => { if (e.key === "Enter") handleAdd(); if (e.key === "Escape") handleClose(); }}
+                  placeholder="e.g. Skin Type, Priority, Notes..."
+                  className="w-full px-3.5 py-2.5 text-[14px] bg-surface border border-border-light rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 text-foreground placeholder:text-text-tertiary"
                 />
-                <select
-                  value={newColType}
-                  onChange={(e) => setNewColType(e.target.value as CustomColumnDef["type"])}
-                  className="w-full px-2.5 py-1.5 text-sm bg-surface border border-border-light rounded-lg outline-none focus:ring-2 focus:ring-primary/20 text-foreground cursor-pointer"
-                >
-                  <option value="text">Text</option>
-                  <option value="dropdown">Dropdown</option>
-                  <option value="number">Number</option>
-                  <option value="date">Date</option>
-                </select>
-                {newColType === "dropdown" && (
+              </div>
+
+              <div>
+                <label className="text-[12px] font-medium text-text-secondary block mb-2">Column Type</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {([
+                    { value: "text", label: "Text", desc: "Free text" },
+                    { value: "dropdown", label: "Select", desc: "Pick from list" },
+                    { value: "number", label: "Number", desc: "Numeric" },
+                    { value: "date", label: "Date", desc: "Date picker" },
+                  ] as const).map((t) => (
+                    <button
+                      key={t.value}
+                      onClick={() => setNewColType(t.value)}
+                      className={`flex flex-col items-center gap-1 px-2 py-3 rounded-xl border-2 transition-all cursor-pointer ${
+                        newColType === t.value
+                          ? "bg-foreground/5 border-foreground text-foreground"
+                          : "bg-surface border-border-light text-text-secondary hover:border-foreground/20"
+                      }`}
+                    >
+                      <span className="text-[13px] font-semibold">{t.label}</span>
+                      <span className="text-[10px] text-text-tertiary">{t.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {newColType === "dropdown" && (
+                <div>
+                  <label className="text-[12px] font-medium text-text-secondary block mb-1.5">Dropdown Options</label>
                   <input
                     value={newColOptions}
                     onChange={(e) => setNewColOptions(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") handleAddColumn(); }}
-                    placeholder="Options (comma-separated)"
-                    className="w-full px-2.5 py-1.5 text-sm bg-surface border border-border-light rounded-lg outline-none focus:ring-2 focus:ring-primary/20 text-foreground placeholder:text-text-tertiary"
+                    onKeyDown={(e) => { if (e.key === "Enter") handleAdd(); }}
+                    placeholder="Normal, Oily, Dry, Sensitive..."
+                    className="w-full px-3.5 py-2.5 text-[14px] bg-surface border border-border-light rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 text-foreground placeholder:text-text-tertiary"
                   />
-                )}
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleAddColumn}
-                    disabled={!newColName.trim()}
-                    className="px-3 py-1.5 text-xs font-medium bg-foreground text-white rounded-lg hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    Add
-                  </button>
-                  <button
-                    onClick={() => { setAddingColumn(false); setNewColName(""); setNewColType("text"); setNewColOptions(""); }}
-                    className="px-3 py-1.5 text-xs text-text-secondary hover:text-foreground transition-colors cursor-pointer"
-                  >
-                    Cancel
-                  </button>
+                  <p className="text-[11px] text-text-tertiary mt-1">Separate options with commas</p>
                 </div>
+              )}
+
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  onClick={handleAdd}
+                  disabled={!newColName.trim()}
+                  className="flex-1 px-4 py-2.5 text-[14px] font-medium bg-foreground text-white rounded-xl hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Add Column
+                </button>
+                <button
+                  onClick={handleClose}
+                  className="px-4 py-2.5 text-[14px] text-text-secondary hover:text-foreground transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
               </div>
-            )}
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
-    </div>
+    </>
   );
 }
 
@@ -690,8 +830,6 @@ export function AddRow({ onAdd, colSpan }: AddRowProps) {
 
 interface ClientBoardRowProps {
   client: Client;
-  expanded: boolean;
-  onToggleExpand: () => void;
   onUpdate: (field: string, value: unknown) => void;
   onOpenDetail: () => void;
   visibleColumns: string[];
@@ -700,8 +838,7 @@ interface ClientBoardRowProps {
   industryFields?: { id: string; label: string; type: string; options?: string[] }[];
 }
 
-export function ClientBoardRow({ client, expanded, onToggleExpand, onUpdate, onOpenDetail, visibleColumns, teamMembers, customColumns = [], industryFields = [] }: ClientBoardRowProps) {
-  const totalColSpan = visibleColumns.length + 2; // +1 actions, +1 column picker spacer
+export function ClientBoardRow({ client, onUpdate, onOpenDetail, visibleColumns, teamMembers, customColumns = [], industryFields = [] }: ClientBoardRowProps) {
 
   const customData = (client.customData ?? {}) as Record<string, unknown>;
 
@@ -720,21 +857,13 @@ export function ClientBoardRow({ client, expanded, onToggleExpand, onUpdate, onO
         case "name":
           return (
             <td key={colId} className="px-6 py-2.5" style={{ minWidth: 200 }}>
-              <div className="flex items-center gap-2">
+              <div className="min-w-0">
                 <button
-                  onClick={onToggleExpand}
-                  className="text-text-secondary hover:text-foreground transition-colors flex-shrink-0 cursor-pointer"
+                  onClick={onOpenDetail}
+                  className="text-sm font-medium text-foreground hover:text-blue-600 transition-colors truncate block text-left cursor-pointer"
                 >
-                  {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                  {client.name}
                 </button>
-                <div className="min-w-0 flex-1">
-                  <button
-                    onClick={onToggleExpand}
-                    className="text-sm font-medium text-foreground hover:text-blue-600 transition-colors truncate block text-left cursor-pointer"
-                  >
-                    {client.name}
-                  </button>
-                </div>
               </div>
             </td>
           );
@@ -809,14 +938,11 @@ export function ClientBoardRow({ client, expanded, onToggleExpand, onUpdate, onO
       if (field.type === "select") {
         return (
           <td key={colId} className="px-4 py-2.5" style={{ minWidth: 140 }}>
-            <select
+            <SelectDropdown
               value={(value as string) || ""}
-              onChange={(e) => onUpdate("customData", { ...customData, [fieldId]: e.target.value || undefined })}
-              className="text-sm bg-transparent border-b border-transparent hover:border-border-light outline-none py-0.5 cursor-pointer text-foreground w-full"
-            >
-              <option value="">—</option>
-              {field.options?.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-            </select>
+              options={field.options ?? []}
+              onChange={(v) => onUpdate("customData", { ...customData, [fieldId]: v || undefined })}
+            />
           </td>
         );
       }
@@ -867,14 +993,11 @@ export function ClientBoardRow({ client, expanded, onToggleExpand, onUpdate, onO
       if (customCol.type === "dropdown") {
         return (
           <td key={colId} className="px-4 py-2.5" style={{ minWidth: customCol.minWidth }}>
-            <select
+            <SelectDropdown
               value={(value as string) || ""}
-              onChange={(e) => onUpdate("customData", { ...customData, [customCol.dataKey]: e.target.value || undefined })}
-              className="text-sm bg-transparent border-b border-transparent hover:border-border-light outline-none py-0.5 cursor-pointer text-foreground w-full"
-            >
-              <option value="">—</option>
-              {customCol.options?.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-            </select>
+              options={customCol.options ?? []}
+              onChange={(v) => onUpdate("customData", { ...customData, [customCol.dataKey]: v || undefined })}
+            />
           </td>
         );
       }
@@ -908,26 +1031,21 @@ export function ClientBoardRow({ client, expanded, onToggleExpand, onUpdate, onO
   };
 
   return (
-    <>
-      <tr
-        className={`group border-b border-border-light/60 hover:bg-surface/40 transition-colors ${expanded ? "border-l-2 border-l-blue-400 bg-surface/30" : "border-l-2 border-l-transparent"}`}
-      >
-        {visibleColumns.map(renderCell)}
+    <tr className="group border-b border-border-light/60 hover:bg-surface/40 transition-colors border-l-2 border-l-transparent">
+      {visibleColumns.map(renderCell)}
 
-        {/* Actions */}
-        <td className="px-4 py-2.5 w-[60px] text-right">
-          <button
-            onClick={onOpenDetail}
-            className="text-xs text-text-secondary hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-          >
-            Open
-          </button>
-        </td>
+      {/* Actions */}
+      <td className="px-4 py-2.5 w-[60px] text-right">
+        <button
+          onClick={onOpenDetail}
+          className="text-xs text-text-secondary hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+        >
+          Open
+        </button>
+      </td>
 
-        {/* Column picker spacer */}
-        <td className="w-[40px]" />
-      </tr>
-      {expanded && <ExpandedRow client={client} onUpdate={onUpdate} colSpan={totalColSpan} />}
-    </>
+      {/* Column controls spacer */}
+      <td className="w-[80px]" />
+    </tr>
   );
 }
