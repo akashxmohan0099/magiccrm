@@ -79,10 +79,13 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
   const [maxAttendees, setMaxAttendees] = useState("");
   const [resource, setResource] = useState("");
   const [policyConsent, setPolicyConsent] = useState(false);
+  const [newClientName, setNewClientName] = useState("");
+  const [newClientEmail, setNewClientEmail] = useState("");
 
   const clientOptions = useMemo(
     () => [
       { value: "", label: "No client" },
+      { value: "__new__", label: "+ Create new client" },
       ...clients.map((c) => ({ value: c.id, label: c.name })),
     ],
     [clients]
@@ -116,6 +119,8 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
       setErrors({});
       setSelectedService(null);
       setPolicyConsent(!!booking?.cancellationPolicyConsent?.accepted);
+      setNewClientName("");
+      setNewClientEmail("");
     }
   }, [open, booking, defaultDate]);
 
@@ -128,6 +133,10 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
     const errs: Record<string, string> = {};
     if (!form.title.trim()) errs.title = "Title is required";
     if (!form.date) errs.date = "Date is required";
+    if (form.clientId === "__new__") {
+      if (!newClientName.trim()) errs.newClientName = "Client name is required";
+      if (!newClientEmail.trim()) errs.newClientEmail = "Client email is required";
+    }
     if (!isDateExclusive) {
       if (!form.startTime) errs.startTime = "Start time is required";
       if (!form.endTime) errs.endTime = "End time is required";
@@ -146,9 +155,23 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
 
     setSaving(true);
 
+    let resolvedClientId = form.clientId || undefined;
+
+    if (form.clientId === "__new__") {
+      const newClient = useClientsStore.getState().addClient({
+        name: newClientName.trim(),
+        email: newClientEmail.trim(),
+        phone: "",
+        tags: [],
+        notes: "",
+        status: "active",
+      });
+      resolvedClientId = newClient.id;
+    }
+
     const data: Record<string, unknown> = {
       title: form.title.trim(),
-      clientId: form.clientId || undefined,
+      clientId: resolvedClientId,
       date: form.date,
       startTime: isDateExclusive ? "00:00" : form.startTime,
       endTime: isDateExclusive ? "23:59" : form.endTime,
@@ -265,6 +288,29 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
             onChange={(e) => set("clientId", e.target.value)}
           />
         </FormField>
+
+        {form.clientId === "__new__" && (
+          <div className="space-y-3 pl-3 border-l-2 border-primary/20 animate-in slide-in-from-top-1 fade-in duration-200">
+            <FormField label="Client Name" required error={errors.newClientName}>
+              <input
+                type="text"
+                value={newClientName}
+                onChange={(e) => setNewClientName(e.target.value)}
+                className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
+                placeholder="Full name"
+              />
+            </FormField>
+            <FormField label="Client Email" required error={errors.newClientEmail}>
+              <input
+                type="email"
+                value={newClientEmail}
+                onChange={(e) => setNewClientEmail(e.target.value)}
+                className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
+                placeholder="email@example.com"
+              />
+            </FormField>
+          </div>
+        )}
 
         {teamEnabled && (
           <TeamMemberPicker

@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus, List, Columns3, Users, FileInput, Upload } from "lucide-react";
+import { Plus, List, Columns3, Users, FileInput, Upload, UserCheck } from "lucide-react";
 import { useLeadsStore } from "@/store/leads";
 import { useWorkflowSettingsStore } from "@/store/workflow-settings";
 import { Lead } from "@/types/models";
+import { useAuth } from "@/hooks/useAuth";
 import { useVocabulary } from "@/hooks/useVocabulary";
 import { useBaseIndustryConfig, useIndustryConfig } from "@/hooks/useIndustryConfig";
 import { FeatureSection } from "@/components/modules/FeatureSection";
@@ -23,7 +24,8 @@ import { StageSettingsCard } from "@/components/modules/shared/StageSettingsCard
 type ViewMode = "list" | "pipeline" | "form";
 
 export function LeadsPage() {
-  const { leads } = useLeadsStore();
+  const { leads, convertToClient } = useLeadsStore();
+  const { workspaceId } = useAuth();
   const vocab = useVocabulary();
   const baseConfig = useBaseIndustryConfig();
   const { leadStages } = useIndustryConfig();
@@ -71,6 +73,23 @@ export function LeadsPage() {
       label: "Created",
       sortable: true,
       render: (lead) => new Date(lead.createdAt).toLocaleDateString(),
+    },
+    {
+      key: "actions",
+      label: "",
+      render: (lead) => {
+        if (lead.clientId) {
+          return <span className="text-[11px] text-emerald-600 font-medium flex items-center gap-1"><UserCheck className="w-3 h-3" /> Converted</span>;
+        }
+        return (
+          <button
+            onClick={(e) => { e.stopPropagation(); convertToClient(lead.id, workspaceId ?? undefined); }}
+            className="text-[12px] text-primary hover:text-primary-hover font-medium transition-colors cursor-pointer"
+          >
+            Convert to Client
+          </button>
+        );
+      },
     },
   ];
 

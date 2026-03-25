@@ -28,13 +28,15 @@ import {
   type ColumnId,
   type CustomColumnDef,
 } from "./BoardComponents";
+import { useModulePresentation } from "@/hooks/useModulePresentation";
 
 const COLUMNS_STORAGE_KEY = "magic-crm-client-columns";
 const CUSTOM_COLUMNS_KEY = "magic-crm-custom-client-columns";
 
-function loadVisibleColumns(): string[] {
+function loadVisibleColumns(blueprintDefaults?: string[] | null): string[] {
   if (typeof window === "undefined") return DEFAULT_VISIBLE_COLUMNS;
   try {
+    // 1. User override (localStorage) takes priority
     const stored = localStorage.getItem(COLUMNS_STORAGE_KEY);
     if (stored) {
       const parsed = JSON.parse(stored) as string[];
@@ -46,6 +48,12 @@ function loadVisibleColumns(): string[] {
       return filtered.length > 0 ? filtered : DEFAULT_VISIBLE_COLUMNS;
     }
   } catch { /* ignore */ }
+  // 2. Blueprint defaults (if workspace has a resolved blueprint)
+  if (blueprintDefaults && blueprintDefaults.length > 0) {
+    if (!blueprintDefaults.includes("name")) blueprintDefaults.unshift("name");
+    return blueprintDefaults;
+  }
+  // 3. Static defaults
   return DEFAULT_VISIBLE_COLUMNS;
 }
 
@@ -97,11 +105,14 @@ export function ClientsPage() {
   const { workspaceId } = useAuth();
   const config = useIndustryConfig();
   const industryFieldDefs = config.customFields.clients ?? [];
+  const clientPresentation = useModulePresentation("clients");
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [detailClientId, setDetailClientId] = useState<string | null>(null);
-  const [visibleColumns, setVisibleColumns] = useState<string[]>(loadVisibleColumns);
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(() =>
+    loadVisibleColumns(clientPresentation?.defaultColumns)
+  );
   const [customColumns, setCustomColumns] = useState<CustomColumnDef[]>(loadCustomColumns);
 
   // Duplicate warning state
