@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
-import { ChevronUp, ChevronDown, Plus, X, Check, Trash2 } from "lucide-react";
+import { ChevronUp, ChevronDown, Plus, X, Check, Trash2, SlidersHorizontal } from "lucide-react";
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -172,89 +173,73 @@ function InlineSelectDropdown({ value, options, onChange, placeholder = "—" }:
   );
 }
 
-// ── TableColumnPicker ────────────────────────────────────────
+// ── Portal helper ────────────────────────────────────────────
 
-function TableColumnPicker<T>({
+function usePortalPosition(triggerRef: React.RefObject<HTMLElement | null>, open: boolean) {
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+  useEffect(() => {
+    if (!open || !triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    setPos({ top: rect.bottom + 4, left: rect.right });
+  }, [open, triggerRef]);
+  return pos;
+}
+
+// ── TableVisibilityPicker ────────────────────────────────────
+
+function TableVisibilityPicker<T>({
   columns,
   visibleKeys,
   onToggle,
   customColumns,
-  onAddCustomColumn,
   onRemoveCustomColumn,
-  enableCustomColumns,
 }: {
   columns: Column<T>[];
   visibleKeys: string[];
   onToggle: (key: string) => void;
   customColumns: CustomColumnDef[];
-  onAddCustomColumn: (col: CustomColumnDef) => void;
   onRemoveCustomColumn: (id: string) => void;
-  enableCustomColumns: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const [addingColumn, setAddingColumn] = useState(false);
-  const [newColName, setNewColName] = useState("");
-  const [newColType, setNewColType] = useState<CustomColumnDef["type"]>("text");
-  const [newColOptions, setNewColOptions] = useState("");
-  const ref = useRef<HTMLDivElement>(null);
-  const nameInputRef = useRef<HTMLInputElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const pos = usePortalPosition(triggerRef, open);
 
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-        setAddingColumn(false);
-      }
+      if (triggerRef.current?.contains(e.target as Node)) return;
+      if (dropdownRef.current?.contains(e.target as Node)) return;
+      setOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
-  useEffect(() => {
-    if (addingColumn) nameInputRef.current?.focus();
-  }, [addingColumn]);
-
-  const handleAddColumn = () => {
-    if (!newColName.trim()) return;
-    const id = `custom_${Date.now()}`;
-    const col: CustomColumnDef = {
-      id,
-      label: newColName.trim(),
-      type: newColType,
-      options: newColType === "dropdown" ? newColOptions.split(",").map(o => o.trim()).filter(Boolean) : undefined,
-      dataKey: id,
-      minWidth: 140,
-    };
-    onAddCustomColumn(col);
-    setNewColName("");
-    setNewColType("text");
-    setNewColOptions("");
-    setAddingColumn(false);
-  };
-
-  // Determine which columns are removable (first column is always locked)
   const isRemovable = (col: Column<T>) => {
     if (col.removable === false) return false;
-    if (!columns.some(c => c.removable === false)) {
-      return col.key !== columns[0]?.key;
-    }
+    if (!columns.some(c => c.removable === false)) return col.key !== columns[0]?.key;
     return true;
   };
 
   return (
-    <div ref={ref} className="relative">
+    <>
       <button
+        ref={triggerRef}
         onClick={() => setOpen(!open)}
         className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-text-secondary hover:text-foreground hover:bg-surface transition-colors cursor-pointer"
-        title="Manage columns"
+        title="Show / hide columns"
       >
-        <Plus className="w-4 h-4" />
+        <SlidersHorizontal className="w-4 h-4" />
       </button>
 
-      {open && (
-        <div className="absolute z-50 top-full mt-1 right-0 bg-card-bg border border-border-light rounded-2xl shadow-xl py-3 w-[340px] max-h-[520px] overflow-y-auto animate-in fade-in slide-in-from-top-1 duration-150">
-          <p className="px-4 pb-2 text-[11px] font-semibold text-text-secondary uppercase tracking-wider">Columns</p>
+      {open && typeof window !== "undefined" && createPortal(
+        <div
+          ref={dropdownRef}
+          className="fixed z-[9999] bg-card-bg border border-border-light rounded-2xl shadow-xl py-3 w-[300px] max-h-[480px] overflow-y-auto animate-in fade-in slide-in-from-top-1 duration-150"
+          style={{ top: pos.top, left: pos.left - 300 }}
+        >
+          <p className="px-4 pb-2 text-[11px] font-semibold text-text-secondary uppercase tracking-wider">Show / Hide Columns</p>
           {columns.map((col) => {
             const visible = visibleKeys.includes(col.key);
             const removable = isRemovable(col);
@@ -273,7 +258,6 @@ function TableColumnPicker<T>({
             );
           })}
 
-          {/* Custom columns */}
           {customColumns.length > 0 && (
             <>
               <div className="border-t border-border-light my-2" />
@@ -304,88 +288,86 @@ function TableColumnPicker<T>({
               })}
             </>
           )}
+        </div>,
+        document.body,
+      )}
+    </>
+  );
+}
 
-          {/* Add column */}
-          {enableCustomColumns && (
-            <div className="border-t border-border-light mt-2 pt-2">
-              {!addingColumn ? (
-                <button
-                  onClick={() => setAddingColumn(true)}
-                  className="w-full text-left px-4 py-2 text-[14px] flex items-center gap-2 text-primary hover:bg-surface transition-colors cursor-pointer font-medium"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add Column
-                </button>
-              ) : (
-                <div className="px-4 pb-3 space-y-3">
-                  <div>
-                    <label className="text-[11px] font-medium text-text-secondary uppercase tracking-wider block mb-1.5">Column Name</label>
-                    <input
-                      ref={nameInputRef}
-                      value={newColName}
-                      onChange={(e) => setNewColName(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === "Enter") handleAddColumn(); if (e.key === "Escape") { setAddingColumn(false); setNewColName(""); } }}
-                      placeholder="e.g. Priority, Category..."
-                      className="w-full px-3 py-2 text-sm bg-surface border border-border-light rounded-lg outline-none focus:ring-2 focus:ring-primary/20 text-foreground placeholder:text-text-tertiary"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[11px] font-medium text-text-secondary uppercase tracking-wider block mb-1.5">Type</label>
-                    <div className="grid grid-cols-4 gap-1.5">
-                      {([
-                        { value: "text", label: "Text" },
-                        { value: "dropdown", label: "Dropdown" },
-                        { value: "number", label: "Number" },
-                        { value: "date", label: "Date" },
-                      ] as const).map((t) => (
-                        <button
-                          key={t.value}
-                          onClick={() => setNewColType(t.value)}
-                          className={`px-2 py-1.5 text-[12px] font-medium rounded-lg border transition-all cursor-pointer ${
-                            newColType === t.value
-                              ? "bg-foreground text-white border-foreground"
-                              : "bg-surface text-text-secondary border-border-light hover:border-foreground/30"
-                          }`}
-                        >
-                          {t.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  {newColType === "dropdown" && (
-                    <div>
-                      <label className="text-[11px] font-medium text-text-secondary uppercase tracking-wider block mb-1.5">Options</label>
-                      <input
-                        value={newColOptions}
-                        onChange={(e) => setNewColOptions(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === "Enter") handleAddColumn(); }}
-                        placeholder="Option 1, Option 2, Option 3..."
-                        className="w-full px-3 py-2 text-sm bg-surface border border-border-light rounded-lg outline-none focus:ring-2 focus:ring-primary/20 text-foreground placeholder:text-text-tertiary"
-                      />
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2 pt-1">
-                    <button
-                      onClick={handleAddColumn}
-                      disabled={!newColName.trim()}
-                      className="flex-1 px-3 py-2 text-sm font-medium bg-foreground text-white rounded-lg hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                      Add Column
+// ── TableAddColumnModal ──────────────────────────────────────
+
+function TableAddColumnModal({ onAddCustomColumn }: { onAddCustomColumn: (col: CustomColumnDef) => void }) {
+  const [open, setOpen] = useState(false);
+  const [newColName, setNewColName] = useState("");
+  const [newColType, setNewColType] = useState<CustomColumnDef["type"]>("text");
+  const [newColOptions, setNewColOptions] = useState("");
+  const nameInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (open) setTimeout(() => nameInputRef.current?.focus(), 50);
+  }, [open]);
+
+  const handleAdd = () => {
+    if (!newColName.trim()) return;
+    const id = `custom_${Date.now()}`;
+    onAddCustomColumn({ id, label: newColName.trim(), type: newColType, options: newColType === "dropdown" ? newColOptions.split(",").map(o => o.trim()).filter(Boolean) : undefined, dataKey: id, minWidth: 140 });
+    setNewColName(""); setNewColType("text"); setNewColOptions(""); setOpen(false);
+  };
+
+  const handleClose = () => { setOpen(false); setNewColName(""); setNewColType("text"); setNewColOptions(""); };
+
+  return (
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-text-secondary hover:text-foreground hover:bg-surface transition-colors cursor-pointer"
+        title="Add custom column"
+      >
+        <Plus className="w-4 h-4" />
+      </button>
+
+      {open && typeof window !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/30" onClick={handleClose} />
+          <div className="relative bg-card-bg border border-border-light rounded-2xl shadow-2xl w-[400px] p-6 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-[16px] font-semibold text-foreground">Add Custom Column</h3>
+              <button onClick={handleClose} className="text-text-tertiary hover:text-foreground transition-colors cursor-pointer p-1"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="text-[12px] font-medium text-text-secondary block mb-1.5">Column Name</label>
+                <input ref={nameInputRef} value={newColName} onChange={(e) => setNewColName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleAdd(); if (e.key === "Escape") handleClose(); }} placeholder="e.g. Priority, Category..." className="w-full px-3.5 py-2.5 text-[14px] bg-surface border border-border-light rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 text-foreground placeholder:text-text-tertiary" />
+              </div>
+              <div>
+                <label className="text-[12px] font-medium text-text-secondary block mb-2">Column Type</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {([{ value: "text", label: "Text", desc: "Free text" }, { value: "dropdown", label: "Select", desc: "Pick from list" }, { value: "number", label: "Number", desc: "Numeric" }, { value: "date", label: "Date", desc: "Date picker" }] as const).map((t) => (
+                    <button key={t.value} onClick={() => setNewColType(t.value)} className={`flex flex-col items-center gap-1 px-2 py-3 rounded-xl border-2 transition-all cursor-pointer ${newColType === t.value ? "bg-foreground/5 border-foreground text-foreground" : "bg-surface border-border-light text-text-secondary hover:border-foreground/20"}`}>
+                      <span className="text-[13px] font-semibold">{t.label}</span>
+                      <span className="text-[10px] text-text-tertiary">{t.desc}</span>
                     </button>
-                    <button
-                      onClick={() => { setAddingColumn(false); setNewColName(""); setNewColType("text"); setNewColOptions(""); }}
-                      className="px-3 py-2 text-sm text-text-secondary hover:text-foreground transition-colors cursor-pointer"
-                    >
-                      Cancel
-                    </button>
-                  </div>
+                  ))}
+                </div>
+              </div>
+              {newColType === "dropdown" && (
+                <div>
+                  <label className="text-[12px] font-medium text-text-secondary block mb-1.5">Dropdown Options</label>
+                  <input value={newColOptions} onChange={(e) => setNewColOptions(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleAdd(); }} placeholder="Option 1, Option 2, Option 3..." className="w-full px-3.5 py-2.5 text-[14px] bg-surface border border-border-light rounded-xl outline-none focus:ring-2 focus:ring-primary/20 text-foreground placeholder:text-text-tertiary" />
+                  <p className="text-[11px] text-text-tertiary mt-1">Separate options with commas</p>
                 </div>
               )}
+              <div className="flex items-center gap-3 pt-2">
+                <button onClick={handleAdd} disabled={!newColName.trim()} className="flex-1 px-4 py-2.5 text-[14px] font-medium bg-foreground text-white rounded-xl hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">Add Column</button>
+                <button onClick={handleClose} className="px-4 py-2.5 text-[14px] text-text-secondary hover:text-foreground transition-colors cursor-pointer">Cancel</button>
+              </div>
             </div>
-          )}
-        </div>
+          </div>
+        </div>,
+        document.body,
       )}
-    </div>
+    </>
   );
 }
 
@@ -623,16 +605,17 @@ export function DataTable<T>({ columns, data, onRowClick, keyExtractor, storageK
 
               {/* Column picker */}
               {hasColumnPicker && (
-                <th className="w-[40px] px-1 py-3">
-                  <TableColumnPicker
-                    columns={columns}
-                    visibleKeys={visibleKeys}
-                    onToggle={handleToggleColumn}
-                    customColumns={customColumns}
-                    onAddCustomColumn={handleAddCustomColumn}
-                    onRemoveCustomColumn={handleRemoveCustomColumn}
-                    enableCustomColumns={enableCustomColumns}
-                  />
+                <th className="w-[80px] px-1 py-3">
+                  <div className="flex items-center gap-0.5 justify-end">
+                    <TableVisibilityPicker
+                      columns={columns}
+                      visibleKeys={visibleKeys}
+                      onToggle={handleToggleColumn}
+                      customColumns={customColumns}
+                      onRemoveCustomColumn={handleRemoveCustomColumn}
+                    />
+                    <TableAddColumnModal onAddCustomColumn={handleAddCustomColumn} />
+                  </div>
                 </th>
               )}
             </tr>
@@ -683,8 +666,8 @@ export function DataTable<T>({ columns, data, onRowClick, keyExtractor, storageK
                     </td>
                   ))}
 
-                  {/* Picker spacer */}
-                  {hasColumnPicker && <td className="w-[40px]" />}
+                  {/* Column controls spacer */}
+                  {hasColumnPicker && <td className="w-[80px]" />}
                 </motion.tr>
               ))
             )}
