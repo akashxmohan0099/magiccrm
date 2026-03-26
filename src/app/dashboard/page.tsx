@@ -25,6 +25,7 @@ import { useVocabulary } from "@/hooks/useVocabulary";
 import { useIndustryConfig } from "@/hooks/useIndustryConfig";
 import { useModuleEnabled } from "@/hooks/useFeature";
 import { computeEnabledModuleIds } from "@/lib/module-registry";
+import { useActiveCombinations } from "@/hooks/useActiveCombinations";
 import { RecommendedSetupCard } from "@/components/dashboard/RecommendedSetupCard";
 import { Button } from "@/components/ui/Button";
 import { requestBuilderBrief } from "@/lib/builder-requests";
@@ -49,23 +50,29 @@ function buildSetupTasks(
   teamSize: string,
   vocab: VocabularyMap,
   config: IndustryAdaptiveConfig,
+  moduleRoutes?: Record<string, string>,
 ): SetupTask[] {
   const tasks: SetupTask[] = [];
   const has = (moduleId: string) => enabledModuleIds.has(moduleId);
+  // Resolve module route: use combined route if module is in a combination
+  const route = (defaultSlug: string, moduleId?: string) => {
+    if (moduleId && moduleRoutes?.[moduleId]) return moduleRoutes[moduleId];
+    return `/dashboard/${defaultSlug}`;
+  };
 
   tasks.push({ id: "brand", label: "Set up your brand", description: "Logo, colors, and business details", icon: Palette, href: "/dashboard/settings" });
 
   if (has("bookings-calendar") && config?.bookingMode?.defaultServices?.length) {
     const word = config.vocabulary.job === "Service" ? "services" : config.vocabulary.booking.toLowerCase() + " types";
-    tasks.push({ id: "services", label: `Add your ${word}`, description: "What you offer, pricing, and duration", icon: ListPlus, href: "/dashboard/bookings" });
+    tasks.push({ id: "services", label: `Add your ${word}`, description: "What you offer, pricing, and duration", icon: ListPlus, href: route("bookings", "bookings-calendar") });
   }
 
   if (has("products")) {
-    tasks.push({ id: "products", label: "Add your products", description: "Products, pricing, and categories", icon: Package, href: "/dashboard/products" });
+    tasks.push({ id: "products", label: "Add your products", description: "Products, pricing, and categories", icon: Package, href: route("products", "products") });
   }
 
   if (has("bookings-calendar")) {
-    tasks.push({ id: "availability", label: "Set your availability", description: "Working hours and days off", icon: Clock, href: "/dashboard/bookings" });
+    tasks.push({ id: "availability", label: "Set your availability", description: "Working hours and days off", icon: Clock, href: route("bookings", "bookings-calendar") });
   }
 
   if (has("communication")) {
@@ -73,18 +80,18 @@ function buildSetupTasks(
   }
 
   if (has("quotes-invoicing")) {
-    tasks.push({ id: "billing", label: "Set up billing", description: "Payment details and invoice template", icon: Receipt, href: "/dashboard/invoicing" });
+    tasks.push({ id: "billing", label: "Set up billing", description: "Payment details and invoice template", icon: Receipt, href: route("invoicing", "quotes-invoicing") });
   }
 
   if (has("leads-pipeline")) {
-    tasks.push({ id: "pipeline", label: "Customize your pipeline", description: `Track ${vocab.leads.toLowerCase()} from contact to close`, icon: GitBranch, href: "/dashboard/leads" });
+    tasks.push({ id: "pipeline", label: "Customize your pipeline", description: `Track ${vocab.leads.toLowerCase()} from contact to close`, icon: GitBranch, href: route("leads", "leads-pipeline") });
   }
 
   if (teamSize && teamSize !== "Just me") {
-    tasks.push({ id: "team", label: "Invite your team", description: "Add members with roles and permissions", icon: UserPlus, href: "/dashboard/team" });
+    tasks.push({ id: "team", label: "Invite your team", description: "Add members with roles and permissions", icon: UserPlus, href: route("team", "team") });
   }
 
-  tasks.push({ id: "contacts", label: `Import your ${vocab.clients.toLowerCase()}`, description: "Upload a CSV or add manually", icon: Upload, href: "/dashboard/clients" });
+  tasks.push({ id: "contacts", label: `Import your ${vocab.clients.toLowerCase()}`, description: "Upload a CSV or add manually", icon: Upload, href: route("clients", "client-database") });
 
   return tasks;
 }
@@ -724,6 +731,7 @@ export default function DashboardPage() {
   const teamSize = useOnboardingStore((s) => s.teamSize);
   const vocab = useVocabulary();
   const config = useIndustryConfig();
+  const { activeCombinations } = useActiveCombinations();
 
   const { widgets, addWidget, removeWidget, materializeDefaults, setupDismissed, dismissSetup, completedSetupIds, completeSetupTask } = useDashboardStore();
   const completedIds = useMemo(() => new Set(completedSetupIds), [completedSetupIds]);
@@ -753,7 +761,19 @@ export default function DashboardPage() {
   }, [isEditing]);
 
   const enabledModuleIds = useMemo(() => computeEnabledModuleIds(needs, discoveryAnswers), [needs, discoveryAnswers]);
-  const allTasks = buildSetupTasks(enabledModuleIds, teamSize, vocab, config);
+
+  // Build module-to-route mapping for combined modules
+  const moduleRoutes = useMemo(() => {
+    const routes: Record<string, string> = {};
+    for (const combo of activeCombinations) {
+      for (const tab of combo.tabs) {
+        routes[tab.moduleId] = `/dashboard/${combo.slug}?tab=${tab.id}`;
+      }
+    }
+    return routes;
+  }, [activeCombinations]);
+
+  const allTasks = buildSetupTasks(enabledModuleIds, teamSize, vocab, config, moduleRoutes);
   const completedCount = completedIds.size;
   const totalCount = allTasks.length;
   const setupDone = completedCount >= totalCount || setupDismissed;

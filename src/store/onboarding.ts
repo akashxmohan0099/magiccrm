@@ -9,12 +9,14 @@ import {
   IndustryConfig,
   PersonaConfig,
 } from "@/types/onboarding";
+import type { PresentationPatch } from "@/types/workspace-blueprint";
 import {
   saveOnboardingState,
   fetchWorkspaceSettings,
   saveWorkspaceModules,
 } from "@/lib/db/workspace-settings";
 import { computeEnabledModuleIds, getCoreModules, getModuleById } from "@/lib/module-registry";
+import { getProfileForAIPrompt } from "@/lib/persona-profiles";
 
 interface AIQuestionCategory {
   title: string;
@@ -45,6 +47,12 @@ interface OnboardingStore {
   deepDiveAnswers: Record<string, boolean | string[]>;
   featureActivationLog: import("@/lib/deep-dive-analytics").FeatureActivation[];
 
+  // Tuning API results (personalized module presentation)
+  tuningPatches: PresentationPatch[];
+  tuningModuleMeta: Record<string, { label: string; description: string }>;
+  tuningCombinations: string[];
+  tuningLoaded: boolean;
+
   setStep: (step: number) => void;
   nextStep: () => void;
   prevStep: () => void;
@@ -69,6 +77,10 @@ interface OnboardingStore {
   setAIAnswer: (key: string, value: boolean) => void;
   setDeepDiveAnswer: (key: string, value: boolean | string[]) => void;
   addFeatureActivation: (activation: import("@/lib/deep-dive-analytics").FeatureActivation) => void;
+
+  // Tuning API
+  requestTuning: () => Promise<void>;
+  setTuningCombinationChoice: (combinationId: string, accepted: boolean) => void;
 
   // Supabase sync
   syncToSupabase: (workspaceId: string) => Promise<boolean>;
@@ -95,6 +107,10 @@ function getOnboardingData(state: OnboardingStore) {
     aiAnswers: state.aiAnswers,
     deepDiveAnswers: state.deepDiveAnswers,
     featureActivationLog: state.featureActivationLog,
+    tuningPatches: state.tuningPatches,
+    tuningModuleMeta: state.tuningModuleMeta,
+    tuningCombinations: state.tuningCombinations,
+    tuningLoaded: state.tuningLoaded,
   };
 }
 
@@ -135,6 +151,10 @@ export const useOnboardingStore = create<OnboardingStore>()(
       aiAnswers: {},
       deepDiveAnswers: {},
       featureActivationLog: [],
+      tuningPatches: [],
+      tuningModuleMeta: {},
+      tuningCombinations: [],
+      tuningLoaded: false,
 
       setStep: (step) => set({ step }),
       nextStep: () => set((s) => ({ step: s.step + 1 })),
@@ -256,6 +276,77 @@ export const useOnboardingStore = create<OnboardingStore>()(
         set((s) => ({ featureActivationLog: [...s.featureActivationLog, activation] })),
 
       // ---------------------------------------------------------------
+      // Tuning API — personalize module presentation
+      // ---------------------------------------------------------------
+
+      requestTuning: async () => {
+        try {
+          const state = get();
+          const enabledIds = Array.from(
+            computeEnabledModuleIds(state.needs, state.discoveryAnswers)
+          );
+          const personaProfile = getProfileForAIPrompt(state.selectedPersona);
+
+          const res = await fetch("/api/onboarding/tune", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              industry: state.selectedIndustry,
+              persona: state.selectedPersona,
+              businessName: state.businessContext.businessName,
+              businessDescription: state.businessContext.businessDescription,
+              location: state.businessContext.location,
+              chipSelections: state.chipSelections,
+              enabledModuleIds: enabledIds,
+              personaProfile,
+            }),
+          });
+
+          if (!res.ok) {
+            set({ tuningLoaded: true });
+            return;
+          }
+
+          const data = await res.json();
+          const patches = data.patches || [];
+          const moduleMeta = data.moduleMeta || {};
+
+          // Extract combination IDs from patches
+          const combinationIds = patches
+            .filter((p: PresentationPatch) => p.op === "apply-module-combination")
+            .map((p: PresentationPatch & { combinationId: string }) => p.combinationId);
+
+          set({
+            tuningPatches: patches,
+            tuningModuleMeta: moduleMeta,
+            tuningCombinations: combinationIds,
+            tuningLoaded: true,
+          });
+        } catch (err) {
+          console.error("[onboarding] requestTuning failed:", err);
+          set({ tuningLoaded: true });
+        }
+      },
+
+      setTuningCombinationChoice: (combinationId, accepted) => {
+        const state = get();
+        if (accepted) {
+          // Add combination if not already present
+          if (!state.tuningCombinations.includes(combinationId)) {
+            set({ tuningCombinations: [...state.tuningCombinations, combinationId] });
+          }
+        } else {
+          // Remove combination and its patches
+          set({
+            tuningCombinations: state.tuningCombinations.filter((id) => id !== combinationId),
+            tuningPatches: state.tuningPatches.filter(
+              (p) => !(p.op === "apply-module-combination" && (p as { combinationId: string }).combinationId === combinationId)
+            ),
+          });
+        }
+      },
+
+      // ---------------------------------------------------------------
       // Supabase sync
       // ---------------------------------------------------------------
 
@@ -322,7 +413,7 @@ export const useOnboardingStore = create<OnboardingStore>()(
     }),
     {
       name: "magic-crm-onboarding",
-      version: 17,
+      version: 18,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       migrate: (persisted: any, version: number) => {
         if (version < 17) {
@@ -351,6 +442,20 @@ export const useOnboardingStore = create<OnboardingStore>()(
             aiAnswers: {},
             deepDiveAnswers: {},
             featureActivationLog: [],
+            tuningPatches: [],
+            tuningModuleMeta: {},
+            tuningCombinations: [],
+            tuningLoaded: false,
+          };
+        }
+        if (version < 18) {
+          // v18: Module tuning system — add tuning fields
+          return {
+            ...persisted,
+            tuningPatches: [],
+            tuningModuleMeta: {},
+            tuningCombinations: [],
+            tuningLoaded: false,
           };
         }
         return persisted;

@@ -4,8 +4,11 @@ import type {
   WorkspaceFunctionalConfig,
   WorkspacePresentationConfig,
   PresentationPatch,
+  ActiveCombination,
   DashboardWidgetInstance,
 } from "@/types/workspace-blueprint";
+import { getCombinationById } from "@/lib/module-combinations";
+import { getModuleById } from "@/lib/module-registry";
 import { validateResolvedWorkspace, validatePatch } from "./validator";
 
 // ── Patch application ───────────────────────────────────────
@@ -53,6 +56,60 @@ export function applyPatches(
       case "replace-dashboard-widgets":
         result.dashboardWidgets = patch.widgets;
         break;
+
+      case "apply-module-combination": {
+        const combo = getCombinationById(patch.combinationId);
+        if (!combo) break;
+
+        const activeCombination: ActiveCombination = {
+          combinationId: combo.id,
+          label: patch.label || combo.defaultLabel,
+          description: patch.description || combo.defaultDescription,
+          slug: combo.slug,
+          tabs: combo.tabs,
+          crossReferences: combo.crossReferences,
+          mergedModuleIds: combo.mergedModuleIds,
+        };
+
+        if (!result.activeCombinations) result.activeCombinations = [];
+        result.activeCombinations.push(activeCombination);
+
+        // Replace merged module slugs in sidebar with the combination slug
+        const mergedSlugs = new Set(
+          combo.mergedModuleIds
+            .map((id) => getModuleById(id)?.slug)
+            .filter(Boolean) as string[]
+        );
+        const primarySlug = getModuleById(combo.primaryModuleId)?.slug;
+        let inserted = false;
+        result.sidebarOrder = result.sidebarOrder.reduce<string[]>((acc, slug) => {
+          if (mergedSlugs.has(slug)) {
+            // Insert combination slug at the position of the primary module
+            if (!inserted && slug === primarySlug) {
+              acc.push(combo.slug);
+              inserted = true;
+            }
+            // Skip merged module slugs
+          } else {
+            acc.push(slug);
+          }
+          return acc;
+        }, []);
+        // If primary wasn't in sidebar for some reason, append
+        if (!inserted) {
+          result.sidebarOrder.push(combo.slug);
+        }
+        break;
+      }
+
+      case "set-module-meta": {
+        if (!result.moduleMetaOverrides) result.moduleMetaOverrides = {};
+        result.moduleMetaOverrides[patch.moduleId] = {
+          label: patch.label,
+          description: patch.description,
+        };
+        break;
+      }
     }
   }
 

@@ -1,18 +1,20 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Users, Inbox, Calendar, Receipt, FolderKanban,
   Megaphone, MessageCircle, Package,
   Zap, BarChart3, ArrowRight, Globe, UsersRound,
   Scissors, Wrench, Briefcase, Dumbbell, PenTool,
   CalendarDays, GraduationCap,
-  Check, Plus,
+  Check, Plus, Layers, ChevronDown, ChevronUp,
 } from "lucide-react";
 import { useOnboardingStore } from "@/store/onboarding";
 import { useVocabulary } from "@/hooks/useVocabulary";
 import { MODULE_REGISTRY, ALWAYS_ON_MODULES, computeEnabledModuleIds, getModuleDisplayName } from "@/lib/module-registry";
+import { getApplicableCombinations, getCombinationById, type ModuleCombination } from "@/lib/module-combinations";
+import { useTunedModules, type TunedModuleDisplay } from "@/hooks/useTunedModules";
 import type { VocabularyMap } from "@/types/industry-config";
 
 const MODULE_DISPLAY: Record<string, {
@@ -86,6 +88,12 @@ const MODULE_DISPLAY: Record<string, {
   },
 };
 
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  Users, Inbox, Calendar, Receipt, FolderKanban,
+  Megaphone, MessageCircle, Package,
+  Zap, BarChart3, Globe, UsersRound,
+};
+
 /** Replace "clients"/"client" with the user's vocab in taglines */
 function vocabTagline(tagline: string, vocab: VocabularyMap): string {
   return tagline
@@ -99,16 +107,38 @@ const INDUSTRY_ICONS: Record<string, React.ComponentType<{ className?: string }>
   "education-coaching": GraduationCap,
 };
 
+/** Get display info for a module, falling back to MODULE_DISPLAY if available */
+function getDisplayForModule(moduleId: string): { icon: React.ComponentType<{ className?: string }>; bg: string; color: string; gradient: string; hoverBorder: string } {
+  const d = MODULE_DISPLAY[moduleId];
+  if (d) return d;
+  return { icon: Zap, bg: "bg-gray-500/10", color: "text-gray-500", gradient: "#6B7280", hoverBorder: "hover:border-gray-200" };
+}
+
 export function SummaryStep({ workspaceId }: { workspaceId: string | null }) {
-  const { businessContext, prevStep, setIsBuilding, getIndustryConfig, needs, setDiscoveryAnswer, syncToSupabase } = useOnboardingStore();
+  const {
+    businessContext, prevStep, setIsBuilding, getIndustryConfig, needs,
+    setDiscoveryAnswer, syncToSupabase, requestTuning, setTuningCombinationChoice,
+  } = useOnboardingStore();
   const vocab = useVocabulary();
   const config = getIndustryConfig();
   const [launching, setLaunching] = useState(false);
   const [launchError, setLaunchError] = useState("");
 
+  const selectedIndustry = useOnboardingStore((s) => s.selectedIndustry);
+  const selectedPersona = useOnboardingStore((s) => s.selectedPersona);
   const discoveryAnswers = useOnboardingStore((s) => s.discoveryAnswers);
+  const tuningLoaded = useOnboardingStore((s) => s.tuningLoaded);
+  const tuningModuleMeta = useOnboardingStore((s) => s.tuningModuleMeta);
+  const tuningCombinations = useOnboardingStore((s) => s.tuningCombinations);
 
-  const { enabledModules, disabledModules, enabledAddons } = useMemo(() => {
+  // Fire tuning API request on mount (if not already loaded)
+  useEffect(() => {
+    if (!tuningLoaded) {
+      requestTuning();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const { enabledModules, disabledModules, enabledAddons, enabledModuleIds } = useMemo(() => {
     const enabled = computeEnabledModuleIds(needs, discoveryAnswers);
     const coreModules = MODULE_REGISTRY.filter((m) => m.kind !== "addon");
     const addonModules = MODULE_REGISTRY.filter((m) => m.kind === "addon");
@@ -116,13 +146,27 @@ export function SummaryStep({ workspaceId }: { workspaceId: string | null }) {
       enabledModules: coreModules.filter((m) => enabled.has(m.id)),
       disabledModules: coreModules.filter((m) => !enabled.has(m.id)),
       enabledAddons: addonModules.filter((m) => enabled.has(m.id)),
+      enabledModuleIds: Array.from(enabled),
     };
   }, [needs, discoveryAnswers]);
+
+  // Get applicable combinations (for the choice UI)
+  const applicableCombinations = useMemo(() => {
+    return getApplicableCombinations(selectedIndustry, selectedPersona, enabledModuleIds);
+  }, [selectedIndustry, selectedPersona, enabledModuleIds]);
+
+  // Build tuned module display list
+  const tunedModules = useTunedModules(
+    enabledModules,
+    tuningCombinations,
+    tuningModuleMeta,
+    ALWAYS_ON_MODULES,
+    vocab,
+  );
 
   const toggleModule = (moduleId: string) => {
     if (ALWAYS_ON_MODULES.has(moduleId)) return;
     const isCurrentlyEnabled = enabledModules.some((m) => m.id === moduleId);
-    // Persist immediately to discoveryAnswers (survives back/refresh)
     setDiscoveryAnswer(`module:${moduleId}`, !isCurrentlyEnabled);
   };
 
@@ -149,6 +193,8 @@ export function SummaryStep({ workspaceId }: { workspaceId: string | null }) {
     setLaunching(false);
   };
 
+  const totalModuleCount = tunedModules.length + enabledAddons.length;
+
   return (
     <div className="min-h-screen bg-background">
       <div className="px-8 sm:px-12 lg:px-16 xl:px-24 py-10">
@@ -164,59 +210,48 @@ export function SummaryStep({ workspaceId }: { workspaceId: string | null }) {
             {businessContext.businessName ? `${businessContext.businessName} is ready` : "Your workspace is ready"}
           </h2>
           <p className="text-[15px] text-text-secondary max-w-lg mx-auto">
-            {enabledModules.length + enabledAddons.length} modules configured for you. Everything is customizable from your dashboard.
+            {totalModuleCount} modules configured for you. Everything is customizable from your dashboard.
           </p>
         </motion.div>
 
-        {/* Enabled modules — landing-page-style cards */}
+        {/* Combination choice cards */}
+        {applicableCombinations.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.02 }}
+            className="max-w-2xl mx-auto mb-10"
+          >
+            {applicableCombinations.map((combo) => (
+              <CombinationChoiceCard
+                key={combo.id}
+                combination={combo}
+                isActive={tuningCombinations.includes(combo.id)}
+                tuningLoaded={tuningLoaded}
+                tuningModuleMeta={tuningModuleMeta}
+                vocab={vocab}
+                onToggle={(accepted) => setTuningCombinationChoice(combo.id, accepted)}
+              />
+            ))}
+          </motion.div>
+        )}
+
+        {/* Enabled modules — tuned cards */}
         <div className="flex flex-wrap justify-center gap-5 mb-10">
-          {enabledModules.map((mod, i) => {
-            const d = MODULE_DISPLAY[mod.id];
-            if (!d) return null;
-            const IconComp = d.icon;
-            return (
-              <motion.div
-                key={mod.id}
-                initial={{ opacity: 0, y: 30, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ delay: 0.05 + i * 0.03 }}
-                className={`w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-white rounded-2xl border border-border-light overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 ${d.hoverBorder}`}
-              >
-                <div className="absolute top-0 left-0 right-0 h-24 opacity-[0.05] group-hover:opacity-[0.08] transition-opacity" style={{ background: `linear-gradient(to bottom, ${d.gradient}, transparent)` }} />
-                <div className="absolute top-3 right-3">
-                  {ALWAYS_ON_MODULES.has(mod.id) ? (
-                    <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                      <Check className="w-3 h-3 text-white" />
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => toggleModule(mod.id)}
-                      className="w-6 h-6 bg-primary rounded-full flex items-center justify-center hover:bg-red-500 transition-colors cursor-pointer group/check"
-                      title="Remove module"
-                    >
-                      <Check className="w-3 h-3 text-white group-hover/check:hidden" />
-                      <span className="text-white text-[11px] font-bold hidden group-hover/check:block leading-none">×</span>
-                    </button>
-                  )}
-                </div>
-                <div className="relative px-5 pt-5 pb-3">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${d.bg} mb-3`}>
-                    <IconComp className={`w-5 h-5 ${d.color}`} />
-                  </div>
-                  <h3 className="text-[15px] font-bold text-foreground">{getModuleDisplayName(mod, vocab)}</h3>
-                  <p className="text-[12px] text-text-secondary mt-1">{vocabTagline(d.tagline, vocab)}</p>
-                </div>
-                <div className="relative px-5 pb-5 space-y-1.5">
-                  {d.preview.map((row, j) => (
-                    <div key={j} className="flex justify-between items-center px-3 py-2 rounded-lg bg-background/80">
-                      <span className="text-[11px] text-text-secondary">{row.label}</span>
-                      <span className="text-[11px] font-medium text-foreground">{row.detail}</span>
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
-            );
-          })}
+          {tunedModules.map((item, i) => (
+            <TunedModuleCard
+              key={item.id}
+              item={item}
+              index={i}
+              vocab={vocab}
+              onRemove={item.isCombination
+                ? () => setTuningCombinationChoice(item.combination!.id, false)
+                : () => {
+                    for (const id of item.originalModuleIds) toggleModule(id);
+                  }
+              }
+            />
+          ))}
         </div>
 
         {/* Enabled add-ons */}
@@ -229,14 +264,15 @@ export function SummaryStep({ workspaceId }: { workspaceId: string | null }) {
                 const IconComp = d?.icon || Zap;
                 const bg = d?.bg || "bg-gray-100";
                 const color = d?.color || "text-gray-500";
+                const meta = tuningModuleMeta[mod.id];
                 return (
                   <div key={mod.id} className="flex items-center gap-3 px-5 py-3.5 rounded-2xl bg-card-bg border border-border-light">
                     <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${bg}`}>
                       <IconComp className={`w-4.5 h-4.5 ${color}`} />
                     </div>
                     <div>
-                      <p className="text-[13px] font-semibold text-foreground">{getModuleDisplayName(mod, vocab)}</p>
-                      <p className="text-[11px] text-text-tertiary">{mod.description}</p>
+                      <p className="text-[13px] font-semibold text-foreground">{meta?.label || getModuleDisplayName(mod, vocab)}</p>
+                      <p className="text-[11px] text-text-tertiary">{meta?.description || mod.description}</p>
                     </div>
                   </div>
                 );
@@ -256,6 +292,7 @@ export function SummaryStep({ workspaceId }: { workspaceId: string | null }) {
                 const d = MODULE_DISPLAY[mod.id];
                 if (!d) return null;
                 const IconComp = d.icon;
+                const meta = tuningModuleMeta[mod.id];
                 return (
                   <motion.button
                     key={mod.id}
@@ -268,8 +305,8 @@ export function SummaryStep({ workspaceId }: { workspaceId: string | null }) {
                       <IconComp className={`w-5 h-5 ${d.color}`} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-semibold text-text-secondary group-hover:text-foreground transition-colors">{getModuleDisplayName(mod, vocab)}</p>
-                      <p className="text-[11px] text-text-tertiary leading-snug">{vocabTagline(d.tagline, vocab)}</p>
+                      <p className="text-[13px] font-semibold text-text-secondary group-hover:text-foreground transition-colors">{meta?.label || getModuleDisplayName(mod, vocab)}</p>
+                      <p className="text-[11px] text-text-tertiary leading-snug">{meta?.description || vocabTagline(d.tagline, vocab)}</p>
                     </div>
                     <Plus className="w-4 h-4 text-text-tertiary group-hover:text-foreground transition-colors flex-shrink-0" />
                   </motion.button>
@@ -304,5 +341,230 @@ export function SummaryStep({ workspaceId }: { workspaceId: string | null }) {
         </motion.div>
       </div>
     </div>
+  );
+}
+
+// ── Combination Choice Card ──────────────────────────────────
+// Shows the user a choice: combined or separate modules
+
+function CombinationChoiceCard({
+  combination,
+  isActive,
+  tuningLoaded,
+  tuningModuleMeta,
+  vocab,
+  onToggle,
+}: {
+  combination: ModuleCombination;
+  isActive: boolean;
+  tuningLoaded: boolean;
+  tuningModuleMeta: Record<string, { label: string; description: string }>;
+  vocab: VocabularyMap;
+  onToggle: (accepted: boolean) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  // Get personalized label/description from tuning, or use defaults
+  const comboMeta = tuningModuleMeta[combination.id];
+  const label = comboMeta?.label || combination.defaultLabel;
+  const description = comboMeta?.description || combination.defaultDescription;
+
+  // Get the constituent module names
+  const moduleNames = combination.mergedModuleIds
+    .map((id) => {
+      const mod = MODULE_REGISTRY.find((m) => m.id === id);
+      if (!mod) return id;
+      const meta = tuningModuleMeta[id];
+      return meta?.label || getModuleDisplayName(mod, vocab);
+    });
+
+  const primaryDisplay = getDisplayForModule(combination.primaryModuleId);
+  const PrimaryIcon = primaryDisplay.icon;
+
+  return (
+    <motion.div
+      layout
+      className={`mb-4 rounded-2xl border-2 overflow-hidden transition-all duration-300 ${
+        isActive
+          ? "border-primary/30 bg-primary/[0.03]"
+          : "border-border-light bg-card-bg"
+      }`}
+    >
+      <div className="px-5 py-4">
+        <div className="flex items-start gap-4">
+          <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${primaryDisplay.bg}`}>
+            <Layers className={`w-5 h-5 ${primaryDisplay.color}`} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-primary/70 bg-primary/10 px-2 py-0.5 rounded-full">
+                Smart combo
+              </span>
+            </div>
+            <h4 className="text-[15px] font-bold text-foreground">{label}</h4>
+            <p className="text-[12px] text-text-secondary mt-0.5">{description}</p>
+            <p className="text-[11px] text-text-tertiary mt-1.5">
+              Combines {moduleNames.join(" + ")} into one view
+            </p>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0 pt-1">
+            <button
+              onClick={() => onToggle(!isActive)}
+              className={`px-4 py-2 rounded-xl text-[12px] font-semibold transition-all cursor-pointer ${
+                isActive
+                  ? "bg-primary text-white"
+                  : "bg-surface text-text-secondary hover:bg-primary/10 hover:text-primary"
+              }`}
+            >
+              {isActive ? "Combined" : "Combine"}
+            </button>
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="p-1.5 rounded-lg text-text-tertiary hover:text-foreground hover:bg-surface transition-colors cursor-pointer"
+            >
+              {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="px-5 pb-4 border-t border-border-light/50 pt-3">
+              <p className="text-[11px] text-text-tertiary mb-3">
+                {isActive
+                  ? "These modules are combined into a single view with tabs. You can split them apart anytime from settings."
+                  : "Click \"Combine\" to merge these into one view, or keep them separate."}
+              </p>
+              <div className="flex gap-3">
+                {combination.tabs.map((tab) => {
+                  const tabDisplay = getDisplayForModule(tab.moduleId);
+                  const TabIcon = tabDisplay.icon;
+                  return (
+                    <div key={tab.id} className={`flex-1 flex items-center gap-2 px-3 py-2.5 rounded-xl ${tabDisplay.bg}`}>
+                      <TabIcon className={`w-4 h-4 ${tabDisplay.color}`} />
+                      <span className="text-[12px] font-medium text-foreground">{tab.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
+// ── Tuned Module Card ──────────────────────────────────────────
+// Renders either a regular module or a combined module card
+
+function TunedModuleCard({
+  item,
+  index,
+  vocab,
+  onRemove,
+}: {
+  item: TunedModuleDisplay;
+  index: number;
+  vocab: VocabularyMap;
+  onRemove: () => void;
+}) {
+  // For combinations, use primary module's display data
+  const primaryModuleId = item.isCombination
+    ? item.combination?.primaryModuleId || item.constituentModuleIds[0]
+    : item.id;
+  const d = MODULE_DISPLAY[primaryModuleId];
+
+  if (!d && !item.isCombination) return null;
+
+  const bg = d?.bg || "bg-emerald-500/10";
+  const color = d?.color || "text-emerald-600";
+  const gradient = d?.gradient || "#10B981";
+  const hoverBorder = d?.hoverBorder || "hover:border-emerald-200";
+
+  // For combinations, get combined preview rows from constituent modules
+  const previewRows = item.isCombination
+    ? item.constituentModuleIds.flatMap((id) => {
+        const modDisplay = MODULE_DISPLAY[id];
+        return modDisplay?.preview?.slice(0, 1) || [];
+      })
+    : d?.preview || [];
+
+  const IconComp = item.isCombination ? Layers : (d?.icon || Zap);
+
+  return (
+    <motion.div
+      key={item.id}
+      initial={{ opacity: 0, y: 30, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ delay: 0.05 + index * 0.03 }}
+      className={`w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-white rounded-2xl border overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 ${
+        item.isCombination ? "border-primary/20 hover:border-primary/30" : `border-border-light ${hoverBorder}`
+      }`}
+    >
+      <div className="absolute top-0 left-0 right-0 h-24 opacity-[0.05] group-hover:opacity-[0.08] transition-opacity" style={{ background: `linear-gradient(to bottom, ${gradient}, transparent)` }} />
+
+      {/* Combination badge */}
+      {item.isCombination && (
+        <div className="absolute top-3 left-3 z-10">
+          <span className="text-[9px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+            Combined
+          </span>
+        </div>
+      )}
+
+      <div className="absolute top-3 right-3">
+        {!item.canToggle ? (
+          <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+            <Check className="w-3 h-3 text-white" />
+          </div>
+        ) : (
+          <button
+            onClick={onRemove}
+            className="w-6 h-6 bg-primary rounded-full flex items-center justify-center hover:bg-red-500 transition-colors cursor-pointer group/check"
+            title="Remove module"
+          >
+            <Check className="w-3 h-3 text-white group-hover/check:hidden" />
+            <span className="text-white text-[11px] font-bold hidden group-hover/check:block leading-none">&times;</span>
+          </button>
+        )}
+      </div>
+
+      <div className="relative px-5 pt-5 pb-3">
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${bg} mb-3`}>
+          <IconComp className={`w-5 h-5 ${color}`} />
+        </div>
+        <h3 className="text-[15px] font-bold text-foreground">{item.label}</h3>
+        <p className="text-[12px] text-text-secondary mt-1">{item.description}</p>
+      </div>
+
+      <div className="relative px-5 pb-5 space-y-1.5">
+        {previewRows.map((row, j) => (
+          <div key={j} className="flex justify-between items-center px-3 py-2 rounded-lg bg-background/80">
+            <span className="text-[11px] text-text-secondary">{row.label}</span>
+            <span className="text-[11px] font-medium text-foreground">{row.detail}</span>
+          </div>
+        ))}
+
+        {/* For combinations, show tab hints */}
+        {item.isCombination && item.combination && (
+          <div className="flex gap-1.5 mt-2">
+            {item.combination.tabs.map((tab) => (
+              <div key={tab.id} className="flex-1 text-center text-[10px] font-medium text-text-tertiary bg-surface rounded-lg py-1.5">
+                {tab.label}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </motion.div>
   );
 }

@@ -45,15 +45,29 @@ export interface ModulePresentation {
   columnLabels?: Record<string, string>;
 }
 
+export interface ActiveCombination {
+  combinationId: string;
+  label: string;
+  description: string;
+  slug: string;
+  tabs: { id: string; label: string; moduleId: string }[];
+  crossReferences: { fromTab: string; dataSource: string; display: "badge" | "inline-row"; label: string }[];
+  mergedModuleIds: string[];
+}
+
 export interface WorkspacePresentationConfig {
   homePage: string;
   sidebarOrder: string[];
   primaryAction: { label: string; href: string; icon: string };
   dashboardWidgets: DashboardWidgetInstance[];
   modulePresentation: Record<string, ModulePresentation>;
+  /** Active module combinations (populated by apply-module-combination patches) */
+  activeCombinations?: ActiveCombination[];
+  /** Personalized module metadata overrides — AI-generated names and descriptions */
+  moduleMetaOverrides?: Record<string, { label: string; description: string }>;
 }
 
-// ── Patch Ops (6 total — v1 surface) ────────────────────────
+// ── Patch Ops (8 total — v2 surface) ────────────────────────
 
 export type PresentationPatch =
   | { op: "set-homepage"; pageId: string }
@@ -61,7 +75,9 @@ export type PresentationPatch =
   | { op: "rename-module-section"; moduleId: string; label: string }
   | { op: "set-module-default-columns"; moduleId: string; columnIds: string[] }
   | { op: "set-column-label"; moduleId: string; columnId: string; label: string }
-  | { op: "replace-dashboard-widgets"; widgets: DashboardWidgetInstance[] };
+  | { op: "replace-dashboard-widgets"; widgets: DashboardWidgetInstance[] }
+  | { op: "apply-module-combination"; combinationId: string; label?: string; description?: string }
+  | { op: "set-module-meta"; moduleId: string; label: string; description: string };
 
 // ── Adjustable Blocks (onboarding swap points) ──────────────
 

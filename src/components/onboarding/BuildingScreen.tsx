@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useOnboardingStore } from "@/store/onboarding";
+import { useAssembledSchemasStore } from "@/store/assembled-schemas";
 import { computeEnabledModuleIds, getModuleById, getModuleDisplayName } from "@/lib/module-registry";
+import { assembleWorkspaceSync } from "@/lib/assembly-pipeline";
 import { useVocabulary } from "@/hooks/useVocabulary";
+import type { ModuleSchema } from "@/types/module-schema";
 import {
   Users, Inbox, MessageCircle, Calendar, Receipt, FolderKanban,
   Megaphone, Headphones, FileText, CreditCard, Zap, BarChart3,
@@ -74,10 +77,10 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 const BUILD_STEPS = [
   "Reading your preferences",
-  "Setting up your workspace",
-  "Configuring modules",
-  "Applying industry settings",
-  "Connecting everything together",
+  "Selecting features for your workflow",
+  "Assembling your modules",
+  "Fine-tuning for your industry",
+  "Running quality checks",
   "Final touches",
 ];
 
@@ -100,8 +103,11 @@ export function BuildingScreen() {
   const [revealedModules, setRevealedModules] = useState(0);
   const [showComplete, setShowComplete] = useState(false);
   const [fadeOut, setFadeOut] = useState(false);
+  const [assembledLabels, setAssembledLabels] = useState<Record<string, string>>({});
+  const assemblyRan = useRef(false);
   const router = useRouter();
-  const { businessContext, getIndustryConfig, needs, discoveryAnswers } = useOnboardingStore();
+  const { businessContext, getIndustryConfig, needs, discoveryAnswers, selectedIndustry, selectedPersona } = useOnboardingStore();
+  const setAssemblyResult = useAssembledSchemasStore((s) => s.setAssemblyResult);
   const vocab = useVocabulary();
 
   const config = getIndustryConfig();
@@ -111,6 +117,30 @@ export function BuildingScreen() {
   }, [needs, discoveryAnswers]);
 
   const moduleCount = selectedModules.length;
+
+  // ── Run assembly pipeline on mount ──
+  useEffect(() => {
+    if (assemblyRan.current) return;
+    assemblyRan.current = true;
+
+    // Run synchronous assembly (variants + validation, no AI tuning yet)
+    // AI tuning runs async in background — labels update as they arrive
+    const result = assembleWorkspaceSync({
+      enabledModuleIds: selectedModules,
+      industryId: selectedIndustry,
+      personaId: selectedPersona,
+    });
+
+    // Save assembled schemas to store
+    setAssemblyResult(result.schemas, result.fallbacks, 0);
+
+    // Extract personalized labels for the module cards
+    const labels: Record<string, string> = {};
+    for (const schema of result.schemas) {
+      labels[schema.id] = schema.label;
+    }
+    setAssembledLabels(labels);
+  }, [selectedModules, selectedIndustry, selectedPersona, setAssemblyResult]);
 
   // Generate deterministic particles (seeded from index to avoid impure Math.random during render)
   const particles = useMemo(() =>
@@ -273,7 +303,9 @@ export function BuildingScreen() {
             {selectedModules.map((modId, i) => {
               const Icon = ICON_MAP[modId] || Package;
               const mod = getModuleById(modId);
-              const label = mod ? getModuleDisplayName(mod, vocab) : (CATEGORY_LABELS[modId] || modId);
+              // Use assembled label (persona-specific) if available, fall back to registry name
+              const label = assembledLabels[modId]
+                || (mod ? getModuleDisplayName(mod, vocab) : (CATEGORY_LABELS[modId] || modId));
               const isRevealed = i < revealedModules;
 
               return (

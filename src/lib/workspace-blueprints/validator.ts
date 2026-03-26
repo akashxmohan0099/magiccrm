@@ -4,6 +4,7 @@ import type {
   PresentationPatch,
   ValidationResult,
 } from "@/types/workspace-blueprint";
+import { getCombinationById, combinationsConflict } from "@/lib/module-combinations";
 
 // ── Known registries (extend as modules/widgets are added) ──
 
@@ -64,6 +65,9 @@ const SLUG_TO_MODULE: Record<string, string> = {
   reporting: "reporting",
 };
 
+/** Combined module slugs — valid in sidebar after a combination is applied */
+const KNOWN_COMBINATION_SLUGS = new Set(["book-pay", "schedule-jobs"]);
+
 /** Known dashboard widget manifest IDs */
 const KNOWN_WIDGET_MANIFESTS = new Set([
   "setup-checklist",
@@ -90,6 +94,9 @@ function isModuleEnabled(
   slug: string,
   functional: WorkspaceFunctionalConfig,
 ): boolean {
+  // Combined module slugs are valid if they appear in sidebar
+  if (KNOWN_COMBINATION_SLUGS.has(slug)) return true;
+
   const moduleId = resolveSlugToModuleId(slug);
   if (!moduleId) return false;
   if (ALWAYS_ON_MODULES.has(moduleId)) return true;
@@ -246,6 +253,40 @@ export function validatePatch(
         }
       }
       return null;
+
+    case "apply-module-combination": {
+      const combo = getCombinationById(patch.combinationId);
+      if (!combo) {
+        return `apply-module-combination: unknown combinationId "${patch.combinationId}"`;
+      }
+      // All required modules must be enabled
+      for (const reqModuleId of combo.applicableTo.requiresModules) {
+        const isAlwaysOn = ALWAYS_ON_MODULES.has(reqModuleId);
+        const isEnabled =
+          functional.enabledModules.includes(reqModuleId) ||
+          functional.enabledAddons.includes(reqModuleId);
+        if (!isAlwaysOn && !isEnabled) {
+          return `apply-module-combination: required module "${reqModuleId}" is not enabled`;
+        }
+      }
+      if (patch.label && patch.label.length > 40) {
+        return `apply-module-combination: label must be 1-40 chars`;
+      }
+      if (patch.description && patch.description.length > 120) {
+        return `apply-module-combination: description must be 1-120 chars`;
+      }
+      return null;
+    }
+
+    case "set-module-meta": {
+      if (!patch.label || patch.label.length > 40) {
+        return `set-module-meta: label must be 1-40 chars`;
+      }
+      if (!patch.description || patch.description.length > 120) {
+        return `set-module-meta: description must be 1-120 chars`;
+      }
+      return null;
+    }
 
     default:
       return `Unknown patch op`;

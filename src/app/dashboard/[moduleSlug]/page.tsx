@@ -2,9 +2,15 @@
 
 import { use } from "react";
 import dynamic from "next/dynamic";
-import { notFound } from "next/navigation";
+import { notFound, useSearchParams } from "next/navigation";
 import { getModuleBySlug } from "@/lib/module-registry";
+import { getCombinationBySlug } from "@/lib/module-combinations";
+import { getSchemaBySlug } from "@/lib/module-schemas";
 import { useModuleEnabled } from "@/hooks/useFeature";
+import { useActiveCombinations } from "@/hooks/useActiveCombinations";
+import { useAssembledSchemasStore } from "@/store/assembled-schemas";
+import { CombinedModulePage } from "@/components/modules/CombinedModulePage";
+import { SchemaModuleBridge } from "@/components/SchemaModuleBridge";
 import { PageTransition } from "@/components/ui/PageTransition";
 
 const MODULE_COMPONENTS: Record<string, React.ComponentType> = {
@@ -40,26 +46,78 @@ const MODULE_COMPONENTS: Record<string, React.ComponentType> = {
 
 export default function ModulePage({ params }: { params: Promise<{ moduleSlug: string }> }) {
   const { moduleSlug } = use(params);
+  const searchParams = useSearchParams();
+  const { activeCombinations } = useActiveCombinations();
+
+  const assembled = useAssembledSchemasStore((s) => s.assembled);
+  const assembledSchema = useAssembledSchemasStore((s) => s.getSchemaBySlug(moduleSlug));
+  const forceLegacy = searchParams.get("renderer") === "legacy";
+
+  // 1. Try assembled schema (from onboarding assembly pipeline)
+  //    This is the primary path for new workspaces. Schema-driven rendering
+  //    with persona-specific labels, fields, and views.
+  if (assembled && assembledSchema && !forceLegacy) {
+    return (
+      <PageTransition>
+        <SchemaModuleBridge schema={assembledSchema} />
+      </PageTransition>
+    );
+  }
+
+  // 2. Try standard module lookup (legacy hardcoded components)
+  //    Used for workspaces created before the schema system, or when
+  //    ?renderer=legacy is set for comparison testing.
   const mod = getModuleBySlug(moduleSlug);
-  const isEnabled = useModuleEnabled(mod?.id ?? "");
 
-  if (!mod) {
-    notFound();
+  if (mod) {
+    const isEnabled = useModuleEnabled(mod.id);
+    if (!isEnabled) notFound();
+    const Component = MODULE_COMPONENTS[mod.id];
+    if (!Component) {
+      // No legacy component — try static schema registry as fallback
+      const staticSchema = getSchemaBySlug(moduleSlug);
+      if (staticSchema) {
+        return (
+          <PageTransition>
+            <SchemaModuleBridge schema={staticSchema} />
+          </PageTransition>
+        );
+      }
+      notFound();
+    }
+    return (
+      <PageTransition>
+        <Component />
+      </PageTransition>
+    );
   }
 
-  if (!isEnabled) {
-    notFound();
+  // 3. Try combined module slug lookup
+  const combination = getCombinationBySlug(moduleSlug);
+  if (combination) {
+    const isActive = activeCombinations.some((c) => c.id === combination.id);
+    if (!isActive) notFound();
+
+    const initialTab = searchParams.get("tab") || undefined;
+    return (
+      <PageTransition>
+        <CombinedModulePage
+          combination={combination}
+          initialTab={initialTab}
+        />
+      </PageTransition>
+    );
   }
 
-  const Component = MODULE_COMPONENTS[mod.id];
-
-  if (!Component) {
-    notFound();
+  // 4. Try static schema registry (for ?renderer=schema testing)
+  const staticSchema = getSchemaBySlug(moduleSlug);
+  if (staticSchema) {
+    return (
+      <PageTransition>
+        <SchemaModuleBridge schema={staticSchema} />
+      </PageTransition>
+    );
   }
 
-  return (
-    <PageTransition>
-      <Component />
-    </PageTransition>
-  );
+  notFound();
 }

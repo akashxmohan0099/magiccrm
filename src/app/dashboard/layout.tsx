@@ -19,6 +19,8 @@ import { useBuilderStore } from "@/store/builder";
 import { useEnabledModules, useEnabledAddons } from "@/hooks/useFeature";
 import { useHydration } from "@/hooks/useHydration";
 import { useAuth } from "@/hooks/useAuth";
+import { useActiveCombinations } from "@/hooks/useActiveCombinations";
+import { useAssembledSchemasStore } from "@/store/assembled-schemas";
 import { createClient } from "@/lib/supabase";
 import { useSupabaseSync } from "@/hooks/useSupabaseSync";
 import { useVocabulary } from "@/hooks/useVocabulary";
@@ -64,6 +66,9 @@ function DashboardShell({ children }: { children: ReactNode }) {
   const enabledModules = useEnabledModules();
   const enabledAddons = useEnabledAddons();
   const vocab = useVocabulary();
+  const { activeCombinations, isModuleMerged, tuningModuleMeta } = useActiveCombinations();
+  const assembledSchemas = useAssembledSchemasStore((s) => s.schemas);
+  const hasAssembly = useAssembledSchemasStore((s) => s.assembled);
   const builderCredits = useBuilderStore((s) => s.credits);
   const allCustomFeatures = useBuilderStore((s) => s.customFeatures);
   const customFeatures = useMemo(() => allCustomFeatures.filter((f) => f.status === "ready"), [allCustomFeatures]);
@@ -192,27 +197,55 @@ function DashboardShell({ children }: { children: ReactNode }) {
   // Modules to collapse into their parent (not shown as separate sidebar items)
   const COLLAPSED_MODULES = new Set<string>(); // payments was removed from registry; keep set for future use
 
-  // Group enabled modules by their group, filtering out collapsed and solo-hidden ones
-  const groupedModules = enabledModules
-    .filter((mod) => !COLLAPSED_MODULES.has(mod.id))
-    .filter((mod) => !(mod.id === "team" && isSolo)) // Hide Team for solo operators
-    .reduce<Record<string, typeof enabledModules>>((acc, mod) => {
-      const group = mod.group;
-      if (!acc[group]) acc[group] = [];
-      acc[group].push(mod);
-      return acc;
-    }, {});
+  // Track which combined entries we've already inserted (by combination ID)
+  const insertedCombinations = new Set<string>();
+
+  // Group enabled modules by their group, filtering out collapsed, solo-hidden, and merged ones.
+  // Insert combination entries at the position of their primary module.
+  const groupedItems: Record<string, { href: string; label: string; icon: React.ComponentType<{ className?: string }> }[]> = {};
+
+  for (const mod of enabledModules) {
+    if (COLLAPSED_MODULES.has(mod.id)) continue;
+    if (mod.id === "team" && isSolo) continue;
+
+    // Check if this module is merged into a combination
+    if (isModuleMerged(mod.id)) {
+      // Find which combination absorbs this module
+      const combo = activeCombinations.find((c) => c.mergedModuleIds.includes(mod.id));
+      if (combo && !insertedCombinations.has(combo.id)) {
+        // Insert the combination entry at the primary module's group position
+        const group = mod.group;
+        if (!groupedItems[group]) groupedItems[group] = [];
+
+        const meta = tuningModuleMeta[combo.id];
+        groupedItems[group].push({
+          href: `/dashboard/${combo.slug}`,
+          label: meta?.label || combo.defaultLabel,
+          icon: ICON_MAP[combo.icon] || LayoutDashboard,
+        });
+        insertedCombinations.add(combo.id);
+      }
+      continue;
+    }
+
+    // Regular module — use assembled schema label if available
+    const group = mod.group;
+    if (!groupedItems[group]) groupedItems[group] = [];
+    const assembledLabel = hasAssembly ? assembledSchemas[mod.id]?.label : undefined;
+    const meta = tuningModuleMeta[mod.id];
+    groupedItems[group].push({
+      href: `/dashboard/${hasAssembly && assembledSchemas[mod.id] ? assembledSchemas[mod.id].slug : mod.slug}`,
+      label: assembledLabel || meta?.label || getModuleDisplayName(mod, vocab),
+      icon: ICON_MAP[mod.icon] || LayoutDashboard,
+    });
+  }
 
   // Build nav groups
   const moduleGroups = ["business", "grow", "system"]
-    .filter((g) => groupedModules[g]?.length)
+    .filter((g) => groupedItems[g]?.length)
     .map((g) => ({
       label: GROUP_LABELS[g],
-      items: groupedModules[g].map((mod) => ({
-        href: `/dashboard/${mod.slug}`,
-        label: getModuleDisplayName(mod, vocab),
-        icon: ICON_MAP[mod.icon] || LayoutDashboard,
-      })),
+      items: groupedItems[g],
     }));
 
   // Enabled add-ons show up in their own section
