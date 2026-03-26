@@ -29,11 +29,19 @@ const BASE_SCHEMAS: Record<string, ModuleSchema> = {
 
 import { hairSalonVariants } from "./variants/hair-salon";
 import { plumberVariants } from "./variants/plumber";
+import { photographerVariants } from "./variants/photographer";
+import { personalTrainerVariants } from "./variants/personal-trainer";
+import { tutorVariants } from "./variants/tutor";
+import { makeupArtistVariants } from "./variants/makeup-artist";
 
 /** All registered persona variants */
 const SCHEMA_VARIANTS: SchemaVariant[] = [
   ...hairSalonVariants,
   ...plumberVariants,
+  ...photographerVariants,
+  ...personalTrainerVariants,
+  ...tutorVariants,
+  ...makeupArtistVariants,
 ];
 
 // ── Lookup Functions ─────────────────────────────────────────

@@ -13,6 +13,7 @@ import { SchemaForm } from "@/components/primitives/SchemaForm";
 import { SchemaDetail } from "@/components/primitives/SchemaDetail";
 import { SchemaKanban } from "@/components/primitives/SchemaKanban";
 import { SchemaCalendar } from "@/components/primitives/SchemaCalendar";
+import { SchemaChart } from "@/components/primitives/SchemaChart";
 import type { ModuleSchema, ViewDefinition, ActionDefinition, ConvertAction } from "@/types/module-schema";
 
 type RecordData = { id: string; [key: string]: unknown };
@@ -302,11 +303,12 @@ function ActiveViewRenderer({
       );
 
     case "chart":
-      // Chart primitive will be added in a later phase
       return (
-        <div className="text-center py-12 text-text-tertiary">
-          Chart view coming soon
-        </div>
+        <SchemaChart
+          fields={schema.fields}
+          view={view}
+          records={records}
+        />
       );
 
     default:
