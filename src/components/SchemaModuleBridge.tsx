@@ -1,25 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useCallback } from "react";
+import { useMemo, useCallback } from "react";
 import { ModuleRenderer } from "@/components/ModuleRenderer";
-import { createModuleStore, registerModuleStore, getModuleStore, type RecordData } from "@/store/createModuleStore";
+import { getModuleStore, type RecordData } from "@/store/createModuleStore";
+import { getLegacyStoreAccessor, useLegacyRecords } from "@/lib/legacy-store-bridge";
 import { executeSchemaAction } from "@/lib/action-executor";
 import type { ModuleSchema } from "@/types/module-schema";
-
-// ── Store Cache ──────────────────────────────────────────────
-// Schema-driven stores are created once and reused.
-
-const storeCache = new Map<string, ReturnType<typeof createModuleStore>>();
-
-function getOrCreateStore(schema: ModuleSchema) {
-  if (storeCache.has(schema.id)) {
-    return storeCache.get(schema.id)!;
-  }
-  const store = createModuleStore(schema);
-  storeCache.set(schema.id, store);
-  registerModuleStore(schema.id, store);
-  return store;
-}
 
 // ── Bridge Component ─────────────────────────────────────────
 
@@ -28,15 +14,41 @@ interface SchemaModuleBridgeProps {
 }
 
 /**
- * Bridges a ModuleSchema to the ModuleRenderer by creating/connecting
- * the generic Zustand store and wiring up all callbacks.
+ * Bridges a ModuleSchema to the ModuleRenderer.
+ *
+ * Reads/writes from the LEGACY Zustand stores so existing data
+ * shows up in schema-rendered modules. If no legacy store exists
+ * for this module, falls back to the generic schema store.
  */
 export function SchemaModuleBridge({ schema }: SchemaModuleBridgeProps) {
-  const useStore = useMemo(() => getOrCreateStore(schema), [schema]);
-  const records = useStore((s) => s.records);
-  const addRecord = useStore((s) => s.addRecord);
-  const updateRecord = useStore((s) => s.updateRecord);
-  const deleteRecord = useStore((s) => s.deleteRecord);
+  const legacyAccessor = useMemo(() => getLegacyStoreAccessor(schema.id), [schema.id]);
+
+  // Subscribe to legacy store reactively for records
+  const legacyRecords = useLegacyRecords(schema.id);
+
+  // Use legacy records if available, otherwise empty
+  const records = legacyRecords.length > 0 || legacyAccessor
+    ? legacyRecords
+    : [];
+
+  // CRUD delegates to legacy store if available
+  const handleCreate = useCallback((data: Record<string, unknown>) => {
+    if (legacyAccessor) {
+      legacyAccessor.addRecord(data);
+    }
+  }, [legacyAccessor]);
+
+  const handleUpdate = useCallback((id: string, data: Record<string, unknown>) => {
+    if (legacyAccessor) {
+      legacyAccessor.updateRecord(id, data);
+    }
+  }, [legacyAccessor]);
+
+  const handleDelete = useCallback((id: string) => {
+    if (legacyAccessor) {
+      legacyAccessor.deleteRecord(id);
+    }
+  }, [legacyAccessor]);
 
   // Action execution
   const handleExecuteAction = useCallback((actionId: string, recordId: string) => {
@@ -44,12 +56,20 @@ export function SchemaModuleBridge({ schema }: SchemaModuleBridgeProps) {
     executeSchemaAction(schema.actions, actionId, recordId, schema.id);
   }, [schema]);
 
-  // Relation options resolver — looks up records from other module stores
+  // Relation options resolver — looks up from legacy stores first, then generic stores
   const resolveRelationOptions = useCallback((targetModuleId: string) => {
+    // Try legacy store
+    const targetLegacy = getLegacyStoreAccessor(targetModuleId);
+    if (targetLegacy) {
+      return targetLegacy.getRecords().map((r) => ({
+        value: r.id,
+        label: (r.name as string) || (r.title as string) || r.id.slice(0, 8),
+      }));
+    }
+    // Fall back to generic store
     const targetStore = getModuleStore(targetModuleId);
     if (!targetStore) return [];
-    const targetRecords = targetStore.getState().records;
-    return targetRecords.map((r: RecordData) => ({
+    return targetStore.getState().records.map((r: RecordData) => ({
       value: r.id,
       label: (r.name as string) || (r.title as string) || r.id.slice(0, 8),
     }));
@@ -59,9 +79,9 @@ export function SchemaModuleBridge({ schema }: SchemaModuleBridgeProps) {
     <ModuleRenderer
       schema={schema}
       records={records}
-      onRecordCreate={addRecord}
-      onRecordUpdate={updateRecord}
-      onRecordDelete={deleteRecord}
+      onRecordCreate={handleCreate}
+      onRecordUpdate={handleUpdate}
+      onRecordDelete={handleDelete}
       onExecuteAction={handleExecuteAction}
       resolveRelationOptions={resolveRelationOptions}
     />

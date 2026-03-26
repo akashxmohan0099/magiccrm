@@ -12,6 +12,7 @@ import { SchemaTable } from "@/components/primitives/SchemaTable";
 import { SchemaForm } from "@/components/primitives/SchemaForm";
 import { SchemaDetail } from "@/components/primitives/SchemaDetail";
 import { SchemaKanban } from "@/components/primitives/SchemaKanban";
+import { SchemaCalendar } from "@/components/primitives/SchemaCalendar";
 import type { ModuleSchema, ViewDefinition, ActionDefinition, ConvertAction } from "@/types/module-schema";
 
 type RecordData = { id: string; [key: string]: unknown };
@@ -290,11 +291,14 @@ function ActiveViewRenderer({
       );
 
     case "calendar":
-      // Calendar primitive will be added in a later phase
       return (
-        <div className="text-center py-12 text-text-tertiary">
-          Calendar view coming soon
-        </div>
+        <SchemaCalendar
+          fields={schema.fields}
+          view={view}
+          records={records}
+          statusFlow={schema.statusFlow}
+          onRecordClick={onRowClick}
+        />
       );
 
     case "chart":
