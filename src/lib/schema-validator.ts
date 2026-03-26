@@ -224,9 +224,33 @@ function validateActionSafety(
   allSchemaIds: Set<string>,
 ): string[] {
   const errors: string[] = [];
-  if (!schema.actions) return errors;
-
   const fieldIds = new Set(schema.fields.map((f) => f.id));
+
+  // Check all relation field targets point to known modules
+  for (const field of schema.fields) {
+    if (field.type === "relation" && field.relationTo && !allSchemaIds.has(field.relationTo)) {
+      errors.push(`Field "${field.id}": relationTo "${field.relationTo}" is not a known module`);
+    }
+    // Also check nested subField relations
+    if (field.subFields) {
+      for (const sub of field.subFields) {
+        if (sub.type === "relation" && sub.relationTo && !allSchemaIds.has(sub.relationTo)) {
+          errors.push(`Field "${field.id}" subField "${sub.id}": relationTo "${sub.relationTo}" is not a known module`);
+        }
+      }
+    }
+  }
+
+  // Check relations[] entries
+  if (schema.relations) {
+    for (const rel of schema.relations) {
+      if (!allSchemaIds.has(rel.targetModule)) {
+        errors.push(`Relation on field "${rel.field}": targetModule "${rel.targetModule}" is not a known module`);
+      }
+    }
+  }
+
+  if (!schema.actions) return errors;
 
   for (const action of schema.actions) {
     switch (action.type) {

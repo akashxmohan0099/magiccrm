@@ -10,12 +10,53 @@ import { generateId } from "@/lib/id";
 import { logActivity } from "@/lib/activity-logger";
 import { toast } from "@/components/ui/Toast";
 import { getModuleStore, type RecordData } from "@/store/createModuleStore";
+import { getLegacyStoreAccessor } from "@/lib/legacy-store-bridge";
 import type {
   ActionDefinition,
   ConvertAction,
   CascadeDeleteAction,
   NotifyAction,
 } from "@/types/module-schema";
+
+// ── Store Resolution ─────────────────────────────────────────
+// Try generic schema store first, fall back to legacy store.
+
+interface StoreAccessor {
+  getRecord: (id: string) => RecordData | undefined;
+  addRecord: (data: Record<string, unknown>) => RecordData;
+  updateRecord: (id: string, data: Record<string, unknown>) => void;
+  deleteRecord: (id: string) => void;
+  records: RecordData[];
+}
+
+function resolveStore(moduleId: string): StoreAccessor | undefined {
+  // Try generic schema store
+  const schemaStore = getModuleStore(moduleId);
+  if (schemaStore) {
+    const state = schemaStore.getState();
+    return {
+      getRecord: (id) => state.records.find((r) => r.id === id),
+      addRecord: state.addRecord,
+      updateRecord: state.updateRecord,
+      deleteRecord: state.deleteRecord,
+      records: state.records,
+    };
+  }
+
+  // Fall back to legacy store
+  const legacy = getLegacyStoreAccessor(moduleId);
+  if (legacy) {
+    return {
+      getRecord: (id) => legacy.getRecords().find((r) => r.id === id),
+      addRecord: legacy.addRecord,
+      updateRecord: legacy.updateRecord,
+      deleteRecord: legacy.deleteRecord,
+      records: legacy.getRecords(),
+    };
+  }
+
+  return undefined;
+}
 
 // ── Public API ───────────────────────────────────────────────
 
@@ -58,20 +99,20 @@ function executeConvert(
   sourceRecordId: string,
   sourceModuleId: string,
 ): { success: boolean; targetRecordId?: string; error?: string } {
-  // Get source store and record
-  const sourceStore = getModuleStore(sourceModuleId);
-  if (!sourceStore) {
+  // Resolve source store (schema store or legacy store)
+  const sourceAccessor = resolveStore(sourceModuleId);
+  if (!sourceAccessor) {
     return { success: false, error: `Source module store "${sourceModuleId}" not found` };
   }
 
-  const source = sourceStore.getState().getRecord(sourceRecordId);
+  const source = sourceAccessor.getRecord(sourceRecordId);
   if (!source) {
     return { success: false, error: `Source record "${sourceRecordId}" not found` };
   }
 
-  // Get target store
-  const targetStore = getModuleStore(action.targetModule);
-  if (!targetStore) {
+  // Resolve target store
+  const targetAccessor = resolveStore(action.targetModule);
+  if (!targetAccessor) {
     return { success: false, error: `Target module store "${action.targetModule}" not found` };
   }
 
@@ -111,14 +152,14 @@ function executeConvert(
   }
 
   // Create the target record
-  const created = targetStore.getState().addRecord(targetData);
+  const created = targetAccessor.addRecord(targetData);
 
   // Update the source record
   const sourceUpdates: Record<string, unknown> = {};
   for (const upd of action.sourceUpdates) {
     sourceUpdates[upd.field] = upd.value === "$targetId" ? created.id : upd.value;
   }
-  sourceStore.getState().updateRecord(sourceRecordId, sourceUpdates, true);
+  sourceAccessor.updateRecord(sourceRecordId, sourceUpdates);
 
   // Log the conversion
   const sourceName = (source.name as string) || (source.title as string) || sourceRecordId.slice(0, 8);
@@ -143,16 +184,15 @@ function executeCascadeDelete(
   let totalDeleted = 0;
 
   for (const target of action.targetModules) {
-    const targetStore = getModuleStore(target.moduleId);
-    if (!targetStore) continue;
+    const accessor = resolveStore(target.moduleId);
+    if (!accessor) continue;
 
-    const state = targetStore.getState();
-    const toDelete = state.records.filter(
+    const toDelete = accessor.records.filter(
       (r) => r[target.foreignKey] === sourceRecordId,
     );
 
     for (const record of toDelete) {
-      state.deleteRecord(record.id, true); // silent — don't toast each one
+      accessor.deleteRecord(record.id);
       totalDeleted++;
     }
   }
@@ -176,18 +216,18 @@ function executeNotify(
   sourceRecordId: string,
   sourceModuleId: string,
 ): { success: boolean; error?: string } {
-  const sourceStore = getModuleStore(sourceModuleId);
-  if (!sourceStore) {
+  const sourceAccessor = resolveStore(sourceModuleId);
+  if (!sourceAccessor) {
     return { success: false, error: `Source module store "${sourceModuleId}" not found` };
   }
 
-  const source = sourceStore.getState().getRecord(sourceRecordId);
+  const source = sourceAccessor.getRecord(sourceRecordId);
   if (!source) {
     return { success: false, error: `Source record "${sourceRecordId}" not found` };
   }
 
-  const targetStore = getModuleStore(action.targetModule);
-  if (!targetStore) {
+  const targetAccessor = resolveStore(action.targetModule);
+  if (!targetAccessor) {
     return { success: false, error: `Target module store "${action.targetModule}" not found` };
   }
 
@@ -197,8 +237,8 @@ function executeNotify(
     notifyData[mapping.targetField] = source[mapping.sourceField];
   }
 
-  // Create a record in the target module (e.g., a waitlist notification)
-  targetStore.getState().addRecord(notifyData, true);
+  // Create a record in the target module
+  targetAccessor.addRecord(notifyData);
 
   logActivity(
     "notify",

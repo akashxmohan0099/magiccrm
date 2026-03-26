@@ -231,19 +231,3 @@ export function combinationsConflict(
   return a.applicableTo.conflictsWithCombinations?.includes(bId) ?? false;
 }
 
-/** Get the slugs of all modules absorbed by a set of active combinations. */
-export function getMergedModuleSlugs(
-  activeCombinationIds: string[],
-  moduleSlugLookup: Record<string, string>,
-): Set<string> {
-  const merged = new Set<string>();
-  for (const comboId of activeCombinationIds) {
-    const combo = getCombinationById(comboId);
-    if (!combo) continue;
-    for (const moduleId of combo.mergedModuleIds) {
-      const slug = moduleSlugLookup[moduleId];
-      if (slug) merged.add(slug);
-    }
-  }
-  return merged;
-}

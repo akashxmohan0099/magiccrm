@@ -3,8 +3,8 @@
 import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Upload, X, FileText, Image, File, Download,
-  Trash2, Eye, ZoomIn, ChevronLeft, ChevronRight,
+  Upload, X, FileText, Image, File,
+  Trash2, ZoomIn, ChevronLeft, ChevronRight,
 } from "lucide-react";
 
 export interface FileItem {

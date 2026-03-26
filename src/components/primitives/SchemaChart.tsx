@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+// Icons reserved for future trend indicators
 import type { FieldDefinition, ViewDefinition } from "@/types/module-schema";
 
 type RecordData = { id: string; [key: string]: unknown };

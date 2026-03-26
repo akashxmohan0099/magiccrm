@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
-import { StatusBadge } from "@/components/ui/StatusBadge";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { FieldDefinition, ViewDefinition, StatusFlow } from "@/types/module-schema";
 
 type RecordData = { id: string; [key: string]: unknown };

@@ -247,7 +247,7 @@ export const invoicingSchema: ModuleSchema = {
         { sourceField: "notes", targetField: "notes", transform: "copy" },
       ],
       sourceUpdates: [
-        { field: "status", value: "accepted" },
+        { field: "status", value: "sent" },
       ],
       targetDefaults: [
         { field: "status", value: "draft" },

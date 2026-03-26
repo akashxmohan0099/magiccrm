@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
-import { motion } from "framer-motion";
 import { Plus, Upload, Download } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Tabs } from "@/components/ui/Tabs";
@@ -14,7 +13,7 @@ import { SchemaDetail } from "@/components/primitives/SchemaDetail";
 import { SchemaKanban } from "@/components/primitives/SchemaKanban";
 import { SchemaCalendar } from "@/components/primitives/SchemaCalendar";
 import { SchemaChart } from "@/components/primitives/SchemaChart";
-import type { ModuleSchema, ViewDefinition, ActionDefinition, ConvertAction } from "@/types/module-schema";
+import type { ModuleSchema, ViewDefinition, ConvertAction } from "@/types/module-schema";
 
 type RecordData = { id: string; [key: string]: unknown };
 

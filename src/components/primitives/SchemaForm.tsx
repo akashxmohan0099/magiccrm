@@ -6,7 +6,6 @@ import { SelectField } from "@/components/ui/SelectField";
 import { DateField } from "@/components/ui/DateField";
 import { TextArea } from "@/components/ui/TextArea";
 import { Button } from "@/components/ui/Button";
-import { SchemaRichText } from "@/components/primitives/SchemaRichText";
 import { SchemaFileGallery, type FileItem } from "@/components/primitives/SchemaFileGallery";
 import { Plus, Trash2, Star } from "lucide-react";
 import type { FieldDefinition, FieldCondition } from "@/types/module-schema";

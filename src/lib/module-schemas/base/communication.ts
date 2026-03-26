@@ -172,13 +172,13 @@ export const communicationSchema: ModuleSchema = {
         { sourceField: "contactEmail", targetField: "email", transform: "copy" },
         { sourceField: "contactPhone", targetField: "phone", transform: "copy" },
         { sourceField: "subject", targetField: "notes", transform: "copy" },
+        { sourceField: "channel", targetField: "source", transform: "copy" },
       ],
       sourceUpdates: [
         { field: "leadId", value: "$targetId" },
       ],
       targetDefaults: [
         { field: "stage", value: "new" },
-        { field: "source", value: "email" },
       ],
     },
     {

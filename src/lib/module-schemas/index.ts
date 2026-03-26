@@ -15,6 +15,7 @@ import { bookingsSchema } from "./base/bookings";
 import { invoicingSchema } from "./base/invoicing";
 import { productsSchema } from "./base/products";
 import { communicationSchema } from "./base/communication";
+import { teamSchema } from "./base/team";
 
 /** All registered base schemas, keyed by module ID */
 const BASE_SCHEMAS: Record<string, ModuleSchema> = {
@@ -25,6 +26,7 @@ const BASE_SCHEMAS: Record<string, ModuleSchema> = {
   "quotes-invoicing": invoicingSchema,
   products: productsSchema,
   communication: communicationSchema,
+  team: teamSchema,
 };
 
 import { hairSalonVariants } from "./variants/hair-salon";
@@ -87,11 +89,6 @@ export function getAllSchemas(): ModuleSchema[] {
 /** Get all registered persona variants */
 export function getAllVariants(): SchemaVariant[] {
   return [...SCHEMA_VARIANTS];
-}
-
-/** Check if a module has a schema-driven renderer available */
-export function hasSchemaRenderer(moduleId: string): boolean {
-  return moduleId in BASE_SCHEMAS;
 }
 
 // ── Variant Resolution ───────────────────────────────────────
