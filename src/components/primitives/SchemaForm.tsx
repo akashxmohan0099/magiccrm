@@ -6,6 +6,8 @@ import { SelectField } from "@/components/ui/SelectField";
 import { DateField } from "@/components/ui/DateField";
 import { TextArea } from "@/components/ui/TextArea";
 import { Button } from "@/components/ui/Button";
+import { SchemaRichText } from "@/components/primitives/SchemaRichText";
+import { SchemaFileGallery, type FileItem } from "@/components/primitives/SchemaFileGallery";
 import { Plus, Trash2, Star } from "lucide-react";
 import type { FieldDefinition, FieldCondition } from "@/types/module-schema";
 
@@ -357,6 +359,18 @@ function FieldInput({
         <div className="px-3 py-2.5 text-[14px] text-text-tertiary bg-surface rounded-xl">
           {value != null ? String(value) : "—"}
         </div>
+      );
+
+    case "file":
+    case "image":
+      return (
+        <SchemaFileGallery
+          files={(value as FileItem[]) || []}
+          onChange={(files) => onChange(files)}
+          accept={field.type === "image" ? "image/*" : undefined}
+          mode={field.type === "image" ? "grid" : "list"}
+          maxFiles={field.type === "image" ? 20 : 10}
+        />
       );
 
     default:
