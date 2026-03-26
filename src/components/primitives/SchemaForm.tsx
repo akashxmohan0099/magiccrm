@@ -463,7 +463,7 @@ export function SchemaForm({
 
       const val = formData[field.id];
 
-      if (field.required && (val === undefined || val === null || val === "")) {
+      if (field.required && (val === undefined || val === null || val === "" || (Array.isArray(val) && val.length === 0))) {
         newErrors[field.id] = `${field.label} is required`;
       }
 

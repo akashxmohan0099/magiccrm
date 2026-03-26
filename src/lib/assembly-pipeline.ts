@@ -242,6 +242,8 @@ export function assembleWorkspaceSync(input: Omit<AssemblyInput, "businessContex
   const fallbacks: { moduleId: string; reason: string }[] = [];
   const schemas: ModuleSchema[] = [];
 
+  const allIds = getAllSchemaIds();
+
   for (const moduleId of input.enabledModuleIds) {
     const base = getBaseSchema(moduleId);
     if (!base) {
@@ -252,7 +254,6 @@ export function assembleWorkspaceSync(input: Omit<AssemblyInput, "businessContex
     const variant = findVariant(moduleId, input.industryId, input.personaId);
     const schema = variant ? applyVariant(base, variant) : structuredClone(base);
 
-    const allIds = getAllSchemaIds();
     const validation = validateModuleSchema(schema, allIds);
     if (validation.valid) {
       schemas.push(schema);

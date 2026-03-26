@@ -60,19 +60,24 @@ export function SchemaFileGallery({
   const handleFiles = useCallback((fileList: FileList) => {
     const remaining = maxFiles - files.length;
     const toAdd = Array.from(fileList).slice(0, remaining);
+    const newFiles: FileItem[] = [];
+    let loaded = 0;
 
     for (const file of toAdd) {
       const reader = new FileReader();
       reader.onload = () => {
-        const newFile: FileItem = {
+        newFiles.push({
           id: crypto.randomUUID(),
           name: file.name,
           type: file.type,
           size: file.size,
           dataUrl: reader.result as string,
           uploadedAt: new Date().toISOString(),
-        };
-        onChange([...files, newFile]);
+        });
+        loaded++;
+        if (loaded === toAdd.length) {
+          onChange([...files, ...newFiles]);
+        }
       };
       reader.readAsDataURL(file);
     }

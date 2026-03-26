@@ -106,5 +106,5 @@ export function useTunedModules(
     }
 
     return result;
-  }, [enabledModules, tuningCombinations, tuningModuleMeta, alwaysOnModuleIds, vocab]);
+  }, [enabledModules, tuningCombinations, tuningModuleMeta, alwaysOnModuleIds]);
 }

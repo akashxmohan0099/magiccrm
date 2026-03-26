@@ -131,6 +131,16 @@ function fieldToColumn(
       break;
     }
 
+    case "file":
+    case "image": {
+      col.render = (item) => {
+        const files = item[field.id] as unknown[];
+        if (!files || !Array.isArray(files)) return <span className="text-text-tertiary">—</span>;
+        return <span className="text-[13px] text-text-secondary">{files.length} file{files.length !== 1 ? "s" : ""}</span>;
+      };
+      break;
+    }
+
     case "relation": {
       // For table display, show the denormalized name if available
       col.render = (item) => {
@@ -190,6 +200,11 @@ export function SchemaTable({
       if (aVal == null && bVal == null) return 0;
       if (aVal == null) return 1;
       if (bVal == null) return -1;
+      // Numeric comparison for numbers
+      if (typeof aVal === "number" && typeof bVal === "number") {
+        const diff = aVal - bVal;
+        return direction === "desc" ? -diff : diff;
+      }
       const cmp = String(aVal).localeCompare(String(bVal));
       return direction === "desc" ? -cmp : cmp;
     });

@@ -106,8 +106,7 @@ function FieldValue({
     }
 
     case "relation": {
-      const displayName = (value as RecordData)?.[`${field.id}Name`] || value;
-      return <span className="text-[13px] text-primary">{String(displayName)}</span>;
+      return <span className="text-[13px] text-primary">{String(value)}</span>;
     }
 
     case "textarea":
@@ -135,6 +134,19 @@ function FieldValue({
                 </span>
               ))}
             </div>
+          ))}
+        </div>
+      );
+    }
+
+    case "file":
+    case "image": {
+      const files = value as { name: string }[];
+      if (!Array.isArray(files) || files.length === 0) return <span className="text-text-tertiary text-[13px]">No files</span>;
+      return (
+        <div className="space-y-1">
+          {files.map((f, i) => (
+            <span key={i} className="text-[13px] text-text-secondary block">{f.name}</span>
           ))}
         </div>
       );
