@@ -40,9 +40,9 @@ export const useDocumentsStore = create<DocumentsStore>()(
 
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
-          dbCreateDocument(workspaceId, doc).catch((err) =>
-            console.error("[documents] dbCreateDocument failed:", err)
-          );
+          dbCreateDocument(workspaceId, doc).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving document" }));
+          });
         }
       },
 
@@ -58,9 +58,9 @@ export const useDocumentsStore = create<DocumentsStore>()(
 
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
-          dbUpdateDocument(workspaceId, id, updatedData).catch((err) =>
-            console.error("[documents] dbUpdateDocument failed:", err)
-          );
+          dbUpdateDocument(workspaceId, id, updatedData).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating document" }));
+          });
         }
       },
 
@@ -73,9 +73,9 @@ export const useDocumentsStore = create<DocumentsStore>()(
 
           // Sync to Supabase if workspaceId available
           if (workspaceId) {
-            dbDeleteDocument(workspaceId, id).catch((err) =>
-              console.error("[documents] dbDeleteDocument failed:", err)
-            );
+            dbDeleteDocument(workspaceId, id).catch((err) => {
+              import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting document" }));
+            });
           }
         }
       },
@@ -94,7 +94,7 @@ export const useDocumentsStore = create<DocumentsStore>()(
           const { documents } = get();
           await dbUpsertDocuments(workspaceId, documents);
         } catch (err) {
-          console.error("[documents] syncToSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing documents to Supabase" }));
         }
       },
 
@@ -106,7 +106,7 @@ export const useDocumentsStore = create<DocumentsStore>()(
           );
           set({ documents: mappedDocuments });
         } catch (err) {
-          console.error("[documents] loadFromSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "loading documents from Supabase" }));
         }
       },
     }),

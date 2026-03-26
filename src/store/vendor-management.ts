@@ -37,9 +37,9 @@ export const useVendorManagementStore = create<VendorManagementStore>()(
         toast(`Vendor "${vendor.name}" added`);
 
         if (workspaceId) {
-          dbCreateVendor(workspaceId, vendor).catch((err) =>
-            console.error("[vendor-management] dbCreateVendor failed:", err)
-          );
+          dbCreateVendor(workspaceId, vendor).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving vendor" }));
+          });
         }
         return vendor;
       },
@@ -56,9 +56,9 @@ export const useVendorManagementStore = create<VendorManagementStore>()(
         }
 
         if (workspaceId) {
-          dbUpdateVendor(workspaceId, id, data).catch((err) =>
-            console.error("[vendor-management] dbUpdateVendor failed:", err)
-          );
+          dbUpdateVendor(workspaceId, id, data).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating vendor" }));
+          });
         }
       },
       deleteVendor: (id, workspaceId?) => {
@@ -70,9 +70,9 @@ export const useVendorManagementStore = create<VendorManagementStore>()(
         }
 
         if (workspaceId) {
-          dbDeleteVendor(workspaceId, id).catch((err) =>
-            console.error("[vendor-management] dbDeleteVendor failed:", err)
-          );
+          dbDeleteVendor(workspaceId, id).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting vendor" }));
+          });
         }
       },
       getVendorsByCategory: (category) => {
@@ -88,7 +88,7 @@ export const useVendorManagementStore = create<VendorManagementStore>()(
           const { vendors } = get();
           await dbUpsertVendors(workspaceId, vendors);
         } catch (err) {
-          console.error("[vendor-management] syncToSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing vendors to Supabase" }));
         }
       },
 
@@ -102,7 +102,7 @@ export const useVendorManagementStore = create<VendorManagementStore>()(
           );
           set({ vendors: mapped });
         } catch (err) {
-          console.error("[vendor-management] loadFromSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "loading vendors from Supabase" }));
         }
       },
     }),

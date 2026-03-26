@@ -36,9 +36,9 @@ export const useWinBackStore = create<WinBackStore>()(
         toast(`Rule "${data.name}" created`);
 
         if (workspaceId) {
-          dbCreateWinBackRule(workspaceId, rule).catch((err) =>
-            console.error("[win-back] dbCreateWinBackRule failed:", err)
-          );
+          dbCreateWinBackRule(workspaceId, rule).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving win-back rule" }));
+          });
         }
         return rule;
       },
@@ -48,9 +48,9 @@ export const useWinBackStore = create<WinBackStore>()(
         toast("Win-back rule updated");
 
         if (workspaceId) {
-          dbUpdateWinBackRule(workspaceId, id, data).catch((err) =>
-            console.error("[win-back] dbUpdateWinBackRule failed:", err)
-          );
+          dbUpdateWinBackRule(workspaceId, id, data).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating win-back rule" }));
+          });
         }
       },
       deleteRule: (id, workspaceId?) => {
@@ -62,9 +62,9 @@ export const useWinBackStore = create<WinBackStore>()(
         }
 
         if (workspaceId) {
-          dbDeleteWinBackRule(workspaceId, id).catch((err) =>
-            console.error("[win-back] dbDeleteWinBackRule failed:", err)
-          );
+          dbDeleteWinBackRule(workspaceId, id).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting win-back rule" }));
+          });
         }
       },
       addLapsedClient: (data, workspaceId?) => {
@@ -73,27 +73,27 @@ export const useWinBackStore = create<WinBackStore>()(
         toast(`Lapsed client "${data.clientName}" detected`, "info");
 
         if (workspaceId) {
-          dbCreateLapsedClient(workspaceId, entry).catch((err) =>
-            console.error("[win-back] dbCreateLapsedClient failed:", err)
-          );
+          dbCreateLapsedClient(workspaceId, entry).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving lapsed client" }));
+          });
         }
       },
       updateLapsedStatus: (id, status, workspaceId?) => {
         set((s) => ({ lapsedClients: s.lapsedClients.map((c) => c.id === id ? { ...c, status } : c) }));
 
         if (workspaceId) {
-          dbUpdateLapsedClient(workspaceId, id, status).catch((err) =>
-            console.error("[win-back] dbUpdateLapsedClient failed:", err)
-          );
+          dbUpdateLapsedClient(workspaceId, id, status).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating lapsed client status" }));
+          });
         }
       },
       dismissLapsed: (id, workspaceId?) => {
         set((s) => ({ lapsedClients: s.lapsedClients.map((c) => c.id === id ? { ...c, status: "dismissed" as const } : c) }));
 
         if (workspaceId) {
-          dbUpdateLapsedClient(workspaceId, id, "dismissed").catch((err) =>
-            console.error("[win-back] dbUpdateLapsedClient failed:", err)
-          );
+          dbUpdateLapsedClient(workspaceId, id, "dismissed").catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "dismissing lapsed client" }));
+          });
         }
       },
 
@@ -109,7 +109,7 @@ export const useWinBackStore = create<WinBackStore>()(
             dbUpsertLapsedClients(workspaceId, lapsedClients),
           ]);
         } catch (err) {
-          console.error("[win-back] syncToSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing win-back data to Supabase" }));
         }
       },
 
@@ -133,7 +133,7 @@ export const useWinBackStore = create<WinBackStore>()(
             set(updates as Partial<WinBackStore>);
           }
         } catch (err) {
-          console.error("[win-back] loadFromSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "loading win-back data from Supabase" }));
         }
       },
     }),

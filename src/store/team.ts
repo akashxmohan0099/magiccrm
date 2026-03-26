@@ -50,9 +50,9 @@ export const useTeamStore = create<TeamStore>()(
         toast(`${data.name} added to team`);
 
         if (workspaceId) {
-          dbCreateMember(workspaceId, member).catch((err) =>
-            console.error("[team] dbCreateMember failed:", err)
-          );
+          dbCreateMember(workspaceId, member).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving team member" }));
+          });
         }
 
         return member;
@@ -69,9 +69,9 @@ export const useTeamStore = create<TeamStore>()(
         toast("Team member updated");
 
         if (workspaceId) {
-          dbUpdateMember(workspaceId, id, updatedData).catch((err) =>
-            console.error("[team] dbUpdateMember failed:", err)
-          );
+          dbUpdateMember(workspaceId, id, updatedData).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating team member" }));
+          });
         }
       },
 
@@ -87,14 +87,14 @@ export const useTeamStore = create<TeamStore>()(
           toast(`"${member.name}" removed from team`, "info");
 
           if (workspaceId) {
-            dbDeleteMember(workspaceId, id).catch((err) =>
-              console.error("[team] dbDeleteMember failed:", err)
-            );
+            dbDeleteMember(workspaceId, id).catch((err) => {
+              import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting team member" }));
+            });
             // Cascade-delete associated shifts from DB
             for (const shift of removedShifts) {
-              dbDeleteShiftRow(workspaceId, shift.id).catch((err) =>
-                console.error("[team] dbDeleteShift (cascade) failed:", err)
-              );
+              dbDeleteShiftRow(workspaceId, shift.id).catch((err) => {
+                import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting team member shift (cascade)" }));
+              });
             }
           }
         }
@@ -109,9 +109,9 @@ export const useTeamStore = create<TeamStore>()(
         toast("Availability updated");
 
         if (workspaceId) {
-          dbSetMemberAvailability(workspaceId, memberId, availability).catch((err) =>
-            console.error("[team] dbSetMemberAvailability failed:", err)
-          );
+          dbSetMemberAvailability(workspaceId, memberId, availability).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating team member availability" }));
+          });
         }
       },
 
@@ -122,9 +122,9 @@ export const useTeamStore = create<TeamStore>()(
         toast("Shift added");
 
         if (workspaceId) {
-          dbCreateShift(workspaceId, shift).catch((err) =>
-            console.error("[team] dbCreateShift failed:", err)
-          );
+          dbCreateShift(workspaceId, shift).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving shift" }));
+          });
         }
       },
 
@@ -135,9 +135,9 @@ export const useTeamStore = create<TeamStore>()(
         toast("Shift updated");
 
         if (workspaceId) {
-          dbUpdateShiftRow(workspaceId, id, data).catch((err) =>
-            console.error("[team] dbUpdateShift failed:", err)
-          );
+          dbUpdateShiftRow(workspaceId, id, data).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating shift" }));
+          });
         }
       },
 
@@ -146,9 +146,9 @@ export const useTeamStore = create<TeamStore>()(
         toast("Shift removed", "info");
 
         if (workspaceId) {
-          dbDeleteShiftRow(workspaceId, id).catch((err) =>
-            console.error("[team] dbDeleteShift failed:", err)
-          );
+          dbDeleteShiftRow(workspaceId, id).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting shift" }));
+          });
         }
       },
 
@@ -164,7 +164,7 @@ export const useTeamStore = create<TeamStore>()(
             dbUpsertShifts(workspaceId, shifts),
           ]);
         } catch (err) {
-          console.error("[team] syncToSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing team data to Supabase" }));
         }
       },
 
@@ -183,7 +183,7 @@ export const useTeamStore = create<TeamStore>()(
           );
           set({ members: mappedMembers, shifts: mappedShifts });
         } catch (err) {
-          console.error("[team] loadFromSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "loading team data from Supabase" }));
         }
       },
     }),

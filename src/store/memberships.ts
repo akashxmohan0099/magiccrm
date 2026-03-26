@@ -36,9 +36,9 @@ export const useMembershipsStore = create<MembershipsStore>()(
         toast(`Plan "${data.name}" created`);
 
         if (workspaceId) {
-          dbCreatePlan(workspaceId, plan).catch((err) =>
-            console.error("[memberships] dbCreatePlan failed:", err)
-          );
+          dbCreatePlan(workspaceId, plan).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving membership plan" }));
+          });
         }
         return plan;
       },
@@ -48,9 +48,9 @@ export const useMembershipsStore = create<MembershipsStore>()(
         toast("Membership plan updated");
 
         if (workspaceId) {
-          dbUpdatePlan(workspaceId, id, data).catch((err) =>
-            console.error("[memberships] dbUpdatePlan failed:", err)
-          );
+          dbUpdatePlan(workspaceId, id, data).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating membership plan" }));
+          });
         }
       },
       deletePlan: (id, workspaceId?) => {
@@ -62,9 +62,9 @@ export const useMembershipsStore = create<MembershipsStore>()(
         }
 
         if (workspaceId) {
-          dbDeletePlan(workspaceId, id).catch((err) =>
-            console.error("[memberships] dbDeletePlan failed:", err)
-          );
+          dbDeletePlan(workspaceId, id).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting membership plan" }));
+          });
         }
       },
       addMembership: (data, workspaceId?) => {
@@ -75,9 +75,9 @@ export const useMembershipsStore = create<MembershipsStore>()(
         toast(`${data.clientName} added to ${data.planName}`);
 
         if (workspaceId) {
-          dbCreateMembership(workspaceId, membership).catch((err) =>
-            console.error("[memberships] dbCreateMembership failed:", err)
-          );
+          dbCreateMembership(workspaceId, membership).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving membership" }));
+          });
         }
         return membership;
       },
@@ -88,9 +88,9 @@ export const useMembershipsStore = create<MembershipsStore>()(
         toast("Membership updated");
 
         if (workspaceId) {
-          dbUpdateMembership(workspaceId, id, data).catch((err) =>
-            console.error("[memberships] dbUpdateMembership failed:", err)
-          );
+          dbUpdateMembership(workspaceId, id, data).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating membership" }));
+          });
         }
       },
       deleteMembership: (id, workspaceId?) => {
@@ -102,9 +102,9 @@ export const useMembershipsStore = create<MembershipsStore>()(
         }
 
         if (workspaceId) {
-          dbDeleteMembership(workspaceId, id).catch((err) =>
-            console.error("[memberships] dbDeleteMembership failed:", err)
-          );
+          dbDeleteMembership(workspaceId, id).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting membership" }));
+          });
         }
       },
 
@@ -120,7 +120,7 @@ export const useMembershipsStore = create<MembershipsStore>()(
             dbUpsertMemberships(workspaceId, memberships),
           ]);
         } catch (err) {
-          console.error("[memberships] syncToSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing memberships to Supabase" }));
         }
       },
 
@@ -144,7 +144,7 @@ export const useMembershipsStore = create<MembershipsStore>()(
             set(updates as Partial<MembershipsStore>);
           }
         } catch (err) {
-          console.error("[memberships] loadFromSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "loading memberships from Supabase" }));
         }
       },
     }),

@@ -48,9 +48,9 @@ export const useLoyaltyStore = create<LoyaltyStore>()(
         }
 
         if (workspaceId) {
-          dbCreateTransaction(workspaceId, tx).catch((err) =>
-            console.error("[loyalty] dbCreateTransaction failed:", err)
-          );
+          dbCreateTransaction(workspaceId, tx).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving loyalty transaction" }));
+          });
         }
       },
       getClientPoints: (clientId) => {
@@ -63,9 +63,9 @@ export const useLoyaltyStore = create<LoyaltyStore>()(
         toast(`Referral code ${data.code} created`);
 
         if (workspaceId) {
-          dbCreateReferralCode(workspaceId, code).catch((err) =>
-            console.error("[loyalty] dbCreateReferralCode failed:", err)
-          );
+          dbCreateReferralCode(workspaceId, code).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving referral code" }));
+          });
         }
         return code;
       },
@@ -82,9 +82,9 @@ export const useLoyaltyStore = create<LoyaltyStore>()(
         }));
 
         if (workspaceId) {
-          dbUpdateReferralCode(workspaceId, code, newTimesUsed).catch((err) =>
-            console.error("[loyalty] dbUpdateReferralCode failed:", err)
-          );
+          dbUpdateReferralCode(workspaceId, code, newTimesUsed).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating referral code usage" }));
+          });
         }
       },
 
@@ -100,7 +100,7 @@ export const useLoyaltyStore = create<LoyaltyStore>()(
             dbUpsertReferralCodes(workspaceId, referralCodes),
           ]);
         } catch (err) {
-          console.error("[loyalty] syncToSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing loyalty data to Supabase" }));
         }
       },
 
@@ -124,7 +124,7 @@ export const useLoyaltyStore = create<LoyaltyStore>()(
             set(updates as Partial<LoyaltyStore>);
           }
         } catch (err) {
-          console.error("[loyalty] loadFromSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "loading loyalty data from Supabase" }));
         }
       },
     }),

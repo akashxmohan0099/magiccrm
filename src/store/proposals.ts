@@ -78,9 +78,9 @@ export const useProposalsStore = create<ProposalsStore>()(
         toast(`Created proposal ${proposal.number}`);
 
         if (workspaceId) {
-          dbCreateProposal(workspaceId, proposal).catch((err) =>
-            console.error("[proposals] dbCreateProposal failed:", err)
-          );
+          dbCreateProposal(workspaceId, proposal).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving proposal" }));
+          });
         }
 
         return proposal;
@@ -97,9 +97,9 @@ export const useProposalsStore = create<ProposalsStore>()(
         toast("Proposal updated");
 
         if (workspaceId) {
-          dbUpdateProposal(workspaceId, id, updatedData).catch((err) =>
-            console.error("[proposals] dbUpdateProposal failed:", err)
-          );
+          dbUpdateProposal(workspaceId, id, updatedData).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating proposal" }));
+          });
         }
       },
 
@@ -111,9 +111,9 @@ export const useProposalsStore = create<ProposalsStore>()(
           toast(`Proposal ${proposal.number} deleted`, "info");
 
           if (workspaceId) {
-            dbDeleteProposal(workspaceId, id).catch((err) =>
-              console.error("[proposals] dbDeleteProposal failed:", err)
-            );
+            dbDeleteProposal(workspaceId, id).catch((err) => {
+              import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting proposal" }));
+            });
           }
         }
       },
@@ -132,9 +132,9 @@ export const useProposalsStore = create<ProposalsStore>()(
         toast(`Created template "${template.name}"`);
 
         if (workspaceId) {
-          dbCreateTemplate(workspaceId, template).catch((err) =>
-            console.error("[proposals] dbCreateTemplate failed:", err)
-          );
+          dbCreateTemplate(workspaceId, template).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving proposal template" }));
+          });
         }
 
         return template;
@@ -151,9 +151,9 @@ export const useProposalsStore = create<ProposalsStore>()(
         toast("Template updated");
 
         if (workspaceId) {
-          dbUpdateTemplateRow(workspaceId, id, updatedData).catch((err) =>
-            console.error("[proposals] dbUpdateTemplate failed:", err)
-          );
+          dbUpdateTemplateRow(workspaceId, id, updatedData).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating proposal template" }));
+          });
         }
       },
 
@@ -165,9 +165,9 @@ export const useProposalsStore = create<ProposalsStore>()(
           toast(`Template "${template.name}" deleted`, "info");
 
           if (workspaceId) {
-            dbDeleteTemplateRow(workspaceId, id).catch((err) =>
-              console.error("[proposals] dbDeleteTemplate failed:", err)
-            );
+            dbDeleteTemplateRow(workspaceId, id).catch((err) => {
+              import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting proposal template" }));
+            });
           }
         }
       },
@@ -221,13 +221,13 @@ export const useProposalsStore = create<ProposalsStore>()(
               shareToken: token,
               updatedAt,
             },
-          ]).catch((err) =>
-            console.error("[proposals] dbUpsertProposals (generateShareToken) failed:", err)
-          );
+          ]).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "generating proposal share token" }));
+          });
         } else if (workspaceId) {
-          dbUpdateShareToken(workspaceId, proposalId, token).catch((err) =>
-            console.error("[proposals] dbUpdateShareToken failed:", err)
-          );
+          dbUpdateShareToken(workspaceId, proposalId, token).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating proposal share token" }));
+          });
         }
 
         return token;
@@ -250,9 +250,9 @@ export const useProposalsStore = create<ProposalsStore>()(
         logActivity("view", "proposals", "Proposal viewed by client");
 
         if (workspaceId) {
-          dbRecordProposalView(workspaceId, proposalId).catch((err) =>
-            console.error("[proposals] dbRecordProposalView failed:", err)
-          );
+          dbRecordProposalView(workspaceId, proposalId).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "recording proposal view" }));
+          });
         }
       },
 
@@ -273,9 +273,9 @@ export const useProposalsStore = create<ProposalsStore>()(
         toast("Proposal accepted");
 
         if (workspaceId) {
-          dbAcceptProposal(workspaceId, proposalId, signature).catch((err) =>
-            console.error("[proposals] dbAcceptProposal failed:", err)
-          );
+          dbAcceptProposal(workspaceId, proposalId, signature).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "accepting proposal" }));
+          });
         }
       },
 
@@ -305,9 +305,9 @@ export const useProposalsStore = create<ProposalsStore>()(
         toast(`Version ${proposal.version} saved`);
 
         if (workspaceId) {
-          dbUpdateProposal(workspaceId, proposalId, updatedData).catch((err) =>
-            console.error("[proposals] dbUpdateProposal (saveVersion) failed:", err)
-          );
+          dbUpdateProposal(workspaceId, proposalId, updatedData).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving proposal version" }));
+          });
         }
       },
 
@@ -341,9 +341,9 @@ export const useProposalsStore = create<ProposalsStore>()(
           toast(`Converted to invoice ${invoice.number}`);
 
           if (workspaceId) {
-            dbUpdateProposal(workspaceId, proposalId, updatedData).catch((err) =>
-              console.error("[proposals] dbUpdateProposal (convertToInvoice) failed:", err)
-            );
+            dbUpdateProposal(workspaceId, proposalId, updatedData).catch((err) => {
+              import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "converting proposal to invoice" }));
+            });
           }
 
           return invoice.id;
@@ -382,9 +382,9 @@ export const useProposalsStore = create<ProposalsStore>()(
           toast(`Converted to quote ${quote.number}`);
 
           if (workspaceId) {
-            dbUpdateProposal(workspaceId, proposalId, updatedData).catch((err) =>
-              console.error("[proposals] dbUpdateProposal (convertToQuote) failed:", err)
-            );
+            dbUpdateProposal(workspaceId, proposalId, updatedData).catch((err) => {
+              import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "converting proposal to quote" }));
+            });
           }
 
           return quote.id;
@@ -404,7 +404,7 @@ export const useProposalsStore = create<ProposalsStore>()(
             dbUpsertTemplates(workspaceId, templates),
           ]);
         } catch (err) {
-          console.error("[proposals] syncToSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing proposals to Supabase" }));
         }
       },
 
@@ -433,7 +433,7 @@ export const useProposalsStore = create<ProposalsStore>()(
             nextProposalNum: nextNum,
           });
         } catch (err) {
-          console.error("[proposals] loadFromSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "loading proposals from Supabase" }));
         }
       },
     }),

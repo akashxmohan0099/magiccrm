@@ -47,9 +47,9 @@ export const useClientPortalStore = create<ClientPortalStore>()(
         toast("Portal settings updated");
 
         if (workspaceId) {
-          savePortalConfig(workspaceId, updated).catch((err) =>
-            console.error("[client-portal] savePortalConfig failed:", err)
-          );
+          savePortalConfig(workspaceId, updated).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving portal config" }));
+          });
         }
       },
       grantAccess: (data, workspaceId?) => {
@@ -59,9 +59,9 @@ export const useClientPortalStore = create<ClientPortalStore>()(
         toast(`Portal access granted to ${data.clientName}`);
 
         if (workspaceId) {
-          dbCreatePortalAccess(workspaceId, access).catch((err) =>
-            console.error("[client-portal] dbCreatePortalAccess failed:", err)
-          );
+          dbCreatePortalAccess(workspaceId, access).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "granting portal access" }));
+          });
         }
         return access;
       },
@@ -74,9 +74,9 @@ export const useClientPortalStore = create<ClientPortalStore>()(
         }
 
         if (workspaceId) {
-          dbDeletePortalAccess(workspaceId, id).catch((err) =>
-            console.error("[client-portal] dbDeletePortalAccess failed:", err)
-          );
+          dbDeletePortalAccess(workspaceId, id).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "revoking portal access" }));
+          });
         }
       },
       toggleAccess: (id, workspaceId?) => {
@@ -85,9 +85,9 @@ export const useClientPortalStore = create<ClientPortalStore>()(
         if (access) toast(`Portal access ${access.enabled ? "enabled" : "disabled"} for ${access.clientName}`);
 
         if (workspaceId && access) {
-          dbUpdatePortalAccess(workspaceId, id, { enabled: access.enabled }).catch((err) =>
-            console.error("[client-portal] dbUpdatePortalAccess failed:", err)
-          );
+          dbUpdatePortalAccess(workspaceId, id, { enabled: access.enabled }).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "toggling portal access" }));
+          });
         }
       },
 
@@ -103,7 +103,7 @@ export const useClientPortalStore = create<ClientPortalStore>()(
             dbUpsertPortalAccess(workspaceId, accessList),
           ]);
         } catch (err) {
-          console.error("[client-portal] syncToSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing client portal to Supabase" }));
         }
       },
 
@@ -127,7 +127,7 @@ export const useClientPortalStore = create<ClientPortalStore>()(
             set(updates as Partial<ClientPortalStore>);
           }
         } catch (err) {
-          console.error("[client-portal] loadFromSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "loading client portal from Supabase" }));
         }
       },
     }),

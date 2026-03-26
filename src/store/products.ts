@@ -51,9 +51,9 @@ export const useProductsStore = create<ProductsStore>()(
 
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
-          dbCreateProduct(workspaceId, product).catch((err) =>
-            console.error("[products] dbCreateProduct failed:", err)
-          );
+          dbCreateProduct(workspaceId, product).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving product" }));
+          });
         }
 
         return product;
@@ -71,9 +71,9 @@ export const useProductsStore = create<ProductsStore>()(
 
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
-          dbUpdateProduct(workspaceId, id, updatedData).catch((err) =>
-            console.error("[products] dbUpdateProduct failed:", err)
-          );
+          dbUpdateProduct(workspaceId, id, updatedData).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating product" }));
+          });
         }
       },
 
@@ -86,9 +86,9 @@ export const useProductsStore = create<ProductsStore>()(
 
           // Sync to Supabase if workspaceId available
           if (workspaceId) {
-            dbDeleteProduct(workspaceId, id).catch((err) =>
-              console.error("[products] dbDeleteProduct failed:", err)
-            );
+            dbDeleteProduct(workspaceId, id).catch((err) => {
+              import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting product" }));
+            });
           }
         }
       },
@@ -105,7 +105,7 @@ export const useProductsStore = create<ProductsStore>()(
           const { products } = get();
           await dbUpsertProducts(workspaceId, products);
         } catch (err) {
-          console.error("[products] syncToSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing products to Supabase" }));
         }
       },
 
@@ -117,7 +117,7 @@ export const useProductsStore = create<ProductsStore>()(
           );
           set({ products: mappedProducts });
         } catch (err) {
-          console.error("[products] loadFromSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "loading products from Supabase" }));
         }
       },
     }),

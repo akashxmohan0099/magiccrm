@@ -42,9 +42,9 @@ export const usePaymentsStore = create<PaymentsStore>()(
         toast(`Created payment of $${data.amount.toFixed(2)}`);
 
         if (workspaceId) {
-          dbCreatePayment(workspaceId, payment).catch((err) =>
-            console.error("[payments] dbCreatePayment failed:", err)
-          );
+          dbCreatePayment(workspaceId, payment).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving payment" }));
+          });
         }
 
         return payment;
@@ -58,9 +58,9 @@ export const usePaymentsStore = create<PaymentsStore>()(
         toast("Payment updated");
 
         if (workspaceId) {
-          dbUpdatePayment(workspaceId, id, updatedData).catch((err) =>
-            console.error("[payments] dbUpdatePayment failed:", err)
-          );
+          dbUpdatePayment(workspaceId, id, updatedData).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating payment" }));
+          });
         }
       },
 
@@ -70,9 +70,9 @@ export const usePaymentsStore = create<PaymentsStore>()(
         toast("Payment deleted", "info");
 
         if (workspaceId) {
-          dbDeletePayment(workspaceId, id).catch((err) =>
-            console.error("[payments] dbDeletePayment failed:", err)
-          );
+          dbDeletePayment(workspaceId, id).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting payment" }));
+          });
         }
       },
 
@@ -91,7 +91,7 @@ export const usePaymentsStore = create<PaymentsStore>()(
           const { payments } = get();
           await dbUpsertPayments(workspaceId, payments);
         } catch (err) {
-          console.error("[payments] syncToSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing payments to Supabase" }));
         }
       },
 
@@ -103,7 +103,7 @@ export const usePaymentsStore = create<PaymentsStore>()(
           );
           set({ payments: mappedPayments });
         } catch (err) {
-          console.error("[payments] loadFromSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "loading payments from Supabase" }));
         }
       },
     }),

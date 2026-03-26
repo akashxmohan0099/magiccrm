@@ -33,9 +33,9 @@ export const useSOAPNotesStore = create<SOAPNotesStore>()(
         toast("Treatment note added");
 
         if (workspaceId) {
-          dbCreateSOAPNote(workspaceId, note).catch((err) =>
-            console.error("[soap-notes] dbCreateSOAPNote failed:", err)
-          );
+          dbCreateSOAPNote(workspaceId, note).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving SOAP note" }));
+          });
         }
         return note;
       },
@@ -45,9 +45,9 @@ export const useSOAPNotesStore = create<SOAPNotesStore>()(
         toast("Treatment note updated");
 
         if (workspaceId) {
-          dbUpdateSOAPNote(workspaceId, id, data).catch((err) =>
-            console.error("[soap-notes] dbUpdateSOAPNote failed:", err)
-          );
+          dbUpdateSOAPNote(workspaceId, id, data).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating SOAP note" }));
+          });
         }
       },
       deleteNote: (id, workspaceId?) => {
@@ -59,9 +59,9 @@ export const useSOAPNotesStore = create<SOAPNotesStore>()(
         }
 
         if (workspaceId) {
-          dbDeleteSOAPNote(workspaceId, id).catch((err) =>
-            console.error("[soap-notes] dbDeleteSOAPNote failed:", err)
-          );
+          dbDeleteSOAPNote(workspaceId, id).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting SOAP note" }));
+          });
         }
       },
       getNotesByClient: (clientId) => get().notes.filter((n) => n.clientId === clientId),
@@ -75,7 +75,7 @@ export const useSOAPNotesStore = create<SOAPNotesStore>()(
           const { notes } = get();
           await dbUpsertSOAPNotes(workspaceId, notes);
         } catch (err) {
-          console.error("[soap-notes] syncToSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing SOAP notes to Supabase" }));
         }
       },
 
@@ -89,7 +89,7 @@ export const useSOAPNotesStore = create<SOAPNotesStore>()(
           );
           set({ notes: mapped });
         } catch (err) {
-          console.error("[soap-notes] loadFromSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "loading SOAP notes from Supabase" }));
         }
       },
     }),

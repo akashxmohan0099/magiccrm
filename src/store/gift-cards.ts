@@ -45,9 +45,9 @@ export const useGiftCardStore = create<GiftCardStore>()(
         toast(`Gift card ${card.code} created`);
 
         if (workspaceId) {
-          dbCreateGiftCard(workspaceId, card).catch((err) =>
-            console.error("[gift-cards] dbCreateGiftCard failed:", err)
-          );
+          dbCreateGiftCard(workspaceId, card).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving gift card" }));
+          });
         }
         return card;
       },
@@ -64,9 +64,9 @@ export const useGiftCardStore = create<GiftCardStore>()(
         }
 
         if (workspaceId) {
-          dbUpdateGiftCard(workspaceId, id, data).catch((err) =>
-            console.error("[gift-cards] dbUpdateGiftCard failed:", err)
-          );
+          dbUpdateGiftCard(workspaceId, id, data).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating gift card" }));
+          });
         }
       },
       redeemGiftCard: (id, amount, workspaceId?) => {
@@ -83,9 +83,9 @@ export const useGiftCardStore = create<GiftCardStore>()(
         toast(`$${amount} redeemed from gift card ${card.code}`);
 
         if (workspaceId) {
-          dbUpdateGiftCard(workspaceId, id, { balance: newBalance, status: newStatus }).catch((err) =>
-            console.error("[gift-cards] dbUpdateGiftCard failed:", err)
-          );
+          dbUpdateGiftCard(workspaceId, id, { balance: newBalance, status: newStatus }).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "redeeming gift card" }));
+          });
         }
       },
       deleteGiftCard: (id, workspaceId?) => {
@@ -97,9 +97,9 @@ export const useGiftCardStore = create<GiftCardStore>()(
         }
 
         if (workspaceId) {
-          dbDeleteGiftCard(workspaceId, id).catch((err) =>
-            console.error("[gift-cards] dbDeleteGiftCard failed:", err)
-          );
+          dbDeleteGiftCard(workspaceId, id).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting gift card" }));
+          });
         }
       },
       getGiftCardByCode: (code) => {
@@ -115,7 +115,7 @@ export const useGiftCardStore = create<GiftCardStore>()(
           const { giftCards } = get();
           await dbUpsertGiftCards(workspaceId, giftCards);
         } catch (err) {
-          console.error("[gift-cards] syncToSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing gift cards to Supabase" }));
         }
       },
 
@@ -129,7 +129,7 @@ export const useGiftCardStore = create<GiftCardStore>()(
           );
           set({ giftCards: mapped });
         } catch (err) {
-          console.error("[gift-cards] loadFromSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "loading gift cards from Supabase" }));
         }
       },
     }),

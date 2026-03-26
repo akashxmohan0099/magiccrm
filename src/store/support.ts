@@ -56,9 +56,9 @@ export const useSupportStore = create<SupportStore>()(
         toast(`Created ticket "${ticket.subject}"`);
 
         if (workspaceId) {
-          dbCreateTicket(workspaceId, ticket).catch((err) =>
-            console.error("[support] dbCreateTicket failed:", err)
-          );
+          dbCreateTicket(workspaceId, ticket).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving support ticket" }));
+          });
         }
 
         return ticket;
@@ -75,9 +75,9 @@ export const useSupportStore = create<SupportStore>()(
         toast("Ticket updated");
 
         if (workspaceId) {
-          dbUpdateTicket(workspaceId, id, updatedData).catch((err) =>
-            console.error("[support] dbUpdateTicket failed:", err)
-          );
+          dbUpdateTicket(workspaceId, id, updatedData).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating support ticket" }));
+          });
         }
       },
 
@@ -86,9 +86,9 @@ export const useSupportStore = create<SupportStore>()(
         toast("Ticket deleted", "info");
 
         if (workspaceId) {
-          dbDeleteTicket(workspaceId, id).catch((err) =>
-            console.error("[support] dbDeleteTicket failed:", err)
-          );
+          dbDeleteTicket(workspaceId, id).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting support ticket" }));
+          });
         }
       },
 
@@ -112,9 +112,9 @@ export const useSupportStore = create<SupportStore>()(
           dbUpdateTicket(workspaceId, ticketId, {
             messages: updatedTicket.messages,
             updatedAt: updatedTicket.updatedAt,
-          }).catch((err) =>
-            console.error("[support] dbUpdateTicket (addMessage) failed:", err)
-          );
+          }).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "adding ticket message" }));
+          });
         }
       },
 
@@ -128,9 +128,9 @@ export const useSupportStore = create<SupportStore>()(
         toast(`Article "${data.title}" published`);
 
         if (workspaceId) {
-          dbCreateArticle(workspaceId, article).catch((err) =>
-            console.error("[support] dbCreateArticle failed:", err)
-          );
+          dbCreateArticle(workspaceId, article).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving knowledge base article" }));
+          });
         }
       },
 
@@ -145,9 +145,9 @@ export const useSupportStore = create<SupportStore>()(
         toast("Article updated");
 
         if (workspaceId) {
-          dbUpdateArticleRow(workspaceId, id, updatedData).catch((err) =>
-            console.error("[support] dbUpdateArticle failed:", err)
-          );
+          dbUpdateArticleRow(workspaceId, id, updatedData).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating knowledge base article" }));
+          });
         }
       },
 
@@ -157,9 +157,9 @@ export const useSupportStore = create<SupportStore>()(
         toast("Article deleted", "info");
 
         if (workspaceId) {
-          dbDeleteArticleRow(workspaceId, id).catch((err) =>
-            console.error("[support] dbDeleteArticle failed:", err)
-          );
+          dbDeleteArticleRow(workspaceId, id).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting knowledge base article" }));
+          });
         }
       },
 
@@ -175,7 +175,7 @@ export const useSupportStore = create<SupportStore>()(
             dbUpsertArticles(workspaceId, articles),
           ]);
         } catch (err) {
-          console.error("[support] syncToSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing support data to Supabase" }));
         }
       },
 
@@ -194,7 +194,7 @@ export const useSupportStore = create<SupportStore>()(
           );
           set({ tickets: mappedTickets, articles: mappedArticles });
         } catch (err) {
-          console.error("[support] loadFromSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "loading support data from Supabase" }));
         }
       },
     }),

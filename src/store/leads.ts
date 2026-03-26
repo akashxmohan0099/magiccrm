@@ -129,6 +129,10 @@ export const useLeadsStore = create<LeadsStore>()(
           },
           workspaceId
         );
+        if (!client || !client.id) {
+          toast("Failed to create client — please try again.");
+          return null;
+        }
         const updatedData = {
           stage: "won" as LeadStage,
           clientId: client.id,

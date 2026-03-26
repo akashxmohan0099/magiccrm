@@ -41,9 +41,9 @@ export const useDiscussionsStore = create<DiscussionsStore>()(
         toast("Comment posted");
 
         if (workspaceId) {
-          dbCreateDiscussion(workspaceId, comment).catch((err) =>
-            console.error("[discussions] dbCreateDiscussion failed:", err)
-          );
+          dbCreateDiscussion(workspaceId, comment).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving discussion comment" }));
+          });
         }
       },
 
@@ -57,9 +57,9 @@ export const useDiscussionsStore = create<DiscussionsStore>()(
         toast("Comment updated");
 
         if (workspaceId) {
-          dbUpdateDiscussion(workspaceId, id, content).catch((err) =>
-            console.error("[discussions] dbUpdateDiscussion failed:", err)
-          );
+          dbUpdateDiscussion(workspaceId, id, content).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating discussion comment" }));
+          });
         }
       },
 
@@ -69,9 +69,9 @@ export const useDiscussionsStore = create<DiscussionsStore>()(
         toast("Comment deleted", "info");
 
         if (workspaceId) {
-          dbDeleteDiscussion(workspaceId, id).catch((err) =>
-            console.error("[discussions] dbDeleteDiscussion failed:", err)
-          );
+          dbDeleteDiscussion(workspaceId, id).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting discussion comment" }));
+          });
         }
       },
 
@@ -89,7 +89,7 @@ export const useDiscussionsStore = create<DiscussionsStore>()(
           const { comments } = get();
           await dbUpsertDiscussions(workspaceId, comments);
         } catch (err) {
-          console.error("[discussions] syncToSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing discussions to Supabase" }));
         }
       },
 
@@ -103,7 +103,7 @@ export const useDiscussionsStore = create<DiscussionsStore>()(
           );
           set({ comments: mapped });
         } catch (err) {
-          console.error("[discussions] loadFromSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "loading discussions from Supabase" }));
         }
       },
     }),

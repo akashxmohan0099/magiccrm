@@ -69,9 +69,9 @@ export const useMarketingStore = create<MarketingStore>()(
         toast(`Created campaign "${campaign.name}"`);
 
         if (workspaceId) {
-          dbCreateCampaign(workspaceId, campaign).catch((err) =>
-            console.error("[marketing] dbCreateCampaign failed:", err)
-          );
+          dbCreateCampaign(workspaceId, campaign).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving campaign" }));
+          });
         }
         return campaign;
       },
@@ -81,9 +81,9 @@ export const useMarketingStore = create<MarketingStore>()(
         toast("Campaign updated");
 
         if (workspaceId) {
-          dbUpdateCampaign(workspaceId, id, data).catch((err) =>
-            console.error("[marketing] dbUpdateCampaign failed:", err)
-          );
+          dbUpdateCampaign(workspaceId, id, data).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating campaign" }));
+          });
         }
       },
       deleteCampaign: (id, workspaceId?) => {
@@ -91,9 +91,9 @@ export const useMarketingStore = create<MarketingStore>()(
         toast("Campaign deleted", "info");
 
         if (workspaceId) {
-          dbDeleteCampaign(workspaceId, id).catch((err) =>
-            console.error("[marketing] dbDeleteCampaign failed:", err)
-          );
+          dbDeleteCampaign(workspaceId, id).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting campaign" }));
+          });
         }
       },
 
@@ -104,9 +104,9 @@ export const useMarketingStore = create<MarketingStore>()(
         toast("Review request created");
 
         if (workspaceId) {
-          dbCreateReviewRequest(workspaceId, rr).catch((err) =>
-            console.error("[marketing] dbCreateReviewRequest failed:", err)
-          );
+          dbCreateReviewRequest(workspaceId, rr).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving review request" }));
+          });
         }
       },
       updateReviewRequest: (id, data, workspaceId?) => {
@@ -117,9 +117,9 @@ export const useMarketingStore = create<MarketingStore>()(
         toast("Review request updated");
 
         if (workspaceId) {
-          dbUpdateReviewRequest(workspaceId, id, data).catch((err) =>
-            console.error("[marketing] dbUpdateReviewRequest failed:", err)
-          );
+          dbUpdateReviewRequest(workspaceId, id, data).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating review request" }));
+          });
         }
       },
       deleteReviewRequest: (id, workspaceId?) => {
@@ -128,9 +128,9 @@ export const useMarketingStore = create<MarketingStore>()(
         toast("Review request deleted", "info");
 
         if (workspaceId) {
-          dbDeleteReviewRequest(workspaceId, id).catch((err) =>
-            console.error("[marketing] dbDeleteReviewRequest failed:", err)
-          );
+          dbDeleteReviewRequest(workspaceId, id).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting review request" }));
+          });
         }
       },
 
@@ -141,9 +141,9 @@ export const useMarketingStore = create<MarketingStore>()(
         toast(`Created coupon "${data.code}"`);
 
         if (workspaceId) {
-          dbCreateCoupon(workspaceId, coupon).catch((err) =>
-            console.error("[marketing] dbCreateCoupon failed:", err)
-          );
+          dbCreateCoupon(workspaceId, coupon).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving coupon" }));
+          });
         }
       },
       updateCoupon: (id, data, workspaceId?) => {
@@ -152,9 +152,9 @@ export const useMarketingStore = create<MarketingStore>()(
         toast("Coupon updated");
 
         if (workspaceId) {
-          dbUpdateCoupon(workspaceId, id, data).catch((err) =>
-            console.error("[marketing] dbUpdateCoupon failed:", err)
-          );
+          dbUpdateCoupon(workspaceId, id, data).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating coupon" }));
+          });
         }
       },
       deleteCoupon: (id, workspaceId?) => {
@@ -163,9 +163,9 @@ export const useMarketingStore = create<MarketingStore>()(
         toast("Coupon deleted", "info");
 
         if (workspaceId) {
-          dbDeleteCoupon(workspaceId, id).catch((err) =>
-            console.error("[marketing] dbDeleteCoupon failed:", err)
-          );
+          dbDeleteCoupon(workspaceId, id).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting coupon" }));
+          });
         }
       },
 
@@ -176,9 +176,9 @@ export const useMarketingStore = create<MarketingStore>()(
         toast(`Created sequence "${data.name}"`);
 
         if (workspaceId) {
-          dbCreateSequence(workspaceId, seq).catch((err) =>
-            console.error("[marketing] dbCreateSequence failed:", err)
-          );
+          dbCreateSequence(workspaceId, seq).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving email sequence" }));
+          });
         }
       },
       toggleSequenceStatus: (id, workspaceId?) => {
@@ -194,9 +194,9 @@ export const useMarketingStore = create<MarketingStore>()(
         }));
 
         if (workspaceId) {
-          dbUpdateSequence(workspaceId, id, { status: newStatus }).catch((err) =>
-            console.error("[marketing] dbUpdateSequence failed:", err)
-          );
+          dbUpdateSequence(workspaceId, id, { status: newStatus }).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "toggling email sequence status" }));
+          });
         }
       },
       deleteSequence: (id, workspaceId?) => {
@@ -204,9 +204,9 @@ export const useMarketingStore = create<MarketingStore>()(
         toast("Sequence deleted", "info");
 
         if (workspaceId) {
-          dbDeleteSequence(workspaceId, id).catch((err) =>
-            console.error("[marketing] dbDeleteSequence failed:", err)
-          );
+          dbDeleteSequence(workspaceId, id).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting email sequence" }));
+          });
         }
       },
 
@@ -224,7 +224,7 @@ export const useMarketingStore = create<MarketingStore>()(
             dbUpsertSequences(workspaceId, sequences),
           ]);
         } catch (err) {
-          console.error("[marketing] syncToSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing marketing data to Supabase" }));
         }
       },
 
@@ -244,7 +244,7 @@ export const useMarketingStore = create<MarketingStore>()(
             sequences: (seqRows ?? []).map((r: Record<string, unknown>) => mapSequenceFromDB(r)),
           });
         } catch (err) {
-          console.error("[marketing] loadFromSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "loading marketing data from Supabase" }));
         }
       },
     }),

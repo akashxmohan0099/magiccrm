@@ -41,9 +41,9 @@ export const useRemindersStore = create<RemindersStore>()(
         toast("Reminder added");
 
         if (workspaceId) {
-          dbCreateReminder(workspaceId, reminder).catch((err) =>
-            console.error("[reminders] dbCreateReminder failed:", err)
-          );
+          dbCreateReminder(workspaceId, reminder).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving reminder" }));
+          });
         }
       },
 
@@ -57,9 +57,9 @@ export const useRemindersStore = create<RemindersStore>()(
         if (reminder) toast(reminder.completed ? "Reminder completed" : "Reminder reopened");
 
         if (workspaceId && reminder) {
-          dbUpdateReminder(workspaceId, id, { completed: reminder.completed }).catch((err) =>
-            console.error("[reminders] dbUpdateReminder failed:", err)
-          );
+          dbUpdateReminder(workspaceId, id, { completed: reminder.completed }).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "toggling reminder" }));
+          });
         }
       },
 
@@ -68,9 +68,9 @@ export const useRemindersStore = create<RemindersStore>()(
         toast("Reminder deleted", "info");
 
         if (workspaceId) {
-          dbDeleteReminder(workspaceId, id).catch((err) =>
-            console.error("[reminders] dbDeleteReminder failed:", err)
-          );
+          dbDeleteReminder(workspaceId, id).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting reminder" }));
+          });
         }
       },
 
@@ -93,7 +93,7 @@ export const useRemindersStore = create<RemindersStore>()(
           const { reminders } = get();
           await dbUpsertReminders(workspaceId, reminders);
         } catch (err) {
-          console.error("[reminders] syncToSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing reminders to Supabase" }));
         }
       },
 
@@ -107,7 +107,7 @@ export const useRemindersStore = create<RemindersStore>()(
           );
           set({ reminders: mapped });
         } catch (err) {
-          console.error("[reminders] loadFromSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "loading reminders from Supabase" }));
         }
       },
     }),

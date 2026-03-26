@@ -68,9 +68,9 @@ export const useServicesStore = create<ServicesStore>()(
 
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
-          dbCreateService(workspaceId, service).catch((err) =>
-            console.error("[services] dbCreateService failed:", err)
-          );
+          dbCreateService(workspaceId, service).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving service" }));
+          });
         }
 
         return service;
@@ -87,9 +87,9 @@ export const useServicesStore = create<ServicesStore>()(
 
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
-          dbUpdateService(workspaceId, id, data).catch((err) =>
-            console.error("[services] dbUpdateService failed:", err)
-          );
+          dbUpdateService(workspaceId, id, data).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating service" }));
+          });
         }
       },
 
@@ -102,9 +102,9 @@ export const useServicesStore = create<ServicesStore>()(
 
           // Sync to Supabase if workspaceId available
           if (workspaceId) {
-            dbDeleteService(workspaceId, id).catch((err) =>
-              console.error("[services] dbDeleteService failed:", err)
-            );
+            dbDeleteService(workspaceId, id).catch((err) => {
+              import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting service" }));
+            });
           }
         }
       },
@@ -127,9 +127,9 @@ export const useServicesStore = create<ServicesStore>()(
           if (updatedService) {
             dbUpdateService(workspaceId, serviceId, {
               variants: updatedService.variants,
-            }).catch((err) =>
-              console.error("[services] dbUpdateService (addVariant) failed:", err)
-            );
+            }).catch((err) => {
+              import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving service variant" }));
+            });
           }
         }
       },
@@ -156,9 +156,9 @@ export const useServicesStore = create<ServicesStore>()(
           if (updatedService) {
             dbUpdateService(workspaceId, serviceId, {
               variants: updatedService.variants,
-            }).catch((err) =>
-              console.error("[services] dbUpdateService (updateVariant) failed:", err)
-            );
+            }).catch((err) => {
+              import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating service variant" }));
+            });
           }
         }
       },
@@ -184,9 +184,9 @@ export const useServicesStore = create<ServicesStore>()(
           if (updatedService) {
             dbUpdateService(workspaceId, serviceId, {
               variants: updatedService.variants,
-            }).catch((err) =>
-              console.error("[services] dbUpdateService (deleteVariant) failed:", err)
-            );
+            }).catch((err) => {
+              import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting service variant" }));
+            });
           }
         }
       },
@@ -200,7 +200,7 @@ export const useServicesStore = create<ServicesStore>()(
           const { services } = get();
           await dbUpsertServices(workspaceId, services);
         } catch (err) {
-          console.error("[services] syncToSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing services to Supabase" }));
         }
       },
 
@@ -212,7 +212,7 @@ export const useServicesStore = create<ServicesStore>()(
           );
           set({ services: mappedServices, initialized: true });
         } catch (err) {
-          console.error("[services] loadFromSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "loading services from Supabase" }));
         }
       },
     }),

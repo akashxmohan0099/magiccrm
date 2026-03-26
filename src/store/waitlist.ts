@@ -37,9 +37,9 @@ export const useWaitlistStore = create<WaitlistStore>()(
         toast(`Added ${entry.clientName} to waitlist`);
 
         if (workspaceId) {
-          dbCreateWaitlistEntry(workspaceId, entry).catch((err) =>
-            console.error("[waitlist] dbCreateWaitlistEntry failed:", err)
-          );
+          dbCreateWaitlistEntry(workspaceId, entry).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving waitlist entry" }));
+          });
         }
         return entry;
       },
@@ -49,9 +49,9 @@ export const useWaitlistStore = create<WaitlistStore>()(
         toast("Removed from waitlist", "info");
 
         if (workspaceId) {
-          dbDeleteWaitlistEntry(workspaceId, id).catch((err) =>
-            console.error("[waitlist] dbDeleteWaitlistEntry failed:", err)
-          );
+          dbDeleteWaitlistEntry(workspaceId, id).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "removing waitlist entry" }));
+          });
         }
       },
 
@@ -63,9 +63,9 @@ export const useWaitlistStore = create<WaitlistStore>()(
         }));
 
         if (workspaceId) {
-          dbUpdateWaitlistEntry(workspaceId, id, data).catch((err) =>
-            console.error("[waitlist] dbUpdateWaitlistEntry failed:", err)
-          );
+          dbUpdateWaitlistEntry(workspaceId, id, data).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating waitlist entry" }));
+          });
         }
       },
 
@@ -98,9 +98,9 @@ export const useWaitlistStore = create<WaitlistStore>()(
           if (workspaceId) {
             // Bulk update notified entries
             for (const w of waiting) {
-              dbUpdateWaitlistEntry(workspaceId, w.id, { status: "notified", notifiedAt: now }).catch((err) =>
-                console.error("[waitlist] dbUpdateWaitlistEntry failed:", err)
-              );
+              dbUpdateWaitlistEntry(workspaceId, w.id, { status: "notified", notifiedAt: now }).catch((err) => {
+                import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "notifying waitlist entry" }));
+              });
             }
           }
         }
@@ -117,7 +117,7 @@ export const useWaitlistStore = create<WaitlistStore>()(
           const { entries } = get();
           await dbUpsertWaitlistEntries(workspaceId, entries);
         } catch (err) {
-          console.error("[waitlist] syncToSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing waitlist to Supabase" }));
         }
       },
 
@@ -131,7 +131,7 @@ export const useWaitlistStore = create<WaitlistStore>()(
           );
           set({ entries: mapped });
         } catch (err) {
-          console.error("[waitlist] loadFromSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "loading waitlist from Supabase" }));
         }
       },
     }),

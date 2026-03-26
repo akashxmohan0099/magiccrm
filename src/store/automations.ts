@@ -63,9 +63,9 @@ export const useAutomationsStore = create<AutomationsStore>()(
         toast(`Created automation "${rule.name}"`);
 
         if (workspaceId) {
-          dbCreateRule(workspaceId, rule).catch((err) =>
-            console.error("[automations] dbCreateRule failed:", err)
-          );
+          dbCreateRule(workspaceId, rule).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving automation rule" }));
+          });
         }
       },
 
@@ -77,9 +77,9 @@ export const useAutomationsStore = create<AutomationsStore>()(
         toast("Automation updated");
 
         if (workspaceId) {
-          dbUpdateRule(workspaceId, id, data).catch((err) =>
-            console.error("[automations] dbUpdateRule failed:", err)
-          );
+          dbUpdateRule(workspaceId, id, data).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating automation rule" }));
+          });
         }
       },
 
@@ -88,9 +88,9 @@ export const useAutomationsStore = create<AutomationsStore>()(
         toast("Automation deleted", "info");
 
         if (workspaceId) {
-          dbDeleteRule(workspaceId, id).catch((err) =>
-            console.error("[automations] dbDeleteRule failed:", err)
-          );
+          dbDeleteRule(workspaceId, id).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting automation rule" }));
+          });
         }
       },
 
@@ -104,9 +104,9 @@ export const useAutomationsStore = create<AutomationsStore>()(
         if (rule) toast(`Automation "${rule.name}" ${rule.enabled ? "enabled" : "disabled"}`);
 
         if (workspaceId && rule) {
-          dbUpdateRule(workspaceId, id, { enabled: rule.enabled }).catch((err) =>
-            console.error("[automations] dbUpdateRule failed:", err)
-          );
+          dbUpdateRule(workspaceId, id, { enabled: rule.enabled }).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "toggling automation rule" }));
+          });
         }
       },
 
@@ -121,9 +121,9 @@ export const useAutomationsStore = create<AutomationsStore>()(
         toast(`Template "${template.name}" created`);
 
         if (workspaceId) {
-          dbCreateTemplate(workspaceId, template).catch((err) =>
-            console.error("[automations] dbCreateTemplate failed:", err)
-          );
+          dbCreateTemplate(workspaceId, template).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving recurring template" }));
+          });
         }
       },
 
@@ -138,9 +138,9 @@ export const useAutomationsStore = create<AutomationsStore>()(
         toast("Template deleted", "info");
 
         if (workspaceId) {
-          dbDeleteTemplate(workspaceId, id).catch((err) =>
-            console.error("[automations] dbDeleteTemplate failed:", err)
-          );
+          dbDeleteTemplate(workspaceId, id).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting recurring template" }));
+          });
         }
       },
 
@@ -189,7 +189,7 @@ export const useAutomationsStore = create<AutomationsStore>()(
             dbUpsertTemplates(workspaceId, recurringTemplates),
           ]);
         } catch (err) {
-          console.error("[automations] syncToSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing automations to Supabase" }));
         }
       },
 
@@ -218,7 +218,7 @@ export const useAutomationsStore = create<AutomationsStore>()(
             set(updates as Partial<AutomationsStore>);
           }
         } catch (err) {
-          console.error("[automations] loadFromSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "loading automations from Supabase" }));
         }
       },
     }),

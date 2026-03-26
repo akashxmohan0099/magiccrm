@@ -32,9 +32,9 @@ export const useBeforeAfterStore = create<BeforeAfterStore>()(
         toast("Before/after record added");
 
         if (workspaceId) {
-          dbCreateBeforeAfter(workspaceId, record).catch((err) =>
-            console.error("[before-after] dbCreateBeforeAfter failed:", err)
-          );
+          dbCreateBeforeAfter(workspaceId, record).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving before/after record" }));
+          });
         }
         return record;
       },
@@ -44,9 +44,9 @@ export const useBeforeAfterStore = create<BeforeAfterStore>()(
         toast("Before/after record updated");
 
         if (workspaceId) {
-          dbUpdateBeforeAfter(workspaceId, id, data).catch((err) =>
-            console.error("[before-after] dbUpdateBeforeAfter failed:", err)
-          );
+          dbUpdateBeforeAfter(workspaceId, id, data).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating before/after record" }));
+          });
         }
       },
       deleteRecord: (id, workspaceId?) => {
@@ -58,9 +58,9 @@ export const useBeforeAfterStore = create<BeforeAfterStore>()(
         }
 
         if (workspaceId) {
-          dbDeleteBeforeAfter(workspaceId, id).catch((err) =>
-            console.error("[before-after] dbDeleteBeforeAfter failed:", err)
-          );
+          dbDeleteBeforeAfter(workspaceId, id).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting before/after record" }));
+          });
         }
       },
       getRecordsByClient: (clientId) => get().records.filter((r) => r.clientId === clientId),
@@ -74,7 +74,7 @@ export const useBeforeAfterStore = create<BeforeAfterStore>()(
           const { records } = get();
           await dbUpsertBeforeAfterRecords(workspaceId, records);
         } catch (err) {
-          console.error("[before-after] syncToSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing before/after records to Supabase" }));
         }
       },
 
@@ -88,7 +88,7 @@ export const useBeforeAfterStore = create<BeforeAfterStore>()(
           );
           set({ records: mapped });
         } catch (err) {
-          console.error("[before-after] loadFromSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "loading before/after records from Supabase" }));
         }
       },
     }),

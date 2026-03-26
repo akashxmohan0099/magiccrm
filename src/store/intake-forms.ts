@@ -37,9 +37,9 @@ export const useIntakeFormsStore = create<IntakeFormsStore>()(
         toast(`Form "${data.name}" created`);
 
         if (workspaceId) {
-          dbCreateIntakeForm(workspaceId, form).catch((err) =>
-            console.error("[intake-forms] dbCreateIntakeForm failed:", err)
-          );
+          dbCreateIntakeForm(workspaceId, form).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving intake form" }));
+          });
         }
         return form;
       },
@@ -49,9 +49,9 @@ export const useIntakeFormsStore = create<IntakeFormsStore>()(
         toast("Form updated");
 
         if (workspaceId) {
-          dbUpdateIntakeForm(workspaceId, id, data).catch((err) =>
-            console.error("[intake-forms] dbUpdateIntakeForm failed:", err)
-          );
+          dbUpdateIntakeForm(workspaceId, id, data).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating intake form" }));
+          });
         }
       },
       deleteForm: (id, workspaceId?) => {
@@ -63,9 +63,9 @@ export const useIntakeFormsStore = create<IntakeFormsStore>()(
         }
 
         if (workspaceId) {
-          dbDeleteIntakeForm(workspaceId, id).catch((err) =>
-            console.error("[intake-forms] dbDeleteIntakeForm failed:", err)
-          );
+          dbDeleteIntakeForm(workspaceId, id).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting intake form" }));
+          });
         }
       },
       addSubmission: (data, workspaceId?) => {
@@ -78,15 +78,15 @@ export const useIntakeFormsStore = create<IntakeFormsStore>()(
         toast(`Submission received for "${data.formName}"`);
 
         if (workspaceId) {
-          dbCreateIntakeSubmission(workspaceId, sub).catch((err) =>
-            console.error("[intake-forms] dbCreateIntakeSubmission failed:", err)
-          );
+          dbCreateIntakeSubmission(workspaceId, sub).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving intake submission" }));
+          });
           // Also update the form's submission count
           const form = get().forms.find((f) => f.id === data.formId);
           if (form) {
-            dbUpdateIntakeForm(workspaceId, data.formId, { submissionCount: form.submissionCount }).catch((err) =>
-              console.error("[intake-forms] dbUpdateIntakeForm (count) failed:", err)
-            );
+            dbUpdateIntakeForm(workspaceId, data.formId, { submissionCount: form.submissionCount }).catch((err) => {
+              import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating intake form submission count" }));
+            });
           }
         }
         return sub;
@@ -103,16 +103,16 @@ export const useIntakeFormsStore = create<IntakeFormsStore>()(
         toast("Submission deleted", "info");
 
         if (workspaceId) {
-          dbDeleteIntakeSubmission(workspaceId, id).catch((err) =>
-            console.error("[intake-forms] dbDeleteIntakeSubmission failed:", err)
-          );
+          dbDeleteIntakeSubmission(workspaceId, id).catch((err) => {
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting intake submission" }));
+          });
           // Also update the form's submission count
           if (sub) {
             const form = get().forms.find((f) => f.id === sub.formId);
             if (form) {
-              dbUpdateIntakeForm(workspaceId, sub.formId, { submissionCount: form.submissionCount }).catch((err) =>
-                console.error("[intake-forms] dbUpdateIntakeForm (count) failed:", err)
-              );
+              dbUpdateIntakeForm(workspaceId, sub.formId, { submissionCount: form.submissionCount }).catch((err) => {
+                import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating intake form submission count" }));
+              });
             }
           }
         }
@@ -131,7 +131,7 @@ export const useIntakeFormsStore = create<IntakeFormsStore>()(
             dbUpsertIntakeSubmissions(workspaceId, submissions),
           ]);
         } catch (err) {
-          console.error("[intake-forms] syncToSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing intake forms to Supabase" }));
         }
       },
 
@@ -155,7 +155,7 @@ export const useIntakeFormsStore = create<IntakeFormsStore>()(
             set(updates as Partial<IntakeFormsStore>);
           }
         } catch (err) {
-          console.error("[intake-forms] loadFromSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "loading intake forms from Supabase" }));
         }
       },
     }),
