@@ -8,7 +8,7 @@ import type { ModuleSchema } from "@/types/module-schema";
  * because it tests lineItems, computed fields, and conditional visibility.
  */
 export const invoicingSchema: ModuleSchema = {
-  id: "invoicing",
+  id: "quotes-invoicing",
   label: "Billing",
   description: "Quotes, invoices, and payments.",
   icon: "Receipt",
@@ -32,7 +32,7 @@ export const invoicingSchema: ModuleSchema = {
       id: "clientId",
       label: "Client",
       type: "relation",
-      relationTo: "clients",
+      relationTo: "client-database",
       required: true,
       allowInlineCreate: true,
       showInTable: true,
@@ -44,7 +44,7 @@ export const invoicingSchema: ModuleSchema = {
       id: "jobId",
       label: "Related Job",
       type: "relation",
-      relationTo: "jobs",
+      relationTo: "jobs-projects",
       showInForm: true,
       showInDetail: true,
       group: "Invoice",
@@ -214,8 +214,8 @@ export const invoicingSchema: ModuleSchema = {
   },
 
   relations: [
-    { field: "clientId", targetModule: "clients", displayField: "name" },
-    { field: "jobId", targetModule: "jobs", displayField: "title" },
+    { field: "clientId", targetModule: "client-database", displayField: "name" },
+    { field: "jobId", targetModule: "jobs-projects", displayField: "title" },
   ],
 
   views: [
@@ -240,7 +240,7 @@ export const invoicingSchema: ModuleSchema = {
       label: "Convert to Invoice",
       icon: "Receipt",
       showOn: "detail",
-      targetModule: "invoicing",
+      targetModule: "quotes-invoicing",
       fieldMapping: [
         { sourceField: "clientId", targetField: "clientId", transform: "copy" },
         { sourceField: "lineItems", targetField: "lineItems", transform: "clone-line-items" },

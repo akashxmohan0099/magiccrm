@@ -48,40 +48,51 @@ export default function ModulePage({ params }: { params: Promise<{ moduleSlug: s
   const { moduleSlug } = use(params);
   const searchParams = useSearchParams();
   const { activeCombinations } = useActiveCombinations();
+  const mod = getModuleBySlug(moduleSlug);
+  const isLegacyModuleEnabled = useModuleEnabled(mod?.id ?? "__missing__");
 
   const assembled = useAssembledSchemasStore((s) => s.assembled);
   const assembledSchema = useAssembledSchemasStore((s) => s.getSchemaBySlug(moduleSlug));
-  const forceLegacy = searchParams.get("renderer") === "legacy";
+  const preferSchemaRenderer = searchParams.get("renderer") === "schema";
 
-  // 1. Try assembled schema (from onboarding assembly pipeline)
-  //    This is the primary path for new workspaces. Schema-driven rendering
-  //    with persona-specific labels, fields, and views.
-  if (assembled && assembledSchema && !forceLegacy) {
-    return (
-      <PageTransition>
-        <SchemaModuleBridge schema={assembledSchema} />
-      </PageTransition>
-    );
+  // 1. Opt-in schema rendering for comparison/testing.
+  //    Keep legacy pages as the production default until the schema runtime
+  //    has full data-store parity with the existing modules.
+  if (preferSchemaRenderer) {
+    if (assembled && assembledSchema) {
+      return (
+        <PageTransition>
+          <SchemaModuleBridge schema={assembledSchema} />
+        </PageTransition>
+      );
+    }
+
+    const staticSchema = getSchemaBySlug(moduleSlug);
+    if (staticSchema) {
+      return (
+        <PageTransition>
+          <SchemaModuleBridge schema={staticSchema} />
+        </PageTransition>
+      );
+    }
   }
 
   // 2. Try standard module lookup (legacy hardcoded components)
-  //    Used for workspaces created before the schema system, or when
-  //    ?renderer=legacy is set for comparison testing.
-  const mod = getModuleBySlug(moduleSlug);
-
+  //    This remains the default production renderer.
   if (mod) {
-    const isEnabled = useModuleEnabled(mod.id);
-    if (!isEnabled) notFound();
+    if (!isLegacyModuleEnabled) notFound();
     const Component = MODULE_COMPONENTS[mod.id];
     if (!Component) {
-      // No legacy component — try static schema registry as fallback
-      const staticSchema = getSchemaBySlug(moduleSlug);
-      if (staticSchema) {
-        return (
-          <PageTransition>
-            <SchemaModuleBridge schema={staticSchema} />
-          </PageTransition>
-        );
+      // No legacy component — allow explicit schema fallback only.
+      if (preferSchemaRenderer) {
+        const staticSchema = getSchemaBySlug(moduleSlug);
+        if (staticSchema) {
+          return (
+            <PageTransition>
+              <SchemaModuleBridge schema={staticSchema} />
+            </PageTransition>
+          );
+        }
       }
       notFound();
     }
@@ -109,14 +120,16 @@ export default function ModulePage({ params }: { params: Promise<{ moduleSlug: s
     );
   }
 
-  // 4. Try static schema registry (for ?renderer=schema testing)
-  const staticSchema = getSchemaBySlug(moduleSlug);
-  if (staticSchema) {
-    return (
-      <PageTransition>
-        <SchemaModuleBridge schema={staticSchema} />
-      </PageTransition>
-    );
+  // 4. Static schema registry stays available via ?renderer=schema for testing.
+  if (preferSchemaRenderer) {
+    const staticSchema = getSchemaBySlug(moduleSlug);
+    if (staticSchema) {
+        return (
+          <PageTransition>
+            <SchemaModuleBridge schema={staticSchema} />
+          </PageTransition>
+        );
+    }
   }
 
   notFound();

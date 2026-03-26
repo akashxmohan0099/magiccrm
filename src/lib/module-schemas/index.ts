@@ -18,11 +18,11 @@ import { communicationSchema } from "./base/communication";
 
 /** All registered base schemas, keyed by module ID */
 const BASE_SCHEMAS: Record<string, ModuleSchema> = {
-  clients: clientsSchema,
-  leads: leadsSchema,
-  jobs: jobsSchema,
-  bookings: bookingsSchema,
-  invoicing: invoicingSchema,
+  "client-database": clientsSchema,
+  "leads-pipeline": leadsSchema,
+  "jobs-projects": jobsSchema,
+  "bookings-calendar": bookingsSchema,
+  "quotes-invoicing": invoicingSchema,
   products: productsSchema,
   communication: communicationSchema,
 };
@@ -56,6 +56,11 @@ export function getAllSchemaIds(): Set<string> {
 /** Get all registered base schemas */
 export function getAllSchemas(): ModuleSchema[] {
   return Object.values(BASE_SCHEMAS);
+}
+
+/** Get all registered persona variants */
+export function getAllVariants(): SchemaVariant[] {
+  return [...SCHEMA_VARIANTS];
 }
 
 /** Check if a module has a schema-driven renderer available */

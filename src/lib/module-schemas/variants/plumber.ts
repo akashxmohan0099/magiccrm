@@ -10,7 +10,7 @@ import type { SchemaVariant } from "@/types/module-schema";
 
 /** Clients → relabeled for trades context */
 export const plumberClientsVariant: SchemaVariant = {
-  baseSchemaId: "clients",
+  baseSchemaId: "client-database",
   variantId: "trades-construction:plumber:clients",
   personaId: "plumber",
   industryId: "trades-construction",
@@ -59,7 +59,7 @@ export const plumberClientsVariant: SchemaVariant = {
 
 /** Leads → "Job Requests" for plumber */
 export const plumberLeadsVariant: SchemaVariant = {
-  baseSchemaId: "leads",
+  baseSchemaId: "leads-pipeline",
   variantId: "trades-construction:plumber:leads",
   personaId: "plumber",
   industryId: "trades-construction",
@@ -135,7 +135,7 @@ export const plumberLeadsVariant: SchemaVariant = {
 
 /** Jobs → "Jobs" with trades-specific stages */
 export const plumberJobsVariant: SchemaVariant = {
-  baseSchemaId: "jobs",
+  baseSchemaId: "jobs-projects",
   variantId: "trades-construction:plumber:jobs",
   personaId: "plumber",
   industryId: "trades-construction",
@@ -194,7 +194,7 @@ export const plumberJobsVariant: SchemaVariant = {
 
 /** Bookings → "Site Visits" for plumber */
 export const plumberBookingsVariant: SchemaVariant = {
-  baseSchemaId: "bookings",
+  baseSchemaId: "bookings-calendar",
   variantId: "trades-construction:plumber:bookings",
   personaId: "plumber",
   industryId: "trades-construction",
@@ -204,8 +204,9 @@ export const plumberBookingsVariant: SchemaVariant = {
     fieldOverrides: {
       modify: [
         { id: "title", label: "Visit Title", placeholder: "e.g., Inspect leaking tap — 42 Smith St" },
+        { id: "serviceId", showInForm: false, showInDetail: false },
       ],
-      remove: ["serviceId", "recurring"],
+      remove: ["recurring"],
     },
     primaryAction: { label: "Schedule Visit", icon: "Plus" },
     emptyState: {
@@ -217,7 +218,7 @@ export const plumberBookingsVariant: SchemaVariant = {
 
 /** Invoicing → stays as "Invoicing" but with trades context */
 export const plumberInvoicingVariant: SchemaVariant = {
-  baseSchemaId: "invoicing",
+  baseSchemaId: "quotes-invoicing",
   variantId: "trades-construction:plumber:invoicing",
   personaId: "plumber",
   industryId: "trades-construction",

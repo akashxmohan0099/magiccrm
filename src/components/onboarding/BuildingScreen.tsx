@@ -6,9 +6,8 @@ import { useRouter } from "next/navigation";
 import { useOnboardingStore } from "@/store/onboarding";
 import { useAssembledSchemasStore } from "@/store/assembled-schemas";
 import { computeEnabledModuleIds, getModuleById, getModuleDisplayName } from "@/lib/module-registry";
-import { assembleWorkspaceSync } from "@/lib/assembly-pipeline";
+import { assembleWorkspace, assembleWorkspaceSync } from "@/lib/assembly-pipeline";
 import { useVocabulary } from "@/hooks/useVocabulary";
-import type { ModuleSchema } from "@/types/module-schema";
 import {
   Users, Inbox, MessageCircle, Calendar, Receipt, FolderKanban,
   Megaphone, Headphones, FileText, CreditCard, Zap, BarChart3,
@@ -103,10 +102,10 @@ export function BuildingScreen() {
   const [revealedModules, setRevealedModules] = useState(0);
   const [showComplete, setShowComplete] = useState(false);
   const [fadeOut, setFadeOut] = useState(false);
-  const [assembledLabels, setAssembledLabels] = useState<Record<string, string>>({});
   const assemblyRan = useRef(false);
   const router = useRouter();
   const { businessContext, getIndustryConfig, needs, discoveryAnswers, selectedIndustry, selectedPersona } = useOnboardingStore();
+  const assembledSchemas = useAssembledSchemasStore((s) => s.schemas);
   const setAssemblyResult = useAssembledSchemasStore((s) => s.setAssemblyResult);
   const vocab = useVocabulary();
 
@@ -116,6 +115,14 @@ export function BuildingScreen() {
     return Array.from(computeEnabledModuleIds(needs, discoveryAnswers));
   }, [needs, discoveryAnswers]);
 
+  const assembledLabels = useMemo(
+    () =>
+      Object.fromEntries(
+        Object.values(assembledSchemas).map((schema) => [schema.id, schema.label]),
+      ),
+    [assembledSchemas],
+  );
+
   const moduleCount = selectedModules.length;
 
   // ── Run assembly pipeline on mount ──
@@ -123,8 +130,8 @@ export function BuildingScreen() {
     if (assemblyRan.current) return;
     assemblyRan.current = true;
 
-    // Run synchronous assembly (variants + validation, no AI tuning yet)
-    // AI tuning runs async in background — labels update as they arrive
+    // Stage 1: run sync assembly immediately so the build UI and dashboard have
+    // deterministic schemas right away.
     const result = assembleWorkspaceSync({
       enabledModuleIds: selectedModules,
       industryId: selectedIndustry,
@@ -134,13 +141,31 @@ export function BuildingScreen() {
     // Save assembled schemas to store
     setAssemblyResult(result.schemas, result.fallbacks, 0);
 
-    // Extract personalized labels for the module cards
-    const labels: Record<string, string> = {};
-    for (const schema of result.schemas) {
-      labels[schema.id] = schema.label;
-    }
-    setAssembledLabels(labels);
-  }, [selectedModules, selectedIndustry, selectedPersona, setAssemblyResult]);
+    // Stage 2: tune labels asynchronously and replace the assembled result
+    // when the personalized schemas are ready.
+    void assembleWorkspace({
+      enabledModuleIds: selectedModules,
+      industryId: selectedIndustry,
+      personaId: selectedPersona,
+      businessContext: {
+        businessName: businessContext.businessName,
+        businessDescription: businessContext.businessDescription,
+        location: businessContext.location,
+      },
+    }).then((tunedResult) => {
+      setAssemblyResult(tunedResult.schemas, tunedResult.fallbacks, tunedResult.durationMs);
+    }).catch(() => {
+      // Sync assembly is already stored. Ignore tuning failures and keep defaults.
+    });
+  }, [
+    selectedModules,
+    selectedIndustry,
+    selectedPersona,
+    businessContext.businessName,
+    businessContext.businessDescription,
+    businessContext.location,
+    setAssemblyResult,
+  ]);
 
   // Generate deterministic particles (seeded from index to avoid impure Math.random during render)
   const particles = useMemo(() =>

@@ -10,7 +10,7 @@ import type { SchemaVariant } from "@/types/module-schema";
 
 /** Clients → relabeled for salon context */
 export const hairSalonClientsVariant: SchemaVariant = {
-  baseSchemaId: "clients",
+  baseSchemaId: "client-database",
   variantId: "beauty-wellness:hair-salon:clients",
   personaId: "hair-salon",
   industryId: "beauty-wellness",
@@ -65,7 +65,7 @@ export const hairSalonClientsVariant: SchemaVariant = {
 
 /** Leads → "Inquiries" for salon context */
 export const hairSalonLeadsVariant: SchemaVariant = {
-  baseSchemaId: "leads",
+  baseSchemaId: "leads-pipeline",
   variantId: "beauty-wellness:hair-salon:leads",
   personaId: "hair-salon",
   industryId: "beauty-wellness",
@@ -76,8 +76,8 @@ export const hairSalonLeadsVariant: SchemaVariant = {
       modify: [
         { id: "value", label: "Estimated Value", placeholder: "Expected spend per visit" },
         { id: "source", label: "How they found you" },
+        { id: "company", showInForm: false, showInDetail: false, searchable: false },
       ],
-      remove: ["company"],
     },
     primaryAction: { label: "Add Inquiry", icon: "Plus" },
     emptyState: {
@@ -89,7 +89,7 @@ export const hairSalonLeadsVariant: SchemaVariant = {
 
 /** Bookings → "Appointments" for salon context */
 export const hairSalonBookingsVariant: SchemaVariant = {
-  baseSchemaId: "bookings",
+  baseSchemaId: "bookings-calendar",
   variantId: "beauty-wellness:hair-salon:bookings",
   personaId: "hair-salon",
   industryId: "beauty-wellness",
@@ -110,7 +110,7 @@ export const hairSalonBookingsVariant: SchemaVariant = {
 
 /** Invoicing → "Receipts" for salon (no quotes, pay at point of sale) */
 export const hairSalonInvoicingVariant: SchemaVariant = {
-  baseSchemaId: "invoicing",
+  baseSchemaId: "quotes-invoicing",
   variantId: "beauty-wellness:hair-salon:invoicing",
   personaId: "hair-salon",
   industryId: "beauty-wellness",
@@ -124,8 +124,9 @@ export const hairSalonInvoicingVariant: SchemaVariant = {
           { value: "one-time", label: "Pay now" },
           { value: "deposit-balance", label: "Deposit + Later" },
         ]},
+        { id: "jobId", showInForm: false, showInDetail: false },
       ],
-      remove: ["jobId", "recurringSchedule"],
+      remove: ["recurringSchedule"],
     },
     // Remove the quote→invoice action (salons don't quote)
     actionOverrides: { remove: ["convert-quote-to-invoice"] },
@@ -155,6 +156,14 @@ export const hairSalonProductsVariant: SchemaVariant = {
         { id: "duration", label: "Duration (min)", placeholder: "45" },
       ],
       remove: ["sku", "inStock", "quantity"],
+    },
+    viewOverrides: {
+      modify: [
+        {
+          id: "table",
+          visibleFields: ["name", "category", "price", "duration", "createdAt"],
+        },
+      ],
     },
     primaryAction: { label: "Add Service", icon: "Plus" },
     emptyState: {

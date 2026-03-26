@@ -8,7 +8,7 @@ import type { ModuleSchema } from "@/types/module-schema";
  * add/remove fields, and reorder views.
  */
 export const clientsSchema: ModuleSchema = {
-  id: "clients",
+  id: "client-database",
   label: "Clients",
   description: "Your clients, all in one place.",
   icon: "Users",
@@ -180,10 +180,10 @@ export const clientsSchema: ModuleSchema = {
       id: "cascade-delete-client",
       type: "cascade-delete",
       targetModules: [
-        { moduleId: "bookings", foreignKey: "clientId" },
-        { moduleId: "invoicing", foreignKey: "clientId" },
-        { moduleId: "jobs", foreignKey: "clientId" },
-        { moduleId: "leads", foreignKey: "clientId" },
+        { moduleId: "bookings-calendar", foreignKey: "clientId" },
+        { moduleId: "quotes-invoicing", foreignKey: "clientId" },
+        { moduleId: "jobs-projects", foreignKey: "clientId" },
+        { moduleId: "leads-pipeline", foreignKey: "clientId" },
         { moduleId: "communication", foreignKey: "clientId" },
       ],
     },

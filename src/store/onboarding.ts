@@ -16,6 +16,7 @@ import {
   saveWorkspaceModules,
 } from "@/lib/db/workspace-settings";
 import { computeEnabledModuleIds, getCoreModules, getModuleById } from "@/lib/module-registry";
+import { extractTuningState } from "@/lib/onboarding-tuning";
 import { getProfileForAIPrompt } from "@/lib/persona-profiles";
 
 interface AIQuestionCategory {
@@ -308,13 +309,7 @@ export const useOnboardingStore = create<OnboardingStore>()(
           }
 
           const data = await res.json();
-          const patches = data.patches || [];
-          const moduleMeta = data.moduleMeta || {};
-
-          // Extract combination IDs from patches
-          const combinationIds = patches
-            .filter((p: PresentationPatch) => p.op === "apply-module-combination")
-            .map((p: PresentationPatch & { combinationId: string }) => p.combinationId);
+          const { patches, moduleMeta, combinationIds } = extractTuningState(data);
 
           set({
             tuningPatches: patches,

@@ -7,7 +7,7 @@ import type { ModuleSchema } from "@/types/module-schema";
  * Service selection auto-fills title, duration, and price.
  */
 export const bookingsSchema: ModuleSchema = {
-  id: "bookings",
+  id: "bookings-calendar",
   label: "Scheduling",
   description: "Bookings, appointments, and calendar.",
   icon: "Calendar",
@@ -32,7 +32,7 @@ export const bookingsSchema: ModuleSchema = {
       id: "clientId",
       label: "Client",
       type: "relation",
-      relationTo: "clients",
+      relationTo: "client-database",
       allowInlineCreate: true,
       showInTable: true,
       showInForm: true,
@@ -197,7 +197,7 @@ export const bookingsSchema: ModuleSchema = {
   },
 
   relations: [
-    { field: "clientId", targetModule: "clients", displayField: "name" },
+    { field: "clientId", targetModule: "client-database", displayField: "name" },
     { field: "serviceId", targetModule: "products", displayField: "name" },
     { field: "assignedToId", targetModule: "team", displayField: "name" },
   ],

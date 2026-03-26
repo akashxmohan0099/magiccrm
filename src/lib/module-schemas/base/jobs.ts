@@ -7,7 +7,7 @@ import type { ModuleSchema } from "@/types/module-schema";
  * Includes subRecords for tasks and time entries.
  */
 export const jobsSchema: ModuleSchema = {
-  id: "jobs",
+  id: "jobs-projects",
   label: "Projects",
   description: "Track work from start to finish.",
   icon: "FolderKanban",
@@ -41,7 +41,7 @@ export const jobsSchema: ModuleSchema = {
       id: "clientId",
       label: "Client",
       type: "relation",
-      relationTo: "clients",
+      relationTo: "client-database",
       allowInlineCreate: true,
       showInTable: true,
       showInForm: true,
@@ -162,7 +162,7 @@ export const jobsSchema: ModuleSchema = {
   },
 
   relations: [
-    { field: "clientId", targetModule: "clients", displayField: "name" },
+    { field: "clientId", targetModule: "client-database", displayField: "name" },
     { field: "assignedToId", targetModule: "team", displayField: "name" },
   ],
 

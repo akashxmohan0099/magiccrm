@@ -11,10 +11,7 @@
 
 import type {
   ModuleSchema,
-  FieldDefinition,
   FieldType,
-  ViewDefinition,
-  ActionDefinition,
   SchemaValidationResult,
 } from "@/types/module-schema";
 
@@ -32,6 +29,7 @@ const VALID_FIELD_TYPES: Set<FieldType> = new Set([
 ]);
 
 const SELECTION_TYPES: Set<FieldType> = new Set(["select", "multiselect", "status", "stage"]);
+const REQUIRED_OPTIONS_TYPES: Set<FieldType> = new Set(["status", "stage"]);
 const NESTED_TYPES: Set<FieldType> = new Set(["lineItems", "subRecords"]);
 const DATE_TYPES: Set<FieldType> = new Set(["date", "datetime"]);
 const GROUPABLE_TYPES: Set<FieldType> = new Set(["select", "status", "stage"]);
@@ -64,8 +62,8 @@ function validateFieldIntegrity(schema: ModuleSchema): string[] {
       errors.push(`Field "${field.id}": options only allowed on select/multiselect/status/stage types`);
     }
 
-    // Selection types must have options
-    if (SELECTION_TYPES.has(field.type) && (!field.options || field.options.length === 0)) {
+    // Status/stage fields must declare options; select/multiselect may be populated dynamically.
+    if (REQUIRED_OPTIONS_TYPES.has(field.type) && (!field.options || field.options.length === 0)) {
       errors.push(`Field "${field.id}": ${field.type} field must have at least 1 option`);
     }
 

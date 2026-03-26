@@ -7,7 +7,7 @@ import type { ModuleSchema } from "@/types/module-schema";
  * Includes the Lead → Client conversion action.
  */
 export const leadsSchema: ModuleSchema = {
-  id: "leads",
+  id: "leads-pipeline",
   label: "Leads",
   description: "Never lose track of a potential customer.",
   icon: "Inbox",
@@ -151,7 +151,7 @@ export const leadsSchema: ModuleSchema = {
       id: "clientId",
       label: "Converted Client",
       type: "relation",
-      relationTo: "clients",
+      relationTo: "client-database",
       showInForm: false,
       showInDetail: true,
       group: "Conversion",
@@ -196,7 +196,7 @@ export const leadsSchema: ModuleSchema = {
   relations: [
     {
       field: "clientId",
-      targetModule: "clients",
+      targetModule: "client-database",
       displayField: "name",
     },
   ],
@@ -231,7 +231,7 @@ export const leadsSchema: ModuleSchema = {
       label: "Convert to Client",
       icon: "UserCheck",
       showOn: "detail",
-      targetModule: "clients",
+      targetModule: "client-database",
       fieldMapping: [
         { sourceField: "name", targetField: "name", transform: "copy" },
         { sourceField: "email", targetField: "email", transform: "copy" },

@@ -100,7 +100,7 @@ export const communicationSchema: ModuleSchema = {
       id: "clientId",
       label: "Linked Client",
       type: "relation",
-      relationTo: "clients",
+      relationTo: "client-database",
       showInDetail: true,
       group: "Links",
     },
@@ -108,7 +108,7 @@ export const communicationSchema: ModuleSchema = {
       id: "leadId",
       label: "Linked Inquiry",
       type: "relation",
-      relationTo: "leads",
+      relationTo: "leads-pipeline",
       showInDetail: true,
       group: "Links",
     },
@@ -138,8 +138,8 @@ export const communicationSchema: ModuleSchema = {
   },
 
   relations: [
-    { field: "clientId", targetModule: "clients", displayField: "name" },
-    { field: "leadId", targetModule: "leads", displayField: "name" },
+    { field: "clientId", targetModule: "client-database", displayField: "name" },
+    { field: "leadId", targetModule: "leads-pipeline", displayField: "name" },
   ],
 
   views: [
@@ -166,7 +166,7 @@ export const communicationSchema: ModuleSchema = {
       label: "Convert to Inquiry",
       icon: "Inbox",
       showOn: "detail",
-      targetModule: "leads",
+      targetModule: "leads-pipeline",
       fieldMapping: [
         { sourceField: "contactName", targetField: "name", transform: "copy" },
         { sourceField: "contactEmail", targetField: "email", transform: "copy" },
@@ -187,7 +187,7 @@ export const communicationSchema: ModuleSchema = {
       label: "Convert to Client",
       icon: "UserPlus",
       showOn: "detail",
-      targetModule: "clients",
+      targetModule: "client-database",
       fieldMapping: [
         { sourceField: "contactName", targetField: "name", transform: "copy" },
         { sourceField: "contactEmail", targetField: "email", transform: "copy" },
