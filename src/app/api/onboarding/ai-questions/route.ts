@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
+import { kimiChat } from "@/lib/integrations/kimi";
 import { rateLimit } from "@/lib/rate-limit";
-
-const anthropic = new Anthropic();
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
@@ -35,13 +33,9 @@ export async function POST(req: NextRequest) {
     const localTopics = (localQuestionTopics || []).join("\n- ");
     const profileContext = personaProfile || "";
 
-    const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1024,
-      messages: [
-        {
-          role: "user",
-          content: `You are helping personalize a CRM platform during onboarding. The user just answered activity-based questions and some deterministic follow-ups. Now generate 4 smart questions to uncover what they STILL missed.
+    const systemPrompt = "You are an onboarding assistant for a CRM platform. Return ONLY valid JSON. No markdown, no explanation.";
+
+    const userPrompt = `You are helping personalize a CRM platform during onboarding. The user just answered activity-based questions and some deterministic follow-ups. Now generate 4 smart questions to uncover what they STILL missed.
 
 ABOUT THIS USER:
 - Industry: ${industry}
@@ -117,22 +111,16 @@ Return ONLY valid JSON:
       ]
     }
   ]
-}`,
-        },
-      ],
-    });
+}`;
 
-    const textContent = message.content.find((c) => c.type === "text");
-    if (!textContent || textContent.type !== "text") {
+    const result = await kimiChat(systemPrompt, userPrompt);
+
+    if (!result) {
       return NextResponse.json({ categories: [] });
     }
 
     try {
-      let jsonStr = textContent.text.trim();
-      if (jsonStr.startsWith("```")) {
-        jsonStr = jsonStr.replace(/```json?\n?/g, "").replace(/```/g, "").trim();
-      }
-      const data = JSON.parse(jsonStr);
+      const data = JSON.parse(result);
       return NextResponse.json(data);
     } catch {
       return NextResponse.json({ categories: [] });

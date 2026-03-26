@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
-
-const anthropic = new Anthropic();
+import { kimiChat } from "@/lib/integrations/kimi";
 
 /**
  * AI rewording endpoint for deep-dive configuration questions.
@@ -31,13 +29,9 @@ export async function POST(req: NextRequest) {
       ? `Use this vocabulary: clients="${vocabulary.clients}", bookings="${vocabulary.bookings}", jobs="${vocabulary.jobs}", leads="${vocabulary.leads}", invoices="${vocabulary.invoices}".`
       : "";
 
-    const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1024,
-      messages: [
-        {
-          role: "user",
-          content: `Reword these onboarding configuration questions for a ${persona} in ${industry}.
+    const systemPrompt = "You are an onboarding assistant. Return ONLY valid JSON. No markdown, no explanation.";
+
+    const userPrompt = `Reword these onboarding configuration questions for a ${persona} in ${industry}.
 Business: ${businessName || "Not provided"}. ${businessDescription || ""}
 ${personaProfile ? `How this persona typically operates: ${personaProfile}` : ""}
 
@@ -59,22 +53,16 @@ Return ONLY valid JSON:
     {"id": "question-id-here", "text": "reworded question text"},
     ...
   ]
-}`,
-        },
-      ],
-    });
+}`;
 
-    const textContent = message.content.find((c) => c.type === "text");
-    if (!textContent || textContent.type !== "text") {
+    const result = await kimiChat(systemPrompt, userPrompt);
+
+    if (!result) {
       return NextResponse.json({ questions: [] });
     }
 
     try {
-      let jsonStr = textContent.text.trim();
-      if (jsonStr.startsWith("```")) {
-        jsonStr = jsonStr.replace(/```json?\n?/g, "").replace(/```/g, "").trim();
-      }
-      const data = JSON.parse(jsonStr);
+      const data = JSON.parse(result);
       return NextResponse.json(data);
     } catch {
       return NextResponse.json({ questions: [] });
