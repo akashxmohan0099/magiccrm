@@ -23,8 +23,10 @@ import { ProposalBuilder } from "./ProposalBuilder";
 import { ProposalDetail } from "./ProposalDetail";
 import { FeatureSection } from "@/components/modules/FeatureSection";
 import { useFeature } from "@/hooks/useFeature";
+import { useModuleSchema } from "@/hooks/useModuleSchema";
 
 export function InvoicingPage() {
+  const ms = useModuleSchema("quotes-invoicing");
   const { invoices, quotes, generateRecurringInvoices } = useInvoicesStore();
   const { workspaceId } = useAuth();
   const { proposals } = useProposalsStore();
@@ -175,8 +177,8 @@ export function InvoicingPage() {
   return (
     <div>
       <PageHeader
-        title="Billing"
-        description={`Create and manage ${vocab.quotes.toLowerCase()} and ${vocab.invoices.toLowerCase()} for your ${vocab.clients.toLowerCase()}.`}
+        title={ms.label || "Billing"}
+        description={ms.description || `Create and manage ${vocab.quotes.toLowerCase()} and ${vocab.invoices.toLowerCase()} for your ${vocab.clients.toLowerCase()}.`}
         actions={
           <div className="flex items-center gap-2">
             {hasRecurring && (
@@ -193,7 +195,7 @@ export function InvoicingPage() {
               <FileText className="w-4 h-4" /> New {vocab.quote}
             </Button>
             <Button variant="primary" size="sm" onClick={handleNewInvoice}>
-              <Plus className="w-4 h-4" /> {vocab.addInvoice}
+              <Plus className="w-4 h-4" /> {ms.primaryAction || vocab.addInvoice}
             </Button>
           </div>
         }
@@ -206,8 +208,8 @@ export function InvoicingPage() {
           {invoices.length === 0 ? (
             <EmptyState
               icon={<Receipt className="w-10 h-10" />}
-              title={`No ${vocab.invoices.toLowerCase()} yet`}
-              description={`Set up your billing, then start sending ${vocab.invoices.toLowerCase()}.`}
+              title={ms.emptyTitle || `No ${vocab.invoices.toLowerCase()} yet`}
+              description={ms.emptyDescription || `Set up your billing, then start sending ${vocab.invoices.toLowerCase()}.`}
               setupSteps={[
                 { label: `Create your first ${vocab.invoice.toLowerCase()}`, description: "Add line items, set payment terms, and send", action: handleNewInvoice },
               ]}

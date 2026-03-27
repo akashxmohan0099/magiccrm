@@ -11,8 +11,10 @@ import { DataTable, Column } from "@/components/ui/DataTable";
 import { Button } from "@/components/ui/Button";
 import { ProductForm } from "./ProductForm";
 import { CSVImportWizard } from "@/components/modules/shared/CSVImportWizard";
+import { useModuleSchema } from "@/hooks/useModuleSchema";
 
 export function ProductsPage() {
+  const ms = useModuleSchema("products");
   const { products } = useProductsStore();
   const [formOpen, setFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | undefined>(undefined);
@@ -60,8 +62,8 @@ export function ProductsPage() {
   return (
     <div>
       <PageHeader
-        title="Products & Services"
-        description="Manage your product and service catalog."
+        title={ms.label || "Products & Services"}
+        description={ms.description || "Manage your product and service catalog."}
         actions={
           <div className="flex items-center gap-2">
             <FeatureSection moduleId="client-database" featureId="import-export" featureLabel="Import / Export">
@@ -71,7 +73,7 @@ export function ProductsPage() {
               </Button>
             </FeatureSection>
             <Button variant="primary" size="sm" onClick={() => { setEditingProduct(undefined); setFormOpen(true); }}>
-              <Plus className="w-4 h-4" /> Add Product
+              <Plus className="w-4 h-4" /> {ms.primaryAction || "Add Product"}
             </Button>
           </div>
         }
@@ -80,8 +82,8 @@ export function ProductsPage() {
       {products.length === 0 ? (
         <EmptyState
           icon={<Package className="w-10 h-10" />}
-          title="No products yet"
-          description="Add your products and services to start building your catalog."
+          title={ms.emptyTitle || "No products yet"}
+          description={ms.emptyDescription || "Add your products and services to start building your catalog."}
           setupSteps={[
             { label: "Add your first product or service", description: "Name, price, and category", action: () => { setEditingProduct(undefined); setFormOpen(true); } },
           ]}

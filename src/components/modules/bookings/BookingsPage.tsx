@@ -23,10 +23,12 @@ import { TextArea } from "@/components/ui/TextArea";
 import { ViewToggle } from "@/components/ui/ViewToggle";
 import { useTeamStore } from "@/store/team";
 import { useModuleEnabled } from "@/hooks/useFeature";
+import { useModuleSchema } from "@/hooks/useModuleSchema";
 
 type ViewMode = "list" | "calendar";
 
 export function BookingsPage() {
+  const ms = useModuleSchema("bookings-calendar");
   const { bookings, deleteBooking: _deleteBooking, cancellationPolicy, setCancellationPolicy } = useBookingsStore();
   const { clients } = useClientsStore();
   const { members } = useTeamStore();
@@ -143,12 +145,12 @@ export function BookingsPage() {
   return (
     <div>
       <PageHeader
-        title="Scheduling"
-        description={`Schedule ${vocab.bookings.toLowerCase()} and manage your calendar.`}
+        title={ms.label || "Scheduling"}
+        description={ms.description || `Schedule ${vocab.bookings.toLowerCase()} and manage your calendar.`}
         actions={
           <Button variant="primary" size="sm" onClick={handleAdd}>
             <Plus className="w-4 h-4 mr-1.5" />
-            {vocab.addBooking}
+            {ms.primaryAction || vocab.addBooking}
           </Button>
         }
       />
@@ -195,8 +197,8 @@ export function BookingsPage() {
       {bookings.length === 0 ? (
         <EmptyState
           icon={<Calendar className="w-10 h-10" />}
-          title={`No ${vocab.bookings.toLowerCase()} yet`}
-          description={`Set up your scheduling first, then start taking ${vocab.bookings.toLowerCase()}.`}
+          title={ms.emptyTitle || `No ${vocab.bookings.toLowerCase()} yet`}
+          description={ms.emptyDescription || `Set up your scheduling first, then start taking ${vocab.bookings.toLowerCase()}.`}
           setupSteps={[
             { label: `Create your first ${vocab.booking.toLowerCase()}`, description: "Or wait for clients to book you", action: handleAdd },
           ]}

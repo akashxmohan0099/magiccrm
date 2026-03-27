@@ -5,6 +5,7 @@ import { Plus, MessageSquare, Bell, Mail, MessageCircle, Instagram, Phone, Linke
 import { useCommunicationStore } from "@/store/communication";
 import { Channel, ChannelConnectionConfig, ChannelConnectionStatus, Conversation } from "@/types/models";
 import { useFeature } from "@/hooks/useFeature";
+import { useModuleSchema } from "@/hooks/useModuleSchema";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { Button } from "@/components/ui/Button";
@@ -63,6 +64,7 @@ function getChannelStatusMeta(config?: ChannelConnectionConfig) {
 }
 
 export function CommunicationPage() {
+  const ms = useModuleSchema("communication");
   const conversations = useCommunicationStore((s) => s.conversations);
   const connectedChannelsList = useCommunicationStore((s) => s.connectedChannels);
   const channelConfigs = useCommunicationStore((s) => s.channelConfigs);
@@ -167,13 +169,13 @@ export function CommunicationPage() {
   return (
     <div>
       <PageHeader
-        title="Communication"
-        description="Manage all conversations with your clients in one place."
+        title={ms.label || "Communication"}
+        description={ms.description || "Manage all conversations with your clients in one place."}
         actions={
           hasConversationChannels ? (
             <Button variant="primary" size="sm" onClick={() => setNewConvoOpen(true)}>
               <Plus className="w-4 h-4 mr-1.5" />
-              New Conversation
+              {ms.primaryAction || "New Conversation"}
             </Button>
           ) : undefined
         }
@@ -526,9 +528,9 @@ export function CommunicationPage() {
               <div className="flex-1 flex items-center justify-center">
                 <div className="text-center">
                   <MessageSquare className="w-8 h-8 text-text-tertiary mx-auto mb-2" />
-                  <p className="text-[14px] font-medium text-foreground mb-1">No synced conversations yet</p>
+                  <p className="text-[14px] font-medium text-foreground mb-1">{ms.emptyTitle || "No synced conversations yet"}</p>
                   <p className="text-[12px] text-text-tertiary mb-4">
-                    This screen is ready for backend sync, but you can model the workflow manually right now.
+                    {ms.emptyDescription || "This screen is ready for backend sync, but you can model the workflow manually right now."}
                   </p>
                   <Button variant="primary" size="sm" onClick={() => setNewConvoOpen(true)}>
                     <Plus className="w-4 h-4 mr-1.5" />

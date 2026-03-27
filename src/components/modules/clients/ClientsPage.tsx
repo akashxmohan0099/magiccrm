@@ -6,6 +6,7 @@ import { useClientsStore, DuplicateMatch } from "@/store/clients";
 import { useTeamStore } from "@/store/team";
 import { Client } from "@/types/models";
 import { useVocabulary } from "@/hooks/useVocabulary";
+import { useModuleSchema } from "@/hooks/useModuleSchema";
 import { useIndustryConfig } from "@/hooks/useIndustryConfig";
 import { useAuth } from "@/hooks/useAuth";
 import { FeatureSection } from "@/components/modules/FeatureSection";
@@ -102,6 +103,7 @@ export function ClientsPage() {
   } = useClientsStore();
   const teamMembers = useTeamStore((s) => s.members);
   const vocab = useVocabulary();
+  const ms = useModuleSchema("client-database");
   const { workspaceId } = useAuth();
   const config = useIndustryConfig();
   const industryFieldDefs = config.customFields.clients ?? [];
@@ -263,8 +265,8 @@ export function ClientsPage() {
   return (
     <div>
       <PageHeader
-        title={vocab.clients}
-        description={`Manage your ${vocab.client.toLowerCase()} database`}
+        title={ms.label || vocab.clients}
+        description={ms.description || `Manage your ${vocab.client.toLowerCase()} database`}
         actions={
           <div className="flex items-center gap-3">
             <SearchInput
@@ -286,7 +288,7 @@ export function ClientsPage() {
                 )}
               </div>
             </FeatureSection>
-            <Button onClick={() => setFormOpen(true)}>{vocab.addClient}</Button>
+            <Button onClick={() => setFormOpen(true)}>{ms.primaryAction || vocab.addClient}</Button>
           </div>
         }
       />
@@ -294,8 +296,8 @@ export function ClientsPage() {
       {clients.length === 0 ? (
         <EmptyState
           icon={<Users className="w-10 h-10" />}
-          title={`No ${vocab.clients.toLowerCase()} yet`}
-          description={`Get started by importing your existing contacts or adding your first ${vocab.client.toLowerCase()}.`}
+          title={ms.emptyTitle || `No ${vocab.clients.toLowerCase()} yet`}
+          description={ms.emptyDescription || `Get started by importing your existing contacts or adding your first ${vocab.client.toLowerCase()}.`}
           setupSteps={[
             { label: `Add your first ${vocab.client.toLowerCase()}`, description: "Enter their details manually", action: () => setFormOpen(true) },
           ]}

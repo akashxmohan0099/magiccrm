@@ -8,6 +8,7 @@ import { Lead } from "@/types/models";
 import { useAuth } from "@/hooks/useAuth";
 import { useVocabulary } from "@/hooks/useVocabulary";
 import { useBaseIndustryConfig, useIndustryConfig } from "@/hooks/useIndustryConfig";
+import { useModuleSchema } from "@/hooks/useModuleSchema";
 import { FeatureSection } from "@/components/modules/FeatureSection";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -24,6 +25,7 @@ import { StageSettingsCard } from "@/components/modules/shared/StageSettingsCard
 type ViewMode = "list" | "pipeline" | "form";
 
 export function LeadsPage() {
+  const ms = useModuleSchema("leads-pipeline");
   const { leads, convertToClient } = useLeadsStore();
   const { workspaceId } = useAuth();
   const vocab = useVocabulary();
@@ -106,8 +108,8 @@ export function LeadsPage() {
   return (
     <div>
       <PageHeader
-        title={vocab.leads}
-        description={`Track ${vocab.leads.toLowerCase()} from first contact to closed deal.`}
+        title={ms.label || vocab.leads}
+        description={ms.description || `Track ${vocab.leads.toLowerCase()} from first contact to closed deal.`}
         actions={
           <div className="flex items-center gap-2">
             <FeatureSection moduleId="client-database" featureId="import-export" featureLabel="Import / Export">
@@ -118,7 +120,7 @@ export function LeadsPage() {
             </FeatureSection>
             <Button variant="primary" size="sm" onClick={handleAdd}>
               <Plus className="w-4 h-4 mr-1.5" />
-              {vocab.addLead}
+              {ms.primaryAction || vocab.addLead}
             </Button>
           </div>
         }
@@ -181,8 +183,8 @@ export function LeadsPage() {
       {leads.length === 0 ? (
         <EmptyState
           icon={<Users className="w-10 h-10" />}
-          title={`No ${vocab.leads.toLowerCase()} yet`}
-          description={`Capture ${vocab.leads.toLowerCase()} from your website, social media, or add them manually.`}
+          title={ms.emptyTitle || `No ${vocab.leads.toLowerCase()} yet`}
+          description={ms.emptyDescription || `Capture ${vocab.leads.toLowerCase()} from your website, social media, or add them manually.`}
           setupSteps={[
             { label: `Add your first ${vocab.lead.toLowerCase()}`, description: "Enter their details manually", action: handleAdd },
             { label: "Set up a web capture form", description: "Embed a form on your website or share a link", action: () => setView("form") },
