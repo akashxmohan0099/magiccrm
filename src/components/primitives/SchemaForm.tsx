@@ -22,6 +22,8 @@ interface SchemaFormProps {
   submitLabel?: string;
   /** Optional: resolve relation options from external stores */
   resolveRelationOptions?: (moduleId: string) => { value: string; label: string }[];
+  /** Optional: look up a full record from a related module (for autoFillFrom) */
+  resolveRecord?: (moduleId: string, recordId: string) => RecordData | undefined;
 }
 
 // ── Condition Evaluator ──────────────────────────────────────
@@ -394,6 +396,7 @@ export function SchemaForm({
   onCancel,
   submitLabel = "Save",
   resolveRelationOptions,
+  resolveRecord,
 }: SchemaFormProps) {
   const [formData, setFormData] = useState<RecordData>(() => {
     const initial: RecordData = {};
@@ -426,13 +429,20 @@ export function SchemaForm({
   const handleFieldChange = useCallback((field: FieldDefinition, value: unknown) => {
     setField(field.id, value);
 
-    // Auto-fill: when a relation is selected, populate other fields
-    if (field.autoFillFrom && field.type === "relation" && resolveRelationOptions) {
-      // autoFillFrom is handled by the parent via resolveRelationOptions
-      // For now, we just set the value. Full auto-fill requires the parent
-      // to provide a record lookup function (Phase 5 enhancement).
+    // Auto-fill: when a relation is selected, look up the related record
+    // and populate other fields based on autoFillFrom rules
+    if (field.autoFillFrom && field.autoFillFrom.length > 0 && field.type === "relation" && field.relationTo && resolveRecord && value) {
+      const related = resolveRecord(field.relationTo, value as string);
+      if (related) {
+        for (const rule of field.autoFillFrom) {
+          const sourceVal = related[rule.sourceField];
+          if (sourceVal !== undefined) {
+            setField(rule.targetField, sourceVal);
+          }
+        }
+      }
     }
-  }, [setField, resolveRelationOptions]);
+  }, [setField, resolveRecord]);
 
   // Group fields by their group property
   const groupedFields = useMemo(() => {

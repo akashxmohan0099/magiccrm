@@ -56,6 +56,17 @@ export function SchemaModuleBridge({ schema }: SchemaModuleBridgeProps) {
     executeSchemaAction(schema.actions, actionId, recordId, schema.id);
   }, [schema]);
 
+  // Record lookup — resolves a full record from a related module (for autoFillFrom)
+  const resolveRecord = useCallback((targetModuleId: string, recordId: string) => {
+    const targetLegacy = getLegacyStoreAccessor(targetModuleId);
+    if (targetLegacy) {
+      return targetLegacy.getRecords().find((r) => r.id === recordId);
+    }
+    const targetStore = getModuleStore(targetModuleId);
+    if (!targetStore) return undefined;
+    return targetStore.getState().records.find((r: RecordData) => r.id === recordId);
+  }, []);
+
   // Relation options resolver — looks up from legacy stores first, then generic stores
   const resolveRelationOptions = useCallback((targetModuleId: string) => {
     // Try legacy store
@@ -84,6 +95,7 @@ export function SchemaModuleBridge({ schema }: SchemaModuleBridgeProps) {
       onRecordDelete={handleDelete}
       onExecuteAction={handleExecuteAction}
       resolveRelationOptions={resolveRelationOptions}
+      resolveRecord={resolveRecord}
     />
   );
 }

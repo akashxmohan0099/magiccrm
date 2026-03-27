@@ -14,6 +14,7 @@ import { useOnboardingStore } from "@/store/onboarding";
 import { useVocabulary } from "@/hooks/useVocabulary";
 import { MODULE_REGISTRY, ALWAYS_ON_MODULES, computeEnabledModuleIds, getModuleDisplayName } from "@/lib/module-registry";
 import { getApplicableCombinations, getCombinationById, type ModuleCombination } from "@/lib/module-combinations";
+import { getBaseSchema, findVariant, applyVariant } from "@/lib/module-schemas";
 import { useTunedModules, type TunedModuleDisplay } from "@/hooks/useTunedModules";
 import type { VocabularyMap } from "@/types/industry-config";
 
@@ -150,6 +151,26 @@ export function SummaryStep({ workspaceId }: { workspaceId: string | null }) {
     };
   }, [needs, discoveryAnswers]);
 
+  // Compute variant labels as deterministic fallback when AI tuning hasn't loaded
+  // This ensures the SummaryStep always shows persona-specific names like "Appointments"
+  // instead of generic "Scheduling" — even before or without AI tuning.
+  const effectiveModuleMeta = useMemo(() => {
+    const variantLabels: Record<string, { label: string; description: string }> = {};
+    for (const moduleId of enabledModuleIds) {
+      const base = getBaseSchema(moduleId);
+      if (!base) continue;
+      const variant = findVariant(moduleId, selectedIndustry, selectedPersona);
+      if (variant) {
+        const assembled = applyVariant(base, variant);
+        variantLabels[moduleId] = { label: assembled.label, description: assembled.description };
+      } else {
+        variantLabels[moduleId] = { label: base.label, description: base.description };
+      }
+    }
+    // AI tuning overrides variant labels when available
+    return { ...variantLabels, ...tuningModuleMeta };
+  }, [enabledModuleIds, selectedIndustry, selectedPersona, tuningModuleMeta]);
+
   // Get applicable combinations (for the choice UI)
   const applicableCombinations = useMemo(() => {
     return getApplicableCombinations(selectedIndustry, selectedPersona, enabledModuleIds);
@@ -159,7 +180,7 @@ export function SummaryStep({ workspaceId }: { workspaceId: string | null }) {
   const tunedModules = useTunedModules(
     enabledModules,
     tuningCombinations,
-    tuningModuleMeta,
+    effectiveModuleMeta,
     ALWAYS_ON_MODULES,
     vocab,
   );
@@ -228,7 +249,7 @@ export function SummaryStep({ workspaceId }: { workspaceId: string | null }) {
                 combination={combo}
                 isActive={tuningCombinations.includes(combo.id)}
                 tuningLoaded={tuningLoaded}
-                tuningModuleMeta={tuningModuleMeta}
+                tuningModuleMeta={effectiveModuleMeta}
                 vocab={vocab}
                 onToggle={(accepted) => setTuningCombinationChoice(combo.id, accepted)}
               />
@@ -264,7 +285,7 @@ export function SummaryStep({ workspaceId }: { workspaceId: string | null }) {
                 const IconComp = d?.icon || Zap;
                 const bg = d?.bg || "bg-gray-100";
                 const color = d?.color || "text-gray-500";
-                const meta = tuningModuleMeta[mod.id];
+                const meta = effectiveModuleMeta[mod.id];
                 return (
                   <div key={mod.id} className="flex items-center gap-3 px-5 py-3.5 rounded-2xl bg-card-bg border border-border-light">
                     <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${bg}`}>
@@ -292,7 +313,7 @@ export function SummaryStep({ workspaceId }: { workspaceId: string | null }) {
                 const d = MODULE_DISPLAY[mod.id];
                 if (!d) return null;
                 const IconComp = d.icon;
-                const meta = tuningModuleMeta[mod.id];
+                const meta = effectiveModuleMeta[mod.id];
                 return (
                   <motion.button
                     key={mod.id}

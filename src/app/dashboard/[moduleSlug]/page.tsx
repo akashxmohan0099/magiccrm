@@ -53,46 +53,35 @@ export default function ModulePage({ params }: { params: Promise<{ moduleSlug: s
 
   const assembled = useAssembledSchemasStore((s) => s.assembled);
   const assembledSchema = useAssembledSchemasStore((s) => s.getSchemaBySlug(moduleSlug));
-  const preferSchemaRenderer = searchParams.get("renderer") === "schema";
+  const forceLegacy = searchParams.get("renderer") === "legacy";
 
-  // 1. Opt-in schema rendering for comparison/testing.
-  //    Keep legacy pages as the production default until the schema runtime
-  //    has full data-store parity with the existing modules.
-  if (preferSchemaRenderer) {
-    if (assembled && assembledSchema) {
-      return (
-        <PageTransition>
-          <SchemaModuleBridge schema={assembledSchema} />
-        </PageTransition>
-      );
-    }
-
-    const staticSchema = getSchemaBySlug(moduleSlug);
-    if (staticSchema) {
-      return (
-        <PageTransition>
-          <SchemaModuleBridge schema={staticSchema} />
-        </PageTransition>
-      );
-    }
+  // 1. Schema-driven rendering (production default for assembled workspaces)
+  //    If the onboarding assembly pipeline has run and produced a schema for
+  //    this slug, render it via the composable ModuleRenderer. This gives
+  //    the user persona-specific labels, fields, views, and actions.
+  //    Use ?renderer=legacy to force the old hardcoded component.
+  if (assembled && assembledSchema && !forceLegacy) {
+    return (
+      <PageTransition>
+        <SchemaModuleBridge schema={assembledSchema} />
+      </PageTransition>
+    );
   }
 
-  // 2. Try standard module lookup (legacy hardcoded components)
-  //    This remains the default production renderer.
+  // 2. Legacy hardcoded components (fallback for modules without schemas,
+  //    pre-assembly workspaces, or when ?renderer=legacy is set)
   if (mod) {
     if (!isLegacyModuleEnabled) notFound();
     const Component = MODULE_COMPONENTS[mod.id];
     if (!Component) {
-      // No legacy component — allow explicit schema fallback only.
-      if (preferSchemaRenderer) {
-        const staticSchema = getSchemaBySlug(moduleSlug);
-        if (staticSchema) {
-          return (
-            <PageTransition>
-              <SchemaModuleBridge schema={staticSchema} />
-            </PageTransition>
-          );
-        }
+      // No legacy component — try static schema registry
+      const staticSchema = getSchemaBySlug(moduleSlug);
+      if (staticSchema) {
+        return (
+          <PageTransition>
+            <SchemaModuleBridge schema={staticSchema} />
+          </PageTransition>
+        );
       }
       notFound();
     }
@@ -103,7 +92,7 @@ export default function ModulePage({ params }: { params: Promise<{ moduleSlug: s
     );
   }
 
-  // 3. Try combined module slug lookup
+  // 3. Combined module slug lookup
   const combination = getCombinationBySlug(moduleSlug);
   if (combination) {
     const isActive = activeCombinations.some((c) => c.id === combination.id);
@@ -118,18 +107,6 @@ export default function ModulePage({ params }: { params: Promise<{ moduleSlug: s
         />
       </PageTransition>
     );
-  }
-
-  // 4. Static schema registry stays available via ?renderer=schema for testing.
-  if (preferSchemaRenderer) {
-    const staticSchema = getSchemaBySlug(moduleSlug);
-    if (staticSchema) {
-        return (
-          <PageTransition>
-            <SchemaModuleBridge schema={staticSchema} />
-          </PageTransition>
-        );
-    }
   }
 
   notFound();

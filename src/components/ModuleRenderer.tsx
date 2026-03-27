@@ -27,6 +27,8 @@ interface ModuleRendererProps {
   onExecuteAction?: (actionId: string, recordId: string) => void;
   /** Resolve relation options for dropdowns (module ID → options) */
   resolveRelationOptions?: (moduleId: string) => { value: string; label: string }[];
+  /** Look up a full record from a related module (for autoFillFrom) */
+  resolveRecord?: (moduleId: string, recordId: string) => RecordData | undefined;
 }
 
 /**
@@ -41,6 +43,7 @@ export function ModuleRenderer({
   onRecordDelete,
   onExecuteAction,
   resolveRelationOptions,
+  resolveRecord,
 }: ModuleRendererProps) {
   // ── State ──────────────────────────────────────────────
   const [activeViewId, setActiveViewId] = useState(schema.primaryView);
@@ -143,6 +146,7 @@ export function ModuleRenderer({
             onCancel={() => setFormOpen(false)}
             submitLabel="Create"
             resolveRelationOptions={resolveRelationOptions}
+            resolveRecord={resolveRecord}
           />
         </Modal>
       </div>
@@ -229,6 +233,7 @@ export function ModuleRenderer({
             onCancel={() => setEditingRecord(null)}
             submitLabel="Save Changes"
             resolveRelationOptions={resolveRelationOptions}
+            resolveRecord={resolveRecord}
           />
         )}
       </Modal>
