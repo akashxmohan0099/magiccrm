@@ -123,24 +123,24 @@ export function TravelCalculator({ onResult, showCost = true }: TravelCalculator
       <div className="flex items-center gap-3">
         <label className="flex items-center gap-1.5 cursor-pointer">
           <input type="radio" checked={!useManual} onChange={() => setUseManual(false)} className="accent-primary" />
-          <span className="text-[12px] text-foreground">Calculate from address</span>
+          <span className="text-xs text-foreground">Calculate from address</span>
         </label>
         <label className="flex items-center gap-1.5 cursor-pointer">
           <input type="radio" checked={useManual} onChange={() => setUseManual(true)} className="accent-primary" />
-          <span className="text-[12px] text-foreground">Enter manually</span>
+          <span className="text-xs text-foreground">Enter manually</span>
         </label>
       </div>
 
       {!useManual ? (
         <>
           <div>
-            <label className="block text-[12px] font-medium text-foreground mb-1">
+            <label className="block text-xs font-medium text-foreground mb-1">
               <MapPin className="w-3 h-3 inline mr-1" />Your location
             </label>
             <input type="text" value={fromAddress} onChange={(e) => setFromAddress(e.target.value)} placeholder="e.g. 123 Main St, Brisbane QLD" className={inputClass} />
           </div>
           <div>
-            <label className="block text-[12px] font-medium text-foreground mb-1">
+            <label className="block text-xs font-medium text-foreground mb-1">
               <Navigation className="w-3 h-3 inline mr-1" />Client location
             </label>
             <input type="text" value={toAddress} onChange={(e) => setToAddress(e.target.value)} placeholder="e.g. 456 George St, Sydney NSW" className={inputClass} />
@@ -148,14 +148,14 @@ export function TravelCalculator({ onResult, showCost = true }: TravelCalculator
         </>
       ) : (
         <div>
-          <label className="block text-[12px] font-medium text-foreground mb-1">Travel time (minutes)</label>
+          <label className="block text-xs font-medium text-foreground mb-1">Travel time (minutes)</label>
           <input type="number" value={manualMinutes} onChange={(e) => setManualMinutes(e.target.value)} placeholder="e.g. 45" className={inputClass} />
         </div>
       )}
 
       {showCost && (
         <div>
-          <label className="block text-[12px] font-medium text-foreground mb-1">
+          <label className="block text-xs font-medium text-foreground mb-1">
             <DollarSign className="w-3 h-3 inline mr-1" />Hourly travel rate
           </label>
           <input type="number" step="0.01" value={hourlyRate} onChange={(e) => setHourlyRate(e.target.value)} placeholder="50.00" className={inputClass} />
@@ -171,7 +171,7 @@ export function TravelCalculator({ onResult, showCost = true }: TravelCalculator
       </button>
 
       {error && (
-        <p className="text-[12px] text-red-500">{error}</p>
+        <p className="text-xs text-red-500">{error}</p>
       )}
 
       {result && (

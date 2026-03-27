@@ -44,7 +44,7 @@ export function RecommendedSetupCard() {
     >
       <div className="flex items-center gap-2 mb-4">
         <Sparkles className="w-4 h-4 text-primary" />
-        <h3 className="text-[14px] font-semibold text-foreground">Complete your setup</h3>
+        <h3 className="text-sm font-semibold text-foreground">Complete your setup</h3>
       </div>
 
       <div className="space-y-3">

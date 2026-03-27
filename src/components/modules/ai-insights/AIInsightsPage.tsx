@@ -48,7 +48,7 @@ export function AIInsightsPage() {
                   <Icon className="w-4 h-4 text-text-secondary" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[14px] font-semibold text-foreground">{insight.title}</p>
+                  <p className="text-sm font-semibold text-foreground">{insight.title}</p>
                   <p className="text-[13px] text-text-secondary mt-0.5">{insight.description}</p>
                   {insight.actionLabel && (
                     <Button variant="ghost" size="sm" className="mt-2 text-primary">{insight.actionLabel}</Button>

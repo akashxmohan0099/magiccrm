@@ -64,7 +64,7 @@ function RecordSection<T extends { id: string }>({
           <span className="text-[13px] font-medium text-foreground">
             {label}
           </span>
-          <span className="text-[12px] text-text-secondary bg-white rounded-full px-1.5 py-0.5 border border-border-light">
+          <span className="text-xs text-text-secondary bg-white rounded-full px-1.5 py-0.5 border border-border-light">
             {items.length}
           </span>
         </div>
@@ -79,7 +79,7 @@ function RecordSection<T extends { id: string }>({
         <Link
           href={href}
           onClick={onNavigate}
-          className="ml-6 text-[12px] text-primary hover:text-primary-hover mt-1 inline-block"
+          className="ml-6 text-xs text-primary hover:text-primary-hover mt-1 inline-block"
         >
           +{remaining} more
         </Link>

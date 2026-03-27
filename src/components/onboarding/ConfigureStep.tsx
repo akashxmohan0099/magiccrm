@@ -336,7 +336,7 @@ export function ConfigureStep() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10">
           <div className="flex items-center justify-center gap-2 mb-4">
             <Sparkles className="w-3.5 h-3.5 text-primary" />
-            <span className="text-[12px] font-medium text-text-tertiary">Personalizing for {businessContext.businessName || "you"}</span>
+            <span className="text-xs font-medium text-text-tertiary">Personalizing for {businessContext.businessName || "you"}</span>
           </div>
           <h2 className="text-[28px] font-bold text-foreground tracking-tight mb-2">
             Let&apos;s fine-tune your workspace
@@ -454,7 +454,7 @@ export function ConfigureStep() {
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleAnswer(q.id, true)}
-                            className={`flex-1 py-2.5 rounded-xl text-[14px] font-medium transition-all cursor-pointer ${
+                            className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${
                               isYes ? "bg-primary text-white shadow-sm" : "bg-surface border border-border-light text-foreground hover:border-primary/30"
                             }`}
                           >
@@ -462,7 +462,7 @@ export function ConfigureStep() {
                           </button>
                           <button
                             onClick={() => handleAnswer(q.id, false)}
-                            className={`flex-1 py-2.5 rounded-xl text-[14px] font-medium transition-all cursor-pointer ${
+                            className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${
                               isNo ? "bg-foreground text-white" : "bg-surface border border-border-light text-foreground hover:border-foreground/20"
                             }`}
                           >
@@ -480,7 +480,7 @@ export function ConfigureStep() {
                             exit={{ opacity: 0, height: 0 }}
                           >
                             <div className="p-5 rounded-2xl bg-white/60 border border-border-light ml-4">
-                              <p className="text-[14px] font-medium text-foreground mb-3">{q.followUp!.question}</p>
+                              <p className="text-sm font-medium text-foreground mb-3">{q.followUp!.question}</p>
                               <div className="flex gap-2">
                                 <button
                                   onClick={() => handleFollowUpAnswer(q.id, true)}

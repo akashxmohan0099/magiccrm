@@ -58,7 +58,7 @@ export function ClientPortalPage() {
             {toggles.map((t) => (
               <label key={t.key} className="flex items-center gap-3 cursor-pointer">
                 <input type="checkbox" checked={config[t.key]} onChange={(e) => updateConfig({ [t.key]: e.target.checked })} className="rounded" />
-                <span className="text-[14px] text-foreground">{t.label}</span>
+                <span className="text-sm text-foreground">{t.label}</span>
               </label>
             ))}
           </div>
@@ -90,7 +90,7 @@ export function ClientPortalPage() {
             <h3 className="text-[15px] font-semibold text-foreground">Branding</h3>
             <div>
               <label className="block text-[13px] font-medium text-foreground mb-1.5">Welcome Message</label>
-              <textarea value={config.welcomeMessage} onChange={(e) => updateConfig({ welcomeMessage: e.target.value })} rows={2} placeholder="Welcome to your portal..." className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" />
+              <textarea value={config.welcomeMessage} onChange={(e) => updateConfig({ welcomeMessage: e.target.value })} rows={2} placeholder="Welcome to your portal..." className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" />
             </div>
             <div>
               <label className="block text-[13px] font-medium text-foreground mb-1.5">Accent Colour</label>
@@ -103,7 +103,7 @@ export function ClientPortalPage() {
           <div className="bg-card-bg rounded-xl border border-border-light overflow-hidden">
             <div className="px-5 py-3 border-b border-border-light flex items-center gap-2">
               <UserCheck className="w-4 h-4 text-text-secondary" />
-              <h3 className="text-[14px] font-semibold text-foreground">Client Access ({accessList.length})</h3>
+              <h3 className="text-sm font-semibold text-foreground">Client Access ({accessList.length})</h3>
             </div>
             <DataTable<PortalAccess> storageKey="magic-crm-portal-access-columns" columns={accessColumns} data={accessList} keyExtractor={(a) => a.id} />
           </div>

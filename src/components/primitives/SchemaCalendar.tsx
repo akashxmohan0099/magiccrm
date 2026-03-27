@@ -149,7 +149,7 @@ export function SchemaCalendar({
         <div className="flex items-center gap-1">
           <button
             onClick={() => setCurrentDate(new Date())}
-            className="px-3 py-1.5 text-[12px] font-medium text-text-secondary hover:text-foreground hover:bg-surface rounded-lg transition-colors cursor-pointer"
+            className="px-3 py-1.5 text-xs font-medium text-text-secondary hover:text-foreground hover:bg-surface rounded-lg transition-colors cursor-pointer"
           >
             Today
           </button>
@@ -159,7 +159,7 @@ export function SchemaCalendar({
               onClick={() => setMode(m)}
               aria-label={`${m.charAt(0).toUpperCase() + m.slice(1)} view`}
               aria-pressed={mode === m}
-              className={`px-3 py-1.5 text-[12px] font-medium rounded-lg transition-colors cursor-pointer ${
+              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer ${
                 mode === m ? "bg-foreground text-white" : "text-text-secondary hover:bg-surface"
               }`}
             >
@@ -261,7 +261,7 @@ function MonthView({
                 isToday ? "bg-primary/[0.03]" : ""
               }`}
             >
-              <span className={`text-[12px] font-medium inline-flex items-center justify-center w-6 h-6 rounded-full ${
+              <span className={`text-xs font-medium inline-flex items-center justify-center w-6 h-6 rounded-full ${
                 isToday ? "bg-primary text-white" : "text-text-secondary"
               }`}>
                 {day}
@@ -347,7 +347,7 @@ function TimeGridView({
             <div key={dateKey} className="border-r border-border-light last:border-r-0">
               {/* Day header */}
               <div className={`h-10 flex items-center justify-center border-b border-border-light ${isToday ? "bg-primary/[0.03]" : ""}`}>
-                <span className={`text-[12px] font-medium ${isToday ? "text-primary" : "text-text-secondary"}`}>
+                <span className={`text-xs font-medium ${isToday ? "text-primary" : "text-text-secondary"}`}>
                   {mode === "week" ? `${DAY_LABELS[day.getDay()]} ${day.getDate()}` : ""}
                 </span>
               </div>

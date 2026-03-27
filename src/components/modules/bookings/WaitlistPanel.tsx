@@ -84,7 +84,7 @@ export function WaitlistPanel({ selectedDate, standalone = false }: WaitlistPane
       {showForm && (
         <div className="mb-4 p-3 bg-surface rounded-lg border border-border-light space-y-3">
           <div>
-            <label className="block text-[12px] font-medium text-foreground mb-1">
+            <label className="block text-xs font-medium text-foreground mb-1">
               Client Name *
             </label>
             <input
@@ -97,7 +97,7 @@ export function WaitlistPanel({ selectedDate, standalone = false }: WaitlistPane
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[12px] font-medium text-foreground mb-1">
+              <label className="block text-xs font-medium text-foreground mb-1">
                 Preferred Start
               </label>
               <input
@@ -108,7 +108,7 @@ export function WaitlistPanel({ selectedDate, standalone = false }: WaitlistPane
               />
             </div>
             <div>
-              <label className="block text-[12px] font-medium text-foreground mb-1">
+              <label className="block text-xs font-medium text-foreground mb-1">
                 Preferred End
               </label>
               <input
@@ -120,7 +120,7 @@ export function WaitlistPanel({ selectedDate, standalone = false }: WaitlistPane
             </div>
           </div>
           <div>
-            <label className="block text-[12px] font-medium text-foreground mb-1">
+            <label className="block text-xs font-medium text-foreground mb-1">
               Service
             </label>
             <input

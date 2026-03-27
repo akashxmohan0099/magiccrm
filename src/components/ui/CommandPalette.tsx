@@ -345,7 +345,7 @@ export function CommandPalette() {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Type a command or search..."
-                  className="flex-1 py-3.5 bg-transparent text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none"
+                  className="flex-1 py-3.5 bg-transparent text-sm text-foreground placeholder:text-text-tertiary focus:outline-none"
                 />
                 <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded-md bg-surface border border-border-light text-[11px] font-medium text-text-tertiary flex-shrink-0">
                   ESC
@@ -396,7 +396,7 @@ export function CommandPalette() {
                             >
                               <item.icon className="w-3.5 h-3.5" />
                             </div>
-                            <span className="flex-1 text-[14px] font-medium truncate">
+                            <span className="flex-1 text-sm font-medium truncate">
                               {item.label}
                             </span>
                             {isActive && (

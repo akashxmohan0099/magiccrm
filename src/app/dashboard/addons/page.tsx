@@ -199,7 +199,7 @@ function DisableAddonDialog({
               <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="text-[13px] font-semibold text-red-800">This add-on has data</p>
-                <p className="text-[12px] text-red-600 mt-0.5">
+                <p className="text-xs text-red-600 mt-0.5">
                   You currently have <span className="font-semibold">{data.label}</span> in {addonName}. Disabling this add-on will hide this data.
                 </p>
               </div>
@@ -213,7 +213,7 @@ function DisableAddonDialog({
                 value={deleteInput}
                 onChange={(e) => setDeleteInput(e.target.value)}
                 placeholder="Type DELETE to confirm"
-                className="w-full px-3 py-2.5 bg-card-bg border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:border-red-300 font-mono"
+                className="w-full px-3 py-2.5 bg-card-bg border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:border-red-300 font-mono"
                 autoFocus
               />
             </div>

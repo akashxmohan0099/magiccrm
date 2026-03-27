@@ -57,7 +57,7 @@ export function MessageThread({ conversationId }: MessageThreadProps) {
       <FeatureSection moduleId="communication" featureId="conversation-assignment" featureLabel="Conversation Assignment">
         <div className="px-4 py-2 border-b border-border-light flex items-center gap-2">
           <span className="text-[11px] text-text-tertiary">Assigned to:</span>
-          <select value={assignee} onChange={(e) => setAssignee(e.target.value)} className="text-[12px] px-2 py-1 bg-surface border border-border-light rounded-lg text-foreground">
+          <select value={assignee} onChange={(e) => setAssignee(e.target.value)} className="text-xs px-2 py-1 bg-surface border border-border-light rounded-lg text-foreground">
             <option value="">Unassigned</option>
             <option value="me">Me</option>
           </select>

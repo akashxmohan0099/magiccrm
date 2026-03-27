@@ -393,7 +393,7 @@ export function ColumnVisibilityPicker({ visibleColumns, onToggle, customColumns
                 key={col.id}
                 onClick={() => { if (col.removable) onToggle(col.id); }}
                 disabled={!col.removable}
-                className={`w-full text-left px-4 py-2 text-[14px] flex items-center gap-3 transition-colors ${col.removable ? "hover:bg-surface cursor-pointer" : "opacity-50 cursor-not-allowed"}`}
+                className={`w-full text-left px-4 py-2 text-sm flex items-center gap-3 transition-colors ${col.removable ? "hover:bg-surface cursor-pointer" : "opacity-50 cursor-not-allowed"}`}
               >
                 <span className={`w-5 h-5 rounded-md border flex items-center justify-center flex-shrink-0 transition-colors ${visible ? "bg-foreground border-foreground" : "border-border-light"}`}>
                   {visible && <Check className="w-3.5 h-3.5 text-white" />}
@@ -414,7 +414,7 @@ export function ColumnVisibilityPicker({ visibleColumns, onToggle, customColumns
                   <button
                     key={colId}
                     onClick={() => onToggle(colId)}
-                    className="w-full text-left px-4 py-2 text-[14px] flex items-center gap-3 hover:bg-surface transition-colors cursor-pointer"
+                    className="w-full text-left px-4 py-2 text-sm flex items-center gap-3 hover:bg-surface transition-colors cursor-pointer"
                   >
                     <span className={`w-5 h-5 rounded-md border flex items-center justify-center flex-shrink-0 transition-colors ${visible ? "bg-foreground border-foreground" : "border-border-light"}`}>
                       {visible && <Check className="w-3.5 h-3.5 text-white" />}
@@ -436,7 +436,7 @@ export function ColumnVisibilityPicker({ visibleColumns, onToggle, customColumns
                   <div key={col.id} className="flex items-center gap-1 px-4 py-2 hover:bg-surface transition-colors group/custom">
                     <button
                       onClick={() => onToggle(col.id)}
-                      className="flex-1 text-left text-[14px] flex items-center gap-3 cursor-pointer"
+                      className="flex-1 text-left text-sm flex items-center gap-3 cursor-pointer"
                     >
                       <span className={`w-5 h-5 rounded-md border flex items-center justify-center flex-shrink-0 transition-colors ${visible ? "bg-foreground border-foreground" : "border-border-light"}`}>
                         {visible && <Check className="w-3.5 h-3.5 text-white" />}
@@ -529,19 +529,19 @@ export function AddColumnDropdown({ onAddCustomColumn }: AddColumnDropdownProps)
 
             <div className="space-y-4">
               <div>
-                <label className="text-[12px] font-medium text-text-secondary block mb-1.5">Column Name</label>
+                <label className="text-xs font-medium text-text-secondary block mb-1.5">Column Name</label>
                 <input
                   ref={nameInputRef}
                   value={newColName}
                   onChange={(e) => setNewColName(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter") handleAdd(); if (e.key === "Escape") handleClose(); }}
                   placeholder="e.g. Skin Type, Priority, Notes..."
-                  className="w-full px-3.5 py-2.5 text-[14px] bg-surface border border-border-light rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 text-foreground placeholder:text-text-tertiary"
+                  className="w-full px-3.5 py-2.5 text-sm bg-surface border border-border-light rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 text-foreground placeholder:text-text-tertiary"
                 />
               </div>
 
               <div>
-                <label className="text-[12px] font-medium text-text-secondary block mb-2">Column Type</label>
+                <label className="text-xs font-medium text-text-secondary block mb-2">Column Type</label>
                 <div className="grid grid-cols-4 gap-2">
                   {([
                     { value: "text", label: "Text", desc: "Free text" },
@@ -567,13 +567,13 @@ export function AddColumnDropdown({ onAddCustomColumn }: AddColumnDropdownProps)
 
               {newColType === "dropdown" && (
                 <div>
-                  <label className="text-[12px] font-medium text-text-secondary block mb-1.5">Dropdown Options</label>
+                  <label className="text-xs font-medium text-text-secondary block mb-1.5">Dropdown Options</label>
                   <input
                     value={newColOptions}
                     onChange={(e) => setNewColOptions(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter") handleAdd(); }}
                     placeholder="Normal, Oily, Dry, Sensitive..."
-                    className="w-full px-3.5 py-2.5 text-[14px] bg-surface border border-border-light rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 text-foreground placeholder:text-text-tertiary"
+                    className="w-full px-3.5 py-2.5 text-sm bg-surface border border-border-light rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 text-foreground placeholder:text-text-tertiary"
                   />
                   <p className="text-[11px] text-text-tertiary mt-1">Separate options with commas</p>
                 </div>
@@ -583,13 +583,13 @@ export function AddColumnDropdown({ onAddCustomColumn }: AddColumnDropdownProps)
                 <button
                   onClick={handleAdd}
                   disabled={!newColName.trim()}
-                  className="flex-1 px-4 py-2.5 text-[14px] font-medium bg-foreground text-white rounded-xl hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="flex-1 px-4 py-2.5 text-sm font-medium bg-foreground text-white rounded-xl hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Add Column
                 </button>
                 <button
                   onClick={handleClose}
-                  className="px-4 py-2.5 text-[14px] text-text-secondary hover:text-foreground transition-colors cursor-pointer"
+                  className="px-4 py-2.5 text-sm text-text-secondary hover:text-foreground transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>

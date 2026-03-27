@@ -11,7 +11,7 @@ export default function PrivacyPage() {
       <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">Privacy Policy</h1>
       <p className="text-[13px] text-text-tertiary mb-8">Last updated: March 2026</p>
 
-      <div className="prose prose-sm max-w-none text-text-secondary space-y-6 text-[14px] leading-relaxed">
+      <div className="prose prose-sm max-w-none text-text-secondary space-y-6 text-sm leading-relaxed">
         <section>
           <h2 className="text-[18px] font-semibold text-foreground mt-8 mb-3">1. Information We Collect</h2>
           <p>We collect information you provide when creating an account (email, password), business information entered during onboarding, and data you store in the platform (clients, bookings, invoices, etc.).</p>

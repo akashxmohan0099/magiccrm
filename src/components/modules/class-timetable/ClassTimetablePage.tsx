@@ -143,7 +143,7 @@ export function ClassTimetablePage() {
   };
 
   const inputClass =
-    "w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30";
+    "w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30";
 
   return (
     <div>
@@ -231,7 +231,7 @@ export function ClassTimetablePage() {
                               }}
                               onClick={() => openEdit(cls)}
                             >
-                              <div className="text-[12px] font-semibold leading-tight truncate">
+                              <div className="text-xs font-semibold leading-tight truncate">
                                 {cls.name}
                               </div>
                               <div className="text-[10px] opacity-80 truncate">

@@ -11,7 +11,7 @@ export default function TermsPage() {
       <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">Terms of Service</h1>
       <p className="text-[13px] text-text-tertiary mb-8">Last updated: March 2026</p>
 
-      <div className="prose prose-sm max-w-none text-text-secondary space-y-6 text-[14px] leading-relaxed">
+      <div className="prose prose-sm max-w-none text-text-secondary space-y-6 text-sm leading-relaxed">
         <section>
           <h2 className="text-[18px] font-semibold text-foreground mt-8 mb-3">1. Acceptance of Terms</h2>
           <p>By accessing or using Magic (&quot;the Service&quot;), you agree to be bound by these Terms of Service. If you do not agree, do not use the Service.</p>

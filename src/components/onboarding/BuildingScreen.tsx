@@ -338,7 +338,7 @@ export function BuildingScreen() {
           {config && config.id !== "generic" ? `, customized for ${config.label.toLowerCase()}` : ""}.
         </motion.p>
         <motion.p
-          className="text-text-tertiary text-[14px] mb-10"
+          className="text-text-tertiary text-sm mb-10"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6 }}
@@ -424,7 +424,7 @@ export function BuildingScreen() {
                 className="flex items-center justify-center gap-2"
               >
                 <Sparkles className="w-4 h-4 text-primary" />
-                <span className="text-[14px] font-semibold text-primary">Ready to go</span>
+                <span className="text-sm font-semibold text-primary">Ready to go</span>
               </motion.div>
             )}
           </AnimatePresence>

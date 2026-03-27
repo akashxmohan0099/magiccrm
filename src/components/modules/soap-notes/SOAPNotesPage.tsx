@@ -85,7 +85,7 @@ export function SOAPNotesPage() {
       />
       <FeatureSection moduleId="soap-notes" featureId="practitioner-filter" featureLabel="Practitioner Filter">
         <div className="mb-4 flex items-center gap-2">
-          <span className="text-[12px] text-text-tertiary">Filter by:</span>
+          <span className="text-xs text-text-tertiary">Filter by:</span>
           <select value={practFilter} onChange={(e) => setPractFilter(e.target.value)} className="px-3 py-1.5 bg-surface border border-border-light rounded-lg text-[13px] text-foreground">
             <option value="">All practitioners</option>
           </select>
@@ -167,7 +167,7 @@ export function SOAPNotesPage() {
                     <div key={zoneId} className="flex items-start gap-2 px-3 py-2 bg-surface rounded-lg border border-border-light">
                       <div className="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-[12px] font-medium text-foreground">{bodyZones.find((z) => z.id === zoneId)?.label}</p>
+                        <p className="text-xs font-medium text-foreground">{bodyZones.find((z) => z.id === zoneId)?.label}</p>
                         <p className="text-[11px] text-text-secondary">{note}</p>
                       </div>
                       <button onClick={() => clearZoneNote(zoneId)} className="p-0.5 rounded hover:bg-card-bg text-text-tertiary hover:text-red-500 cursor-pointer flex-shrink-0">
@@ -178,7 +178,7 @@ export function SOAPNotesPage() {
                 </div>
               ) : (
                 <div className="flex items-center justify-center h-full">
-                  <p className="text-[12px] text-text-tertiary">Select a zone on the body outline to add notes.</p>
+                  <p className="text-xs text-text-tertiary">Select a zone on the body outline to add notes.</p>
                 </div>
               )}
             </div>
@@ -198,7 +198,7 @@ export function SOAPNotesPage() {
           <h3 className="text-[13px] font-semibold text-text-tertiary uppercase tracking-wider mb-3">Treatment Plans</h3>
           <p className="text-[13px] text-text-tertiary text-center py-4">Create multi-session treatment plans with progress tracking across visits.</p>
           <div className="flex justify-center">
-            <button className="px-4 py-2 bg-foreground text-white rounded-lg text-[12px] font-medium cursor-pointer hover:opacity-90">New Treatment Plan</button>
+            <button className="px-4 py-2 bg-foreground text-white rounded-lg text-xs font-medium cursor-pointer hover:opacity-90">New Treatment Plan</button>
           </div>
         </div>
       </FeatureSection>

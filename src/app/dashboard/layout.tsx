@@ -353,7 +353,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
                 onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
                 onFocus={() => setSearchFocused(true)}
                 onBlur={() => setSearchFocused(false)}
-                className="w-full pl-10 pr-12 py-2.5 bg-surface border border-border-light rounded-[10px] text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/15 focus:border-primary/30 transition-all cursor-pointer"
+                className="w-full pl-10 pr-12 py-2.5 bg-surface border border-border-light rounded-[10px] text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/15 focus:border-primary/30 transition-all cursor-pointer"
               />
               {!searchFocused && (
                 <kbd
@@ -587,7 +587,7 @@ function DashboardCustomizeButton() {
   return (
     <button
       onClick={() => window.dispatchEvent(new CustomEvent("dashboard:toggle-edit"))}
-      className="flex items-center gap-1.5 px-2.5 py-1.5 bg-surface border border-border-light rounded-xl text-[12px] font-medium text-text-secondary hover:text-foreground hover:border-foreground/15 cursor-pointer transition-all"
+      className="flex items-center gap-1.5 px-2.5 py-1.5 bg-surface border border-border-light rounded-xl text-xs font-medium text-text-secondary hover:text-foreground hover:border-foreground/15 cursor-pointer transition-all"
     >
       <SlidersHorizontal className="w-3.5 h-3.5" /> Customize
     </button>

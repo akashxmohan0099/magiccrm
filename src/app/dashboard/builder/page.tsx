@@ -101,13 +101,13 @@ export default function BuilderPage() {
           className="w-full px-5 py-4 bg-card-bg border border-border-light rounded-2xl text-[15px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all resize-none"
         />
         <div className="flex items-center justify-between mt-3">
-          <span className="text-[12px] text-text-tertiary">
+          <span className="text-xs text-text-tertiary">
             <span className="font-semibold text-foreground">{credits}</span> credits remaining
           </span>
           <button
             onClick={handleBuild}
             disabled={!prompt.trim() || submitting || credits < 1}
-            className="px-6 py-2.5 bg-foreground text-white rounded-full text-[14px] font-semibold hover:opacity-90 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer flex items-center gap-2"
+            className="px-6 py-2.5 bg-foreground text-white rounded-full text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer flex items-center gap-2"
           >
             {submitting ? "Generating..." : "Generate Brief"} <ArrowRight className="w-4 h-4" />
           </button>
@@ -121,7 +121,7 @@ export default function BuilderPage() {
 
       {/* Example prompts */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }} className="mb-12">
-        <p className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider mb-3">Try an example</p>
+        <p className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-3">Try an example</p>
         <div className="flex flex-wrap gap-2">
           {EXAMPLE_PROMPTS.map((example) => (
             <button
@@ -137,7 +137,7 @@ export default function BuilderPage() {
 
       {/* How it works */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mb-12">
-        <p className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider mb-4">How it works</p>
+        <p className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-4">How it works</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {[
             { icon: MessageSquare, title: "Describe it", desc: "Tell us what you need" },
@@ -149,7 +149,7 @@ export default function BuilderPage() {
                 <step.icon className="w-4 h-4 text-text-secondary" />
               </div>
               <p className="text-[13px] font-semibold text-foreground mb-0.5">{step.title}</p>
-              <p className="text-[12px] text-text-tertiary">{step.desc}</p>
+              <p className="text-xs text-text-tertiary">{step.desc}</p>
             </div>
           ))}
         </div>
@@ -157,7 +157,7 @@ export default function BuilderPage() {
 
       {/* What custom features can do */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="mb-12">
-        <p className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider mb-4">What you can build</p>
+        <p className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-4">What you can build</p>
         <div className="bg-card-bg border border-border-light rounded-2xl divide-y divide-border-light">
           {[
             { icon: Database, label: "Custom data tables", desc: "Track anything — loyalty points, inventory, waitlists" },
@@ -170,8 +170,8 @@ export default function BuilderPage() {
                 <item.icon className="w-4 h-4 text-text-secondary" />
               </div>
               <div>
-                <p className="text-[14px] font-medium text-foreground">{item.label}</p>
-                <p className="text-[12px] text-text-tertiary">{item.desc}</p>
+                <p className="text-sm font-medium text-foreground">{item.label}</p>
+                <p className="text-xs text-text-tertiary">{item.desc}</p>
               </div>
             </div>
           ))}
@@ -189,7 +189,7 @@ export default function BuilderPage() {
       {/* Existing custom features */}
       {readyFeatures.length > 0 && (
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-          <p className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider mb-4">Your custom features</p>
+          <p className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-4">Your custom features</p>
           <div className="space-y-2">
             {readyFeatures.map((feature) => (
               <div key={feature.id} className="flex items-center gap-4 px-5 py-4 bg-card-bg border border-border-light rounded-2xl">
@@ -197,8 +197,8 @@ export default function BuilderPage() {
                   <Sparkles className="w-4 h-4 text-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[14px] font-medium text-foreground">{feature.name}</p>
-                  <p className="text-[12px] text-text-tertiary">{feature.description}</p>
+                  <p className="text-sm font-medium text-foreground">{feature.name}</p>
+                  <p className="text-xs text-text-tertiary">{feature.description}</p>
                 </div>
                 <button
                   onClick={() => removeFeature(feature.id)}

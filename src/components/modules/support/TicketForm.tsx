@@ -104,7 +104,7 @@ export function TicketForm({ open, onClose, ticket }: TicketFormProps) {
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
             placeholder="e.g. Login issue on mobile app"
-            className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
+            className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
           />
         </FormField>
 
@@ -114,7 +114,7 @@ export function TicketForm({ open, onClose, ticket }: TicketFormProps) {
             value={clientName}
             onChange={(e) => setClientName(e.target.value)}
             placeholder="e.g. Acme Corp"
-            className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
+            className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
           />
         </FormField>
 

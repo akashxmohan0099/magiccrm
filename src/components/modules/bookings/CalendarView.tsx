@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Plus, Coffee, Ban, Clock } from "lucide-reac
 import { Booking, BookingType } from "@/types/models";
 import { useClientsStore } from "@/store/clients";
 import { useBookingsStore } from "@/store/bookings";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 interface CalendarViewProps {
   bookings: Booking[];
@@ -224,16 +225,16 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
           <div className="flex items-center gap-2">
             <button onClick={prev} className="p-1.5 rounded-lg hover:bg-surface text-text-secondary cursor-pointer"><ChevronLeft className="w-4 h-4" /></button>
             <button onClick={next} className="p-1.5 rounded-lg hover:bg-surface text-text-secondary cursor-pointer"><ChevronRight className="w-4 h-4" /></button>
-            <h3 className="text-[14px] font-semibold text-foreground ml-1">{headerLabel}</h3>
+            <h3 className="text-sm font-semibold text-foreground ml-1">{headerLabel}</h3>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={goToday} className="text-[12px] font-medium text-text-secondary hover:text-foreground px-2.5 py-1.5 rounded-lg hover:bg-surface cursor-pointer">Today</button>
+            <button onClick={goToday} className="text-xs font-medium text-text-secondary hover:text-foreground px-2.5 py-1.5 rounded-lg hover:bg-surface cursor-pointer">Today</button>
             <div className="flex items-center bg-surface rounded-lg p-0.5 border border-border-light">
               {(["today", "week", "month"] as CalendarMode[]).map((m) => (
                 <button
                   key={m}
                   onClick={() => { setMode(m); if (m === "today") setCurrentDate(new Date()); }}
-                  className={`px-3 py-1 rounded-md text-[12px] font-medium transition-colors cursor-pointer ${mode === m ? "bg-card-bg text-foreground shadow-sm" : "text-text-secondary hover:text-foreground"}`}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${mode === m ? "bg-card-bg text-foreground shadow-sm" : "text-text-secondary hover:text-foreground"}`}
                 >
                   {m === "today" ? "Day" : m === "week" ? "Week" : "Month"}
                 </button>
@@ -320,7 +321,7 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
                       <div className="flex items-center gap-1.5">
                         {b.bookingType === "break" && <Coffee className="w-3 h-3 flex-shrink-0" />}
                         {b.bookingType === "unavailable" && <Ban className="w-3 h-3 flex-shrink-0" />}
-                        <p className="text-[12px] font-semibold truncate">{b.title || (b.bookingType === "break" ? "Break" : "Unavailable")}</p>
+                        <p className="text-xs font-semibold truncate">{b.title || (b.bookingType === "break" ? "Break" : "Unavailable")}</p>
                       </div>
                       {!isBlock && (
                         <p className="text-[11px] text-text-secondary truncate">
@@ -368,7 +369,7 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
                       className={`text-center py-2 cursor-pointer hover:bg-surface transition-colors ${isToday ? "bg-primary/5" : ""}`}
                     >
                       <p className="text-[10px] text-text-tertiary font-medium">{DAY_LABELS[i]}</p>
-                      <p className={`text-[14px] font-semibold ${isToday ? "text-primary" : "text-foreground"}`}>{d.getDate()}</p>
+                      <p className={`text-sm font-semibold ${isToday ? "text-primary" : "text-foreground"}`}>{d.getDate()}</p>
                     </button>
                   );
                 })}
@@ -481,7 +482,7 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
                     const isToday = dateKey === todayKey;
                     return (
                       <button key={idx} onClick={() => { setCurrentDate(new Date(dateKey + "T00:00:00")); setMode("today"); }} className={`relative min-h-[80px] p-1.5 text-left border-b border-r border-border-light transition-colors cursor-pointer ${!inMonth ? "bg-surface/30" : "hover:bg-surface/50"}`}>
-                        <span className={`text-[12px] font-medium inline-flex items-center justify-center w-6 h-6 rounded-full ${isToday ? "bg-foreground text-white" : inMonth ? "text-foreground" : "text-text-tertiary/40"}`}>{day}</span>
+                        <span className={`text-xs font-medium inline-flex items-center justify-center w-6 h-6 rounded-full ${isToday ? "bg-foreground text-white" : inMonth ? "text-foreground" : "text-text-tertiary/40"}`}>{day}</span>
                         <div className="mt-0.5 space-y-0.5">
                           {dayBookings.slice(0, 2).map((b) => (
                             <div key={b.id} className={`text-[10px] px-1.5 py-0.5 rounded truncate ${getBookingStyle(b)}`}>
@@ -546,18 +547,11 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
                     {previewBooking.title || (previewBooking.bookingType === "break" ? "Break" : "Unavailable")}
                   </p>
                 </div>
-                <p className="text-[12px] text-text-secondary">
+                <p className="text-xs text-text-secondary">
                   {new Date(previewBooking.date + "T00:00:00").toLocaleDateString("default", { weekday: "short", month: "short", day: "numeric" })}
                 </p>
               </div>
-              <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
-                previewBooking.status === "confirmed" ? "bg-emerald-50 text-emerald-700" :
-                previewBooking.status === "pending" ? "bg-yellow-50 text-yellow-700" :
-                previewBooking.status === "completed" ? "bg-blue-50 text-blue-700" :
-                "bg-surface text-text-secondary"
-              }`}>
-                {previewBooking.status}
-              </span>
+              <StatusBadge status={previewBooking.status} />
             </div>
 
             <div className="space-y-2 mb-4">
@@ -566,7 +560,7 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
                 <span className="text-foreground">{previewBooking.startTime} — {previewBooking.endTime}</span>
               </div>
               {previewBooking.serviceName && (
-                <p className="text-[12px] text-text-secondary ml-5.5">{previewBooking.serviceName}</p>
+                <p className="text-xs text-text-secondary ml-5.5">{previewBooking.serviceName}</p>
               )}
               {previewBooking.clientId && clientMap[previewBooking.clientId] && (
                 <div className="flex items-center gap-2 text-[13px]">
@@ -577,20 +571,20 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
                 </div>
               )}
               {previewBooking.notes && (
-                <p className="text-[12px] text-text-tertiary mt-1">{previewBooking.notes}</p>
+                <p className="text-xs text-text-tertiary mt-1">{previewBooking.notes}</p>
               )}
             </div>
 
             <div className="flex gap-2">
               <button
                 onClick={() => { closePreview(); onBookingClick(previewBooking); }}
-                className="flex-1 px-3 py-1.5 bg-foreground text-white rounded-lg text-[12px] font-medium cursor-pointer hover:opacity-90 transition-opacity"
+                className="flex-1 px-3 py-1.5 bg-foreground text-white rounded-lg text-xs font-medium cursor-pointer hover:opacity-90 transition-opacity"
               >
                 Edit
               </button>
               <button
                 onClick={closePreview}
-                className="px-3 py-1.5 bg-surface text-text-secondary rounded-lg text-[12px] font-medium cursor-pointer hover:text-foreground transition-colors"
+                className="px-3 py-1.5 bg-surface text-text-secondary rounded-lg text-xs font-medium cursor-pointer hover:text-foreground transition-colors"
               >
                 Close
               </button>

@@ -13,6 +13,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { DataTable, Column } from "@/components/ui/DataTable";
 import { Button } from "@/components/ui/Button";
 import { FeatureSection } from "@/components/modules/FeatureSection";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { TeamMemberForm } from "./TeamMemberForm";
 import { MemberAvailabilityPanel } from "./MemberAvailabilityPanel";
 import { ShiftScheduler } from "./ShiftScheduler";
@@ -95,13 +96,7 @@ export function TeamPage() {
       key: "status",
       label: "Status",
       render: (m) => (
-        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-          m.status === "active" ? "bg-emerald-50 text-emerald-700" :
-          m.status === "invited" ? "bg-yellow-50 text-yellow-700" :
-          "bg-gray-100 text-gray-600"
-        }`}>
-          {m.status === "active" ? "Active" : m.status === "invited" ? "Invited" : "Inactive"}
-        </span>
+        <StatusBadge status={m.status} />
       ),
     },
     {
@@ -195,7 +190,7 @@ export function TeamPage() {
                       <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center"><span className="text-[9px] font-bold text-white">{m.name[0]}</span></div>
                       <span className="text-[13px] text-foreground">{m.name}</span>
                     </div>
-                    <div className="flex gap-3 text-[12px] text-text-tertiary">
+                    <div className="flex gap-3 text-xs text-text-tertiary">
                       <span>{wl.bookings} booking{wl.bookings !== 1 ? "s" : ""}</span>
                       <span>{wl.tasks} task{wl.tasks !== 1 ? "s" : ""}</span>
                     </div>

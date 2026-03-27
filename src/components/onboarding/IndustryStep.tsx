@@ -122,12 +122,12 @@ export function IndustryStep() {
                     }`}>
                       <IconComp className={`w-5 h-5 ${isSelected ? "text-white" : iconConfig.color}`} />
                     </div>
-                    <p className={`font-semibold text-[14px] tracking-tight mb-1 ${
+                    <p className={`font-semibold text-sm tracking-tight mb-1 ${
                       isSelected ? "text-white" : "text-foreground"
                     }`}>
                       {config.label}
                     </p>
-                    <p className={`text-[12px] leading-relaxed ${
+                    <p className={`text-xs leading-relaxed ${
                       isSelected ? "text-white/60" : "text-text-tertiary"
                     }`}>
                       {config.description}
@@ -171,7 +171,7 @@ export function IndustryStep() {
                 return (
                   <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full mb-4 ${iconConfig.bg}`}>
                     <IconComp className={`w-4 h-4 ${iconConfig.color}`} />
-                    <span className="text-[12px] font-semibold text-foreground">{currentIndustry?.label}</span>
+                    <span className="text-xs font-semibold text-foreground">{currentIndustry?.label}</span>
                   </div>
                 );
               })()}
@@ -202,12 +202,12 @@ export function IndustryStep() {
                     }`}
                   >
                     <div className="flex-1 min-w-0">
-                      <p className={`font-semibold text-[14px] tracking-tight ${
+                      <p className={`font-semibold text-sm tracking-tight ${
                         isSelected ? "text-white" : "text-foreground"
                       }`}>
                         {persona.label}
                       </p>
-                      <p className={`text-[12px] mt-0.5 ${
+                      <p className={`text-xs mt-0.5 ${
                         isSelected ? "text-white/60" : "text-text-tertiary"
                       }`}>
                         {persona.description}

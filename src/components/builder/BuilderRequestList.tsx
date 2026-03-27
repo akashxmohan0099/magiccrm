@@ -57,8 +57,8 @@ export function BuilderRequestList({
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-[14px] font-semibold text-foreground">{title}</h3>
-        <p className="text-[12px] text-text-tertiary mt-1">{description}</p>
+        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+        <p className="text-xs text-text-tertiary mt-1">{description}</p>
       </div>
 
       <div className="space-y-3">
@@ -70,7 +70,7 @@ export function BuilderRequestList({
             <div key={request.id} className="bg-card-bg border border-border-light rounded-2xl p-4">
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div className="min-w-0">
-                  <p className="text-[14px] font-medium text-foreground leading-relaxed">
+                  <p className="text-sm font-medium text-foreground leading-relaxed">
                     {request.prompt}
                   </p>
                   <div className="flex items-center gap-2 mt-2 text-[11px] text-text-tertiary">
@@ -89,13 +89,13 @@ export function BuilderRequestList({
 
               {request.result ? (
                 <div className="rounded-xl bg-surface/50 border border-border-light p-3">
-                  <p className="text-[12px] text-text-secondary leading-relaxed whitespace-pre-wrap">
+                  <p className="text-xs text-text-secondary leading-relaxed whitespace-pre-wrap">
                     {request.result}
                   </p>
                 </div>
               ) : (
                 <div className="rounded-xl bg-surface/40 border border-border-light p-3">
-                  <p className="text-[12px] text-text-secondary">
+                  <p className="text-xs text-text-secondary">
                     {request.status === "generating"
                       ? "Generating an implementation brief from your prompt."
                       : "Saved locally for backend handoff. AI enrichment has not completed yet."}

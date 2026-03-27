@@ -40,7 +40,7 @@ export function StorefrontPage() {
     setPhotos((prev) => prev.filter((p) => p.id !== id));
   };
 
-  const inputClass = "w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30";
+  const inputClass = "w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30";
 
   return (
     <div>
@@ -88,11 +88,11 @@ export function StorefrontPage() {
           <h3 className="text-[15px] font-semibold text-foreground">Display Options</h3>
           <label className="flex items-center gap-3 cursor-pointer">
             <input type="checkbox" checked={config.showPricing} onChange={(e) => updateConfig({ showPricing: e.target.checked })} className="rounded" />
-            <span className="text-[14px] text-foreground">Show pricing on services</span>
+            <span className="text-sm text-foreground">Show pricing on services</span>
           </label>
           <label className="flex items-center gap-3 cursor-pointer">
             <input type="checkbox" checked={config.showDuration} onChange={(e) => updateConfig({ showDuration: e.target.checked })} className="rounded" />
-            <span className="text-[14px] text-foreground">Show duration on services</span>
+            <span className="text-sm text-foreground">Show duration on services</span>
           </label>
         </div>
 
@@ -120,7 +120,7 @@ export function StorefrontPage() {
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {photos.map((photo) => (
                   <div key={photo.id} className={`relative aspect-square ${photo.color} rounded-lg flex items-center justify-center group`}>
-                    <span className="text-[12px] font-medium text-gray-700 text-center px-2">{photo.label}</span>
+                    <span className="text-xs font-medium text-gray-700 text-center px-2">{photo.label}</span>
                     <button
                       onClick={() => removePhoto(photo.id)}
                       className="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
@@ -153,7 +153,7 @@ export function StorefrontPage() {
                   value={photoLabel}
                   onChange={(e) => setPhotoLabel(e.target.value)}
                   placeholder="e.g. Before & After #1"
-                  className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
+                  className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
                   autoFocus
                   onKeyDown={(e) => e.key === "Enter" && addPhoto()}
                 />
@@ -176,7 +176,7 @@ export function StorefrontPage() {
         {!config.enabled && (
           <div className="bg-surface rounded-xl border border-border-light p-8 text-center">
             <Store className="w-10 h-10 text-text-tertiary mx-auto mb-3" />
-            <p className="text-[14px] text-text-secondary">Enable your storefront to see a live preview</p>
+            <p className="text-sm text-text-secondary">Enable your storefront to see a live preview</p>
           </div>
         )}
       </div>

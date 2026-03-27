@@ -257,7 +257,7 @@ export function CSVImportWizard({ open, onClose, defaultTarget }: CSVImportWizar
                       {isDone ? <CheckCircle2 className="w-3.5 h-3.5" /> : stepNum}
                     </div>
                     <span
-                      className={`text-[12px] font-medium ${
+                      className={`text-xs font-medium ${
                         isActive ? "text-foreground" : "text-text-tertiary"
                       }`}
                     >
@@ -380,7 +380,7 @@ export function CSVImportWizard({ open, onClose, defaultTarget }: CSVImportWizar
                 transition={{ duration: 0.2 }}
                 className="p-6 space-y-4"
               >
-                <p className="text-[12px] text-text-tertiary">
+                <p className="text-xs text-text-tertiary">
                   Map your CSV columns to {target.label.toLowerCase()} fields. Required fields are marked with *.
                 </p>
 
@@ -445,7 +445,7 @@ export function CSVImportWizard({ open, onClose, defaultTarget }: CSVImportWizar
                 {!requiredFieldsMapped && (
                   <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
                     <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                    <span className="text-[12px]">
+                    <span className="text-xs">
                       Map all required fields ({target.requiredFields.map((f) => target.fieldLabels[f]).join(", ")}) to proceed.
                     </span>
                   </div>
@@ -501,11 +501,11 @@ export function CSVImportWizard({ open, onClose, defaultTarget }: CSVImportWizar
 
                     {/* Preview table */}
                     <div>
-                      <p className="text-[12px] text-text-tertiary mb-2">
+                      <p className="text-xs text-text-tertiary mb-2">
                         Preview (first {Math.min(5, previewRows.length)} rows):
                       </p>
                       <div className="border border-border-light rounded-xl overflow-x-auto">
-                        <table className="w-full text-[12px]">
+                        <table className="w-full text-xs">
                           <thead>
                             <tr className="bg-surface">
                               {allFields
@@ -566,7 +566,7 @@ export function CSVImportWizard({ open, onClose, defaultTarget }: CSVImportWizar
                     {/* Progress bar */}
                     {importing && (
                       <div className="space-y-2">
-                        <div className="flex items-center justify-between text-[12px] text-text-secondary">
+                        <div className="flex items-center justify-between text-xs text-text-secondary">
                           <span>Importing...</span>
                           <span>{importProgress}%</span>
                         </div>

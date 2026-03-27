@@ -224,7 +224,7 @@ export function SummaryStep({ workspaceId }: { workspaceId: string | null }) {
           {config && IndustryIcon && (
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-surface rounded-full mb-5">
               <IndustryIcon className="w-4 h-4 text-text-secondary" />
-              <span className="text-[12px] font-semibold text-text-secondary">{config.label}</span>
+              <span className="text-xs font-semibold text-text-secondary">{config.label}</span>
             </div>
           )}
           <h2 className="text-[32px] font-bold text-foreground tracking-tight mb-3">
@@ -423,7 +423,7 @@ function CombinationChoiceCard({
               </span>
             </div>
             <h4 className="text-[15px] font-bold text-foreground">{label}</h4>
-            <p className="text-[12px] text-text-secondary mt-0.5">{description}</p>
+            <p className="text-xs text-text-secondary mt-0.5">{description}</p>
             <p className="text-[11px] text-text-tertiary mt-1.5">
               Combines {moduleNames.join(" + ")} into one view
             </p>
@@ -431,7 +431,7 @@ function CombinationChoiceCard({
           <div className="flex items-center gap-2 flex-shrink-0 pt-1">
             <button
               onClick={() => onToggle(!isActive)}
-              className={`px-4 py-2 rounded-xl text-[12px] font-semibold transition-all cursor-pointer ${
+              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                 isActive
                   ? "bg-primary text-white"
                   : "bg-surface text-text-secondary hover:bg-primary/10 hover:text-primary"
@@ -471,7 +471,7 @@ function CombinationChoiceCard({
                   return (
                     <div key={tab.id} className={`flex-1 flex items-center gap-2 px-3 py-2.5 rounded-xl ${tabDisplay.bg}`}>
                       <TabIcon className={`w-4 h-4 ${tabDisplay.color}`} />
-                      <span className="text-[12px] font-medium text-foreground">{tab.label}</span>
+                      <span className="text-xs font-medium text-foreground">{tab.label}</span>
                     </div>
                   );
                 })}
@@ -564,7 +564,7 @@ function TunedModuleCard({
           <IconComp className={`w-5 h-5 ${color}`} />
         </div>
         <h3 className="text-[15px] font-bold text-foreground">{item.label}</h3>
-        <p className="text-[12px] text-text-secondary mt-1">{item.description}</p>
+        <p className="text-xs text-text-secondary mt-1">{item.description}</p>
       </div>
 
       <div className="relative px-5 pb-5 space-y-1.5">

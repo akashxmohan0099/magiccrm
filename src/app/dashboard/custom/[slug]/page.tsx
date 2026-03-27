@@ -117,7 +117,7 @@ function CollectionSection({
             <h3 className="text-[15px] font-semibold text-foreground">
               {collection.name}
             </h3>
-            <p className="text-[12px] text-text-tertiary">
+            <p className="text-xs text-text-tertiary">
               {collection.records.length}{" "}
               {collection.records.length === 1 ? "record" : "records"}
             </p>
@@ -186,7 +186,7 @@ function QuickAddForm({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {fields.map((field) => (
           <div key={field.id}>
-            <label className="block text-[12px] font-medium text-text-secondary mb-1">
+            <label className="block text-xs font-medium text-text-secondary mb-1">
               {field.name}
               {field.required && <span className="text-red-500 ml-0.5">*</span>}
             </label>

@@ -110,7 +110,7 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
           <FeatureSection moduleId="client-database" featureId="auto-inactive-flag" featureLabel="Auto-Inactive Flag">
             <div className="mb-4 px-4 py-3 bg-yellow-50 border border-yellow-200 rounded-xl flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-yellow-600 flex-shrink-0" />
-              <p className="text-[12px] text-yellow-800">This client has been inactive. Consider reaching out.</p>
+              <p className="text-xs text-yellow-800">This client has been inactive. Consider reaching out.</p>
             </div>
           </FeatureSection>
 

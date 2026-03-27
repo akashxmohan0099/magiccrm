@@ -211,12 +211,12 @@ export function CommunicationPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="text-[14px] font-medium text-foreground">{ch.label}</p>
+                    <p className="text-sm font-medium text-foreground">{ch.label}</p>
                     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${statusMeta.badgeClass}`}>
                       {statusMeta.label}
                     </span>
                   </div>
-                  <p className="text-[12px] text-text-tertiary mt-0.5">
+                  <p className="text-xs text-text-tertiary mt-0.5">
                     {channelConfig?.statusMessage || ch.description}
                   </p>
                   {channelConfig?.identifier && (
@@ -249,7 +249,7 @@ export function CommunicationPage() {
                 </div>
                 <div>
                   <h2 className="text-[16px] font-bold text-foreground">Connect {setupChannel.label}</h2>
-                  <p className="text-[12px] text-text-tertiary">{setupChannel.description}</p>
+                  <p className="text-xs text-text-tertiary">{setupChannel.description}</p>
                 </div>
               </div>
               <button onClick={() => setSetupChannelId(null)} className="p-1.5 text-text-secondary hover:text-foreground rounded-lg hover:bg-surface cursor-pointer">
@@ -269,7 +269,7 @@ export function CommunicationPage() {
                       identifier: event.target.value,
                     }))
                   }
-                  className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
+                  className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
                 />
               </div>
 
@@ -287,7 +287,7 @@ export function CommunicationPage() {
                         }))
                       }
                       placeholder="Your Business Name"
-                      className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20"
                     />
                   </div>
                   <div>
@@ -302,7 +302,7 @@ export function CommunicationPage() {
                       }
                       placeholder="Best regards,&#10;Your Business Name"
                       rows={3}
-                      className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+                      className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
                     />
                   </div>
                 </div>
@@ -311,7 +311,7 @@ export function CommunicationPage() {
               {(setupChannel.id === "instagram" || setupChannel.id === "facebook" || setupChannel.id === "linkedin") && (
                 <div className="p-4 bg-surface/50 rounded-xl border border-border-light">
                   <p className="text-[13px] text-text-secondary mb-2">To connect {setupChannel.label}, you&apos;ll need to:</p>
-                  <ol className="space-y-1.5 text-[12px] text-text-tertiary list-decimal list-inside">
+                  <ol className="space-y-1.5 text-xs text-text-tertiary list-decimal list-inside">
                     <li>Enter your {setupChannel.fieldLabel.toLowerCase()} above</li>
                     <li>Authorize Magic once the backend OAuth flow is connected</li>
                     <li>Messages will sync after backend credentials are active</li>
@@ -322,7 +322,7 @@ export function CommunicationPage() {
               <div className="pt-2">
                 <button
                   onClick={() => completeSetup(setupChannel.id)}
-                  className="w-full px-6 py-3 bg-foreground text-white rounded-xl text-[14px] font-semibold cursor-pointer hover:opacity-90 transition-opacity"
+                  className="w-full px-6 py-3 bg-foreground text-white rounded-xl text-sm font-semibold cursor-pointer hover:opacity-90 transition-opacity"
                 >
                   Save {setupChannel.label} Configuration
                 </button>
@@ -472,7 +472,7 @@ export function CommunicationPage() {
                   className="w-full px-3 py-2 bg-surface border border-border-light rounded-lg text-[13px] text-foreground placeholder:text-text-tertiary focus:outline-none resize-none"
                 />
               </div>
-              <label className="mt-3 inline-flex items-center gap-2 text-[12px] text-text-secondary">
+              <label className="mt-3 inline-flex items-center gap-2 text-xs text-text-secondary">
                 <input
                   type="checkbox"
                   checked={automationSettings.includeUnsubscribeLink}
@@ -528,8 +528,8 @@ export function CommunicationPage() {
               <div className="flex-1 flex items-center justify-center">
                 <div className="text-center">
                   <MessageSquare className="w-8 h-8 text-text-tertiary mx-auto mb-2" />
-                  <p className="text-[14px] font-medium text-foreground mb-1">{ms.emptyTitle || "No synced conversations yet"}</p>
-                  <p className="text-[12px] text-text-tertiary mb-4">
+                  <p className="text-sm font-medium text-foreground mb-1">{ms.emptyTitle || "No synced conversations yet"}</p>
+                  <p className="text-xs text-text-tertiary mb-4">
                     {ms.emptyDescription || "This screen is ready for backend sync, but you can model the workflow manually right now."}
                   </p>
                   <Button variant="primary" size="sm" onClick={() => setNewConvoOpen(true)}>

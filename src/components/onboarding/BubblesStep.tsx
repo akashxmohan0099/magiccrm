@@ -352,7 +352,7 @@ export function BubblesStep() {
                 transition={{ duration: 0.4, ease: "easeOut" }}
               />
             </div>
-            <span className="text-[12px] text-text-tertiary font-medium tabular-nums">
+            <span className="text-xs text-text-tertiary font-medium tabular-nums">
               {slideIndex + 1}/{slides.length}
             </span>
           </div>

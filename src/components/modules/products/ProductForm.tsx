@@ -60,7 +60,7 @@ export function ProductForm({ open, onClose, product }: ProductFormProps) {
 
   if (!open) return null;
 
-  const inputClass = "w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30";
+  const inputClass = "w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30";
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,22 +117,22 @@ export function ProductForm({ open, onClose, product }: ProductFormProps) {
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <FormField label="Name" required error={errors.name}>
             <input type="text" value={name} onChange={(e) => { setName(e.target.value); if (errors.name) setErrors((prev) => { const next = { ...prev }; delete next.name; return next; }); }} placeholder="e.g. Gel Manicure"
-              className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30" />
+              className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30" />
           </FormField>
           <div>
             <label className="block text-[13px] font-medium text-foreground mb-1.5">Description</label>
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Brief description..." rows={2}
-              className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 resize-none" />
+              className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 resize-none" />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <FormField label="Price" error={errors.price}>
               <input type="number" step="0.01" value={price} onChange={(e) => { setPrice(e.target.value); if (errors.price) setErrors((prev) => { const next = { ...prev }; delete next.price; return next; }); }} placeholder="0.00"
-                className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30" />
+                className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30" />
             </FormField>
             <div>
               <label className="block text-[13px] font-medium text-foreground mb-1.5">Quantity</label>
               <input type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="Optional"
-                className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30" />
+                className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30" />
             </div>
           </div>
           <FeatureSection moduleId="products" featureId="cost-margins" featureLabel="Cost Price & Margins">
@@ -176,7 +176,7 @@ export function ProductForm({ open, onClose, product }: ProductFormProps) {
                     />
                   </div>
                 ))}
-                <button type="button" onClick={addVariant} className="text-[12px] text-primary hover:underline cursor-pointer">+ Add variant</button>
+                <button type="button" onClick={addVariant} className="text-xs text-primary hover:underline cursor-pointer">+ Add variant</button>
               </div>
             </div>
           </FeatureSection>
@@ -196,12 +196,12 @@ export function ProductForm({ open, onClose, product }: ProductFormProps) {
           <div>
             <label className="block text-[13px] font-medium text-foreground mb-1.5">Category</label>
             <input type="text" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="e.g. Nails, Hair, Accessories"
-              className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30" />
+              className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30" />
           </div>
           <div>
             <label className="block text-[13px] font-medium text-foreground mb-1.5">SKU</label>
             <input type="text" value={sku} onChange={(e) => setSku(e.target.value)} placeholder="Optional product code"
-              className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30" />
+              className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30" />
           </div>
           <div className="pt-2 space-y-2">
             <Button type="submit" loading={saving} className="w-full">{product ? "Save Changes" : "Add Product"}</Button>

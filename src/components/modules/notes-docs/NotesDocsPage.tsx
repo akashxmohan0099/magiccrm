@@ -210,7 +210,7 @@ export function NotesDocsPage() {
       <div className="w-[280px] flex-shrink-0 border-r border-border-light bg-card-bg flex flex-col">
         <div className="p-3 border-b border-border-light">
           <div className="flex items-center justify-between mb-2.5">
-            <h2 className="text-[14px] font-bold text-foreground">Notes</h2>
+            <h2 className="text-sm font-bold text-foreground">Notes</h2>
             <button
               onClick={createNote}
               className="p-1.5 rounded-lg bg-foreground text-white hover:bg-foreground/80 transition-colors"
@@ -225,7 +225,7 @@ export function NotesDocsPage() {
               placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 bg-background border border-border-light rounded-lg text-[12px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:border-primary/40"
+              className="w-full pl-8 pr-3 py-1.5 bg-background border border-border-light rounded-lg text-xs text-foreground placeholder:text-text-tertiary focus:outline-none focus:border-primary/40"
             />
           </div>
         </div>
@@ -304,7 +304,7 @@ export function NotesDocsPage() {
               <button
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => { setShowSizePicker(!showSizePicker); setShowColorPicker(false); }}
-                className="flex items-center gap-1 px-2 py-1.5 rounded-md text-text-secondary hover:bg-surface hover:text-foreground transition-colors text-[12px] font-medium"
+                className="flex items-center gap-1 px-2 py-1.5 rounded-md text-text-secondary hover:bg-surface hover:text-foreground transition-colors text-xs font-medium"
               >
                 <Type className="w-3.5 h-3.5" /> Size
               </button>
@@ -319,7 +319,7 @@ export function NotesDocsPage() {
                         exec("fontSize", String(idx + 1));
                         setShowSizePicker(false);
                       }}
-                      className="w-full text-left px-2.5 py-1.5 rounded-lg text-[12px] text-text-secondary hover:bg-surface hover:text-foreground transition-colors"
+                      className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs text-text-secondary hover:bg-surface hover:text-foreground transition-colors"
                       style={{ fontSize: size }}
                     >
                       {size}
@@ -377,7 +377,7 @@ export function NotesDocsPage() {
                   suppressContentEditableWarning
                   onInput={() => { saveContent(); saveTitle(); }}
                   data-placeholder="Start writing..."
-                  className="min-h-[900px] outline-none text-[14px] text-foreground leading-[1.8] empty:before:content-[attr(data-placeholder)] empty:before:text-text-tertiary/30 [&>h1]:text-[24px] [&>h1]:font-bold [&>h1]:mb-3 [&>h1]:mt-5 [&>h2]:text-[19px] [&>h2]:font-bold [&>h2]:mb-2 [&>h2]:mt-4 [&>p]:mb-2 [&>ul]:ml-5 [&>ul]:list-disc [&>ul]:mb-2 [&>ol]:ml-5 [&>ol]:list-decimal [&>ol]:mb-2 [&>li]:mb-0.5 [&>blockquote]:border-l-[3px] [&>blockquote]:border-foreground/15 [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:text-text-secondary [&>blockquote]:my-3 [&>hr]:my-5 [&>hr]:border-border-light"
+                  className="min-h-[900px] outline-none text-sm text-foreground leading-[1.8] empty:before:content-[attr(data-placeholder)] empty:before:text-text-tertiary/30 [&>h1]:text-[24px] [&>h1]:font-bold [&>h1]:mb-3 [&>h1]:mt-5 [&>h2]:text-[19px] [&>h2]:font-bold [&>h2]:mb-2 [&>h2]:mt-4 [&>p]:mb-2 [&>ul]:ml-5 [&>ul]:list-disc [&>ul]:mb-2 [&>ol]:ml-5 [&>ol]:list-decimal [&>ol]:mb-2 [&>li]:mb-0.5 [&>blockquote]:border-l-[3px] [&>blockquote]:border-foreground/15 [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:text-text-secondary [&>blockquote]:my-3 [&>hr]:my-5 [&>hr]:border-border-light"
                 />
               </div>
             </div>
@@ -387,7 +387,7 @@ export function NotesDocsPage() {
         <div className="flex-1 flex items-center justify-center bg-background">
           <div className="text-center">
             <FileText className="w-10 h-10 text-text-tertiary/30 mx-auto mb-3" />
-            <p className="text-[14px] text-text-tertiary">Select a note or create a new one</p>
+            <p className="text-sm text-text-tertiary">Select a note or create a new one</p>
           </div>
         </div>
       )}

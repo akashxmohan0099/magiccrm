@@ -105,7 +105,7 @@ export function RecurringTemplateLibrary() {
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="Template name"
-              className="w-full rounded-lg border border-border-light bg-white px-2.5 py-1.5 text-[12px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-primary/30"
+              className="w-full rounded-lg border border-border-light bg-white px-2.5 py-1.5 text-xs text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-primary/30"
               autoFocus
             />
             <input
@@ -113,20 +113,20 @@ export function RecurringTemplateLibrary() {
               value={formData.taskTitle}
               onChange={(e) => setFormData({ ...formData, taskTitle: e.target.value })}
               placeholder="Task title (what gets created)"
-              className="w-full rounded-lg border border-border-light bg-white px-2.5 py-1.5 text-[12px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-primary/30"
+              className="w-full rounded-lg border border-border-light bg-white px-2.5 py-1.5 text-xs text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-primary/30"
             />
             <input
               type="text"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Description (optional)"
-              className="w-full rounded-lg border border-border-light bg-white px-2.5 py-1.5 text-[12px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-primary/30"
+              className="w-full rounded-lg border border-border-light bg-white px-2.5 py-1.5 text-xs text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-primary/30"
             />
             <div className="flex gap-2">
               <select
                 value={formData.frequency}
                 onChange={(e) => setFormData({ ...formData, frequency: e.target.value as RecurringTaskTemplate["frequency"] })}
-                className="flex-1 rounded-lg border border-border-light bg-white px-2.5 py-1.5 text-[12px] text-foreground focus:outline-none focus:ring-1 focus:ring-primary/30"
+                className="flex-1 rounded-lg border border-border-light bg-white px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary/30"
               >
                 <option value="daily">Daily</option>
                 <option value="weekly">Weekly</option>
@@ -139,7 +139,7 @@ export function RecurringTemplateLibrary() {
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 placeholder="Category"
-                className="flex-1 rounded-lg border border-border-light bg-white px-2.5 py-1.5 text-[12px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-primary/30"
+                className="flex-1 rounded-lg border border-border-light bg-white px-2.5 py-1.5 text-xs text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-primary/30"
               />
             </div>
             <div className="flex gap-2 pt-1">

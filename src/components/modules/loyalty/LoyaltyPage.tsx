@@ -53,14 +53,14 @@ export function LoyaltyPage() {
             <div className="bg-card-bg rounded-xl border border-border-light p-5">
               <div className="flex items-center gap-2 mb-4">
                 <Trophy className="w-4 h-4 text-primary" />
-                <h3 className="text-[14px] font-semibold text-foreground">Top Members</h3>
+                <h3 className="text-sm font-semibold text-foreground">Top Members</h3>
               </div>
               <div className="space-y-2">
                 {leaderboard.map((entry, i) => (
                   <div key={i} className="flex items-center justify-between py-1.5">
                     <div className="flex items-center gap-3">
-                      <span className="text-[12px] font-bold text-text-tertiary w-5">{i + 1}.</span>
-                      <span className="text-[14px] text-foreground">{entry.name}</span>
+                      <span className="text-xs font-bold text-text-tertiary w-5">{i + 1}.</span>
+                      <span className="text-sm text-foreground">{entry.name}</span>
                     </div>
                     <span className="text-[13px] font-semibold text-primary">{entry.points} pts</span>
                   </div>
@@ -72,7 +72,7 @@ export function LoyaltyPage() {
           {referralCodes.length > 0 && (
             <div className="bg-card-bg rounded-xl border border-border-light overflow-hidden">
               <div className="px-5 py-3 border-b border-border-light">
-                <h3 className="text-[14px] font-semibold text-foreground">Referral Codes</h3>
+                <h3 className="text-sm font-semibold text-foreground">Referral Codes</h3>
               </div>
               <DataTable<ReferralCode> storageKey="magic-crm-referrals-columns" columns={codeColumns} data={referralCodes} keyExtractor={(c) => c.id} />
             </div>
@@ -81,7 +81,7 @@ export function LoyaltyPage() {
       )}
       <FeatureSection moduleId="loyalty" featureId="digital-punch-card" featureLabel="Digital Punch Card">
         <div className="bg-card-bg rounded-xl border border-border-light p-5 mb-4 mt-4">
-          <h3 className="text-[14px] font-semibold text-foreground mb-3">Digital Punch Card</h3>
+          <h3 className="text-sm font-semibold text-foreground mb-3">Digital Punch Card</h3>
           <div className="flex gap-2">
             {Array.from({ length: 10 }, (_, i) => (
               <div key={i} className={`w-8 h-8 rounded-full border-2 flex items-center justify-center ${i < 3 ? "bg-primary/20 border-primary" : "border-border-light"}`}>
@@ -95,7 +95,7 @@ export function LoyaltyPage() {
 
       <FeatureSection moduleId="loyalty" featureId="reward-tiers" featureLabel="Reward Tiers">
         <div className="bg-card-bg rounded-xl border border-border-light p-5 mb-4">
-          <h3 className="text-[14px] font-semibold text-foreground mb-3">Reward Tiers</h3>
+          <h3 className="text-sm font-semibold text-foreground mb-3">Reward Tiers</h3>
           <div className="space-y-2">
             {[
               { name: "Bronze", min: 0, color: "bg-orange-100 text-orange-700" },
@@ -103,7 +103,7 @@ export function LoyaltyPage() {
               { name: "Gold", min: 300, color: "bg-yellow-100 text-yellow-700" },
             ].map((tier) => (
               <div key={tier.name} className="flex items-center justify-between px-3 py-2 rounded-lg bg-surface/50">
-                <span className={`text-[12px] px-2 py-0.5 rounded-full font-medium ${tier.color}`}>{tier.name}</span>
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${tier.color}`}>{tier.name}</span>
                 <span className="text-[11px] text-text-tertiary">{tier.min}+ points</span>
               </div>
             ))}
@@ -113,7 +113,7 @@ export function LoyaltyPage() {
 
       <FeatureSection moduleId="loyalty" featureId="custom-reward-catalog" featureLabel="Reward Catalog">
         <div className="bg-card-bg rounded-xl border border-border-light p-5 mb-4">
-          <h3 className="text-[14px] font-semibold text-foreground mb-3">Reward Catalog</h3>
+          <h3 className="text-sm font-semibold text-foreground mb-3">Reward Catalog</h3>
           <div className="space-y-1.5">
             {[
               { name: "$10 off next visit", points: 100 },
@@ -121,8 +121,8 @@ export function LoyaltyPage() {
               { name: "50% off any service", points: 500 },
             ].map((reward) => (
               <div key={reward.name} className="flex items-center justify-between px-3 py-2 rounded-lg bg-surface/50">
-                <span className="text-[12px] text-foreground">{reward.name}</span>
-                <span className="text-[12px] font-semibold text-primary">{reward.points} pts</span>
+                <span className="text-xs text-foreground">{reward.name}</span>
+                <span className="text-xs font-semibold text-primary">{reward.points} pts</span>
               </div>
             ))}
           </div>

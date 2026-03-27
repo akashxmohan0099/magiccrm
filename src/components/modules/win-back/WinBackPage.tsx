@@ -10,6 +10,7 @@ import { DataTable, Column } from "@/components/ui/DataTable";
 import { Button } from "@/components/ui/Button";
 import { WinBackRuleForm } from "./WinBackRuleForm";
 import { FeatureSection } from "@/components/modules/FeatureSection";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 export function WinBackPage() {
   const { rules, lapsedClients } = useWinBackStore();
@@ -21,9 +22,7 @@ export function WinBackPage() {
     { key: "inactiveDays", label: "Trigger After", render: (r) => `${r.inactiveDays} days inactive` },
     { key: "channel", label: "Channel", render: (r) => r.channel.toUpperCase() },
     { key: "enabled", label: "Status", render: (r) => (
-      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${r.enabled ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-600"}`}>
-        {r.enabled ? "Active" : "Paused"}
-      </span>
+      <StatusBadge status={r.enabled ? "active" : "inactive"} />
     )},
   ];
 

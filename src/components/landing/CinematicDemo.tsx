@@ -158,7 +158,7 @@ export function ModulePickerDemo() {
               <button
                 key={preset.label}
                 onClick={() => selectPreset(i)}
-                className={`px-4 py-2 rounded-full text-[12px] transition-all cursor-pointer ${
+                className={`px-4 py-2 rounded-full text-xs transition-all cursor-pointer ${
                   activePreset === i
                     ? "bg-foreground text-white shadow-md"
                     : "bg-surface border border-border-light text-text-secondary hover:text-foreground hover:border-foreground/20"
@@ -189,14 +189,14 @@ export function ModulePickerDemo() {
                 <span className="text-[9px] font-bold text-white">{PERSONA_PRESETS[activePreset].label[0]}</span>
               </div>
               <div>
-                <p className="text-[12px] font-semibold text-foreground leading-tight">{PERSONA_PRESETS[activePreset].label}</p>
+                <p className="text-xs font-semibold text-foreground leading-tight">{PERSONA_PRESETS[activePreset].label}</p>
                 <p className="text-[11px] text-text-tertiary">{PERSONA_PRESETS[activePreset].role}</p>
               </div>
             </div>
-            <p className="text-[12px] text-text-secondary leading-relaxed">
+            <p className="text-xs text-text-secondary leading-relaxed">
               {PERSONA_PRESETS[activePreset].context}
             </p>
-            <p className="text-[12px] text-primary font-medium mt-2">
+            <p className="text-xs text-primary font-medium mt-2">
               AI suggested {PERSONA_PRESETS[activePreset].modules.length} modules
             </p>
           </motion.div>
@@ -204,25 +204,25 @@ export function ModulePickerDemo() {
 
         {/* Right hint — what you can do */}
         <div className="hidden xl:block absolute -right-52 top-12 w-44">
-          <p className="text-[12px] text-text-tertiary leading-relaxed mb-3">
+          <p className="text-xs text-text-tertiary leading-relaxed mb-3">
             <span className="text-foreground font-semibold">Toggle freely.</span> Turn any module on or off at any time — your data stays safe.
           </p>
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <div className="w-4 h-2 bg-primary rounded-full" />
-              <span className="text-[12px] text-text-secondary">On — shows in your sidebar</span>
+              <span className="text-xs text-text-secondary">On — shows in your sidebar</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-2 bg-border-light rounded-full" />
-              <span className="text-[12px] text-text-secondary">Off — hidden, data preserved</span>
+              <span className="text-xs text-text-secondary">Off — hidden, data preserved</span>
             </div>
           </div>
-          <p className="text-[12px] text-text-tertiary mt-3">$49/mo flat. All modules included. No per-feature fees.</p>
+          <p className="text-xs text-text-tertiary mt-3">$49/mo flat. All modules included. No per-feature fees.</p>
         </div>
 
         {/* Mobile fallback */}
         <div className="block md:hidden text-center py-8 px-4 bg-surface/50 rounded-2xl border border-border-light">
-          <p className="text-[14px] text-text-secondary">Try the interactive demo on desktop for the full experience.</p>
+          <p className="text-sm text-text-secondary">Try the interactive demo on desktop for the full experience.</p>
         </div>
 
         <div
@@ -247,7 +247,7 @@ export function ModulePickerDemo() {
             {/* Left: Module checklist */}
             <div className="w-[340px] border-r border-border-light p-5 flex-shrink-0">
               <div className="flex items-center justify-between mb-4">
-                <p className="text-[14px] font-bold text-foreground">Your Modules</p>
+                <p className="text-sm font-bold text-foreground">Your Modules</p>
                 <span className="text-[11px] text-primary font-semibold bg-primary/10 px-2 py-0.5 rounded-full">{activeCount} of {MODULES.length}</span>
               </div>
               <div className="space-y-1">
@@ -286,7 +286,7 @@ export function ModulePickerDemo() {
             <div className="flex-1 bg-background flex flex-col">
               <div className="px-5 py-3 border-b border-border-light bg-white flex items-center gap-2">
                 <div className="w-5 h-5 rounded-lg flex items-center justify-center" style={{backgroundColor:"var(--logo-green)"}}><div className="w-2 h-2 bg-white rounded-sm" /></div>
-                <span className="text-[12px] font-bold text-foreground">Only what you need</span>
+                <span className="text-xs font-bold text-foreground">Only what you need</span>
                 {!paused && <div className="ml-auto flex items-center gap-1"><div className="w-1.5 h-1.5 bg-primary rounded-full pulse-dot" /><span className="text-[9px] text-text-tertiary">Live</span></div>}
               </div>
               <div className="flex-1 bg-white mx-4 my-4 rounded-xl border border-border-light overflow-hidden">
@@ -563,7 +563,7 @@ export function FeatureCustomizeDemo() {
 
         {/* Mobile fallback */}
         <div className="block md:hidden text-center py-8 px-4 bg-surface/50 rounded-2xl border border-border-light">
-          <p className="text-[14px] text-text-secondary">Try the interactive demo on desktop for the full experience.</p>
+          <p className="text-sm text-text-secondary">Try the interactive demo on desktop for the full experience.</p>
         </div>
 
         <div
@@ -654,7 +654,7 @@ export function FeatureCustomizeDemo() {
                 {/* Customize panel — dynamic */}
                 <div className="w-[220px] bg-white border-l border-border-light flex-shrink-0 overflow-y-auto">
                   <div className="px-4 py-3 border-b border-border-light">
-                    <p className="text-[12px] font-bold text-foreground">Customize</p>
+                    <p className="text-xs font-bold text-foreground">Customize</p>
                     <p className="text-[9px] text-text-tertiary">{activeModule} features</p>
                   </div>
                   <div className="p-3 space-y-1">

@@ -249,7 +249,7 @@ function TableVisibilityPicker<T>({
                 key={col.key}
                 onClick={() => { if (removable) onToggle(col.key); }}
                 disabled={!removable}
-                className={`w-full text-left px-4 py-2 text-[14px] flex items-center gap-3 transition-colors ${removable ? "hover:bg-surface cursor-pointer" : "opacity-50 cursor-not-allowed"}`}
+                className={`w-full text-left px-4 py-2 text-sm flex items-center gap-3 transition-colors ${removable ? "hover:bg-surface cursor-pointer" : "opacity-50 cursor-not-allowed"}`}
               >
                 <span className={`w-5 h-5 rounded-md border flex items-center justify-center flex-shrink-0 transition-colors ${visible ? "bg-foreground border-foreground" : "border-border-light"}`}>
                   {visible && <Check className="w-3.5 h-3.5 text-white" />}
@@ -269,7 +269,7 @@ function TableVisibilityPicker<T>({
                   <div key={col.id} className="flex items-center gap-1 px-4 py-2 hover:bg-surface transition-colors group/custom">
                     <button
                       onClick={() => onToggle(col.id)}
-                      className="flex-1 text-left text-[14px] flex items-center gap-3 cursor-pointer"
+                      className="flex-1 text-left text-sm flex items-center gap-3 cursor-pointer"
                     >
                       <span className={`w-5 h-5 rounded-md border flex items-center justify-center flex-shrink-0 transition-colors ${visible ? "bg-foreground border-foreground" : "border-border-light"}`}>
                         {visible && <Check className="w-3.5 h-3.5 text-white" />}
@@ -338,11 +338,11 @@ function TableAddColumnModal({ onAddCustomColumn }: { onAddCustomColumn: (col: C
             </div>
             <div className="space-y-4">
               <div>
-                <label className="text-[12px] font-medium text-text-secondary block mb-1.5">Column Name</label>
-                <input ref={nameInputRef} value={newColName} onChange={(e) => setNewColName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleAdd(); if (e.key === "Escape") handleClose(); }} placeholder="e.g. Priority, Category..." className="w-full px-3.5 py-2.5 text-[14px] bg-surface border border-border-light rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 text-foreground placeholder:text-text-tertiary" />
+                <label className="text-xs font-medium text-text-secondary block mb-1.5">Column Name</label>
+                <input ref={nameInputRef} value={newColName} onChange={(e) => setNewColName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleAdd(); if (e.key === "Escape") handleClose(); }} placeholder="e.g. Priority, Category..." className="w-full px-3.5 py-2.5 text-sm bg-surface border border-border-light rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 text-foreground placeholder:text-text-tertiary" />
               </div>
               <div>
-                <label className="text-[12px] font-medium text-text-secondary block mb-2">Column Type</label>
+                <label className="text-xs font-medium text-text-secondary block mb-2">Column Type</label>
                 <div className="grid grid-cols-4 gap-2">
                   {([{ value: "text", label: "Text", desc: "Free text" }, { value: "dropdown", label: "Select", desc: "Pick from list" }, { value: "number", label: "Number", desc: "Numeric" }, { value: "date", label: "Date", desc: "Date picker" }] as const).map((t) => (
                     <button key={t.value} onClick={() => setNewColType(t.value)} className={`flex flex-col items-center gap-1 px-2 py-3 rounded-xl border-2 transition-all cursor-pointer ${newColType === t.value ? "bg-foreground/5 border-foreground text-foreground" : "bg-surface border-border-light text-text-secondary hover:border-foreground/20"}`}>
@@ -354,14 +354,14 @@ function TableAddColumnModal({ onAddCustomColumn }: { onAddCustomColumn: (col: C
               </div>
               {newColType === "dropdown" && (
                 <div>
-                  <label className="text-[12px] font-medium text-text-secondary block mb-1.5">Dropdown Options</label>
-                  <input value={newColOptions} onChange={(e) => setNewColOptions(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleAdd(); }} placeholder="Option 1, Option 2, Option 3..." className="w-full px-3.5 py-2.5 text-[14px] bg-surface border border-border-light rounded-xl outline-none focus:ring-2 focus:ring-primary/20 text-foreground placeholder:text-text-tertiary" />
+                  <label className="text-xs font-medium text-text-secondary block mb-1.5">Dropdown Options</label>
+                  <input value={newColOptions} onChange={(e) => setNewColOptions(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleAdd(); }} placeholder="Option 1, Option 2, Option 3..." className="w-full px-3.5 py-2.5 text-sm bg-surface border border-border-light rounded-xl outline-none focus:ring-2 focus:ring-primary/20 text-foreground placeholder:text-text-tertiary" />
                   <p className="text-[11px] text-text-tertiary mt-1">Separate options with commas</p>
                 </div>
               )}
               <div className="flex items-center gap-3 pt-2">
-                <button onClick={handleAdd} disabled={!newColName.trim()} className="flex-1 px-4 py-2.5 text-[14px] font-medium bg-foreground text-white rounded-xl hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">Add Column</button>
-                <button onClick={handleClose} className="px-4 py-2.5 text-[14px] text-text-secondary hover:text-foreground transition-colors cursor-pointer">Cancel</button>
+                <button onClick={handleAdd} disabled={!newColName.trim()} className="flex-1 px-4 py-2.5 text-sm font-medium bg-foreground text-white rounded-xl hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">Add Column</button>
+                <button onClick={handleClose} className="px-4 py-2.5 text-sm text-text-secondary hover:text-foreground transition-colors cursor-pointer">Cancel</button>
               </div>
             </div>
           </div>
@@ -548,7 +548,7 @@ export function DataTable<T>({ columns, data, onRowClick, keyExtractor, storageK
                   key={col.key}
                   scope="col"
                   aria-sort={sortKey === col.key ? (sortDir === "asc" ? "ascending" : "descending") : undefined}
-                  className={`text-left text-[12px] font-semibold text-text-secondary uppercase tracking-wider px-4 py-3 group/header ${
+                  className={`text-left text-xs font-semibold text-text-secondary uppercase tracking-wider px-4 py-3 group/header ${
                     col.sortable ? "cursor-pointer select-none hover:text-foreground hover:bg-surface transition-colors" : ""
                   }`}
                   style={col.minWidth ? { minWidth: col.minWidth } : undefined}
@@ -589,7 +589,7 @@ export function DataTable<T>({ columns, data, onRowClick, keyExtractor, storageK
                 <th
                   key={col.id}
                   scope="col"
-                  className="text-left text-[12px] font-semibold text-text-secondary uppercase tracking-wider px-4 py-3 group/header"
+                  className="text-left text-xs font-semibold text-text-secondary uppercase tracking-wider px-4 py-3 group/header"
                   style={{ minWidth: col.minWidth }}
                 >
                   <div className="flex items-center gap-1.5">

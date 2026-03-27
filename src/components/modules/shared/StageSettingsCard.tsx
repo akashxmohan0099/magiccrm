@@ -125,7 +125,7 @@ export function StageSettingsCard({
           <h4 className="text-[13px] font-semibold text-text-tertiary uppercase tracking-wider">
             {title}
           </h4>
-          <p className="text-[12px] text-text-secondary mt-1">{description}</p>
+          <p className="text-xs text-text-secondary mt-1">{description}</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" type="button" onClick={handleReset}>
@@ -173,7 +173,7 @@ export function StageSettingsCard({
               </select>
             </label>
 
-            <label className="flex items-center gap-2 pt-6 text-[12px] text-text-secondary">
+            <label className="flex items-center gap-2 pt-6 text-xs text-text-secondary">
               <input
                 type="checkbox"
                 checked={Boolean(stage.isClosed)}

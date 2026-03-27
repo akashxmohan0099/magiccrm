@@ -25,7 +25,7 @@ const VENDOR_CATEGORIES = [
 ];
 
 function RatingStars({ rating }: { rating?: number }) {
-  if (!rating) return <span className="text-text-tertiary text-[12px]">&mdash;</span>;
+  if (!rating) return <span className="text-text-tertiary text-xs">&mdash;</span>;
   return (
     <div className="flex items-center gap-0.5">
       {Array.from({ length: 5 }, (_, i) => (
@@ -115,7 +115,7 @@ export function VendorManagementPage() {
       label: "Category",
       sortable: true,
       render: (v) => (
-        <span className="text-[12px] px-2 py-0.5 rounded-full bg-surface font-medium text-text-secondary">
+        <span className="text-xs px-2 py-0.5 rounded-full bg-surface font-medium text-text-secondary">
           {v.category}
         </span>
       ),
@@ -139,7 +139,7 @@ export function VendorManagementPage() {
   ];
 
   const inputClass =
-    "w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30";
+    "w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30";
 
   return (
     <div>

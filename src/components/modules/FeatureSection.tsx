@@ -19,7 +19,7 @@ export function FeatureSection({ moduleId, featureId, children, featureLabel, sh
     if (showDisabledState) {
       return (
         <div className="flex flex-col items-center justify-center py-12 text-center">
-          <p className="text-[14px] text-text-tertiary">
+          <p className="text-sm text-text-tertiary">
             {featureLabel || "This feature"} is available — enable it from <span className="font-medium text-text-secondary">Customize</span> in the top bar.
           </p>
         </div>

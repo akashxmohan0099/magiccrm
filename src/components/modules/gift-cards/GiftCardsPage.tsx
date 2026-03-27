@@ -154,7 +154,7 @@ export function GiftCardsPage() {
       sortable: true,
       render: (c) => (
         <span
-          className={`text-[12px] px-2 py-0.5 rounded-full font-medium capitalize ${STATUS_BADGE[c.status]}`}
+          className={`text-xs px-2 py-0.5 rounded-full font-medium capitalize ${STATUS_BADGE[c.status]}`}
         >
           {c.status}
         </span>
@@ -163,7 +163,7 @@ export function GiftCardsPage() {
   ];
 
   const inputClass =
-    "w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30";
+    "w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30";
 
   return (
     <div>
@@ -295,25 +295,25 @@ export function GiftCardsPage() {
             {/* Card summary */}
             <div className="bg-surface rounded-xl border border-border-light p-4 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[12px] text-text-tertiary uppercase tracking-wider font-semibold">Code</span>
-                <span className="font-mono text-[14px] text-foreground">{detailCard.code}</span>
+                <span className="text-xs text-text-tertiary uppercase tracking-wider font-semibold">Code</span>
+                <span className="font-mono text-sm text-foreground">{detailCard.code}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-[12px] text-text-tertiary uppercase tracking-wider font-semibold">Amount</span>
-                <span className="text-[14px] text-foreground">${detailCard.amount.toFixed(2)}</span>
+                <span className="text-xs text-text-tertiary uppercase tracking-wider font-semibold">Amount</span>
+                <span className="text-sm text-foreground">${detailCard.amount.toFixed(2)}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-[12px] text-text-tertiary uppercase tracking-wider font-semibold">Balance</span>
-                <span className="text-[14px] font-semibold text-foreground">${detailCard.balance.toFixed(2)}</span>
+                <span className="text-xs text-text-tertiary uppercase tracking-wider font-semibold">Balance</span>
+                <span className="text-sm font-semibold text-foreground">${detailCard.balance.toFixed(2)}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-[12px] text-text-tertiary uppercase tracking-wider font-semibold">Status</span>
-                <span className={`text-[12px] px-2 py-0.5 rounded-full font-medium capitalize ${STATUS_BADGE[detailCard.status]}`}>
+                <span className="text-xs text-text-tertiary uppercase tracking-wider font-semibold">Status</span>
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium capitalize ${STATUS_BADGE[detailCard.status]}`}>
                   {detailCard.status}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-[12px] text-text-tertiary uppercase tracking-wider font-semibold">Created</span>
+                <span className="text-xs text-text-tertiary uppercase tracking-wider font-semibold">Created</span>
                 <span className="text-[13px] text-text-secondary">
                   {new Date(detailCard.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
                 </span>
@@ -348,19 +348,19 @@ export function GiftCardsPage() {
               <div className="space-y-2">
                 <div className="bg-surface rounded-xl border border-border-light p-4 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-[12px] text-text-tertiary uppercase tracking-wider font-semibold">Purchased By</span>
+                    <span className="text-xs text-text-tertiary uppercase tracking-wider font-semibold">Purchased By</span>
                     <span className="text-[13px] text-foreground">{detailCard.purchasedBy || "\u2014"}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-[12px] text-text-tertiary uppercase tracking-wider font-semibold">Recipient</span>
+                    <span className="text-xs text-text-tertiary uppercase tracking-wider font-semibold">Recipient</span>
                     <span className="text-[13px] text-foreground">{detailCard.recipientName || "\u2014"}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-[12px] text-text-tertiary uppercase tracking-wider font-semibold">Email</span>
+                    <span className="text-xs text-text-tertiary uppercase tracking-wider font-semibold">Email</span>
                     <span className="text-[13px] text-foreground">{detailCard.recipientEmail || "\u2014"}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-[12px] text-text-tertiary uppercase tracking-wider font-semibold">Expires</span>
+                    <span className="text-xs text-text-tertiary uppercase tracking-wider font-semibold">Expires</span>
                     <span className="text-[13px] text-foreground">
                       {detailCard.expiresAt
                         ? new Date(detailCard.expiresAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })

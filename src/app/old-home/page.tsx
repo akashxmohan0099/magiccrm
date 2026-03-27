@@ -194,7 +194,7 @@ export default function LandingPage() {
                 Build my workspace <ArrowRight className="w-5 h-5" />
               </Button>
             </Link>
-            <p className="text-[14px] text-text-tertiary">
+            <p className="text-sm text-text-tertiary">
               Free to set up. $49/mo when you&apos;re ready.
             </p>
           </motion.div>
@@ -217,7 +217,7 @@ export default function LandingPage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={viewportConfig}
             transition={{ duration: 0.5 }}
-            className="text-center text-[14px] text-text-tertiary mb-4 font-medium"
+            className="text-center text-sm text-text-tertiary mb-4 font-medium"
           >
             Trusted across industries
           </motion.p>
@@ -381,7 +381,7 @@ export default function LandingPage() {
               <div className="relative px-5 pt-5 pb-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-pink-500/10 mb-3"><Ticket className="w-5 h-5 text-pink-500" /></div>
                 <h3 className="text-[15px] font-bold text-foreground">Gift Cards</h3>
-                <p className="text-[12px] text-text-secondary mt-1">Create, sell, and track digital gift vouchers. A revenue channel that markets itself.</p>
+                <p className="text-xs text-text-secondary mt-1">Create, sell, and track digital gift vouchers. A revenue channel that markets itself.</p>
               </div>
               <div className="relative px-5 pb-5 space-y-1.5">
                 {[{ label: "GIFT-7X4K-M2NP", value: "$100.00", status: "Active" }, { label: "GIFT-R9BW-3CTL", value: "$25.00", status: "Partial" }, { label: "GIFT-5FHQ-8YJA", value: "$0.00", status: "Redeemed" }].map((row, i) => (
@@ -402,7 +402,7 @@ export default function LandingPage() {
               <div className="relative px-5 pt-5 pb-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-amber-500/10 mb-3"><Lightbulb className="w-5 h-5 text-amber-500" /></div>
                 <h3 className="text-[15px] font-bold text-foreground">AI Insights</h3>
-                <p className="text-[12px] text-text-secondary mt-1">Smart suggestions — overdue rebookings, revenue forecasts, and churn risk.</p>
+                <p className="text-xs text-text-secondary mt-1">Smart suggestions — overdue rebookings, revenue forecasts, and churn risk.</p>
               </div>
               <div className="relative px-5 pb-5 space-y-1.5">
                 {[{ text: "Sarah M. is 2 weeks overdue for her lash fill", color: "border-l-red-400", tag: "Action", tagColor: "bg-red-50 text-red-600" }, { text: "Tom K. opened your quote 3x but hasn\u2019t responded", color: "border-l-amber-400", tag: "Follow up", tagColor: "bg-amber-50 text-amber-700" }, { text: "Tuesday afternoons are consistently empty", color: "border-l-blue-400", tag: "Opportunity", tagColor: "bg-blue-50 text-blue-600" }].map((insight, i) => (
@@ -420,7 +420,7 @@ export default function LandingPage() {
               <div className="relative px-5 pt-5 pb-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-emerald-500/10 mb-3"><Gift className="w-5 h-5 text-emerald-500" /></div>
                 <h3 className="text-[15px] font-bold text-foreground">Loyalty & Referrals</h3>
-                <p className="text-[12px] text-text-secondary mt-1">Points per visit, referral codes, and reward tiers for repeat clients.</p>
+                <p className="text-xs text-text-secondary mt-1">Points per visit, referral codes, and reward tiers for repeat clients.</p>
               </div>
               <div className="relative px-5 pb-5 space-y-1.5">
                 {[{ name: "Sarah M.", points: "420 pts", rank: "1" }, { name: "Emma R.", points: "310 pts", rank: "2" }, { name: "Jess T.", points: "185 pts", rank: "3" }].map((m, i) => (
@@ -441,7 +441,7 @@ export default function LandingPage() {
               <div className="relative px-5 pt-5 pb-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-purple-500/10 mb-3"><Crown className="w-5 h-5 text-purple-500" /></div>
                 <h3 className="text-[15px] font-bold text-foreground">Memberships</h3>
-                <p className="text-[12px] text-text-secondary mt-1">Session packs, recurring plans, and member tracking with auto-billing.</p>
+                <p className="text-xs text-text-secondary mt-1">Session packs, recurring plans, and member tracking with auto-billing.</p>
               </div>
               <div className="relative px-5 pb-5 space-y-1.5">
                 {[{ plan: "10-Session Pack", price: "$450", members: "8 active" }, { plan: "Monthly Unlimited", price: "$99/mo", members: "12 active" }].map((p) => (
@@ -459,7 +459,7 @@ export default function LandingPage() {
               <div className="relative px-5 pt-5 pb-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-amber-500/10 mb-3"><UserCheck className="w-5 h-5 text-amber-500" /></div>
                 <h3 className="text-[15px] font-bold text-foreground">Win-Back</h3>
-                <p className="text-[12px] text-text-secondary mt-1">Detect lapsed clients and auto-send re-engagement messages.</p>
+                <p className="text-xs text-text-secondary mt-1">Detect lapsed clients and auto-send re-engagement messages.</p>
               </div>
               <div className="relative px-5 pb-5 space-y-1.5">
                 {[{ name: "Sarah M.", days: "45 days inactive", status: "Contacted", sc: "bg-emerald-50 text-emerald-700" }, { name: "Tom K.", days: "62 days inactive", status: "Detected", sc: "bg-amber-50 text-amber-700" }].map((c) => (
@@ -477,7 +477,7 @@ export default function LandingPage() {
               <div className="relative px-5 pt-5 pb-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-cyan-500/10 mb-3"><Store className="w-5 h-5 text-cyan-500" /></div>
                 <h3 className="text-[15px] font-bold text-foreground">Storefront</h3>
-                <p className="text-[12px] text-text-secondary mt-1">A public page showcasing your services with pricing and booking links.</p>
+                <p className="text-xs text-text-secondary mt-1">A public page showcasing your services with pricing and booking links.</p>
               </div>
               <div className="relative px-5 pb-5">
                 <div className="rounded-lg bg-background/80 p-3">
@@ -494,7 +494,7 @@ export default function LandingPage() {
               <div className="relative px-5 pt-5 pb-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-pink-500/10 mb-3"><FileInput className="w-5 h-5 text-pink-500" /></div>
                 <h3 className="text-[15px] font-bold text-foreground">Intake Forms</h3>
-                <p className="text-[12px] text-text-secondary mt-1">Custom questionnaires with conditional logic for client intake.</p>
+                <p className="text-xs text-text-secondary mt-1">Custom questionnaires with conditional logic for client intake.</p>
               </div>
               <div className="relative px-5 pb-5">
                 <div className="rounded-lg bg-background/80 p-3 space-y-2">
@@ -510,7 +510,7 @@ export default function LandingPage() {
               <div className="relative px-5 pt-5 pb-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-teal-500/10 mb-3"><Camera className="w-5 h-5 text-teal-500" /></div>
                 <h3 className="text-[15px] font-bold text-foreground">Before & After</h3>
-                <p className="text-[12px] text-text-secondary mt-1">Capture proof of work with photos and digital checklists.</p>
+                <p className="text-xs text-text-secondary mt-1">Capture proof of work with photos and digital checklists.</p>
               </div>
               <div className="relative px-5 pb-5">
                 <div className="grid grid-cols-2 gap-2.5">
@@ -526,7 +526,7 @@ export default function LandingPage() {
               <div className="relative px-5 pt-5 pb-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-indigo-500/10 mb-3"><ClipboardList className="w-5 h-5 text-indigo-500" /></div>
                 <h3 className="text-[15px] font-bold text-foreground">Treatment Notes</h3>
-                <p className="text-[12px] text-text-secondary mt-1">Structured SOAP notes for clinical treatment records.</p>
+                <p className="text-xs text-text-secondary mt-1">Structured SOAP notes for clinical treatment records.</p>
               </div>
               <div className="relative px-5 pb-5 space-y-1.5">
                 {[{ letter: "S", label: "Subjective", text: "Patient reports lower back pain..." }, { letter: "O", label: "Objective", text: "ROM limited to 40° flexion..." }, { letter: "A", label: "Assessment", text: "Lumbar strain, improving..." }].map((n) => (
@@ -544,7 +544,7 @@ export default function LandingPage() {
               <div className="relative px-5 pt-5 pb-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-sky-500/10 mb-3"><NotebookPen className="w-5 h-5 text-sky-500" /></div>
                 <h3 className="text-[15px] font-bold text-foreground">Notes & Docs</h3>
-                <p className="text-[12px] text-text-secondary mt-1">Write notes, create docs, and share with your team. Simple formatting, no bloat.</p>
+                <p className="text-xs text-text-secondary mt-1">Write notes, create docs, and share with your team. Simple formatting, no bloat.</p>
               </div>
               <div className="relative px-5 pb-5">
                 <div className="rounded-xl bg-background/80 overflow-hidden border border-border-light">
@@ -575,7 +575,7 @@ export default function LandingPage() {
               <div className="relative px-5 pt-5 pb-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-violet-500/10 mb-3"><CalendarRange className="w-5 h-5 text-violet-500" /></div>
                 <h3 className="text-[15px] font-bold text-foreground">Class Timetable</h3>
-                <p className="text-[12px] text-text-secondary mt-1">Visual weekly class schedule with capacity limits and check-in.</p>
+                <p className="text-xs text-text-secondary mt-1">Visual weekly class schedule with capacity limits and check-in.</p>
               </div>
               <div className="relative px-5 pb-5 space-y-1.5">
                 {[{ day: "Mon 9:00", name: "Yoga Flow", cap: "6/12" }, { day: "Wed 6:00", name: "HIIT", cap: "10/15" }, { day: "Fri 10:00", name: "Pilates", cap: "8/10" }].map((cls) => (
@@ -596,7 +596,7 @@ export default function LandingPage() {
               <div className="relative px-5 pt-5 pb-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-orange-500/10 mb-3"><Building2 className="w-5 h-5 text-orange-500" /></div>
                 <h3 className="text-[15px] font-bold text-foreground">Vendors</h3>
-                <p className="text-[12px] text-text-secondary mt-1">Track suppliers, vendor availability, contracts, and payments.</p>
+                <p className="text-xs text-text-secondary mt-1">Track suppliers, vendor availability, contracts, and payments.</p>
               </div>
               <div className="relative px-5 pb-5 space-y-1.5">
                 {[{ name: "Bloom & Co", type: "Florist", stars: 5 }, { name: "DJ Marcus", type: "Entertainment", stars: 4 }, { name: "Sweet Table", type: "Caterer", stars: 5 }].map((v) => (
@@ -614,7 +614,7 @@ export default function LandingPage() {
               <div className="relative px-5 pt-5 pb-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-violet-600/10 mb-3"><ScrollText className="w-5 h-5 text-violet-600" /></div>
                 <h3 className="text-[15px] font-bold text-foreground">Proposals</h3>
-                <p className="text-[12px] text-text-secondary mt-1">Branded proposal pages with interactive pricing and e-signature.</p>
+                <p className="text-xs text-text-secondary mt-1">Branded proposal pages with interactive pricing and e-signature.</p>
               </div>
               <div className="relative px-5 pb-5 space-y-1.5">
                 {[{ id: "PROP-001", title: "Website Redesign", status: "Sent", amount: "$4,500", sc: "bg-blue-50 text-blue-600" }, { id: "PROP-002", title: "Brand Package", status: "Viewed", amount: "$2,800", sc: "bg-amber-50 text-amber-700" }, { id: "PROP-003", title: "Event Coverage", status: "Accepted", amount: "$3,200", sc: "bg-emerald-50 text-emerald-700" }].map((p) => (
@@ -638,7 +638,7 @@ export default function LandingPage() {
               <div className="relative px-5 pt-5 pb-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-teal-500/10 mb-3"><ListOrdered className="w-5 h-5 text-teal-500" /></div>
                 <h3 className="text-[15px] font-bold text-foreground">Waitlist</h3>
-                <p className="text-[12px] text-text-secondary mt-1">Manage walk-in queues and auto-notify clients when spots open up.</p>
+                <p className="text-xs text-text-secondary mt-1">Manage walk-in queues and auto-notify clients when spots open up.</p>
               </div>
               <div className="relative px-5 pb-5 space-y-1.5">
                 {[{ name: "Emma R.", detail: "Lash Fill", status: "Waiting", sc: "bg-amber-50 text-amber-700" }, { name: "Tom K.", detail: "2:00 PM slot", status: "Notified \u2713", sc: "bg-blue-50 text-blue-600" }].map((w) => (
@@ -692,19 +692,19 @@ export default function LandingPage() {
                       <span className="text-[11px] font-bold text-white">{i + 1}</span>
                     </div>
                     <div>
-                      <p className="text-[14px] font-semibold text-foreground">{step.title}</p>
-                      <p className="text-[12px] text-text-secondary">{step.desc}</p>
+                      <p className="text-sm font-semibold text-foreground">{step.title}</p>
+                      <p className="text-xs text-text-secondary">{step.desc}</p>
                     </div>
                   </div>
                 ))}
                 <div className="flex items-center gap-3 mt-6 pt-4 border-t border-border-light">
                   <span className="text-[11px] text-text-tertiary">Powered by</span>
                   <div className="flex items-center gap-1">
-                    <span className="text-[12px] font-semibold text-text-tertiary hover:text-text-secondary transition-colors">Anthropic</span>
+                    <span className="text-xs font-semibold text-text-tertiary hover:text-text-secondary transition-colors">Anthropic</span>
                     <span className="text-[10px] text-border-light mx-1">/</span>
-                    <span className="text-[12px] font-semibold text-text-tertiary hover:text-text-secondary transition-colors">OpenAI</span>
+                    <span className="text-xs font-semibold text-text-tertiary hover:text-text-secondary transition-colors">OpenAI</span>
                     <span className="text-[10px] text-border-light mx-1">/</span>
-                    <span className="text-[12px] font-semibold text-text-tertiary hover:text-text-secondary transition-colors">Kimi</span>
+                    <span className="text-xs font-semibold text-text-tertiary hover:text-text-secondary transition-colors">Kimi</span>
                   </div>
                 </div>
               </div>
@@ -725,7 +725,7 @@ export default function LandingPage() {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <div className="flex-1 h-9 bg-foreground rounded-xl flex items-center justify-center text-[12px] text-white font-semibold">Build Feature</div>
+                    <div className="flex-1 h-9 bg-foreground rounded-xl flex items-center justify-center text-xs text-white font-semibold">Build Feature</div>
                   </div>
                   <div className="space-y-2">
                     <p className="text-[10px] text-text-tertiary uppercase tracking-wider font-semibold">What AI can build</p>
@@ -783,7 +783,7 @@ export default function LandingPage() {
                   <span className="text-white font-bold text-lg">{item.num}</span>
                 </div>
                 <h3 className="font-semibold text-foreground text-[17px] mb-2">{item.title}</h3>
-                <p className="text-[14px] text-text-secondary leading-relaxed">{item.description}</p>
+                <p className="text-sm text-text-secondary leading-relaxed">{item.description}</p>
               </motion.div>
             ))}
           </div>
@@ -833,7 +833,7 @@ export default function LandingPage() {
                       <Check className="w-3 h-3 text-white" />
                     </div>
                     <div>
-                      <p className="font-semibold text-foreground text-[14px]">{item.title}</p>
+                      <p className="font-semibold text-foreground text-sm">{item.title}</p>
                       <p className="text-[13px] text-text-secondary">{item.desc}</p>
                     </div>
                   </motion.div>
@@ -855,11 +855,11 @@ export default function LandingPage() {
                 <div className="flex items-center gap-1 mb-3">
                   {[1,2,3,4,5].map((s) => <Star key={s} className="w-4 h-4 fill-primary text-primary" />)}
                 </div>
-                <p className="text-[14px] text-foreground leading-relaxed mb-4">
+                <p className="text-sm text-foreground leading-relaxed mb-4">
                   I was paying $180/mo for software I used 10% of. Magic gave me exactly what I needed for my salon in under 5 minutes.
                 </p>
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-surface rounded-full flex items-center justify-center"><span className="text-[12px] font-bold text-foreground">SK</span></div>
+                  <div className="w-8 h-8 bg-surface rounded-full flex items-center justify-center"><span className="text-xs font-bold text-foreground">SK</span></div>
                   <div>
                     <p className="text-[13px] font-semibold text-foreground">Sarah K.</p>
                     <p className="text-[11px] text-text-tertiary">Hair salon owner, Melbourne</p>
@@ -878,11 +878,11 @@ export default function LandingPage() {
                 <div className="flex items-center gap-1 mb-3">
                   {[1,2,3,4,5].map((s) => <Star key={s} className="w-4 h-4 fill-primary text-primary" />)}
                 </div>
-                <p className="text-[14px] text-foreground leading-relaxed mb-4">
+                <p className="text-sm text-foreground leading-relaxed mb-4">
                   Finally a platform that gets trades. Quote, invoice, track the job, done. No nonsense. The add-ons are a bonus.
                 </p>
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-surface rounded-full flex items-center justify-center"><span className="text-[12px] font-bold text-foreground">MR</span></div>
+                  <div className="w-8 h-8 bg-surface rounded-full flex items-center justify-center"><span className="text-xs font-bold text-foreground">MR</span></div>
                   <div>
                     <p className="text-[13px] font-semibold text-foreground">Mike R.</p>
                     <p className="text-[11px] text-text-tertiary">Electrician, Gold Coast</p>
@@ -901,11 +901,11 @@ export default function LandingPage() {
                 <div className="flex items-center gap-1 mb-3">
                   {[1,2,3,4,5].map((s) => <Star key={s} className="w-4 h-4 fill-primary text-primary" />)}
                 </div>
-                <p className="text-[14px] text-foreground leading-relaxed mb-4">
+                <p className="text-sm text-foreground leading-relaxed mb-4">
                   The client portal and gift cards changed everything. My clients book themselves, pay online, and gift cards sell themselves around the holidays.
                 </p>
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-surface rounded-full flex items-center justify-center"><span className="text-[12px] font-bold text-foreground">JT</span></div>
+                  <div className="w-8 h-8 bg-surface rounded-full flex items-center justify-center"><span className="text-xs font-bold text-foreground">JT</span></div>
                   <div>
                     <p className="text-[13px] font-semibold text-foreground">Jess T.</p>
                     <p className="text-[11px] text-text-tertiary">Business coach, Sydney</p>
@@ -976,7 +976,7 @@ export default function LandingPage() {
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-3">
                   <Check className="w-4 h-4 text-primary flex-shrink-0" />
-                  <span className="text-[14px] text-foreground">{item}</span>
+                  <span className="text-sm text-foreground">{item}</span>
                 </div>
               ))}
             </div>
@@ -1108,18 +1108,18 @@ export default function LandingPage() {
               <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ backgroundColor: "#7CFE9D" }}>
                 <div className="w-2.5 h-2.5 bg-white rounded-sm" />
               </div>
-              <span className="text-[14px] font-semibold" style={{ color: "#777" }}>Magic</span>
+              <span className="text-sm font-semibold" style={{ color: "#777" }}>Magic</span>
             </div>
             <div className="flex items-center gap-2.5">
               <span className="text-[13px]" style={{ color: "#555" }}>Powered by</span>
               {["Anthropic", "OpenAI", "Kimi"].map((name, i) => (
                 <span key={name} className="flex items-center gap-2.5">
                   {i > 0 && <span className="text-[13px]" style={{ color: "#444" }}>&middot;</span>}
-                  <span className="text-[14px] font-semibold" style={{ color: "#888" }}>{name}</span>
+                  <span className="text-sm font-semibold" style={{ color: "#888" }}>{name}</span>
                 </span>
               ))}
             </div>
-            <p className="text-[12px]" style={{ color: "#555" }}>&copy; {new Date().getFullYear()} Magic</p>
+            <p className="text-xs" style={{ color: "#555" }}>&copy; {new Date().getFullYear()} Magic</p>
           </div>
         </div>
       </footer>

@@ -70,7 +70,7 @@ export function OnboardingLoader({ title, subtitle, step, totalSteps, detail }: 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.1 }}
-            className="text-[12px] font-medium text-text-tertiary mb-4 tracking-wide uppercase"
+            className="text-xs font-medium text-text-tertiary mb-4 tracking-wide uppercase"
           >
             Step {step} of {totalSteps}
           </motion.p>
@@ -82,13 +82,13 @@ export function OnboardingLoader({ title, subtitle, step, totalSteps, detail }: 
         </h3>
 
         {/* Subtitle — the WHY */}
-        <p className="text-[14px] text-text-secondary mb-2">
+        <p className="text-sm text-text-secondary mb-2">
           {subtitle}
         </p>
 
         {/* Optional detail */}
         {detail && (
-          <p className="text-[12px] text-text-tertiary">
+          <p className="text-xs text-text-tertiary">
             {detail}
           </p>
         )}

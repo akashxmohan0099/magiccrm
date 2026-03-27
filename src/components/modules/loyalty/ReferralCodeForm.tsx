@@ -22,7 +22,7 @@ export function ReferralCodeForm({ open, onClose }: ReferralCodeFormProps) {
     onClose();
   };
 
-  const inputClass = "w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30";
+  const inputClass = "w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30";
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-end">
@@ -42,7 +42,7 @@ export function ReferralCodeForm({ open, onClose }: ReferralCodeFormProps) {
             <input type="text" value={code} onChange={(e) => setCode(e.target.value)} placeholder="e.g. SARAH10" required className={`${inputClass} font-mono uppercase`} />
           </div>
           <div className="bg-surface rounded-xl border border-border-light p-3">
-            <p className="text-[12px] text-text-secondary">Both the referrer and new client will earn <span className="font-semibold text-foreground">{referralBonus} points</span> when the code is used.</p>
+            <p className="text-xs text-text-secondary">Both the referrer and new client will earn <span className="font-semibold text-foreground">{referralBonus} points</span> when the code is used.</p>
           </div>
           <div className="pt-2"><Button type="submit" className="w-full">Create Code</Button></div>
         </form>

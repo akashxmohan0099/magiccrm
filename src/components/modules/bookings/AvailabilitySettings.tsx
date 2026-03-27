@@ -122,7 +122,7 @@ export function AvailabilitySettings() {
       <FeatureSection moduleId="bookings-calendar" featureId="cancellation-policy" featureLabel="Cancellation Policy">
         <div className="mt-4">
           <label className="block text-[13px] font-medium text-foreground mb-1.5">Minimum notice for cancellation</label>
-          <select value={cancelNotice} onChange={(e) => setCancelNotice(e.target.value)} className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px]">
+          <select value={cancelNotice} onChange={(e) => setCancelNotice(e.target.value)} className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm">
             <option value="0">No restriction</option>
             <option value="2">2 hours</option>
             <option value="4">4 hours</option>

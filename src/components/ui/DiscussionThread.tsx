@@ -100,7 +100,7 @@ export function DiscussionThread({ entityType, entityId }: DiscussionThreadProps
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-[12px] font-medium text-foreground">
+                    <span className="text-xs font-medium text-foreground">
                       {comment.authorName}
                     </span>
                     <span className="text-[11px] text-text-tertiary">

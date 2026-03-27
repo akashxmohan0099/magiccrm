@@ -234,7 +234,7 @@ function WidgetCard({ widget, onRemove, isEditing }: { widget: DashboardWidget; 
     case "quick-actions":
       content = (
         <>
-          <h3 className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider mb-3">Quick Actions</h3>
+          <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-3">Quick Actions</h3>
           <div className="space-y-1">
             {hasClients && <Link href="/dashboard/clients" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface transition-colors"><div className="w-7 h-7 bg-surface rounded-lg flex items-center justify-center"><Plus className="w-3.5 h-3.5 text-text-secondary" /></div><span className="text-[13px] font-medium text-foreground">{vocab.addClient}</span></Link>}
             {hasBookings && <Link href="/dashboard/bookings" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface transition-colors"><div className="w-7 h-7 bg-surface rounded-lg flex items-center justify-center"><Calendar className="w-3.5 h-3.5 text-text-secondary" /></div><span className="text-[13px] font-medium text-foreground">{vocab.addBooking}</span></Link>}
@@ -249,7 +249,7 @@ function WidgetCard({ widget, onRemove, isEditing }: { widget: DashboardWidget; 
     case "recent-activity":
       content = (
         <>
-          <h3 className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider mb-3">Recent Activity</h3>
+          <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-3">Recent Activity</h3>
           {recentActivity.length === 0 ? (
             <p className="text-[13px] text-text-tertiary py-4 text-center">No activity yet.</p>
           ) : (
@@ -273,8 +273,8 @@ function WidgetCard({ widget, onRemove, isEditing }: { widget: DashboardWidget; 
       content = todaysBookings.length > 0 ? (
         <>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider">Today&apos;s Schedule</h3>
-            <Link href="/dashboard/bookings" className="text-[12px] text-primary font-medium hover:underline">View all</Link>
+            <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">Today&apos;s Schedule</h3>
+            <Link href="/dashboard/bookings" className="text-xs text-primary font-medium hover:underline">View all</Link>
           </div>
           <div className="space-y-2">
             {todaysBookings.map((booking) => (
@@ -291,7 +291,7 @@ function WidgetCard({ widget, onRemove, isEditing }: { widget: DashboardWidget; 
       ) : (
         <>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider">Today&apos;s Schedule</h3>
+            <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">Today&apos;s Schedule</h3>
           </div>
           <p className="text-[13px] text-text-tertiary py-6 text-center">No appointments today.</p>
         </>
@@ -302,14 +302,14 @@ function WidgetCard({ widget, onRemove, isEditing }: { widget: DashboardWidget; 
       content = (
         <Link href="/dashboard/leads" className="block h-full">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider">Active {vocab.leads}</span>
+            <span className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">Active {vocab.leads}</span>
             <span className="text-[20px] font-bold text-foreground">{activeLeads.length}</span>
           </div>
           {activeLeads.length > 0 ? (
             <div className="space-y-1.5 mt-3">
               {activeLeads.slice(0, 4).map((l) => (
                 <div key={l.id} className="flex items-center justify-between">
-                  <span className="text-[12px] text-foreground truncate">{l.name}</span>
+                  <span className="text-xs text-foreground truncate">{l.name}</span>
                   <span className="text-[10px] text-text-tertiary capitalize">{l.stage}</span>
                 </div>
               ))}
@@ -326,14 +326,14 @@ function WidgetCard({ widget, onRemove, isEditing }: { widget: DashboardWidget; 
       content = (
         <Link href="/dashboard/jobs" className="block h-full">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider">Active {vocab.jobs}</span>
+            <span className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">Active {vocab.jobs}</span>
             <span className="text-[20px] font-bold text-foreground">{activeJobs.length}</span>
           </div>
           {activeJobs.length > 0 ? (
             <div className="space-y-1.5 mt-3">
               {activeJobs.slice(0, 4).map((j) => (
                 <div key={j.id} className="flex items-center justify-between">
-                  <span className="text-[12px] text-foreground truncate">{j.title}</span>
+                  <span className="text-xs text-foreground truncate">{j.title}</span>
                   <span className="text-[10px] text-text-tertiary capitalize">{j.stage}</span>
                 </div>
               ))}
@@ -350,7 +350,7 @@ function WidgetCard({ widget, onRemove, isEditing }: { widget: DashboardWidget; 
       content = (
         <Link href="/dashboard/invoicing" className="block h-full">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider">Overdue</span>
+            <span className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">Overdue</span>
             <span className="text-[20px] font-bold text-red-500">{overdueInvoices.length}</span>
           </div>
           {overdueInvoices.length > 0 ? (
@@ -359,8 +359,8 @@ function WidgetCard({ widget, onRemove, isEditing }: { widget: DashboardWidget; 
                 const total = inv.lineItems.reduce((s, li) => s + li.quantity * li.unitPrice, 0);
                 return (
                   <div key={inv.id} className="flex items-center justify-between">
-                    <span className="text-[12px] text-foreground">{inv.number}</span>
-                    <span className="text-[12px] font-medium text-red-500">${total.toLocaleString()}</span>
+                    <span className="text-xs text-foreground">{inv.number}</span>
+                    <span className="text-xs font-medium text-red-500">${total.toLocaleString()}</span>
                   </div>
                 );
               })}
@@ -491,7 +491,7 @@ function WidgetPanel({ open, onClose, onAdd, onRemove, existingTypes, activeWidg
         <div className="sticky top-0 bg-card-bg border-b border-border-light px-6 py-4 flex items-center justify-between z-10">
           <div>
             <h2 className="text-[16px] font-bold text-foreground">Customize Dashboard</h2>
-            <p className="text-[12px] text-text-tertiary">Add, remove, and preview widgets.</p>
+            <p className="text-xs text-text-tertiary">Add, remove, and preview widgets.</p>
           </div>
           <button onClick={onClose} className="p-1.5 text-text-secondary hover:text-foreground rounded-lg hover:bg-surface cursor-pointer">
             <X className="w-4 h-4" />
@@ -545,7 +545,7 @@ function WidgetPanel({ open, onClose, onAdd, onRemove, existingTypes, activeWidg
                       </div>
                       <button
                         onClick={() => onAdd(w.type, w.sizes[0])}
-                        className="flex items-center gap-1 px-3 py-1.5 bg-foreground text-white rounded-lg text-[12px] font-semibold cursor-pointer hover:opacity-90 transition-opacity"
+                        className="flex items-center gap-1 px-3 py-1.5 bg-foreground text-white rounded-lg text-xs font-semibold cursor-pointer hover:opacity-90 transition-opacity"
                       >
                         <Plus className="w-3 h-3" /> Add
                       </button>
@@ -849,7 +849,7 @@ export default function DashboardPage() {
             <div className="flex-1 h-1.5 bg-border-light rounded-full overflow-hidden">
               <motion.div className="h-full bg-primary rounded-full" initial={{ width: 0 }} animate={{ width: `${progress}%` }} transition={{ duration: 0.5 }} />
             </div>
-            <span className="text-[12px] font-semibold text-text-tertiary tabular-nums">{completedCount}/{totalCount}</span>
+            <span className="text-xs font-semibold text-text-tertiary tabular-nums">{completedCount}/{totalCount}</span>
           </div>
 
           {currentTask && (
@@ -861,11 +861,11 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-[15px] font-bold text-foreground">{currentTask.label}</h3>
-                    <p className="text-[12px] text-text-tertiary">{currentTask.description}</p>
+                    <p className="text-xs text-text-tertiary">{currentTask.description}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 ml-[52px] sm:ml-0">
-                  <button onClick={() => completeTask(currentTask.id)} className="text-[12px] text-text-tertiary hover:text-foreground cursor-pointer transition-colors whitespace-nowrap flex items-center gap-1"><Check className="w-3 h-3" /> Mark done</button>
+                  <button onClick={() => completeTask(currentTask.id)} className="text-xs text-text-tertiary hover:text-foreground cursor-pointer transition-colors whitespace-nowrap flex items-center gap-1"><Check className="w-3 h-3" /> Mark done</button>
                   <Link href={currentTask.href}><Button size="sm">Start <ArrowRight className="w-3.5 h-3.5" /></Button></Link>
                 </div>
               </div>
@@ -920,7 +920,7 @@ export default function DashboardPage() {
                     <LayoutGrid className="w-4 h-4 text-primary" />
                     <span className="text-[13px] font-medium text-foreground">Editing dashboard — click the <X className="w-3 h-3 inline" /> on widgets to remove them</span>
                   </div>
-                  <button onClick={() => setIsEditing(false)} className="px-3 py-1 bg-primary text-foreground rounded-lg text-[12px] font-semibold cursor-pointer hover:opacity-90">Done</button>
+                  <button onClick={() => setIsEditing(false)} className="px-3 py-1 bg-primary text-foreground rounded-lg text-xs font-semibold cursor-pointer hover:opacity-90">Done</button>
                 </div>
               </motion.div>
             )}
@@ -967,7 +967,7 @@ export default function DashboardPage() {
             className="w-full py-4 rounded-2xl border-2 border-dashed border-border-light hover:border-primary/30 hover:bg-primary/5 transition-all flex items-center justify-center gap-2 cursor-pointer group"
           >
             <Plus className="w-4 h-4 text-text-tertiary group-hover:text-primary transition-colors" />
-            <span className="text-[14px] font-medium text-text-tertiary group-hover:text-primary transition-colors">Add Widget</span>
+            <span className="text-sm font-medium text-text-tertiary group-hover:text-primary transition-colors">Add Widget</span>
           </motion.button>
         </motion.div>
       )}

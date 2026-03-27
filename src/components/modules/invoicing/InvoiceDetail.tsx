@@ -166,7 +166,7 @@ export function InvoiceDetail({ open, onClose, invoiceId, onEdit }: InvoiceDetai
                     <button
                       key={t}
                       onClick={() => setTipAmount(parseFloat(t.replace("$", "")))}
-                      className={`px-2 py-1 rounded text-[12px] cursor-pointer ${
+                      className={`px-2 py-1 rounded text-xs cursor-pointer ${
                         tipAmount === parseFloat(t.replace("$", ""))
                           ? "bg-primary/20 text-foreground font-medium"
                           : "bg-surface text-text-secondary hover:bg-surface/80"
@@ -181,7 +181,7 @@ export function InvoiceDetail({ open, onClose, invoiceId, onEdit }: InvoiceDetai
                     value={tipAmount || ""}
                     onChange={(e) => setTipAmount(parseFloat(e.target.value) || 0)}
                     placeholder="Custom"
-                    className="w-16 px-2 py-1 bg-surface border border-border-light rounded text-[12px] text-center"
+                    className="w-16 px-2 py-1 bg-surface border border-border-light rounded text-xs text-center"
                   />
                 </div>
               </div>
@@ -190,28 +190,28 @@ export function InvoiceDetail({ open, onClose, invoiceId, onEdit }: InvoiceDetai
 
           <FeatureSection moduleId="quotes-invoicing" featureId="partial-payments" featureLabel="Partial Payments">
             <div className="mt-3 flex items-center gap-2">
-              <button className="text-[12px] font-medium text-primary hover:underline cursor-pointer">Record Partial Payment</button>
+              <button className="text-xs font-medium text-primary hover:underline cursor-pointer">Record Partial Payment</button>
               <span className="text-[11px] text-text-tertiary">Accept a deposit or split payment</span>
             </div>
           </FeatureSection>
 
           <FeatureSection moduleId="quotes-invoicing" featureId="payment-links" featureLabel="Payment Links">
             <div className="mt-3 bg-surface rounded-lg px-3 py-2 flex items-center justify-between">
-              <span className="text-[12px] font-mono text-text-secondary truncate">pay.magic/inv/...</span>
+              <span className="text-xs font-mono text-text-secondary truncate">pay.magic/inv/...</span>
               <button className="text-[11px] text-primary font-medium cursor-pointer hover:underline ml-2 flex-shrink-0">Copy Link</button>
             </div>
           </FeatureSection>
 
           <FeatureSection moduleId="quotes-invoicing" featureId="overdue-escalation" featureLabel="Overdue Escalation">
             <div className="mt-3 p-3 bg-surface/50 rounded-lg">
-              <p className="text-[12px] text-text-secondary">Escalation: <span className="font-medium text-foreground">Reminder → Warning → Final Notice</span></p>
+              <p className="text-xs text-text-secondary">Escalation: <span className="font-medium text-foreground">Reminder → Warning → Final Notice</span></p>
               <p className="text-[10px] text-text-tertiary mt-0.5">Auto-escalates overdue invoices through severity levels.</p>
             </div>
           </FeatureSection>
 
           <FeatureSection moduleId="quotes-invoicing" featureId="client-invoice-portal" featureLabel="Client Invoice Page">
             <div className="mt-3 bg-surface rounded-lg px-3 py-2 flex items-center justify-between">
-              <span className="text-[12px] text-text-secondary">Client can view this invoice at a branded page</span>
+              <span className="text-xs text-text-secondary">Client can view this invoice at a branded page</span>
               <button className="text-[11px] text-primary font-medium cursor-pointer hover:underline">Preview</button>
             </div>
           </FeatureSection>

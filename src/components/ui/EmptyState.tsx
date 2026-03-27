@@ -37,7 +37,7 @@ export function EmptyState({ icon, title, description, actionLabel, onAction, se
         {icon}
       </motion.div>
       <h3 className="text-[18px] font-bold text-foreground mb-1.5 tracking-tight">{title}</h3>
-      <p className="text-[14px] text-text-secondary max-w-sm mb-6 leading-relaxed">{description}</p>
+      <p className="text-sm text-text-secondary max-w-sm mb-6 leading-relaxed">{description}</p>
 
       {/* Setup steps — guided onboarding within the module */}
       {setupSteps && setupSteps.length > 0 && (
@@ -65,11 +65,11 @@ export function EmptyState({ icon, title, description, actionLabel, onAction, se
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <p className={`text-[14px] font-medium ${step.done ? "text-text-tertiary line-through" : "text-foreground"}`}>
+                <p className={`text-sm font-medium ${step.done ? "text-text-tertiary line-through" : "text-foreground"}`}>
                   {step.label}
                 </p>
                 {step.description && !step.done && (
-                  <p className="text-[12px] text-text-tertiary mt-0.5">{step.description}</p>
+                  <p className="text-xs text-text-tertiary mt-0.5">{step.description}</p>
                 )}
               </div>
               {!step.done && <ChevronRight className="w-4 h-4 text-text-tertiary flex-shrink-0" />}
@@ -86,7 +86,7 @@ export function EmptyState({ icon, title, description, actionLabel, onAction, se
         >
           <button
             onClick={onAction}
-            className="px-6 py-2.5 bg-foreground text-white rounded-full text-[14px] font-semibold cursor-pointer hover:opacity-90 transition-opacity"
+            className="px-6 py-2.5 bg-foreground text-white rounded-full text-sm font-semibold cursor-pointer hover:opacity-90 transition-opacity"
           >
             {actionLabel}
           </button>

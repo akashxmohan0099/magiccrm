@@ -362,13 +362,13 @@ export function AIQuestionsStep() {
                 {!isLocalSlide && (
                   <div className="flex items-center justify-center gap-2 mb-4">
                     <Sparkles className="w-3.5 h-3.5 text-primary" />
-                    <span className="text-[12px] font-medium text-text-tertiary">Personalized for {businessContext.businessName || "you"}</span>
+                    <span className="text-xs font-medium text-text-tertiary">Personalized for {businessContext.businessName || "you"}</span>
                   </div>
                 )}
                 <h2 className="text-[26px] font-bold text-foreground tracking-tight mb-1.5">
                   {displayCat.title}
                 </h2>
-                <p className="text-[14px] text-text-secondary">
+                <p className="text-sm text-text-secondary">
                   {displayCat.subtitle}
                 </p>
               </div>
@@ -402,7 +402,7 @@ export function AIQuestionsStep() {
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleAnswer(key, true)}
-                            className={`flex-1 py-2.5 rounded-xl text-[14px] font-medium transition-all cursor-pointer ${
+                            className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${
                               isYes ? "bg-primary text-white shadow-sm" : "bg-surface border border-border-light text-foreground hover:border-primary/30"
                             }`}
                           >
@@ -410,7 +410,7 @@ export function AIQuestionsStep() {
                           </button>
                           <button
                             onClick={() => handleAnswer(key, false)}
-                            className={`flex-1 py-2.5 rounded-xl text-[14px] font-medium transition-all cursor-pointer ${
+                            className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${
                               isNo ? "bg-foreground text-white" : "bg-surface border border-border-light text-foreground hover:border-foreground/20"
                             }`}
                           >
@@ -429,7 +429,7 @@ export function AIQuestionsStep() {
                             transition={{ type: "spring", stiffness: 300, damping: 30 }}
                           >
                             <div className="p-5 rounded-2xl bg-white/60 border border-border-light ml-4">
-                              <p className="text-[14px] font-medium text-foreground mb-3">{localQ.followUp.question}</p>
+                              <p className="text-sm font-medium text-foreground mb-3">{localQ.followUp.question}</p>
                               <div className="flex gap-2">
                                 <button
                                   onClick={() => handleAnswer(followUpKey, true)}
@@ -462,7 +462,7 @@ export function AIQuestionsStep() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.4 }}
-                className="text-center text-[12px] text-text-tertiary mt-5"
+                className="text-center text-xs text-text-tertiary mt-5"
               >
                 {currentCatAnswered === 0
                   ? isLocalSlide

@@ -897,7 +897,7 @@ export function ProposalBuilder({ open, onClose }: ProposalBuilderProps) {
                 }
                 className="w-4 h-4 rounded border-border-light text-primary focus:ring-primary/20 cursor-pointer"
               />
-              <span className="text-[12px] text-text-secondary group-hover:text-foreground transition-colors">
+              <span className="text-xs text-text-secondary group-hover:text-foreground transition-colors">
                 Make pricing interactive
               </span>
               <span className="text-[10px] text-text-tertiary">
@@ -991,7 +991,7 @@ export function ProposalBuilder({ open, onClose }: ProposalBuilderProps) {
                       )}
                     </div>
                     <span
-                      className={`text-[12px] font-medium hidden sm:inline ${
+                      className={`text-xs font-medium hidden sm:inline ${
                         isActive
                           ? "text-foreground"
                           : isPast
@@ -1044,10 +1044,10 @@ export function ProposalBuilder({ open, onClose }: ProposalBuilderProps) {
                       {TEMPLATE_ICONS[tpl.icon] ?? <FileText className="w-6 h-6" />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[14px] font-semibold text-foreground mb-1">
+                      <p className="text-sm font-semibold text-foreground mb-1">
                         {tpl.name}
                       </p>
-                      <p className="text-[12px] text-text-tertiary leading-relaxed">
+                      <p className="text-xs text-text-tertiary leading-relaxed">
                         {tpl.description}
                       </p>
                     </div>
@@ -1069,10 +1069,10 @@ export function ProposalBuilder({ open, onClose }: ProposalBuilderProps) {
                     <Plus className="w-6 h-6" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[14px] font-semibold text-foreground mb-1">
+                    <p className="text-sm font-semibold text-foreground mb-1">
                       Blank Proposal
                     </p>
-                    <p className="text-[12px] text-text-tertiary leading-relaxed">
+                    <p className="text-xs text-text-tertiary leading-relaxed">
                       Start from scratch with an empty canvas.
                     </p>
                   </div>
@@ -1090,7 +1090,7 @@ export function ProposalBuilder({ open, onClose }: ProposalBuilderProps) {
                 <div className="mt-8">
                   <div className="flex items-center gap-2 mb-4">
                     <Sparkles className="w-4 h-4 text-text-tertiary" />
-                    <span className="text-[12px] text-text-tertiary font-semibold uppercase tracking-wider">
+                    <span className="text-xs text-text-tertiary font-semibold uppercase tracking-wider">
                       Your Templates
                     </span>
                   </div>
@@ -1115,10 +1115,10 @@ export function ProposalBuilder({ open, onClose }: ProposalBuilderProps) {
                           <LayoutTemplate className="w-6 h-6" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-[14px] font-semibold text-foreground mb-1">
+                          <p className="text-sm font-semibold text-foreground mb-1">
                             {tpl.name}
                           </p>
-                          <p className="text-[12px] text-text-tertiary leading-relaxed">
+                          <p className="text-xs text-text-tertiary leading-relaxed">
                             {tpl.description}
                           </p>
                         </div>
@@ -1169,7 +1169,7 @@ export function ProposalBuilder({ open, onClose }: ProposalBuilderProps) {
                   <button
                     key={cat.value}
                     onClick={() => setStyleFilter(cat.value)}
-                    className={`px-4 py-1.5 rounded-full text-[12px] font-medium transition-all cursor-pointer ${
+                    className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
                       styleFilter === cat.value
                         ? "bg-primary text-white"
                         : "bg-surface text-text-secondary hover:bg-surface/80 hover:text-foreground"
@@ -1325,7 +1325,7 @@ export function ProposalBuilder({ open, onClose }: ProposalBuilderProps) {
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
                       placeholder="e.g. Website Redesign Proposal"
-                      className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
+                      className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
                     />
                   </FormField>
 

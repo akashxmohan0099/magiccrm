@@ -276,7 +276,7 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
             type="text"
             value={form.title}
             onChange={(e) => set("title", e.target.value)}
-            className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
+            className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
             placeholder={`${vocab.booking} title`}
           />
         </FormField>
@@ -296,7 +296,7 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
                 type="text"
                 value={newClientName}
                 onChange={(e) => setNewClientName(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
+                className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
                 placeholder="Full name"
               />
             </FormField>
@@ -305,7 +305,7 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
                 type="email"
                 value={newClientEmail}
                 onChange={(e) => setNewClientEmail(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
+                className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
                 placeholder="email@example.com"
               />
             </FormField>
@@ -337,7 +337,7 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
                 type="time"
                 value={form.startTime}
                 onChange={(e) => set("startTime", e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
+                className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
               />
             </FormField>
 
@@ -346,7 +346,7 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
                 type="time"
                 value={form.endTime}
                 onChange={(e) => set("endTime", e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
+                className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
               />
             </FormField>
           </div>
@@ -372,7 +372,7 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
             {requireDeposit && (
               <div>
                 <label className="block text-[13px] font-medium text-foreground mb-1.5">Deposit Amount ($)</label>
-                <input type="number" step="0.01" value={depositAmount} onChange={(e) => setDepositAmount(e.target.value)} placeholder="0.00" className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30" />
+                <input type="number" step="0.01" value={depositAmount} onChange={(e) => setDepositAmount(e.target.value)} placeholder="0.00" className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30" />
               </div>
             )}
           </div>
@@ -388,7 +388,7 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
         <FeatureSection moduleId="bookings-calendar" featureId="group-class-booking" featureLabel="Group Booking">
           <div>
             <label className="block text-[13px] font-medium text-foreground mb-1.5">Max Attendees</label>
-            <input type="number" value={maxAttendees} onChange={(e) => setMaxAttendees(e.target.value)} placeholder="e.g. 10" className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30" />
+            <input type="number" value={maxAttendees} onChange={(e) => setMaxAttendees(e.target.value)} placeholder="e.g. 10" className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30" />
             <p className="text-[11px] text-text-tertiary mt-1">Leave empty for 1-on-1 appointments.</p>
           </div>
         </FeatureSection>
@@ -396,7 +396,7 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
         <FeatureSection moduleId="bookings-calendar" featureId="resource-room-assignment" featureLabel="Room / Resource">
           <div>
             <label className="block text-[13px] font-medium text-foreground mb-1.5">Room / Resource</label>
-            <input type="text" value={resource} onChange={(e) => setResource(e.target.value)} placeholder="e.g. Room 1, Chair 3" className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30" />
+            <input type="text" value={resource} onChange={(e) => setResource(e.target.value)} placeholder="e.g. Room 1, Chair 3" className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30" />
           </div>
         </FeatureSection>
 
@@ -411,7 +411,7 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
             />
             {travelMinutes && parseInt(travelMinutes) > 0 && (
               <div className="mt-2 px-3 py-2 bg-primary/5 border border-primary/20 rounded-lg">
-                <p className="text-[12px] text-foreground">
+                <p className="text-xs text-foreground">
                   <span className="font-semibold">{travelMinutes} min</span> travel time will be blocked before this appointment.
                 </p>
               </div>
@@ -421,7 +421,7 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
 
         <FeatureSection moduleId="bookings-calendar" featureId="booking-confirmation-flow" featureLabel="Booking Confirmation">
           <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl">
-            <p className="text-[12px] text-blue-800">New bookings will land as &quot;Pending&quot; and need manual confirmation.</p>
+            <p className="text-xs text-blue-800">New bookings will land as &quot;Pending&quot; and need manual confirmation.</p>
           </div>
         </FeatureSection>
 
@@ -453,7 +453,7 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
         <FeatureSection moduleId="bookings-calendar" featureId="booking-reminders" featureLabel="Automated Reminders">
           <div>
             <label className="block text-[13px] font-medium text-foreground mb-1.5">Send reminder</label>
-            <select value={reminderHours} onChange={(e) => setReminderHours(e.target.value)} className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30">
+            <select value={reminderHours} onChange={(e) => setReminderHours(e.target.value)} className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30">
               <option value="0">No reminder</option>
               <option value="1">1 hour before</option>
               <option value="2">2 hours before</option>
@@ -467,7 +467,7 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
           {cancellationPolicy ? (
             <div className="space-y-2">
               <div className="p-3 bg-surface rounded-lg border border-border-light">
-                <p className="text-[12px] text-text-secondary whitespace-pre-wrap">{cancellationPolicy}</p>
+                <p className="text-xs text-text-secondary whitespace-pre-wrap">{cancellationPolicy}</p>
               </div>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -485,7 +485,7 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
               )}
             </div>
           ) : (
-            <p className="text-[12px] text-text-tertiary">No cancellation policy set. Add one from the Scheduling page settings.</p>
+            <p className="text-xs text-text-tertiary">No cancellation policy set. Add one from the Scheduling page settings.</p>
           )}
         </FeatureSection>
 
@@ -500,7 +500,7 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
                 <StarRating value={booking.satisfactionRating} readOnly size="sm" />
               </div>
               {booking.satisfactionFeedback && (
-                <p className="text-[12px] text-green-800">{booking.satisfactionFeedback}</p>
+                <p className="text-xs text-green-800">{booking.satisfactionFeedback}</p>
               )}
               {booking.ratedAt && (
                 <p className="text-[11px] text-green-600">Rated on {new Date(booking.ratedAt).toLocaleString()}</p>

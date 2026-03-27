@@ -21,7 +21,7 @@ const MEMBER_COLORS = [
 ];
 
 const inputCls =
-  "w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30";
+  "w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30";
 
 function formatTime12(time24: string): string {
   const [hStr, mStr] = time24.split(":");
@@ -71,7 +71,7 @@ function AddShiftPopover({
             type="time"
             value={startTime}
             onChange={(e) => setStartTime(e.target.value)}
-            className={inputCls + " !py-1.5 text-[12px]"}
+            className={inputCls + " !py-1.5 text-xs"}
           />
         </div>
         <div>
@@ -80,7 +80,7 @@ function AddShiftPopover({
             type="time"
             value={endTime}
             onChange={(e) => setEndTime(e.target.value)}
-            className={inputCls + " !py-1.5 text-[12px]"}
+            className={inputCls + " !py-1.5 text-xs"}
           />
         </div>
         <Button variant="primary" size="sm" onClick={handleSave} className="w-full">
@@ -128,7 +128,7 @@ function EditShiftPopover({ shift, workspaceId, onClose }: EditShiftPopoverProps
             type="time"
             value={startTime}
             onChange={(e) => setStartTime(e.target.value)}
-            className={inputCls + " !py-1.5 text-[12px]"}
+            className={inputCls + " !py-1.5 text-xs"}
           />
         </div>
         <div>
@@ -137,7 +137,7 @@ function EditShiftPopover({ shift, workspaceId, onClose }: EditShiftPopoverProps
             type="time"
             value={endTime}
             onChange={(e) => setEndTime(e.target.value)}
-            className={inputCls + " !py-1.5 text-[12px]"}
+            className={inputCls + " !py-1.5 text-xs"}
           />
         </div>
         <div className="flex gap-2">
@@ -209,7 +209,7 @@ export function ShiftScheduler({ workspaceId }: { workspaceId?: string }) {
                     <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
                       <span className="text-[8px] font-bold text-white">{member.name[0]}</span>
                     </div>
-                    <span className="text-[12px] text-foreground truncate max-w-[80px]">
+                    <span className="text-xs text-foreground truncate max-w-[80px]">
                       {member.name.split(" ")[0]}
                     </span>
                   </div>

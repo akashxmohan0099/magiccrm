@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/Button";
 import { ProductForm } from "./ProductForm";
 import { CSVImportWizard } from "@/components/modules/shared/CSVImportWizard";
 import { useModuleSchema } from "@/hooks/useModuleSchema";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 export function ProductsPage() {
   const ms = useModuleSchema("products");
@@ -46,15 +47,7 @@ export function ProductsPage() {
       key: "inStock",
       label: "Status",
       render: (p) => (
-        <span
-          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-            p.inStock
-              ? "bg-emerald-50 text-emerald-700"
-              : "bg-red-50 text-red-700"
-          }`}
-        >
-          {p.inStock ? "In Stock" : "Out of Stock"}
-        </span>
+        <StatusBadge status={p.inStock ? "active" : "inactive"} />
       ),
     },
   ];

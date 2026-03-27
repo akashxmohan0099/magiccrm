@@ -91,7 +91,7 @@ export function TicketDetail({ open, onClose, ticketId }: TicketDetailProps) {
             <FeatureSection moduleId="support" featureId="sla-timers" featureLabel="SLA Timers">
               <div className="flex items-center gap-2 px-4 py-2 bg-surface/50 rounded-lg mb-3">
                 <Clock className="w-3.5 h-3.5 text-text-tertiary" />
-                <span className="text-[12px] text-text-secondary">Response target: <span className="font-medium text-foreground">4 hours</span></span>
+                <span className="text-xs text-text-secondary">Response target: <span className="font-medium text-foreground">4 hours</span></span>
               </div>
             </FeatureSection>
 
@@ -118,7 +118,7 @@ export function TicketDetail({ open, onClose, ticketId }: TicketDetailProps) {
               )}
               <FeatureSection moduleId="support" featureId="ticket-to-job" featureLabel="Ticket → Job">
                 <Link href="/dashboard/jobs">
-                  <button className="text-[12px] font-medium text-primary hover:underline cursor-pointer flex items-center gap-1">
+                  <button className="text-xs font-medium text-primary hover:underline cursor-pointer flex items-center gap-1">
                     <FolderKanban className="w-3 h-3" /> Convert to Job
                   </button>
                 </Link>
@@ -203,7 +203,7 @@ export function TicketDetail({ open, onClose, ticketId }: TicketDetailProps) {
           {/* Post-Resolution Survey */}
           <FeatureSection moduleId="support" featureId="satisfaction-survey-trigger" featureLabel="Post-Resolution Survey">
             {(ticket.status === "resolved" || ticket.status === "closed") && (
-              <button className="text-[12px] font-medium text-primary hover:underline cursor-pointer flex items-center gap-1 mt-2">
+              <button className="text-xs font-medium text-primary hover:underline cursor-pointer flex items-center gap-1 mt-2">
                 <Star className="w-3 h-3" /> Send satisfaction survey
               </button>
             )}

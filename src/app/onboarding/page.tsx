@@ -204,7 +204,7 @@ function OnboardingContent() {
               <h2 className="text-[22px] font-bold text-foreground">
                 Workspace setup didn&apos;t complete
               </h2>
-              <p className="text-[14px] text-text-secondary leading-relaxed">
+              <p className="text-sm text-text-secondary leading-relaxed">
                 We couldn&apos;t finish creating your workspace. This is usually a temporary issue.
               </p>
               <div className="flex flex-col gap-2 pt-2">

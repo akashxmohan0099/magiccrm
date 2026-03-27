@@ -104,7 +104,7 @@ function SubRecordEditor({
         type="button"
         onClick={addItem}
         aria-label={`Add ${field.label.replace(/s$/, "").toLowerCase()}`}
-        className="flex items-center gap-1.5 text-[12px] text-text-tertiary hover:text-foreground transition-colors cursor-pointer"
+        className="flex items-center gap-1.5 text-xs text-text-tertiary hover:text-foreground transition-colors cursor-pointer"
       >
         <Plus className="w-3.5 h-3.5" /> Add {field.label.replace(/s$/, "").toLowerCase()}
       </button>
@@ -179,7 +179,7 @@ function LineItemEditor({
         type="button"
         onClick={addItem}
         aria-label="Add line item"
-        className="flex items-center gap-1.5 text-[12px] text-text-tertiary hover:text-foreground transition-colors px-3 py-2 cursor-pointer"
+        className="flex items-center gap-1.5 text-xs text-text-tertiary hover:text-foreground transition-colors px-3 py-2 cursor-pointer"
       >
         <Plus className="w-3.5 h-3.5" /> Add line item
       </button>
@@ -211,8 +211,8 @@ function FieldInput({
   ariaDescribedBy?: string;
 }) {
   const baseClass = compact
-    ? "w-full px-2 py-1 text-[12px] rounded-lg border border-border-light bg-white focus:outline-none focus:ring-1 focus:ring-primary/30"
-    : "w-full px-3 py-2.5 text-[14px] rounded-xl border border-border-light bg-white focus:outline-none focus:ring-2 focus:ring-primary/20";
+    ? "w-full px-2 py-1 text-xs rounded-lg border border-border-light bg-white focus:outline-none focus:ring-1 focus:ring-primary/30"
+    : "w-full px-3 py-2.5 text-sm rounded-xl border border-border-light bg-white focus:outline-none focus:ring-2 focus:ring-primary/20";
 
   switch (field.type) {
     case "text":
@@ -349,7 +349,7 @@ function FieldInput({
                       : [...selected, opt.value]
                   );
                 }}
-                className={`px-2.5 py-1 rounded-full text-[12px] font-medium transition-colors cursor-pointer ${
+                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors cursor-pointer ${
                   isSelected
                     ? "bg-primary/10 text-primary border border-primary/20"
                     : "bg-surface text-text-tertiary border border-border-light hover:border-primary/20"
@@ -404,7 +404,7 @@ function FieldInput({
     case "computed":
       // Computed fields are read-only in forms
       return (
-        <div className="px-3 py-2.5 text-[14px] text-text-tertiary bg-surface rounded-xl">
+        <div className="px-3 py-2.5 text-sm text-text-tertiary bg-surface rounded-xl">
           {value != null ? String(value) : "—"}
         </div>
       );
@@ -563,7 +563,7 @@ export function SchemaForm({
       {groupedFields.map((group) => (
         <div key={group.name} role={group.name ? "group" : undefined} aria-label={group.name || undefined}>
           {group.name && (
-            <h4 className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider mb-3">
+            <h4 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-3">
               {group.name}
             </h4>
           )}

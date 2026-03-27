@@ -142,7 +142,7 @@ function BreakdownView({ stat, total }: { stat: StatCard; total: number }) {
 
   return (
     <div className="bg-white rounded-2xl border border-border-light p-5">
-      <p className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider mb-4">
+      <p className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-4">
         {stat.label}
       </p>
       <div className="space-y-3">

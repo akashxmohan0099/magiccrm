@@ -48,7 +48,7 @@ function RebookingPromptsInner() {
                 <p className="text-[13px] font-medium text-foreground truncate">
                   {prompt.clientName}
                 </p>
-                <p className="text-[12px] text-text-secondary truncate">
+                <p className="text-xs text-text-secondary truncate">
                   {prompt.serviceName}
                 </p>
                 <div className="flex items-center gap-3 mt-1">

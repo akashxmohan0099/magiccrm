@@ -156,7 +156,7 @@ export function SignupStep() {
             className={`${inputClass} ${confirmPassword && !passwordsMatch ? "border-red-300 focus:border-red-400 focus:ring-red-100" : ""}`}
           />
           {confirmPassword && !passwordsMatch && (
-            <p className="text-[12px] text-red-500 mt-1.5">Passwords don&apos;t match</p>
+            <p className="text-xs text-red-500 mt-1.5">Passwords don&apos;t match</p>
           )}
         </div>
 
@@ -216,7 +216,7 @@ export function SignupStep() {
         </button>
       </form>
 
-      <p className="text-center text-[12px] text-text-tertiary mt-6">
+      <p className="text-center text-xs text-text-tertiary mt-6">
         Already have an account?{" "}
         <a href="/login" className="text-foreground font-medium hover:underline">Log in</a>
       </p>

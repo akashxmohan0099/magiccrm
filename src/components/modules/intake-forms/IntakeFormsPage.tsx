@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { SlideOver } from "@/components/ui/SlideOver";
 import { IntakeFormForm } from "./IntakeFormForm";
 import { FeatureSection } from "@/components/modules/FeatureSection";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 export function IntakeFormsPage() {
   const { forms } = useIntakeFormsStore();
@@ -25,9 +26,7 @@ export function IntakeFormsPage() {
     { key: "description", label: "Description", render: (f) => <span className="text-text-secondary">{f.description || "—"}</span> },
     { key: "submissionCount", label: "Submissions", sortable: true },
     { key: "active", label: "Status", render: (f) => (
-      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${f.active ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-600"}`}>
-        {f.active ? "Active" : "Inactive"}
-      </span>
+      <StatusBadge status={f.active ? "active" : "inactive"} />
     )},
   ];
 
@@ -92,7 +91,7 @@ export function IntakeFormsPage() {
                       <td className="py-3 text-right">
                         <button
                           onClick={() => setViewingSub(sub)}
-                          className="inline-flex items-center gap-1 px-3 py-1 bg-surface border border-border-light rounded-lg text-[12px] font-medium text-foreground hover:bg-card-bg cursor-pointer transition-colors"
+                          className="inline-flex items-center gap-1 px-3 py-1 bg-surface border border-border-light rounded-lg text-xs font-medium text-foreground hover:bg-card-bg cursor-pointer transition-colors"
                         >
                           <Eye className="w-3.5 h-3.5" />
                           View
@@ -113,14 +112,14 @@ export function IntakeFormsPage() {
         >
           {viewingSub && (
             <div className="space-y-4">
-              <div className="flex items-center gap-2 text-[12px] text-text-tertiary">
+              <div className="flex items-center gap-2 text-xs text-text-tertiary">
                 <span>Submitted {new Date(viewingSub.submittedAt).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" })}</span>
               </div>
               <div className="space-y-3">
                 {Object.entries(viewingSub.responses).map(([field, value]) => (
                   <div key={field} className="bg-surface rounded-xl border border-border-light px-4 py-3">
                     <p className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider mb-1">{field}</p>
-                    <p className="text-[14px] text-foreground">{String(value)}</p>
+                    <p className="text-sm text-foreground">{String(value)}</p>
                   </div>
                 ))}
               </div>

@@ -20,7 +20,7 @@ const DEFAULT_AVAILABILITY: AvailabilitySlot[] = [
 ];
 
 const inputCls =
-  "w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30";
+  "w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30";
 
 function getSlots(member: TeamMember): AvailabilitySlot[] {
   if (member.availability && member.availability.length === 7) return member.availability;
@@ -83,7 +83,7 @@ function MemberRow({
             const slot = slots.find((s) => s.day === dayNum)!;
             return (
               <div key={dayNum} className="flex items-center gap-2">
-                <label className="w-10 text-[12px] font-medium text-text-secondary flex-shrink-0">
+                <label className="w-10 text-xs font-medium text-text-secondary flex-shrink-0">
                   {DAY_NAMES[dayNum]}
                 </label>
 
@@ -108,18 +108,18 @@ function MemberRow({
                       type="time"
                       value={slot.startTime}
                       onChange={(e) => updateSlot(dayNum, { startTime: e.target.value })}
-                      className={inputCls + " !w-[120px] !py-1.5 text-[12px]"}
+                      className={inputCls + " !w-[120px] !py-1.5 text-xs"}
                     />
                     <span className="text-[11px] text-text-tertiary">to</span>
                     <input
                       type="time"
                       value={slot.endTime}
                       onChange={(e) => updateSlot(dayNum, { endTime: e.target.value })}
-                      className={inputCls + " !w-[120px] !py-1.5 text-[12px]"}
+                      className={inputCls + " !w-[120px] !py-1.5 text-xs"}
                     />
                   </>
                 ) : (
-                  <span className="text-[12px] text-text-tertiary italic">Off</span>
+                  <span className="text-xs text-text-tertiary italic">Off</span>
                 )}
               </div>
             );

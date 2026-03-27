@@ -66,7 +66,7 @@ function TestContent() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="bg-amber-400 text-amber-900 text-center py-1.5 text-[12px] font-semibold">
+      <div className="bg-amber-400 text-amber-900 text-center py-1.5 text-xs font-semibold">
         Test Mode — no account created, resets each visit
       </div>
       <AnimatePresence mode="wait">

@@ -66,7 +66,7 @@ export function SchemaRichText({
   if (readOnly) {
     return (
       <div
-        className="prose prose-sm max-w-none text-[14px] text-foreground leading-relaxed"
+        className="prose prose-sm max-w-none text-sm text-foreground leading-relaxed"
         dangerouslySetInnerHTML={{ __html: sanitizeHtml(value || "") }}
       />
     );
@@ -100,7 +100,7 @@ export function SchemaRichText({
         suppressContentEditableWarning
         onInput={handleInput}
         onKeyDown={handleKeyDown}
-        className="px-4 py-3 text-[14px] text-foreground leading-relaxed focus:outline-none prose prose-sm max-w-none
+        className="px-4 py-3 text-sm text-foreground leading-relaxed focus:outline-none prose prose-sm max-w-none
           [&:empty]:before:content-[attr(data-placeholder)] [&:empty]:before:text-text-tertiary [&:empty]:before:pointer-events-none"
         data-placeholder={placeholder}
         style={{ minHeight }}

@@ -50,7 +50,7 @@ function LoginContent() {
   }, [searchParams]);
 
   const inputClass =
-    "w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30";
+    "w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30";
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -131,7 +131,7 @@ function LoginContent() {
         <div className="bg-card-bg border border-border-light rounded-2xl p-8 shadow-sm">
           <div className="text-center mb-6">
             <h1 className="text-[22px] font-bold text-foreground tracking-tight">Welcome back</h1>
-            <p className="text-[14px] text-text-secondary mt-1.5">
+            <p className="text-sm text-text-secondary mt-1.5">
               Sign in to your workspace.
             </p>
           </div>
@@ -158,7 +158,7 @@ function LoginContent() {
                 autoFocus
               />
               {errors.email && (
-                <p className="text-[12px] text-red-500 mt-1.5 flex items-center gap-1">
+                <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1">
                   <span className="inline-block w-1 h-1 rounded-full bg-red-500" />
                   {errors.email}
                 </p>
@@ -172,7 +172,7 @@ function LoginContent() {
                 <button
                   type="button"
                   onClick={handleForgotPassword}
-                  className="text-[12px] text-text-tertiary hover:text-foreground cursor-pointer"
+                  className="text-xs text-text-tertiary hover:text-foreground cursor-pointer"
                 >
                   Forgot password?
                 </button>
@@ -198,7 +198,7 @@ function LoginContent() {
                 </button>
               </div>
               {errors.password && (
-                <p className="text-[12px] text-red-500 mt-1.5 flex items-center gap-1">
+                <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1">
                   <span className="inline-block w-1 h-1 rounded-full bg-red-500" />
                   {errors.password}
                 </p>
@@ -208,7 +208,7 @@ function LoginContent() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-foreground text-white text-[14px] font-semibold rounded-full hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
+              className="w-full py-3 bg-foreground text-white text-sm font-semibold rounded-full hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
               {loading ? "Signing in..." : "Sign In"}

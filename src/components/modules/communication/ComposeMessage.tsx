@@ -75,14 +75,14 @@ export function ComposeMessage({ conversationId }: ComposeMessageProps) {
                     { label: "Booking confirmed", text: "Your booking has been confirmed. See you then!" },
                     { label: "Payment received", text: "Payment received — thank you!" },
                   ].map((resp) => (
-                    <button key={resp.label} type="button" onClick={() => { insertCanned(resp.text); setShowCanned(false); }} className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-surface text-[12px] text-foreground cursor-pointer">{resp.label}</button>
+                    <button key={resp.label} type="button" onClick={() => { insertCanned(resp.text); setShowCanned(false); }} className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-surface text-xs text-foreground cursor-pointer">{resp.label}</button>
                   ))}
                 </div>
               )}
             </div>
           </FeatureSection>
           <FeatureSection moduleId="communication" featureId="scheduled-send" featureLabel="Scheduled Send">
-            <input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} className="px-2 py-1.5 bg-surface border border-border-light rounded-lg text-[12px] text-text-secondary" title="Schedule send" />
+            <input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} className="px-2 py-1.5 bg-surface border border-border-light rounded-lg text-xs text-text-secondary" title="Schedule send" />
           </FeatureSection>
           <FeatureSection moduleId="communication" featureId="template-variables" featureLabel="Template Variables">
             <div className="relative">
@@ -93,7 +93,7 @@ export function ComposeMessage({ conversationId }: ComposeMessageProps) {
                 <div className="absolute bottom-full mb-1 right-0 w-48 bg-card-bg border border-border-light rounded-xl shadow-lg p-2 z-10">
                   <p className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider px-2 py-1">Variables</p>
                   {["{name}", "{email}", "{date}", "{service}", "{amount}"].map((v) => (
-                    <button key={v} type="button" onClick={() => { insertVariable(v); setShowVars(false); }} className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-surface text-[12px] font-mono text-foreground cursor-pointer">{v}</button>
+                    <button key={v} type="button" onClick={() => { insertVariable(v); setShowVars(false); }} className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-surface text-xs font-mono text-foreground cursor-pointer">{v}</button>
                   ))}
                 </div>
               )}

@@ -380,7 +380,7 @@ export function ProposalDetail({ open, onClose, proposalId, onEdit }: ProposalDe
             <div className="bg-surface/50 rounded-xl border border-primary/20 p-4 space-y-3">
               <p className="text-sm font-semibold text-foreground">Save as Template</p>
               <div>
-                <label className="text-[12px] text-text-secondary font-medium mb-1 block">
+                <label className="text-xs text-text-secondary font-medium mb-1 block">
                   Template Name
                 </label>
                 <input
@@ -393,7 +393,7 @@ export function ProposalDetail({ open, onClose, proposalId, onEdit }: ProposalDe
                 />
               </div>
               <div>
-                <label className="text-[12px] text-text-secondary font-medium mb-1 block">
+                <label className="text-xs text-text-secondary font-medium mb-1 block">
                   Description
                 </label>
                 <textarea

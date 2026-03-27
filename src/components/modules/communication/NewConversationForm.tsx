@@ -106,7 +106,7 @@ export function NewConversationForm({ open, onClose, onCreated }: NewConversatio
           />
         </FormField>
         {errors.channel && (
-          <p className="text-[12px] text-red-500 -mt-3">{errors.channel}</p>
+          <p className="text-xs text-red-500 -mt-3">{errors.channel}</p>
         )}
 
         <FormField label="Subject">

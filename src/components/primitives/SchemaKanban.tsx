@@ -96,7 +96,7 @@ export function SchemaKanban({
 
   if (!groupField) {
     return (
-      <div className="text-center py-12 text-text-tertiary text-[14px]">
+      <div className="text-center py-12 text-text-tertiary text-sm">
         No grouping field configured for this kanban view.
       </div>
     );

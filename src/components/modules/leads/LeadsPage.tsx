@@ -86,7 +86,7 @@ export function LeadsPage() {
         return (
           <button
             onClick={(e) => { e.stopPropagation(); convertToClient(lead.id, workspaceId ?? undefined); }}
-            className="text-[12px] text-primary hover:text-primary-hover font-medium transition-colors cursor-pointer"
+            className="text-xs text-primary hover:text-primary-hover font-medium transition-colors cursor-pointer"
           >
             Convert to Client
           </button>

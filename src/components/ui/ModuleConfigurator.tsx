@@ -102,7 +102,7 @@ export function ModuleConfigurator({ moduleId, moduleName }: ModuleConfiguratorP
         <div className="sticky top-0 bg-card-bg border-b border-border-light px-6 py-4 flex items-center justify-between z-10">
           <div>
             <h2 className="text-[16px] font-bold text-foreground">Customize {moduleName}</h2>
-            <p className="text-[12px] text-text-tertiary mt-0.5">{enabledCount} of {totalCount} features enabled</p>
+            <p className="text-xs text-text-tertiary mt-0.5">{enabledCount} of {totalCount} features enabled</p>
           </div>
           <button
             onClick={() => setOpen(false)}

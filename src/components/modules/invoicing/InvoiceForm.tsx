@@ -174,7 +174,7 @@ export function InvoiceForm({ open, onClose, invoice }: InvoiceFormProps) {
               value={invoiceNumber}
               onChange={(e) => setInvoiceNumber(e.target.value)}
               placeholder="e.g. INV-2026-001"
-              className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
+              className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
             />
           </FormField>
         </FeatureSection>
@@ -221,7 +221,7 @@ export function InvoiceForm({ open, onClose, invoice }: InvoiceFormProps) {
                 onChange={(e) => setDepositPercent(Number(e.target.value))}
                 min={1}
                 max={99}
-                className="w-24 px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
+                className="w-24 px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
               />
               <span className="text-sm text-text-secondary">%</span>
               {total > 0 && (
@@ -289,10 +289,10 @@ export function InvoiceForm({ open, onClose, invoice }: InvoiceFormProps) {
               {applyTax && (
                 <input type="number" step="0.1" value={taxRate} onChange={(e) => setTaxRate(e.target.value)} className="w-16 px-2 py-1 bg-surface border border-border-light rounded-xl text-[13px] text-foreground text-center focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30" />
               )}
-              {applyTax && <span className="text-[12px] text-text-tertiary">%</span>}
+              {applyTax && <span className="text-xs text-text-tertiary">%</span>}
             </div>
             {applyTax && (
-              <span className="text-[14px] font-semibold text-foreground">${(total * (parseFloat(taxRate) || 0) / 100).toFixed(2)}</span>
+              <span className="text-sm font-semibold text-foreground">${(total * (parseFloat(taxRate) || 0) / 100).toFixed(2)}</span>
             )}
           </div>
         </FeatureSection>

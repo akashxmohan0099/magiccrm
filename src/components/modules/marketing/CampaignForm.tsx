@@ -119,7 +119,7 @@ export function CampaignForm({ open, onClose, campaign }: CampaignFormProps) {
             type="text"
             value={form.name}
             onChange={(e) => set("name", e.target.value)}
-            className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
+            className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
             placeholder="e.g. Spring Sale Announcement"
           />
         </FormField>
@@ -146,7 +146,7 @@ export function CampaignForm({ open, onClose, campaign }: CampaignFormProps) {
               type="text"
               value={form.subject}
               onChange={(e) => set("subject", e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
+              className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
               placeholder="Email subject line"
             />
           </FormField>
@@ -166,7 +166,7 @@ export function CampaignForm({ open, onClose, campaign }: CampaignFormProps) {
             type="text"
             value={form.audienceTags}
             onChange={(e) => set("audienceTags", e.target.value)}
-            className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
+            className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
             placeholder="e.g. vip, new-customer, local"
           />
           <p className="text-xs text-text-secondary mt-1">

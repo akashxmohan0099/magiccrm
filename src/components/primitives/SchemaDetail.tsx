@@ -54,7 +54,7 @@ function FieldValue({
           {vals.map((v) => {
             const opt = field.options?.find((o) => o.value === v);
             return (
-              <span key={v} className="px-2 py-0.5 rounded-full bg-surface text-[12px] text-text-secondary border border-border-light">
+              <span key={v} className="px-2 py-0.5 rounded-full bg-surface text-xs text-text-secondary border border-border-light">
                 {opt?.label || v}
               </span>
             );
@@ -72,7 +72,7 @@ function FieldValue({
 
     case "currency":
       return (
-        <span className="text-[14px] font-semibold text-foreground tabular-nums">
+        <span className="text-sm font-semibold text-foreground tabular-nums">
           ${(value as number).toLocaleString("en-AU", { minimumFractionDigits: 2 })}
         </span>
       );
@@ -129,7 +129,7 @@ function FieldValue({
           {items.map((item, i) => (
             <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface border border-border-light">
               {field.subFields?.map((sf) => (
-                <span key={sf.id} className="text-[12px] text-text-secondary">
+                <span key={sf.id} className="text-xs text-text-secondary">
                   {sf.type === "boolean" ? (item[sf.id] ? "✓" : "○") : String(item[sf.id] || "")}
                 </span>
               ))}

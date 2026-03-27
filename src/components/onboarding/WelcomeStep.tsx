@@ -76,7 +76,7 @@ export function WelcomeStep() {
           >
             Get started
           </button>
-          <p className="text-[12px] text-text-tertiary mt-5">
+          <p className="text-xs text-text-tertiary mt-5">
             Free to set up. No credit card needed.
           </p>
           <p className="text-[13px] text-text-tertiary mt-3">

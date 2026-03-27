@@ -122,7 +122,7 @@ export function JobForm({ open, onClose, job }: JobFormProps) {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g. Website Redesign"
-            className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
+            className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
           />
         </FormField>
 
@@ -171,7 +171,7 @@ export function JobForm({ open, onClose, job }: JobFormProps) {
         <FeatureSection moduleId="jobs-projects" featureId="job-priority">
           <div>
             <label className="block text-[13px] font-medium text-foreground mb-1.5">Priority</label>
-            <select value={priority} onChange={(e) => setPriority(e.target.value)} className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30">
+            <select value={priority} onChange={(e) => setPriority(e.target.value)} className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30">
               <option value="">Not set</option>
               <option value="low">Low</option>
               <option value="medium">Medium</option>

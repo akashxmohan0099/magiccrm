@@ -45,7 +45,7 @@ export function TeamMemberPicker({ value, onChange, label = "Assign to" }: TeamM
         <select
           value={value || ""}
           onChange={handleChange}
-          className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 appearance-none"
+          className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 appearance-none"
         >
           <option value="">Unassigned</option>
           {activeMembers.map((m) => (
@@ -71,7 +71,7 @@ export function TeamMemberPicker({ value, onChange, label = "Assign to" }: TeamM
             <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold">
               {initials}
             </div>
-            <span className="text-[12px] text-text-secondary">
+            <span className="text-xs text-text-secondary">
               {member.name}
               {member.title && <span className="text-text-tertiary"> &middot; {member.title}</span>}
             </span>

@@ -10,6 +10,7 @@ import { DataTable, Column } from "@/components/ui/DataTable";
 import { Button } from "@/components/ui/Button";
 import { MembershipPlanForm } from "./MembershipPlanForm";
 import { FeatureSection } from "@/components/modules/FeatureSection";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 export function MembershipsPage() {
   const { plans, memberships } = useMembershipsStore();
@@ -20,9 +21,7 @@ export function MembershipsPage() {
     { key: "price", label: "Price", sortable: true, render: (p) => `$${p.price.toFixed(2)}/${p.interval}` },
     { key: "sessionsIncluded", label: "Sessions", render: (p) => p.unlimitedSessions ? "Unlimited" : p.sessionsIncluded ? String(p.sessionsIncluded) : "—" },
     { key: "active", label: "Status", render: (p) => (
-      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${p.active ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-600"}`}>
-        {p.active ? "Active" : "Inactive"}
-      </span>
+      <StatusBadge status={p.active ? "active" : "inactive"} />
     )},
   ];
 

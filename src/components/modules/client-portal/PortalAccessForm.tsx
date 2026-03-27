@@ -22,7 +22,7 @@ export function PortalAccessForm({ open, onClose }: PortalAccessFormProps) {
     onClose();
   };
 
-  const inputClass = "w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30";
+  const inputClass = "w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30";
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-end">
@@ -42,7 +42,7 @@ export function PortalAccessForm({ open, onClose }: PortalAccessFormProps) {
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="client@example.com" required className={inputClass} />
           </div>
           <div className="bg-surface rounded-xl border border-border-light p-3">
-            <p className="text-[12px] text-text-secondary">The client will receive an email with a link to access their portal.</p>
+            <p className="text-xs text-text-secondary">The client will receive an email with a link to access their portal.</p>
           </div>
           <div className="pt-2"><Button type="submit" className="w-full">Grant Access</Button></div>
         </form>

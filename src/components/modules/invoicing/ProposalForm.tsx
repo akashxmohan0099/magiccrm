@@ -432,7 +432,7 @@ export function ProposalForm({ open, onClose, proposal }: ProposalFormProps) {
             >
               <div className="flex items-center gap-2 mb-3">
                 <LayoutTemplate className="w-4 h-4 text-text-secondary" />
-                <h3 className="text-[14px] font-semibold text-foreground">Start from a template</h3>
+                <h3 className="text-sm font-semibold text-foreground">Start from a template</h3>
               </div>
               <div className="grid grid-cols-1 gap-2">
                 {BUILT_IN_TEMPLATES.map((tpl) => (
@@ -512,7 +512,7 @@ export function ProposalForm({ open, onClose, proposal }: ProposalFormProps) {
                   <ArrowLeft className="w-4 h-4" />
                 </button>
                 <Palette className="w-4 h-4 text-text-secondary" />
-                <h3 className="text-[14px] font-semibold text-foreground">Choose a design</h3>
+                <h3 className="text-sm font-semibold text-foreground">Choose a design</h3>
                 {selectedTemplateData && (
                   <span className="ml-auto text-[11px] text-text-tertiary bg-surface px-2 py-0.5 rounded-full">
                     {selectedTemplateData.name}
@@ -566,7 +566,7 @@ export function ProposalForm({ open, onClose, proposal }: ProposalFormProps) {
                       </div>
                       {/* Style info */}
                       <div className="px-3 py-2.5 bg-card-bg">
-                        <p className="text-[12px] font-semibold text-foreground">{style.name}</p>
+                        <p className="text-xs font-semibold text-foreground">{style.name}</p>
                         <p className="text-[10px] text-text-tertiary">{style.description}</p>
                       </div>
                     </button>
@@ -626,7 +626,7 @@ export function ProposalForm({ open, onClose, proposal }: ProposalFormProps) {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g. Website Redesign Proposal"
-                className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
+                className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
               />
             </FormField>
 

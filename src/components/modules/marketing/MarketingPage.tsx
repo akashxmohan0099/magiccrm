@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { FeatureSection } from "@/components/modules/FeatureSection";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { CampaignList } from "./CampaignList";
 import { CampaignForm } from "./CampaignForm";
 import { CouponManager } from "./CouponManager";
@@ -126,11 +127,7 @@ export function MarketingPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${
-                          seq.status === "active" ? "bg-emerald-50 text-emerald-700" : seq.status === "paused" ? "bg-amber-50 text-amber-700" : "bg-gray-100 text-gray-600"
-                        }`}>
-                          {seq.status}
-                        </span>
+                        <StatusBadge status={seq.status} />
                         {seq.status !== "draft" && (
                           <button
                             onClick={() => toggleSequenceStatus(seq.id)}
@@ -172,7 +169,7 @@ export function MarketingPage() {
                     value={seqName}
                     onChange={(e) => setSeqName(e.target.value)}
                     placeholder="e.g. Welcome series"
-                    className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
+                    className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
                     autoFocus
                     onKeyDown={(e) => e.key === "Enter" && addSequence()}
                   />
@@ -197,7 +194,7 @@ export function MarketingPage() {
               <h3 className="text-[13px] font-semibold text-text-tertiary uppercase tracking-wider mb-3">Referral Program</h3>
               <p className="text-[13px] text-text-tertiary mb-3">Clients share a unique link. When someone books, both get a reward.</p>
               <div className="bg-surface rounded-lg px-3 py-2 flex items-center justify-between">
-                <span className="text-[12px] font-mono text-text-secondary">yourbusiness.magic/refer/...</span>
+                <span className="text-xs font-mono text-text-secondary">yourbusiness.magic/refer/...</span>
                 <button onClick={() => { navigator.clipboard.writeText(window.location.origin + "/refer/" + "preview").catch(() => {}); }} className="text-[11px] text-primary font-medium cursor-pointer hover:underline">Copy</button>
               </div>
             </div>
