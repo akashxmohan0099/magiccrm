@@ -7,6 +7,13 @@ import { useOnboardingStore } from "@/store/onboarding";
 import { useAssembledSchemasStore } from "@/store/assembled-schemas";
 import { computeEnabledModuleIds, getModuleById, getModuleDisplayName } from "@/lib/module-registry";
 import { assembleWorkspace, assembleWorkspaceSync } from "@/lib/assembly-pipeline";
+import { generateSampleData } from "@/lib/sample-data-generator";
+import { useClientsStore } from "@/store/clients";
+import { useLeadsStore } from "@/store/leads";
+import { useBookingsStore } from "@/store/bookings";
+import { useInvoicesStore } from "@/store/invoices";
+import { useJobsStore } from "@/store/jobs";
+import { useProductsStore } from "@/store/products";
 import { useVocabulary } from "@/hooks/useVocabulary";
 import {
   Users, Inbox, MessageCircle, Calendar, Receipt, FolderKanban,
@@ -140,6 +147,23 @@ export function BuildingScreen() {
 
     // Save assembled schemas to store
     setAssemblyResult(result.schemas, result.fallbacks, 0);
+
+    // Seed sample data so the dashboard feels alive from the first moment
+    const sampleData = generateSampleData({
+      industryId: selectedIndustry,
+      personaId: selectedPersona,
+      businessName: businessContext.businessName,
+      enabledModuleIds: selectedModules,
+    });
+    // Seed sample data into legacy stores (type boundary — sample records match store shapes)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const any = (x: unknown) => x as any;
+    for (const c of sampleData.clients) useClientsStore.getState().addClient(any(c));
+    for (const p of sampleData.products) useProductsStore.getState().addProduct(any(p));
+    for (const l of sampleData.leads) useLeadsStore.getState().addLead(any(l));
+    for (const b of sampleData.bookings) useBookingsStore.getState().addBooking(any(b));
+    for (const inv of sampleData.invoices) useInvoicesStore.getState().addInvoice(any(inv));
+    for (const j of sampleData.jobs) useJobsStore.getState().addJob(any(j));
 
     // Stage 2: tune labels asynchronously and replace the assembled result
     // when the personalized schemas are ready.

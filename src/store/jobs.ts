@@ -30,8 +30,8 @@ interface JobsStore {
   deleteTask: (jobId: string, taskId: string, workspaceId?: string) => void;
   addTimeEntry: (jobId: string, entry: Omit<TimeEntry, "id">, workspaceId?: string) => void;
   deleteTimeEntry: (jobId: string, entryId: string, workspaceId?: string) => void;
-  addFile: (jobId: string, file: Omit<FileAttachment, "id" | "uploadedAt">) => void;
-  deleteFile: (jobId: string, fileId: string) => void;
+  addFile: (jobId: string, file: Omit<FileAttachment, "id" | "uploadedAt">, workspaceId?: string) => void;
+  deleteFile: (jobId: string, fileId: string, workspaceId?: string) => void;
   rateJob: (id: string, rating: number, feedback?: string, workspaceId?: string) => void;
 
   // Supabase sync
@@ -240,25 +240,47 @@ export const useJobsStore = create<JobsStore>()(
         }
       },
 
-      addFile: (jobId, file) => {
+      addFile: (jobId, file, workspaceId?) => {
         const attachment: FileAttachment = { ...file, id: generateId(), uploadedAt: new Date().toISOString() };
+        const now = new Date().toISOString();
         set((s) => ({
           jobs: s.jobs.map((j) =>
             j.id === jobId
-              ? { ...j, files: [...j.files, attachment], updatedAt: new Date().toISOString() }
+              ? { ...j, files: [...j.files, attachment], updatedAt: now }
               : j
           ),
         }));
+        if (workspaceId) {
+          const job = get().jobs.find((j) => j.id === jobId);
+          if (job) {
+            dbUpdateJob(workspaceId, jobId, { files: job.files, updatedAt: now } as Partial<Job>).catch((err) => {
+              import("@/lib/sync-error-handler").then((m) =>
+                m.handleSyncError(err, { context: "saving file attachment" })
+              );
+            });
+          }
+        }
       },
 
-      deleteFile: (jobId, fileId) => {
+      deleteFile: (jobId, fileId, workspaceId?) => {
+        const now = new Date().toISOString();
         set((s) => ({
           jobs: s.jobs.map((j) =>
             j.id === jobId
-              ? { ...j, files: j.files.filter((f) => f.id !== fileId), updatedAt: new Date().toISOString() }
+              ? { ...j, files: j.files.filter((f) => f.id !== fileId), updatedAt: now }
               : j
           ),
         }));
+        if (workspaceId) {
+          const job = get().jobs.find((j) => j.id === jobId);
+          if (job) {
+            dbUpdateJob(workspaceId, jobId, { files: job.files, updatedAt: now } as Partial<Job>).catch((err) => {
+              import("@/lib/sync-error-handler").then((m) =>
+                m.handleSyncError(err, { context: "removing file attachment" })
+              );
+            });
+          }
+        }
       },
 
       rateJob: (id, rating, feedback, workspaceId?) => {

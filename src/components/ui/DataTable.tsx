@@ -229,6 +229,7 @@ function TableVisibilityPicker<T>({
         onClick={() => setOpen(!open)}
         className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-text-secondary hover:text-foreground hover:bg-surface transition-colors cursor-pointer"
         title="Show / hide columns"
+        aria-label="Show or hide columns"
       >
         <SlidersHorizontal className="w-4 h-4" />
       </button>
@@ -546,6 +547,7 @@ export function DataTable<T>({ columns, data, onRowClick, keyExtractor, storageK
                 <th
                   key={col.key}
                   scope="col"
+                  aria-sort={sortKey === col.key ? (sortDir === "asc" ? "ascending" : "descending") : undefined}
                   className={`text-left text-[12px] font-semibold text-text-secondary uppercase tracking-wider px-4 py-3 group/header ${
                     col.sortable ? "cursor-pointer select-none hover:text-foreground hover:bg-surface transition-colors" : ""
                   }`}
