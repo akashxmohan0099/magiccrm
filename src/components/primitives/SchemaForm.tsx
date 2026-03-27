@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useId } from "react";
 import { FormField } from "@/components/ui/FormField";
 import { SelectField } from "@/components/ui/SelectField";
 import { DateField } from "@/components/ui/DateField";
@@ -93,6 +93,7 @@ function SubRecordEditor({
           <button
             type="button"
             onClick={() => removeItem(i)}
+            aria-label={`Remove ${field.label.replace(/s$/, "").toLowerCase()} ${i + 1}`}
             className="p-1.5 text-text-tertiary hover:text-red-500 transition-colors mt-4 cursor-pointer"
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -102,6 +103,7 @@ function SubRecordEditor({
       <button
         type="button"
         onClick={addItem}
+        aria-label={`Add ${field.label.replace(/s$/, "").toLowerCase()}`}
         className="flex items-center gap-1.5 text-[12px] text-text-tertiary hover:text-foreground transition-colors cursor-pointer"
       >
         <Plus className="w-3.5 h-3.5" /> Add {field.label.replace(/s$/, "").toLowerCase()}
@@ -165,6 +167,7 @@ function LineItemEditor({
           <button
             type="button"
             onClick={() => removeItem(i)}
+            aria-label={`Remove line item ${i + 1}`}
             className="p-1 text-text-tertiary hover:text-red-500 transition-colors cursor-pointer"
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -175,6 +178,7 @@ function LineItemEditor({
       <button
         type="button"
         onClick={addItem}
+        aria-label="Add line item"
         className="flex items-center gap-1.5 text-[12px] text-text-tertiary hover:text-foreground transition-colors px-3 py-2 cursor-pointer"
       >
         <Plus className="w-3.5 h-3.5" /> Add line item
@@ -191,12 +195,20 @@ function FieldInput({
   onChange,
   compact,
   relationOptions,
+  id,
+  ariaRequired,
+  ariaInvalid,
+  ariaDescribedBy,
 }: {
   field: FieldDefinition;
   value: unknown;
   onChange: (val: unknown) => void;
   compact?: boolean;
   relationOptions?: { value: string; label: string }[];
+  id?: string;
+  ariaRequired?: boolean;
+  ariaInvalid?: boolean;
+  ariaDescribedBy?: string;
 }) {
   const baseClass = compact
     ? "w-full px-2 py-1 text-[12px] rounded-lg border border-border-light bg-white focus:outline-none focus:ring-1 focus:ring-primary/30"
@@ -209,6 +221,7 @@ function FieldInput({
     case "url":
       return (
         <input
+          id={id}
           type={field.type === "email" ? "email" : field.type === "phone" ? "tel" : field.type === "url" ? "url" : "text"}
           value={(value as string) || ""}
           onChange={(e) => onChange(e.target.value)}
@@ -218,16 +231,23 @@ function FieldInput({
           min={field.min}
           max={field.max}
           pattern={field.pattern}
+          aria-required={ariaRequired || undefined}
+          aria-invalid={ariaInvalid || undefined}
+          aria-describedby={ariaDescribedBy || undefined}
         />
       );
 
     case "textarea":
       return (
         <TextArea
+          id={id}
           value={(value as string) || ""}
           onChange={(e) => onChange(e.target.value)}
           placeholder={field.placeholder}
           rows={compact ? 2 : 4}
+          aria-required={ariaRequired || undefined}
+          aria-invalid={ariaInvalid || undefined}
+          aria-describedby={ariaDescribedBy || undefined}
         />
       );
 
@@ -236,6 +256,7 @@ function FieldInput({
     case "percentage":
       return (
         <input
+          id={id}
           type="number"
           value={value != null ? String(value) : ""}
           onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
@@ -244,6 +265,9 @@ function FieldInput({
           min={field.min}
           max={field.max}
           step={field.type === "currency" ? "0.01" : field.type === "percentage" ? "1" : undefined}
+          aria-required={ariaRequired || undefined}
+          aria-invalid={ariaInvalid || undefined}
+          aria-describedby={ariaDescribedBy || undefined}
         />
       );
 
@@ -251,19 +275,27 @@ function FieldInput({
     case "datetime":
       return (
         <DateField
+          id={id}
           value={(value as string) || ""}
           onChange={(e) => onChange(e.target.value)}
           allowPast
+          aria-required={ariaRequired || undefined}
+          aria-invalid={ariaInvalid || undefined}
+          aria-describedby={ariaDescribedBy || undefined}
         />
       );
 
     case "time":
       return (
         <input
+          id={id}
           type="time"
           value={(value as string) || ""}
           onChange={(e) => onChange(e.target.value)}
           className={baseClass}
+          aria-required={ariaRequired || undefined}
+          aria-invalid={ariaInvalid || undefined}
+          aria-describedby={ariaDescribedBy || undefined}
         />
       );
 
@@ -271,10 +303,14 @@ function FieldInput({
       return (
         <label className="flex items-center gap-2 cursor-pointer">
           <input
+            id={id}
             type="checkbox"
             checked={!!value}
             onChange={(e) => onChange(e.target.checked)}
             className="w-4 h-4 rounded border-border-light text-primary focus:ring-primary/20"
+            aria-required={ariaRequired || undefined}
+            aria-invalid={ariaInvalid || undefined}
+            aria-describedby={ariaDescribedBy || undefined}
           />
           {!compact && <span className="text-[13px] text-text-secondary">{field.label}</span>}
         </label>
@@ -285,22 +321,27 @@ function FieldInput({
     case "stage":
       return (
         <SelectField
+          id={id}
           value={(value as string) || ""}
           onChange={(e) => onChange(e.target.value)}
           options={field.options?.map((o) => ({ value: o.value, label: o.label })) || []}
+          aria-required={ariaRequired || undefined}
+          aria-invalid={ariaInvalid || undefined}
+          aria-describedby={ariaDescribedBy || undefined}
         />
       );
 
     case "multiselect": {
       const selected = (value as string[]) || [];
       return (
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-1.5" role="group" aria-label={field.label} id={id}>
           {field.options?.map((opt) => {
             const isSelected = selected.includes(opt.value);
             return (
               <button
                 key={opt.value}
                 type="button"
+                aria-pressed={isSelected}
                 onClick={() => {
                   onChange(
                     isSelected
@@ -325,6 +366,7 @@ function FieldInput({
     case "relation":
       return (
         <SelectField
+          id={id}
           value={(value as string) || ""}
           onChange={(e) => onChange(e.target.value)}
           options={[
@@ -332,17 +374,21 @@ function FieldInput({
             ...(relationOptions || []),
             ...(field.allowInlineCreate ? [{ value: "__new__", label: `+ New ${field.label}` }] : []),
           ]}
+          aria-required={ariaRequired || undefined}
+          aria-invalid={ariaInvalid || undefined}
+          aria-describedby={ariaDescribedBy || undefined}
         />
       );
 
     case "rating": {
       const rating = (value as number) || 0;
       return (
-        <div className="flex gap-0.5">
+        <div className="flex gap-0.5" role="group" aria-label={`${field.label} rating`} id={id}>
           {[1, 2, 3, 4, 5].map((star) => (
             <button
               key={star}
               type="button"
+              aria-label={`Rate ${star} out of 5`}
               onClick={() => onChange(star === rating ? 0 : star)}
               className="cursor-pointer"
             >
@@ -378,11 +424,15 @@ function FieldInput({
     default:
       return (
         <input
+          id={id}
           type="text"
           value={(value as string) || ""}
           onChange={(e) => onChange(e.target.value)}
           placeholder={field.placeholder}
           className={baseClass}
+          aria-required={ariaRequired || undefined}
+          aria-invalid={ariaInvalid || undefined}
+          aria-describedby={ariaDescribedBy || undefined}
         />
       );
   }
@@ -506,10 +556,12 @@ export function SchemaForm({
     }
   };
 
+  const formBaseId = useId();
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {groupedFields.map((group) => (
-        <div key={group.name}>
+        <div key={group.name} role={group.name ? "group" : undefined} aria-label={group.name || undefined}>
           {group.name && (
             <h4 className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider mb-3">
               {group.name}
@@ -528,10 +580,14 @@ export function SchemaForm({
               // Skip timestamp fields in forms
               if (field.id === "createdAt" || field.id === "updatedAt") return null;
 
+              const fieldId = `${formBaseId}-${field.id}`;
+              const errorMsgId = `${fieldId}-msg`;
+              const hasError = !!errors[field.id];
+
               // Nested types get special rendering
               if (field.type === "subRecords") {
                 return (
-                  <FormField key={field.id} label={field.label} error={errors[field.id]}>
+                  <FormField key={field.id} label={field.label} error={errors[field.id]} htmlFor={fieldId}>
                     <SubRecordEditor
                       field={field}
                       value={(formData[field.id] as RecordData[]) || []}
@@ -543,7 +599,7 @@ export function SchemaForm({
 
               if (field.type === "lineItems") {
                 return (
-                  <FormField key={field.id} label={field.label} error={errors[field.id]}>
+                  <FormField key={field.id} label={field.label} error={errors[field.id]} htmlFor={fieldId}>
                     <LineItemEditor
                       field={field}
                       value={(formData[field.id] as RecordData[]) || []}
@@ -561,9 +617,13 @@ export function SchemaForm({
                       field={field}
                       value={formData[field.id]}
                       onChange={(val) => handleFieldChange(field, val)}
+                      id={fieldId}
+                      ariaRequired={field.required}
+                      ariaInvalid={hasError}
+                      ariaDescribedBy={hasError ? errorMsgId : undefined}
                     />
                     {errors[field.id] && (
-                      <p className="text-[11px] text-red-500 mt-1">{errors[field.id]}</p>
+                      <p id={errorMsgId} className="text-[11px] text-red-500 mt-1">{errors[field.id]}</p>
                     )}
                   </div>
                 );
@@ -581,12 +641,17 @@ export function SchemaForm({
                   required={field.required}
                   error={errors[field.id]}
                   hint={field.type === "computed" ? "Calculated automatically" : undefined}
+                  htmlFor={fieldId}
                 >
                   <FieldInput
                     field={field}
                     value={formData[field.id]}
                     onChange={(val) => handleFieldChange(field, val)}
                     relationOptions={relationOptions}
+                    id={fieldId}
+                    ariaRequired={field.required}
+                    ariaInvalid={hasError}
+                    ariaDescribedBy={hasError ? errorMsgId : undefined}
                   />
                 </FormField>
               );

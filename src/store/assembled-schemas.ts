@@ -83,6 +83,8 @@ export const useAssembledSchemasStore = create<AssembledSchemasState>()(
     {
       name: "magic-crm-assembled-schemas",
       version: 1,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      migrate: (persisted: any) => persisted,
     },
   ),
 );

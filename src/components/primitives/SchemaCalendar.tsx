@@ -136,10 +136,10 @@ export function SchemaCalendar({
       {/* Toolbar */}
       <div className="flex items-center justify-between px-1 py-3 flex-shrink-0">
         <div className="flex items-center gap-2">
-          <button onClick={prev} className="p-1.5 hover:bg-surface rounded-lg transition-colors cursor-pointer">
+          <button onClick={prev} aria-label={mode === "day" ? "Previous day" : mode === "week" ? "Previous week" : "Previous month"} className="p-1.5 hover:bg-surface rounded-lg transition-colors cursor-pointer">
             <ChevronLeft className="w-4 h-4 text-text-secondary" />
           </button>
-          <button onClick={next} className="p-1.5 hover:bg-surface rounded-lg transition-colors cursor-pointer">
+          <button onClick={next} aria-label={mode === "day" ? "Next day" : mode === "week" ? "Next week" : "Next month"} className="p-1.5 hover:bg-surface rounded-lg transition-colors cursor-pointer">
             <ChevronRight className="w-4 h-4 text-text-secondary" />
           </button>
           <h3 className="text-[15px] font-semibold text-foreground ml-1">{headerLabel}</h3>
@@ -155,6 +155,8 @@ export function SchemaCalendar({
             <button
               key={m}
               onClick={() => setMode(m)}
+              aria-label={`${m.charAt(0).toUpperCase() + m.slice(1)} view`}
+              aria-pressed={mode === m}
               className={`px-3 py-1.5 text-[12px] font-medium rounded-lg transition-colors cursor-pointer ${
                 mode === m ? "bg-foreground text-white" : "text-text-secondary hover:bg-surface"
               }`}
@@ -220,11 +222,11 @@ function MonthView({
   for (let i = 1; i <= daysInMonth; i++) cells.push(i);
 
   return (
-    <div className="border border-border-light rounded-xl overflow-hidden">
+    <div className="border border-border-light rounded-xl overflow-hidden" role="grid" aria-label="Month calendar">
       {/* Day headers */}
-      <div className="grid grid-cols-7 border-b border-border-light">
+      <div className="grid grid-cols-7 border-b border-border-light" role="row">
         {DAY_LABELS.map((d) => (
-          <div key={d} className="py-2 text-center text-[11px] font-semibold text-text-tertiary uppercase">
+          <div key={d} role="columnheader" className="py-2 text-center text-[11px] font-semibold text-text-tertiary uppercase">
             {d}
           </div>
         ))}
@@ -233,7 +235,7 @@ function MonthView({
       {/* Day cells */}
       <div className="grid grid-cols-7">
         {cells.map((day, i) => {
-          if (day === null) return <div key={`empty-${i}`} className="min-h-[80px] bg-surface/30 border-b border-r border-border-light/50" />;
+          if (day === null) return <div key={`empty-${i}`} role="gridcell" className="min-h-[80px] bg-surface/30 border-b border-r border-border-light/50" />;
 
           const dateKey = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
           const dayRecords = recordsByDate[dateKey] || [];
@@ -242,8 +244,18 @@ function MonthView({
           return (
             <div
               key={dateKey}
+              role="gridcell"
+              tabIndex={0}
+              aria-label={`${new Date(year, month, day).toLocaleDateString("default", { weekday: "long", month: "long", day: "numeric" })}${dayRecords.length > 0 ? `, ${dayRecords.length} events` : ""}`}
+              aria-current={isToday ? "date" : undefined}
               onClick={() => onDateSelect?.(dateKey)}
-              className={`min-h-[80px] p-1.5 border-b border-r border-border-light/50 cursor-pointer hover:bg-surface/50 transition-colors ${
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onDateSelect?.(dateKey);
+                }
+              }}
+              className={`min-h-[80px] p-1.5 border-b border-r border-border-light/50 cursor-pointer hover:bg-surface/50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-inset ${
                 isToday ? "bg-primary/[0.03]" : ""
               }`}
             >
@@ -255,13 +267,24 @@ function MonthView({
               <div className="mt-0.5 space-y-0.5">
                 {dayRecords.slice(0, 3).map((record) => {
                   const status = statusField ? (record[statusField] as string) : undefined;
+                  const title = String(record[titleFieldId] || "");
                   return (
                     <div
                       key={record.id}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={title}
                       onClick={(e) => { e.stopPropagation(); onRecordClick?.(record); }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onRecordClick?.(record);
+                        }
+                      }}
                       className={`text-[10px] px-1.5 py-0.5 rounded truncate border ${getStatusColor(status || "", statusFlow)}`}
                     >
-                      {String(record[titleFieldId] || "")}
+                      {title}
                     </div>
                   );
                 })}
@@ -335,17 +358,27 @@ function TimeGridView({
 
                 {/* Events */}
                 {dayRecords.map((record) => {
+                  const title = String(record[titleFieldId] || "");
                   if (!hasTimeFields) {
                     // No time fields — render as all-day events at top
                     return (
                       <div
                         key={record.id}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={title}
                         onClick={() => onRecordClick?.(record)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            onRecordClick?.(record);
+                          }
+                        }}
                         className={`absolute left-1 right-1 top-1 px-2 py-1 rounded-lg border text-[11px] font-medium truncate cursor-pointer ${
                           getStatusColor(statusField ? (record[statusField] as string) : "", statusFlow)
                         }`}
                       >
-                        {String(record[titleFieldId] || "")}
+                        {title}
                       </div>
                     );
                   }
@@ -363,13 +396,22 @@ function TimeGridView({
                   return (
                     <div
                       key={record.id}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`${title}, ${startTime} to ${endTime}`}
                       onClick={() => onRecordClick?.(record)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          onRecordClick?.(record);
+                        }
+                      }}
                       className={`absolute left-1 right-1 px-2 py-1 rounded-lg border overflow-hidden cursor-pointer transition-shadow hover:shadow-md ${
                         getStatusColor(status, statusFlow)
                       }`}
                       style={{ top, height }}
                     >
-                      <p className="text-[11px] font-semibold truncate">{String(record[titleFieldId] || "")}</p>
+                      <p className="text-[11px] font-semibold truncate">{title}</p>
                       <p className="text-[10px] opacity-70">
                         {startTime} — {endTime}
                       </p>

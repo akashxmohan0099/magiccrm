@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, DragEvent, useState } from "react";
+import { ReactNode, DragEvent, KeyboardEvent, useState } from "react";
 import { motion } from "framer-motion";
 
 export interface KanbanColumn<T> {
@@ -51,11 +51,20 @@ export function KanbanBoard<T>({
     if (itemId) onMove(itemId, columnId);
   };
 
+  const handleCardKeyDown = (e: KeyboardEvent, itemId: string) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      // Simulate a click on the card's first interactive element or the card itself
+      (e.currentTarget as HTMLElement).click();
+    }
+  };
+
   return (
-    <div className="flex gap-4 overflow-x-auto pb-4 -mx-2 px-2">
+    <div className="flex gap-4 overflow-x-auto pb-4 -mx-2 px-2" role="list">
       {columns.map((col, colIdx) => (
         <motion.div
           key={col.id}
+          role="listitem"
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: colIdx * 0.05 }}
@@ -67,15 +76,16 @@ export function KanbanBoard<T>({
           onDragOver={(e) => { e.preventDefault(); setDragOverCol(col.id); }}
           onDragLeave={() => setDragOverCol(null)}
           onDrop={(e) => handleDrop(e, col.id)}
+          aria-dropeffect={dragOverCol === col.id ? "move" : "none"}
         >
           <div className="mb-3">
             {renderColumnHeader ? (
               renderColumnHeader(col)
             ) : (
-              <div className="flex items-center gap-2 px-1">
-                <div className={`w-2.5 h-2.5 rounded-full ${col.color}`} />
+              <div className="flex items-center gap-2 px-1" aria-label={`${col.label}: ${col.items.length} items`}>
+                <div className={`w-2.5 h-2.5 rounded-full ${col.color}`} aria-hidden="true" />
                 <span className="text-sm font-semibold text-foreground tracking-tight">{col.label}</span>
-                <span className="ml-auto inline-flex items-center justify-center w-5 h-5 rounded-full bg-background text-[11px] font-semibold text-text-secondary">
+                <span className="ml-auto inline-flex items-center justify-center w-5 h-5 rounded-full bg-background text-[11px] font-semibold text-text-secondary" aria-hidden="true">
                   {col.items.length}
                 </span>
               </div>
@@ -85,23 +95,32 @@ export function KanbanBoard<T>({
             {col.items.length === 0 && renderEmpty ? (
               renderEmpty()
             ) : (
-              col.items.map((item, idx) => (
-                <motion.div
-                  key={keyExtractor(item)}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{
-                    opacity: draggingId === keyExtractor(item) ? 0.5 : 1,
-                    scale: draggingId === keyExtractor(item) ? 0.95 : 1,
-                  }}
-                  transition={{ delay: idx * 0.03, duration: 0.2 }}
-                  draggable
-                  onDragStart={(e) => handleDragStart(e as unknown as DragEvent, keyExtractor(item))}
-                  onDragEnd={handleDragEnd}
-                  className="cursor-grab active:cursor-grabbing"
-                >
-                  {renderCard(item)}
-                </motion.div>
-              ))
+              col.items.map((item, idx) => {
+                const itemId = keyExtractor(item);
+                const isDragging = draggingId === itemId;
+                return (
+                  <motion.div
+                    key={itemId}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{
+                      opacity: isDragging ? 0.5 : 1,
+                      scale: isDragging ? 0.95 : 1,
+                    }}
+                    transition={{ delay: idx * 0.03, duration: 0.2 }}
+                    draggable
+                    role="button"
+                    tabIndex={0}
+                    aria-label={itemId}
+                    aria-grabbed={isDragging}
+                    onDragStart={(e) => handleDragStart(e as unknown as DragEvent, itemId)}
+                    onDragEnd={handleDragEnd}
+                    onKeyDown={(e) => handleCardKeyDown(e as unknown as KeyboardEvent, itemId)}
+                    className="cursor-grab active:cursor-grabbing focus:outline-none focus:ring-2 focus:ring-primary/40 rounded-xl"
+                  >
+                    {renderCard(item)}
+                  </motion.div>
+                );
+              })
             )}
           </div>
         </motion.div>

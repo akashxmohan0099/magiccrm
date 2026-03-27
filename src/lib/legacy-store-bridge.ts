@@ -93,26 +93,30 @@ export function getLegacyStoreAccessor(moduleId: string): LegacyStoreAccessor | 
   }
 }
 
-/** Hook version — subscribes to the legacy store's record array reactively */
+/** Stable empty array to avoid re-renders on non-matching selectors */
+const EMPTY: RecordData[] = [];
+
+/**
+ * Hook version — subscribes ONLY to the legacy store matching the moduleId.
+ * Non-matching stores return a stable empty reference (no re-render).
+ */
 export function useLegacyRecords(moduleId: string): RecordData[] {
-  // Each case uses the Zustand hook directly for reactive subscriptions.
-  // This ensures the component re-renders when legacy data changes.
-  const clients = useClientsStore((s) => s.clients);
-  const leads = useLeadsStore((s) => s.leads);
-  const jobs = useJobsStore((s) => s.jobs);
-  const bookings = useBookingsStore((s) => s.bookings);
-  const invoices = useInvoicesStore((s) => s.invoices);
-  const products = useProductsStore((s) => s.products);
-  const conversations = useCommunicationStore((s) => s.conversations);
+  const clients = useClientsStore((s) => moduleId === "client-database" ? s.clients : EMPTY) as unknown as RecordData[];
+  const leads = useLeadsStore((s) => moduleId === "leads-pipeline" ? s.leads : EMPTY) as unknown as RecordData[];
+  const jobs = useJobsStore((s) => moduleId === "jobs-projects" ? s.jobs : EMPTY) as unknown as RecordData[];
+  const bookings = useBookingsStore((s) => moduleId === "bookings-calendar" ? s.bookings : EMPTY) as unknown as RecordData[];
+  const invoices = useInvoicesStore((s) => moduleId === "quotes-invoicing" ? s.invoices : EMPTY) as unknown as RecordData[];
+  const products = useProductsStore((s) => moduleId === "products" ? s.products : EMPTY) as unknown as RecordData[];
+  const conversations = useCommunicationStore((s) => moduleId === "communication" ? s.conversations : EMPTY) as unknown as RecordData[];
 
   switch (moduleId) {
-    case "client-database": return clients as unknown as RecordData[];
-    case "leads-pipeline": return leads as unknown as RecordData[];
-    case "jobs-projects": return jobs as unknown as RecordData[];
-    case "bookings-calendar": return bookings as unknown as RecordData[];
-    case "quotes-invoicing": return invoices as unknown as RecordData[];
-    case "products": return products as unknown as RecordData[];
-    case "communication": return conversations as unknown as RecordData[];
-    default: return [];
+    case "client-database": return clients;
+    case "leads-pipeline": return leads;
+    case "jobs-projects": return jobs;
+    case "bookings-calendar": return bookings;
+    case "quotes-invoicing": return invoices;
+    case "products": return products;
+    case "communication": return conversations;
+    default: return EMPTY;
   }
 }

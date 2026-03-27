@@ -178,6 +178,8 @@ export function createModuleStore(
       {
         name: `magic-crm-schema-${moduleId}`,
         version: 1,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        migrate: (persisted: any) => persisted,
       },
     ),
   );
