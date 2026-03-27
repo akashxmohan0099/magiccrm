@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase-server";
+import { rateLimit } from "@/lib/rate-limit";
 
 /**
  * Public booking info endpoint. No auth required.
@@ -11,6 +12,12 @@ import { createAdminClient } from "@/lib/supabase-server";
  *   Returns: existing bookings for conflict checking on the selected date range.
  */
 export async function GET(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const { allowed } = rateLimit(`book-info:${ip}`, 30, 60_000);
+  if (!allowed) {
+    return NextResponse.json({ error: "Too many requests." }, { status: 429 });
+  }
+
   try {
     const { searchParams } = new URL(req.url);
     const slug = searchParams.get("slug");

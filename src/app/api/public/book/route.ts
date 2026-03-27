@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase-server";
+import { rateLimit } from "@/lib/rate-limit";
 
 /**
  * Public booking endpoint. No auth required.
@@ -12,6 +13,12 @@ import { createAdminClient } from "@/lib/supabase-server";
  * and sends an SMS confirmation if the client has a phone number.
  */
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const { allowed } = rateLimit(`public-book:${ip}`, 10, 60_000);
+  if (!allowed) {
+    return NextResponse.json({ error: "Too many requests." }, { status: 429 });
+  }
+
   try {
     const body = await req.json();
     const { workspaceId, serviceId, date, time, clientName, clientEmail, clientPhone, notes } = body;

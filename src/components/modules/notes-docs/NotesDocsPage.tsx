@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { toast } from "@/components/ui/Toast";
 import { generateId } from "@/lib/id";
+import { sanitizeHtml } from "@/lib/sanitize-html";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
@@ -84,20 +85,6 @@ const TEXT_COLORS = [
 ];
 
 const FONT_SIZES = ["12px", "14px", "16px", "18px", "20px", "24px"];
-
-// Simple HTML sanitizer — allows only safe tags
-function sanitizeHtml(html: string): string {
-  const div = document.createElement("div");
-  div.innerHTML = html;
-  // Remove script tags and event handlers
-  div.querySelectorAll("script, style, iframe, object, embed").forEach((el) => el.remove());
-  div.querySelectorAll("*").forEach((el) => {
-    for (const attr of Array.from(el.attributes)) {
-      if (attr.name.startsWith("on")) el.removeAttribute(attr.name);
-    }
-  });
-  return div.innerHTML;
-}
 
 export function NotesDocsPage() {
   const { notes, updateNotes } = useNotesStore();

@@ -189,14 +189,6 @@ export function createModuleStore(
 
 const storeRegistry = new Map<string, ReturnType<typeof createModuleStore>>();
 
-/** Register a module store so it can be looked up by the action executor */
-export function registerModuleStore(
-  moduleId: string,
-  store: ReturnType<typeof createModuleStore>,
-) {
-  storeRegistry.set(moduleId, store);
-}
-
 /** Get a registered module store by ID */
 export function getModuleStore(
   moduleId: string,

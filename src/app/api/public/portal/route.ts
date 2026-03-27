@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase-server";
+import { rateLimit } from "@/lib/rate-limit";
 
 /**
  * Public portal API — serves client-facing portal data.
@@ -8,6 +9,12 @@ import { createAdminClient } from "@/lib/supabase-server";
  * GET /api/public/portal?token=xxx — returns portal config + client data
  */
 export async function GET(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const { allowed } = rateLimit(`portal:${ip}`, 20, 60_000);
+  if (!allowed) {
+    return NextResponse.json({ error: "Too many requests." }, { status: 429 });
+  }
+
   try {
     const token = req.nextUrl.searchParams.get("token");
     if (!token) {

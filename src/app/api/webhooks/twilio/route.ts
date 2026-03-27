@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (!client) {
-      console.log(`[Twilio] Inbound SMS from unknown number: ${from}`);
+      console.warn(`[Twilio] Inbound SMS from unknown number: ${from}`);
       // Still return 200 so Twilio doesn't retry
       return new NextResponse(
         '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
@@ -138,7 +138,7 @@ export async function POST(req: NextRequest) {
       description: `SMS received from ${client.name || from}`,
     });
 
-    console.log(`[Twilio] Inbound SMS from ${client.name} (${from}) stored in conversation ${conversationId}`);
+    console.log(`[Twilio] Inbound SMS from ${from} stored in conversation ${conversationId}`);
 
     // Return empty TwiML (no auto-reply)
     return new NextResponse(

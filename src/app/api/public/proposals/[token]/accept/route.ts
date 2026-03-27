@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { acceptPublicProposalByToken } from "@/lib/server/public-proposals";
 import type { ProposalSignature } from "@/types/models";
+import { rateLimit } from "@/lib/rate-limit";
 
 function isValidSignature(value: unknown): value is ProposalSignature {
   return (
@@ -16,6 +17,12 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ token: string }> }
 ) {
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const { allowed } = rateLimit(`proposal-accept:${ip}`, 5, 60_000);
+  if (!allowed) {
+    return NextResponse.json({ error: "Too many requests." }, { status: 429 });
+  }
+
   try {
     const body = (await request.json()) as { signature?: unknown };
     if (!isValidSignature(body.signature)) {

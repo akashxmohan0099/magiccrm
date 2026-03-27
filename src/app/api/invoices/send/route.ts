@@ -150,12 +150,12 @@ export async function POST(req: NextRequest) {
           html: emailHtml,
         });
 
-        console.log(`[Invoice Send] Email sent to ${clientEmail} for invoice ${invoice.number}`);
+        console.log(`[Invoice Send] Email sent for invoice ${invoice.number}`);
       } catch (emailErr) {
         console.error("[Invoice Send] Resend failed:", emailErr);
         return NextResponse.json({ error: "Failed to send email" }, { status: 500 });
       }
-    } else {
+    } else if (process.env.NODE_ENV === "development") {
       console.log("=== INVOICE EMAIL (no RESEND_API_KEY set) ===");
       console.log(`To: ${clientEmail}`);
       console.log(`Subject: Invoice ${invoice.number} from ${businessName}`);

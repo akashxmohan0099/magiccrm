@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase-server";
+import { rateLimit } from "@/lib/rate-limit";
 
 /**
  * Public lead-capture endpoint. No auth required.
@@ -11,6 +12,12 @@ import { createAdminClient } from "@/lib/supabase-server";
  * then fires the "lead-created" automation trigger for the workspace.
  */
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const { allowed } = rateLimit(`lead-form:${ip}`, 10, 60_000);
+  if (!allowed) {
+    return NextResponse.json({ error: "Too many requests." }, { status: 429 });
+  }
+
   try {
     const body = await req.json();
     const { workspaceId, name, email, phone, source, message, formId } = body;

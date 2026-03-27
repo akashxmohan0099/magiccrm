@@ -5,6 +5,7 @@ import {
   Bold, Italic, Underline, List, ListOrdered,
   Heading1, Heading2, Link, Undo2, Redo2, RemoveFormatting,
 } from "lucide-react";
+import { sanitizeHtml } from "@/lib/sanitize-html";
 
 interface SchemaRichTextProps {
   /** Current HTML content */
@@ -66,7 +67,7 @@ export function SchemaRichText({
     return (
       <div
         className="prose prose-sm max-w-none text-[14px] text-foreground leading-relaxed"
-        dangerouslySetInnerHTML={{ __html: value || "" }}
+        dangerouslySetInnerHTML={{ __html: sanitizeHtml(value || "") }}
       />
     );
   }
@@ -103,7 +104,7 @@ export function SchemaRichText({
           [&:empty]:before:content-[attr(data-placeholder)] [&:empty]:before:text-text-tertiary [&:empty]:before:pointer-events-none"
         data-placeholder={placeholder}
         style={{ minHeight }}
-        dangerouslySetInnerHTML={{ __html: value || "" }}
+        dangerouslySetInnerHTML={{ __html: sanitizeHtml(value || "") }}
       />
     </div>
   );

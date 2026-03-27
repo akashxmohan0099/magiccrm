@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export interface RecommendedSetupItem {
+interface RecommendedSetupItem {
   featureId: string;
   moduleId: string;
   reason: string;

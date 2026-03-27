@@ -26,7 +26,7 @@ interface AIQuestionCategory {
 }
 
 // Step constants
-export const FINAL_STEP_INDEX = 7;
+const FINAL_STEP_INDEX = 7;
 export const TOTAL_PROGRESS_STEPS = FINAL_STEP_INDEX + 1;
 
 interface OnboardingStore {
