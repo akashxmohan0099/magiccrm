@@ -53,37 +53,33 @@ export default function ModulePage({ params }: { params: Promise<{ moduleSlug: s
 
   const assembled = useAssembledSchemasStore((s) => s.assembled);
   const assembledSchema = useAssembledSchemasStore((s) => s.getSchemaBySlug(moduleSlug));
-  const forceLegacy = searchParams.get("renderer") === "legacy";
+  const useSchemaRenderer = searchParams.get("renderer") === "schema";
 
-  // 1. Schema-driven rendering (production default for assembled workspaces)
-  //    If the onboarding assembly pipeline has run and produced a schema for
-  //    this slug, render it via the composable ModuleRenderer. This gives
-  //    the user persona-specific labels, fields, views, and actions.
-  //    Use ?renderer=legacy to force the old hardcoded component.
-  if (assembled && assembledSchema && !forceLegacy) {
-    return (
-      <PageTransition>
-        <SchemaModuleBridge schema={assembledSchema} />
-      </PageTransition>
-    );
-  }
-
-  // 2. Legacy hardcoded components (fallback for modules without schemas,
-  //    pre-assembly workspaces, or when ?renderer=legacy is set)
+  // 1. Legacy hardcoded components (production default)
+  //    The legacy pages have full feature parity — calendar with drag-to-create,
+  //    setup checklists, widget system, polished forms. Schema renderer is opt-in
+  //    via ?renderer=schema until it reaches full parity.
   if (mod) {
     if (!isLegacyModuleEnabled) notFound();
     const Component = MODULE_COMPONENTS[mod.id];
     if (!Component) {
-      // No legacy component — try static schema registry
-      const staticSchema = getSchemaBySlug(moduleSlug);
-      if (staticSchema) {
+      // No legacy component — try schema renderer as fallback
+      if (assembledSchema) {
         return (
           <PageTransition>
-            <SchemaModuleBridge schema={staticSchema} />
+            <SchemaModuleBridge schema={assembledSchema} />
           </PageTransition>
         );
       }
       notFound();
+    }
+    // Opt-in schema rendering for comparison/testing
+    if (useSchemaRenderer && assembledSchema) {
+      return (
+        <PageTransition>
+          <SchemaModuleBridge schema={assembledSchema} />
+        </PageTransition>
+      );
     }
     return (
       <PageTransition>
