@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase-server";
 import { rateLimit } from "@/lib/rate-limit";
+import { generateId } from "@/lib/id";
 
 /**
  * Public booking endpoint. No auth required.
@@ -145,7 +146,7 @@ export async function POST(req: NextRequest) {
     if (existingClient) {
       clientId = existingClient.id;
     } else {
-      const newClientId = crypto.randomUUID();
+      const newClientId = generateId();
       const now = new Date().toISOString();
       const { error: clientErr } = await supabase.from("clients").insert({
         id: newClientId,
@@ -164,7 +165,7 @@ export async function POST(req: NextRequest) {
     }
 
     // ---- create the booking ----
-    const bookingId = crypto.randomUUID();
+    const bookingId = generateId();
     const now = new Date().toISOString();
 
     const { error: bookingErr } = await supabase.from("bookings").insert({

@@ -8,6 +8,7 @@ import { TextArea } from "@/components/ui/TextArea";
 import { Button } from "@/components/ui/Button";
 import { SchemaFileGallery, type FileItem } from "@/components/primitives/SchemaFileGallery";
 import { Plus, Trash2, Star } from "lucide-react";
+import { generateId } from "@/lib/id";
 import type { FieldDefinition, FieldCondition } from "@/types/module-schema";
 
 type RecordData = { [key: string]: unknown };
@@ -56,7 +57,7 @@ function SubRecordEditor({
   const subFields = field.subFields || [];
 
   const addItem = () => {
-    const newItem: RecordData = { _id: crypto.randomUUID() };
+    const newItem: RecordData = { _id: generateId() };
     for (const sf of subFields) {
       if (sf.defaultValue !== undefined) newItem[sf.id] = sf.defaultValue;
     }
@@ -123,7 +124,7 @@ function LineItemEditor({
   const subFields = field.subFields || [];
 
   const addItem = () => {
-    const newItem: RecordData = { _id: crypto.randomUUID() };
+    const newItem: RecordData = { _id: generateId() };
     for (const sf of subFields) {
       if (sf.defaultValue !== undefined) newItem[sf.id] = sf.defaultValue;
       else if (sf.type === "number" || sf.type === "currency") newItem[sf.id] = 0;

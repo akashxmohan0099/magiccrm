@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase-server";
 import { rateLimit } from "@/lib/rate-limit";
+import { generateId } from "@/lib/id";
 
 /**
  * Public lead-capture endpoint. No auth required.
@@ -56,7 +57,7 @@ export async function POST(req: NextRequest) {
 
     // ---- create the lead ----
     const now = new Date().toISOString();
-    const leadId = crypto.randomUUID();
+    const leadId = generateId();
 
     const { error: insertErr } = await supabase.from("leads").insert({
       id: leadId,

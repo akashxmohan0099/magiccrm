@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback, KeyboardEvent } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, ChevronRight, Plus, X, Check, User, Trash2, SlidersHorizontal } from "lucide-react";
+import { ChevronDown, Plus, X, Check, User, Trash2, SlidersHorizontal } from "lucide-react";
 import { Client, TeamMember } from "@/types/models";
 
 // ── Portal dropdown helper ──────────────────────────────────

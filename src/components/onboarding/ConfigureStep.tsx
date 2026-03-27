@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, ArrowLeft, Sparkles, Check } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
 import { useOnboardingStore } from "@/store/onboarding";
 import { useVocabulary } from "@/hooks/useVocabulary";
 import { computeEnabledModuleIds, getModuleById } from "@/lib/module-registry";

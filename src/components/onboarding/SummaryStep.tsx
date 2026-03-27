@@ -13,7 +13,7 @@ import {
 import { useOnboardingStore } from "@/store/onboarding";
 import { useVocabulary } from "@/hooks/useVocabulary";
 import { MODULE_REGISTRY, ALWAYS_ON_MODULES, computeEnabledModuleIds, getModuleDisplayName } from "@/lib/module-registry";
-import { getApplicableCombinations, getCombinationById, type ModuleCombination } from "@/lib/module-combinations";
+import { getApplicableCombinations, type ModuleCombination } from "@/lib/module-combinations";
 import { getBaseSchema, findVariant, applyVariant } from "@/lib/module-schemas";
 import { useTunedModules, type TunedModuleDisplay } from "@/hooks/useTunedModules";
 import type { VocabularyMap } from "@/types/industry-config";

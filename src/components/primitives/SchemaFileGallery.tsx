@@ -6,6 +6,7 @@ import {
   Upload, X, FileText, Image, File,
   Trash2, ZoomIn, ChevronLeft, ChevronRight,
 } from "lucide-react";
+import { generateId } from "@/lib/id";
 
 export interface FileItem {
   id: string;
@@ -67,7 +68,7 @@ export function SchemaFileGallery({
       const reader = new FileReader();
       reader.onload = () => {
         newFiles.push({
-          id: crypto.randomUUID(),
+          id: generateId(),
           name: file.name,
           type: file.type,
           size: file.size,
