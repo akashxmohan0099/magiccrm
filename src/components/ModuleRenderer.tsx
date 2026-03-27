@@ -157,10 +157,10 @@ export function ModuleRenderer({
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex-shrink-0 px-6 pt-6 pb-0">
-        <div className="flex items-center justify-between mb-4">
+      <div className="flex-shrink-0 px-4 sm:px-6 pt-4 sm:pt-6 pb-0">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <div>
-            <h1 className="text-[22px] font-bold text-foreground">{schema.label}</h1>
+            <h1 className="text-[20px] sm:text-[22px] font-bold text-foreground">{schema.label}</h1>
             <p className="text-[13px] text-text-secondary mt-0.5">{schema.description}</p>
           </div>
           <div className="flex items-center gap-2">
@@ -177,17 +177,18 @@ export function ModuleRenderer({
             {schema.capabilities.canCreate && (
               <button
                 onClick={() => setFormOpen(true)}
-                className="flex items-center gap-1.5 px-4 py-2 bg-foreground text-white rounded-xl text-[13px] font-medium hover:opacity-90 transition-opacity cursor-pointer"
+                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-foreground text-white rounded-xl text-[13px] font-medium hover:opacity-90 transition-opacity cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
-                {schema.primaryAction?.label || "Add"}
+                <span className="hidden sm:inline">{schema.primaryAction?.label || "Add"}</span>
+                <span className="sm:hidden">Add</span>
               </button>
             )}
           </div>
         </div>
 
         {/* Search + View tabs */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
           {schema.views.length > 1 ? (
             <Tabs tabs={viewTabs} activeTab={activeViewId} onChange={setActiveViewId} />
           ) : (
@@ -198,7 +199,7 @@ export function ModuleRenderer({
       </div>
 
       {/* Active view */}
-      <div className="flex-1 overflow-auto px-6 py-4">
+      <div className="flex-1 overflow-auto px-4 sm:px-6 py-4">
         <ActiveViewRenderer
           view={activeView}
           schema={schema}

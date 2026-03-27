@@ -68,7 +68,7 @@ export function KanbanBoard<T>({
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: colIdx * 0.05 }}
-          className={`flex-shrink-0 w-72 rounded-xl p-3 transition-all duration-200 ${
+          className={`flex-shrink-0 min-w-[260px] w-72 sm:min-w-[288px] rounded-xl p-3 transition-all duration-200 ${
             dragOverCol === col.id
               ? "bg-surface/80 ring-2 ring-foreground/10 scale-[1.01]"
               : "bg-surface/70"

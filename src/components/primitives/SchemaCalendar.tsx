@@ -71,7 +71,9 @@ export function SchemaCalendar({
   onRecordClick,
   onDateSelect,
 }: SchemaCalendarProps) {
-  const [mode, setMode] = useState<CalendarMode>("week");
+  const [mode, setMode] = useState<CalendarMode>(() =>
+    typeof window !== "undefined" && window.innerWidth < 640 ? "day" : "week"
+  );
   const [currentDate, setCurrentDate] = useState(() => new Date());
 
   const dateFieldId = view.dateField || "date";
@@ -134,7 +136,7 @@ export function SchemaCalendar({
   return (
     <div className="flex flex-col h-full">
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-1 py-3 flex-shrink-0">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 px-1 py-3 flex-shrink-0">
         <div className="flex items-center gap-2">
           <button onClick={prev} aria-label={mode === "day" ? "Previous day" : mode === "week" ? "Previous week" : "Previous month"} className="p-1.5 hover:bg-surface rounded-lg transition-colors cursor-pointer">
             <ChevronLeft className="w-4 h-4 text-text-secondary" />
@@ -320,9 +322,10 @@ function TimeGridView({
     : getWeekDays(currentDate);
 
   return (
-    <div className="flex">
+    <div className="overflow-x-auto">
+     <div className={`flex ${mode === "week" ? "min-w-[600px]" : ""}`}>
       {/* Time labels */}
-      <div className="w-16 flex-shrink-0 border-r border-border-light">
+      <div className="w-12 sm:w-16 flex-shrink-0 border-r border-border-light">
         <div className="h-10" /> {/* Header spacer */}
         {HOURS.map((hour) => (
           <div key={hour} className="relative" style={{ height: PX_PER_HOUR }}>
@@ -423,6 +426,7 @@ function TimeGridView({
           );
         })}
       </div>
+     </div>
     </div>
   );
 }

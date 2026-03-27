@@ -220,7 +220,7 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
     <div className="space-y-4">
       <div className="bg-card-bg rounded-xl border border-border-light overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border-light">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 px-4 py-3 border-b border-border-light">
           <div className="flex items-center gap-2">
             <button onClick={prev} className="p-1.5 rounded-lg hover:bg-surface text-text-secondary cursor-pointer"><ChevronLeft className="w-4 h-4" /></button>
             <button onClick={next} className="p-1.5 rounded-lg hover:bg-surface text-text-secondary cursor-pointer"><ChevronRight className="w-4 h-4" /></button>
@@ -264,7 +264,7 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
                 {HOURS.map((hour, i) => (
                   <div key={hour} className="absolute w-full" style={{ top: i * PX_PER_HOUR }}>
                     <div className="flex">
-                      <div className="w-16 flex-shrink-0 text-right pr-3 -mt-1.5">
+                      <div className="w-12 sm:w-16 flex-shrink-0 text-right pr-2 sm:pr-3 -mt-1.5">
                         <span className="text-[11px] text-text-tertiary">{formatTimeLabel(hour)}</span>
                       </div>
                       <div className="flex-1 border-t border-border-light relative" style={{ height: PX_PER_HOUR }}>
@@ -278,7 +278,7 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
 
                 {/* Current time line */}
                 {isToday && nowMinutes >= MIN_MINUTES && nowMinutes <= MIN_MINUTES + HOURS.length * 60 && (
-                  <div className="absolute left-16 right-0 flex items-center z-20 pointer-events-none" style={{ top: ((nowMinutes - MIN_MINUTES) / 60) * PX_PER_HOUR }}>
+                  <div className="absolute left-12 sm:left-16 right-0 flex items-center z-20 pointer-events-none" style={{ top: ((nowMinutes - MIN_MINUTES) / 60) * PX_PER_HOUR }}>
                     <div className="w-2.5 h-2.5 bg-red-500 rounded-full -ml-1" />
                     <div className="flex-1 h-[2px] bg-red-500" />
                   </div>
@@ -287,7 +287,7 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
                 {/* Drag ghost / selection block */}
                 {(isDragging || showQuickAdd) && (
                   <div
-                    className={`absolute left-[72px] right-3 rounded-lg z-10 pointer-events-none flex items-center justify-center ${
+                    className={`absolute left-[56px] sm:left-[72px] right-3 rounded-lg z-10 pointer-events-none flex items-center justify-center ${
                       isDragging
                         ? "bg-primary/15 border-2 border-dashed border-primary/40"
                         : "bg-primary/10 border-2 border-primary/30"
@@ -314,7 +314,7 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
                       key={b.id}
                       onClick={(e) => handleBookingPreview(b, e)}
                       onMouseDown={(e) => e.stopPropagation()}
-                      className={`absolute left-[72px] right-3 rounded-lg border px-3 py-1.5 cursor-pointer hover:shadow-md transition-shadow z-[5] ${style} ${isBlock ? "opacity-80" : ""}`}
+                      className={`absolute left-[56px] sm:left-[72px] right-3 rounded-lg border px-3 py-1.5 cursor-pointer hover:shadow-md transition-shadow z-[5] ${style} ${isBlock ? "opacity-80" : ""}`}
                       style={{ top: Math.max(top, 0), height }}
                     >
                       <div className="flex items-center gap-1.5">

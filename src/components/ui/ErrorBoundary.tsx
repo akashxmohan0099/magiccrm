@@ -2,6 +2,7 @@
 
 import { Component, ReactNode } from "react";
 import Link from "next/link";
+import { reportBoundaryError } from "@/lib/error-reporter";
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -23,6 +24,10 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       throw error;
     }
     return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    reportBoundaryError(error, { componentStack: errorInfo.componentStack ?? undefined });
   }
 
   render() {

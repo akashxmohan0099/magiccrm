@@ -78,9 +78,9 @@ function SubRecordEditor({
     <div className="space-y-2">
       {value.map((item, i) => (
         <div key={(item._id as string) || i} className="flex items-start gap-2 p-3 rounded-xl bg-surface border border-border-light">
-          <div className="flex-1 grid grid-cols-2 gap-2">
+          <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
             {subFields.map((sf) => (
-              <div key={sf.id} className={sf.type === "textarea" ? "col-span-2" : ""}>
+              <div key={sf.id} className={sf.type === "textarea" ? "sm:col-span-2" : ""}>
                 <label className="text-[11px] font-medium text-text-tertiary mb-0.5 block">{sf.label}</label>
                 <FieldInput
                   field={sf}

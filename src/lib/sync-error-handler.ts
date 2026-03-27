@@ -5,6 +5,7 @@
  */
 
 import { toast } from "@/components/ui/Toast";
+import { reportSyncError } from "@/lib/error-reporter";
 
 interface SyncErrorOptions {
   /** User-friendly context, e.g. "saving client" */
@@ -37,6 +38,9 @@ export function handleSyncError(
   if (log) {
     console.error(`[sync] ${context} failed:`, message);
   }
+
+  // Report to structured error monitoring
+  reportSyncError(error, context);
 
   if (showToast) {
     toast(`Failed ${context}. Changes saved locally.`, "error");

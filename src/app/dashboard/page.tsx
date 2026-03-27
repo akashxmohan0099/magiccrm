@@ -829,10 +829,10 @@ export default function DashboardPage() {
   const name = businessContext.businessName;
 
   return (
-    <div className="max-w-4xl mx-auto py-4">
+    <div className="max-w-4xl mx-auto px-4 sm:px-0 py-4">
       {/* Greeting */}
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
-        <h2 className="text-[28px] font-bold text-foreground tracking-tight mb-1">
+        <h2 className="text-[22px] sm:text-[28px] font-bold text-foreground tracking-tight mb-1">
           {name ? `${getGreeting()}, ${name}` : getGreeting()}
         </h2>
         <p className="text-text-secondary text-[15px]">
@@ -853,16 +853,18 @@ export default function DashboardPage() {
           </div>
 
           {currentTask && (
-            <motion.div key={currentTask.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="bg-card-bg rounded-2xl border border-border-light p-5 mb-3">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-primary-muted rounded-xl flex items-center justify-center flex-shrink-0">
-                  <currentTask.icon className="w-5 h-5 text-foreground" />
+            <motion.div key={currentTask.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="bg-card-bg rounded-2xl border border-border-light p-4 sm:p-5 mb-3">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="w-10 h-10 bg-primary-muted rounded-xl flex items-center justify-center flex-shrink-0">
+                    <currentTask.icon className="w-5 h-5 text-foreground" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-[15px] font-bold text-foreground">{currentTask.label}</h3>
+                    <p className="text-[12px] text-text-tertiary">{currentTask.description}</p>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-[15px] font-bold text-foreground">{currentTask.label}</h3>
-                  <p className="text-[12px] text-text-tertiary">{currentTask.description}</p>
-                </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 ml-[52px] sm:ml-0">
                   <button onClick={() => completeTask(currentTask.id)} className="text-[12px] text-text-tertiary hover:text-foreground cursor-pointer transition-colors whitespace-nowrap flex items-center gap-1"><Check className="w-3 h-3" /> Mark done</button>
                   <Link href={currentTask.href}><Button size="sm">Start <ArrowRight className="w-3.5 h-3.5" /></Button></Link>
                 </div>
