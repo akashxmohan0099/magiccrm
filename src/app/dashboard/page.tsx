@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Check, Mail, Instagram,
@@ -738,15 +738,15 @@ export default function DashboardPage() {
   const config = useIndustryConfig();
   const { activeCombinations } = useActiveCombinations();
 
-  // Seed sample data if workspace is empty (covers existing accounts
-  // that onboarded before the sample data feature was added)
+  // Seed sample data per-store if empty. Runs on dashboard mount.
+  // Each store is checked independently — only seeds what's missing.
+  const seeded = useRef(false);
   useEffect(() => {
-    if (!buildComplete || !selectedIndustry) return;
-    const clients = useClientsStore.getState().clients;
-    if (clients.length > 0) return; // already has data
+    if (!buildComplete || !selectedIndustry || seeded.current) return;
+    seeded.current = true;
 
     const enabledIds = Array.from(computeEnabledModuleIds(needs, discoveryAnswers));
-    const sampleData = generateSampleData({
+    const sample = generateSampleData({
       industryId: selectedIndustry,
       personaId: selectedPersona,
       businessName: businessContext.businessName,
@@ -755,12 +755,12 @@ export default function DashboardPage() {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const a = (x: unknown) => x as any;
-    if (sampleData.clients.length > 0) useClientsStore.setState((s) => ({ clients: [...s.clients, ...sampleData.clients.map(a)] }));
-    if (sampleData.products.length > 0) useProductsStore.setState((s) => ({ products: [...s.products, ...sampleData.products.map(a)] }));
-    if (sampleData.leads.length > 0) useLeadsStore.setState((s) => ({ leads: [...s.leads, ...sampleData.leads.map(a)] }));
-    if (sampleData.bookings.length > 0) useBookingsStore.setState((s) => ({ bookings: [...s.bookings, ...sampleData.bookings.map(a)] }));
-    if (sampleData.invoices.length > 0) useInvoicesStore.setState((s) => ({ invoices: [...s.invoices, ...sampleData.invoices.map(a)] }));
-    if (sampleData.jobs.length > 0) useJobsStore.setState((s) => ({ jobs: [...s.jobs, ...sampleData.jobs.map(a)] }));
+    if (sample.clients.length && !useClientsStore.getState().clients.length) useClientsStore.setState({ clients: sample.clients.map(a) });
+    if (sample.products.length && !useProductsStore.getState().products.length) useProductsStore.setState({ products: sample.products.map(a) });
+    if (sample.leads.length && !useLeadsStore.getState().leads.length) useLeadsStore.setState({ leads: sample.leads.map(a) });
+    if (sample.bookings.length && !useBookingsStore.getState().bookings.length) useBookingsStore.setState({ bookings: sample.bookings.map(a) });
+    if (sample.invoices.length && !useInvoicesStore.getState().invoices.length) useInvoicesStore.setState({ invoices: sample.invoices.map(a) });
+    if (sample.jobs.length && !useJobsStore.getState().jobs.length) useJobsStore.setState({ jobs: sample.jobs.map(a) });
   }, [buildComplete, selectedIndustry, selectedPersona, businessContext.businessName, needs, discoveryAnswers]);
 
   const { widgets, addWidget, removeWidget, materializeDefaults, setupDismissed, dismissSetup, completedSetupIds, completeSetupTask } = useDashboardStore();
