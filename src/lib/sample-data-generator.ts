@@ -156,13 +156,40 @@ function genericData(): DataPack {
   };
 }
 
+function makeupArtistData(): DataPack {
+  const c1 = rec({ name: "Jessica & Ryan", email: "", phone: "", status: "active", tags: ["wedding"], notes: "March wedding, Yarra Valley. Bridal party of 5.", source: "instagram", customData: { skinType: "combination", clientType: "bride" } });
+  const c2 = rec({ name: "Priya M.", email: "", phone: "", status: "active", tags: ["regular"], notes: "Monthly makeup lessons", source: "referral", customData: { skinType: "oily", clientType: "lesson" } });
+  const c3 = rec({ name: "Anna K.", email: "", phone: "", status: "vip", tags: ["editorial"], notes: "Fashion shoots, always books 2 weeks ahead", source: "website", customData: { skinType: "normal", clientType: "editorial" } });
+
+  const p1 = rec({ name: "Bridal Package", description: "Trial + wedding day, airbrush, lashes, touch-up kit", price: 650, category: "Bridal", duration: 120, inStock: true });
+  const p2 = rec({ name: "Event Makeup", description: "Full glam for events, parties, and galas", price: 180, category: "Event", duration: 75, inStock: true });
+  const p3 = rec({ name: "Makeup Lesson", description: "1-on-1 lesson with personalised routine", price: 120, category: "Lessons", duration: 90, inStock: true });
+
+  return {
+    clients: [c1, c2, c3],
+    products: [p1, p2, p3],
+    bookings: [
+      rec({ title: "Bridal Trial — Jessica", clientId: c1.id, date: daysFromNow(1), startTime: time(9), endTime: time(11), status: "confirmed", price: 150, serviceName: "Bridal Trial", serviceId: p1.id }),
+      rec({ title: "Makeup Lesson — Priya", clientId: c2.id, date: daysFromNow(3), startTime: time(14), endTime: time(15, 30), status: "confirmed", price: 120, serviceName: "Makeup Lesson", serviceId: p3.id }),
+      rec({ title: "Editorial Shoot — Anna", clientId: c3.id, date: daysAgo(5), startTime: time(7), endTime: time(9), status: "completed", price: 180, serviceName: "Event Makeup", serviceId: p2.id }),
+    ],
+    leads: [
+      rec({ name: "Sophie & James", email: "", phone: "", stage: "new", value: 650, source: "instagram", notes: "December wedding, CBD venue, party of 4", customData: { weddingDate: daysFromNow(120), eventType: "wedding", partySize: 4 } }),
+      rec({ name: "Megan L.", email: "", phone: "", stage: "contacted", value: 180, source: "referral", notes: "Corporate event, evening look" }),
+    ],
+    invoices: [
+      rec({ number: "INV-001", clientId: c3.id, lineItems: [{ id: generateId(), description: "Editorial Shoot Makeup", quantity: 1, unitPrice: 180 }], status: "paid", dueDate: daysAgo(5), notes: "", taxRate: 10, paidAmount: 198 }),
+    ],
+  };
+}
+
 // ── Main Generator ───────────────────────────────────────────
 
 const PERSONA_GENERATORS: { [key: string]: () => DataPack } = {
   "hair-salon": hairSalonData,
   "barber": hairSalonData,
   "nail-tech": hairSalonData,
-  "makeup-artist": hairSalonData,
+  "makeup-artist": makeupArtistData,
   "plumber": plumberData,
   "electrician": plumberData,
   "photographer": photographerData,

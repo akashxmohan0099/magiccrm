@@ -148,22 +148,36 @@ export function BuildingScreen() {
     // Save assembled schemas to store
     setAssemblyResult(result.schemas, result.fallbacks, 0);
 
-    // Seed sample data so the dashboard feels alive from the first moment
+    // Seed sample data directly into store state (bypasses validation,
+    // toast, and activity logging — which is exactly what we want for
+    // demo data). The sample records have pre-linked IDs so client
+    // references in bookings/invoices are valid.
     const sampleData = generateSampleData({
       industryId: selectedIndustry,
       personaId: selectedPersona,
       businessName: businessContext.businessName,
       enabledModuleIds: selectedModules,
     });
-    // Seed sample data into legacy stores (type boundary — sample records match store shapes)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const any = (x: unknown) => x as any;
-    for (const c of sampleData.clients) useClientsStore.getState().addClient(any(c));
-    for (const p of sampleData.products) useProductsStore.getState().addProduct(any(p));
-    for (const l of sampleData.leads) useLeadsStore.getState().addLead(any(l));
-    for (const b of sampleData.bookings) useBookingsStore.getState().addBooking(any(b));
-    for (const inv of sampleData.invoices) useInvoicesStore.getState().addInvoice(any(inv));
-    for (const j of sampleData.jobs) useJobsStore.getState().addJob(any(j));
+    const a = (x: unknown) => x as any;
+    if (sampleData.clients.length > 0) {
+      useClientsStore.setState((s) => ({ clients: [...s.clients, ...sampleData.clients.map(a)] }));
+    }
+    if (sampleData.products.length > 0) {
+      useProductsStore.setState((s) => ({ products: [...s.products, ...sampleData.products.map(a)] }));
+    }
+    if (sampleData.leads.length > 0) {
+      useLeadsStore.setState((s) => ({ leads: [...s.leads, ...sampleData.leads.map(a)] }));
+    }
+    if (sampleData.bookings.length > 0) {
+      useBookingsStore.setState((s) => ({ bookings: [...s.bookings, ...sampleData.bookings.map(a)] }));
+    }
+    if (sampleData.invoices.length > 0) {
+      useInvoicesStore.setState((s) => ({ invoices: [...s.invoices, ...sampleData.invoices.map(a)] }));
+    }
+    if (sampleData.jobs.length > 0) {
+      useJobsStore.setState((s) => ({ jobs: [...s.jobs, ...sampleData.jobs.map(a)] }));
+    }
 
     // Stage 2: tune labels asynchronously and replace the assembled result
     // when the personalized schemas are ready.

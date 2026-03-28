@@ -116,7 +116,7 @@ export const makeupBookingsVariant: SchemaVariant = {
   industryId: "beauty-wellness",
   overrides: {
     label: "Appointments",
-    description: "Studio sessions, trials, and lessons.",
+    description: "Bridal trials, event bookings, and sessions.",
     fieldOverrides: {
       modify: [
         { id: "title", label: "Appointment", placeholder: "e.g., Bridal Trial — Sarah" },
