@@ -12,7 +12,7 @@ import {
   Crown, Camera, FileInput, ClipboardList, Gift, UserCheck,
   Store, Globe, Lightbulb, Puzzle, UsersRound,
   Ticket, CalendarRange, Building2, ScrollText, Wrench, Banknote, ImagePlus, ListOrdered,
-  NotebookPen, LogOut, Loader2,
+  NotebookPen, LogOut, Loader2, User,
 } from "lucide-react";
 import { useOnboardingStore } from "@/store/onboarding";
 import { useBuilderStore } from "@/store/builder";
@@ -414,6 +414,14 @@ function DashboardShell({ children }: { children: ReactNode }) {
                       <p className="text-[11px] text-text-tertiary truncate">{user?.email}</p>
                     </div>
                     <div className="py-1">
+                      <Link
+                        href="/dashboard/profile"
+                        onClick={() => setAvatarMenuOpen(false)}
+                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-text-secondary hover:text-foreground hover:bg-surface transition-colors"
+                      >
+                        <User className="w-4 h-4" />
+                        Profile
+                      </Link>
                       <button
                         onClick={async () => {
                           setAvatarMenuOpen(false);
