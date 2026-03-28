@@ -7,6 +7,7 @@ import { useAddonsStore } from "@/store/addons";
 import { FEATURE_BLOCKS } from "@/types/features";
 import { NeedsAssessment } from "@/types/onboarding";
 import { Puzzle, ChevronDown, ChevronRight } from "lucide-react";
+import { ALWAYS_ON_MODULES } from "@/lib/module-registry";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -35,7 +36,7 @@ function getDefaultFeatures(moduleId: string) {
 }
 
 export function ModuleSettings() {
-  const { featureSelections, setFeatureSelections, setNeed, toggleFeature } = useOnboardingStore();
+  const { featureSelections, setFeatureSelections, setNeed, toggleFeature, setDiscoveryAnswer } = useOnboardingStore();
   const { enabledAddons } = useAddonsStore();
   const [expandedModule, setExpandedModule] = useState<string | null>(null);
 
@@ -48,6 +49,8 @@ export function ModuleSettings() {
   };
 
   const toggleModule = (moduleId: string) => {
+    if (ALWAYS_ON_MODULES.has(moduleId)) return; // can't disable always-on modules
+
     const enabled = isModuleEnabled(moduleId);
     const needKey = MODULE_TO_NEED[moduleId];
 
@@ -55,7 +58,8 @@ export function ModuleSettings() {
       const features = featureSelections[moduleId] || [];
       const disabledFeatures = features.map((f) => ({ ...f, selected: false }));
       setFeatureSelections(moduleId, disabledFeatures);
-      // Also write under the need key so both lookup paths stay consistent
+      // Write discoveryAnswer so computeEnabledModuleIds respects the disable
+      setDiscoveryAnswer(`module:${moduleId}`, false);
       if (needKey) {
         setFeatureSelections(needKey, disabledFeatures);
         setNeed(needKey, false);
@@ -73,7 +77,8 @@ export function ModuleSettings() {
         newFeatures = getDefaultFeatures(moduleId);
       }
       setFeatureSelections(moduleId, newFeatures);
-      // Also write under the need key so both lookup paths stay consistent
+      // Re-enable in discoveryAnswers
+      setDiscoveryAnswer(`module:${moduleId}`, true);
       if (needKey) {
         setFeatureSelections(needKey, newFeatures);
         setNeed(needKey, true);

@@ -218,6 +218,12 @@ export const useOnboardingStore = create<OnboardingStore>()(
         }
 
         set({ teamSize, needs: mergedNeeds });
+
+        // Auto-enable products/services for industries that always need a service menu
+        const serviceIndustries = new Set(["beauty-wellness", "health-fitness", "education-coaching"]);
+        if (serviceIndustries.has(config.id)) {
+          get().setDiscoveryAnswer("module:products", true);
+        }
       },
 
       setTeamSize: (size) => set({ teamSize: size }),

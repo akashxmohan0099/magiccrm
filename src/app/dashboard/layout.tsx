@@ -400,7 +400,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
                 className="w-8 h-8 bg-primary rounded-full flex items-center justify-center cursor-pointer shadow-[0_1px_3px_rgba(91,91,214,0.15)]"
               >
                 <span className="text-[11px] font-bold text-white">
-                  {(user?.user_metadata?.full_name || businessContext.businessName || "U")[0].toUpperCase()}
+                  {(user?.user_metadata?.full_name || user?.email || "U")[0].toUpperCase()}
                 </span>
               </button>
               {avatarMenuOpen && (
