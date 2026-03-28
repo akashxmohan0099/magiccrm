@@ -33,11 +33,11 @@ const MODULES = [
 // ── Persona presets for the module picker demo ──
 
 const PERSONA_PRESETS = [
-  { label: "Sarah", role: "Lash Tech", context: "Based on Sarah\u2019s answers, our AI recommended bookings, client history, and marketing — and left out projects and documents she doesn\u2019t need.", modules: ["Clients", "Leads", "Messages", "Scheduling", "Billing", "Products", "Marketing", "Automations", "Reporting"] },
-  { label: "Tom", role: "Plumber", context: "Our AI analyzed Tom\u2019s workflow and suggested job tracking, quoting, and compliance docs — skipping online bookings since his clients call directly.", modules: ["Clients", "Leads", "Messages", "Projects", "Billing", "Documents", "Team", "Automations", "Reporting"] },
-  { label: "Priya", role: "Consultant", context: "Based on how Priya described her practice, AI recommended proposals, time tracking, and a client portal — plus support for post-project follow-ups.", modules: ["Clients", "Leads", "Messages", "Scheduling", "Projects", "Billing", "Documents", "Support", "Client Portal", "Automations", "Reporting"] },
-  { label: "Jake", role: "Photographer", context: "AI picked up that Jake shoots weddings — so it suggested contracts, deposit billing, and project tracking per shoot, with marketing to grow his portfolio.", modules: ["Clients", "Leads", "Messages", "Scheduling", "Projects", "Billing", "Documents", "Products", "Marketing", "Automations", "Reporting"] },
-  { label: "Mia", role: "Gym Owner", context: "Mia told us she runs a studio with trainers. AI recommended class bookings, team scheduling, and marketing — tailored for a multi-staff fitness business.", modules: ["Clients", "Leads", "Messages", "Scheduling", "Billing", "Products", "Marketing", "Team", "Automations", "Reporting"] },
+  { label: "Sarah", role: "Lash Tech", context: "Sarah told us she does lash extensions and brow lamination. Our AI assembled Appointments (not generic bookings), a Service Menu (not a product catalog), and Receipts (not invoicing) — because that\u2019s how she works.", modules: ["Clients", "Inquiries", "Messages", "Appointments", "Receipts", "Services", "Marketing", "Automations", "Reporting"] },
+  { label: "Tom", role: "Plumber", context: "Tom said clients call with emergencies. So we built him Job Requests with urgency levels, Site Visits with property addresses, and a Job Board that tracks work from quote to sign-off.", modules: ["Customers", "Job Requests", "Messages", "Jobs", "Invoicing", "Documents", "Team", "Automations", "Reporting"] },
+  { label: "Priya", role: "Consultant", context: "Priya runs a consulting practice. We assembled a prospect pipeline with Discovery Call stages, a Client Portal for project deliverables, and monthly retainer billing.", modules: ["Clients", "Prospects", "Messages", "Sessions", "Projects", "Billing", "Documents", "Support", "Client Portal", "Automations", "Reporting"] },
+  { label: "Jake", role: "Photographer", context: "Jake shoots weddings. So we built Shoots with stages from Booked to Delivered, Wedding Inquiries with event dates and party size, and Photography Packages with day rates.", modules: ["Clients", "Inquiries", "Messages", "Sessions", "Shoots", "Invoicing", "Documents", "Packages", "Marketing", "Automations", "Reporting"] },
+  { label: "Mia", role: "Gym Owner", context: "Mia runs a studio with trainers. We assembled Sessions with types (1-on-1, group, online), Programs instead of products, and Prospects with a gym-specific lead pipeline.", modules: ["Clients", "Prospects", "Messages", "Sessions", "Payments", "Programs", "Marketing", "Team", "Automations", "Reporting"] },
 ];
 
 const PERSONA_CYCLE_MS = 6000;
@@ -146,10 +146,10 @@ export function ModulePickerDemo() {
       <div className="max-w-5xl mx-auto px-4 sm:px-6">
         <div className="text-center mb-8">
           <h2 className="text-[1.75rem] sm:text-[2.25rem] font-bold text-foreground leading-tight mb-3">
-            Pick your modules.
+            Watch it assemble for you.
           </h2>
           <p className="text-text-secondary text-[15px] max-w-md mx-auto mb-6">
-            Only turn on what you need. Every business gets a different combination.
+            Same building blocks. Completely different workspace. Click a persona and see what they get.
           </p>
 
           {/* Persona preset pills */}
@@ -505,10 +505,10 @@ export function FeatureCustomizeDemo() {
       <div className="max-w-5xl mx-auto px-4 sm:px-6">
         <div className="text-center mb-10">
           <h2 className="text-[1.75rem] sm:text-[2.25rem] font-bold text-foreground leading-tight mb-3">
-            Then customize every detail.
+            Every module is fine-tuned for you.
           </h2>
           <p className="text-text-secondary text-[15px] max-w-md mx-auto">
-            Each module has toggleable features. Watch the page change in real time.
+            Fields, features, and workflows are configured based on your answers. Not a single toggle you didn&apos;t ask for.
           </p>
         </div>
 

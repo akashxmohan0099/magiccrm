@@ -335,9 +335,167 @@ export default function LandingPage() {
         </div>
       </motion.section>
 
-      {/* Cinematic Demo — replaces module picker + customize sections */}
+      {/* How It Works — the 3-step assembly process */}
+      <motion.section
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={viewportConfig}
+        transition={{ duration: 0.5 }}
+        className="py-16 sm:py-24"
+      >
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-12 sm:mb-16">
+            <motion.h2
+              variants={sectionHeadingVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={viewportConfig}
+              transition={sectionTransition}
+              className="text-[1.75rem] sm:text-[2.5rem] font-bold text-foreground leading-tight mb-3"
+            >
+              3 minutes. That&apos;s it.
+            </motion.h2>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={viewportConfig}
+              transition={{ delay: 0.1, ...sectionTransition }}
+              className="text-text-secondary text-[15px] max-w-lg mx-auto"
+            >
+              From &ldquo;what do you do?&rdquo; to a workspace that feels like it was built just for you.
+            </motion.p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+            {[
+              {
+                step: "01",
+                title: "Answer a few questions",
+                description: "Not a long form. A smart conversation that adapts to your answers. Our AI detects your persona and understands how you work.",
+                detail: "52 tested personas across 8 industries",
+              },
+              {
+                step: "02",
+                title: "Watch it assemble",
+                description: "Features combine into modules that speak your language. A lash tech gets Appointments. A plumber gets Job Requests. Same building blocks, your vocabulary.",
+                detail: "10 feature primitives → persona-specific modules",
+              },
+              {
+                step: "03",
+                title: "Start working",
+                description: "Your dashboard is ready with sample data, personalized labels, and the exact tools you need. Nothing to configure. Nothing to turn off.",
+                detail: "Calendar, lists, pipeline — all populated",
+              },
+            ].map((item, i) => (
+              <motion.div
+                key={item.step}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={viewportConfig}
+                transition={{ delay: i * 0.1, duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
+                className="relative"
+              >
+                <div className="text-[48px] sm:text-[56px] font-bold text-foreground/[0.04] leading-none mb-3">{item.step}</div>
+                <h3 className="text-[17px] font-bold text-foreground mb-2">{item.title}</h3>
+                <p className="text-sm text-text-secondary leading-relaxed mb-3">{item.description}</p>
+                <p className="text-xs text-text-tertiary font-medium">{item.detail}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </motion.section>
+
+      {/* Cinematic Demo */}
       <CinematicDemo />
 
+      {/* The Difference — Generic CRM vs Magic */}
+      <motion.section
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={viewportConfig}
+        transition={{ duration: 0.5 }}
+        className="py-16 sm:py-24 bg-white"
+      >
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-12">
+            <motion.h2
+              variants={sectionHeadingVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={viewportConfig}
+              transition={sectionTransition}
+              className="text-[1.75rem] sm:text-[2.25rem] font-bold text-foreground leading-tight mb-3"
+            >
+              Not another CRM with settings you&apos;ll never touch.
+            </motion.h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Generic CRM */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={viewportConfig}
+              transition={{ duration: 0.5 }}
+              className="rounded-2xl border border-border-light p-6 bg-card-bg"
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-2 h-2 rounded-full bg-red-400" />
+                <span className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">Every other CRM</span>
+              </div>
+              <div className="space-y-3">
+                {[
+                  { label: "Contacts", sublabel: "Generic contact database" },
+                  { label: "Deals", sublabel: "Sales pipeline you don't use" },
+                  { label: "Tasks", sublabel: "Project management you didn't ask for" },
+                  { label: "Invoicing", sublabel: "One-size-fits-all billing" },
+                  { label: "Settings", sublabel: "200 toggles to figure out yourself" },
+                ].map((item) => (
+                  <div key={item.label} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-surface/50">
+                    <div className="w-1.5 h-1.5 rounded-full bg-text-tertiary/30" />
+                    <div>
+                      <p className="text-sm font-medium text-text-secondary">{item.label}</p>
+                      <p className="text-xs text-text-tertiary">{item.sublabel}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Magic CRM for a Hair Salon */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={viewportConfig}
+              transition={{ delay: 0.1, duration: 0.5 }}
+              className="rounded-2xl border-2 border-primary/20 p-6 bg-card-bg relative overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 right-0 h-24 opacity-[0.04]" style={{ background: "linear-gradient(to bottom, var(--primary), transparent)" }} />
+              <div className="relative flex items-center gap-2 mb-4">
+                <div className="w-2 h-2 rounded-full bg-primary" />
+                <span className="text-xs font-semibold text-primary uppercase tracking-wider">Magic for a Hair Salon</span>
+              </div>
+              <div className="relative space-y-3">
+                {[
+                  { label: "Clients", sublabel: "With hair type, colour formula, allergies" },
+                  { label: "Appointments", sublabel: "Calendar with services and rebooking" },
+                  { label: "Services", sublabel: "Your cuts, colours, and treatments with pricing" },
+                  { label: "Receipts", sublabel: "Pay-at-chair billing, no quotes or proposals" },
+                  { label: "Inquiries", sublabel: "Instagram DMs → leads, one click" },
+                ].map((item) => (
+                  <div key={item.label} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-primary/[0.03] border border-primary/10">
+                    <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{item.label}</p>
+                      <p className="text-xs text-text-secondary">{item.sublabel}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </motion.section>
 
       {/* Add-ons */}
       <motion.section

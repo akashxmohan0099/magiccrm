@@ -161,7 +161,7 @@ export default function LandingPage() {
             transition={{ delay: 0.2, duration: 0.6 }}
             className="text-[13px] text-text-secondary font-medium mb-6"
           >
-            Built for how you actually work
+            Not another CRM. Your CRM.
           </motion.div>
 
           <motion.h1
@@ -170,8 +170,8 @@ export default function LandingPage() {
             transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
             className="text-[2.25rem] sm:text-[3.5rem] md:text-[4rem] font-bold mb-6 leading-[1.05]"
           >
-            <span className="gradient-text">The software that fits</span><br />
-            <span className="text-text-secondary">your business, not the other way around</span>
+            <span className="gradient-text">We don&apos;t give you a CRM.</span><br />
+            <span className="text-text-secondary">We build one around you.</span>
           </motion.h1>
 
           <motion.p
@@ -180,7 +180,7 @@ export default function LandingPage() {
             transition={{ delay: 0.15, duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
             className="text-[15px] sm:text-[17px] text-text-secondary mb-8 sm:mb-10 max-w-xl mx-auto leading-relaxed"
           >
-            Tell us what you do and we&apos;ll assemble a workspace with only the tools you need. One flat price, nothing you won&apos;t use.
+            Answer a few questions about how you work. Our AI assembles the features into modules that speak your language — not generic CRM jargon.
           </motion.p>
 
           <motion.div
@@ -195,7 +195,7 @@ export default function LandingPage() {
               </Button>
             </Link>
             <p className="text-sm text-text-tertiary">
-              Free to set up. $49/mo when you&apos;re ready.
+              Free to set up. Ready in under 3 minutes.
             </p>
           </motion.div>
         </motion.div>
@@ -219,7 +219,7 @@ export default function LandingPage() {
             transition={{ duration: 0.5 }}
             className="text-center text-sm text-text-tertiary mb-4 font-medium"
           >
-            Trusted across industries
+            Every industry. Every workflow.
           </motion.p>
           <div className="flex flex-wrap justify-center gap-2">
             {INDUSTRIES.map((industry, i) => (
@@ -236,7 +236,7 @@ export default function LandingPage() {
             ))}
           </div>
           <p className="text-center text-[13px] text-text-tertiary mt-4 max-w-md mx-auto">
-            Not built for one industry — built for anyone who wants to manage their business, their way.
+            52 personas. 12 tested configurations per persona. One platform that reshapes itself for each.
           </p>
         </div>
       </motion.section>
@@ -259,7 +259,7 @@ export default function LandingPage() {
               transition={sectionTransition}
               className="text-[1.75rem] sm:text-[2.25rem] font-bold text-foreground leading-tight mb-3"
             >
-              Same platform. Your language.
+              Same features. Completely different workspace.
             </motion.h2>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -268,8 +268,7 @@ export default function LandingPage() {
               transition={{ delay: 0.1, ...sectionTransition }}
               className="text-text-secondary text-[15px] max-w-lg mx-auto"
             >
-              Your clients aren&apos;t &ldquo;contacts&rdquo;. Your work isn&apos;t &ldquo;deals&rdquo;.
-              Magic adapts its vocabulary, fields, and workflows to match how you actually run your business.
+              A lash tech gets Appointments and Receipts. An electrician gets Jobs and Invoices. A life coach gets Sessions and Programs. Same building blocks, assembled differently — with fields, labels, and workflows that match how you actually work.
             </motion.p>
           </div>
 
@@ -361,7 +360,7 @@ export default function LandingPage() {
               transition={sectionTransition}
               className="text-[1.75rem] sm:text-[2.5rem] font-bold text-foreground leading-tight mb-3"
             >
-              And more add-ons when you&apos;re ready.
+              Extend it when you&apos;re ready.
             </motion.h2>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -370,7 +369,7 @@ export default function LandingPage() {
               transition={{ delay: 0.1, ...sectionTransition }}
               className="text-text-secondary text-[15px] max-w-lg mx-auto"
             >
-              One click from your sidebar. No setup, no downtime, no migration.
+              Your core workspace is built for you. These add-ons snap in when the time is right — one click, no migration.
             </motion.p>
           </div>
 
@@ -967,11 +966,11 @@ export default function LandingPage() {
             </div>
             <div className="space-y-3 mb-8">
               {[
-                "Only the tools you need — nothing else",
-                "200+ toggleable features included",
-                "Add-ons — install anytime",
+                "Workspace assembled from your answers",
+                "Persona-specific modules, fields, and labels",
+                "Add-ons — install anytime from your sidebar",
                 "Unlimited team members",
-                "AI Builder — 25 credits",
+                "AI-powered workspace tuning",
                 "Priority email support",
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-3">
@@ -1013,7 +1012,7 @@ export default function LandingPage() {
             transition={{ duration: 0.5 }}
             className="mb-5"
           >
-            <span className="text-[13px] font-medium" style={{ color: "#7CFE9D" }}>Your business is unique</span>
+            <span className="text-[13px] font-medium" style={{ color: "#7CFE9D" }}>Every business works differently</span>
           </motion.div>
           <motion.h2
             variants={sectionHeadingVariants}
@@ -1024,7 +1023,7 @@ export default function LandingPage() {
             className="text-[1.75rem] sm:text-[2.5rem] font-bold mb-5 leading-[1.1]"
             style={{ color: "#fff" }}
           >
-            Your software should be too.
+            Yours deserves software that gets that.
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -1034,7 +1033,7 @@ export default function LandingPage() {
             className="mb-10 text-[15px] max-w-md mx-auto"
             style={{ color: "#888" }}
           >
-            Tell us what you do. We&apos;ll build the workspace. You&apos;ll wonder how you worked without it.
+            Answer a few questions. Watch your workspace assemble. Start working in under 3 minutes.
           </motion.p>
           <motion.div variants={ctaPulseVariants} initial="hidden" whileInView="visible" viewport={viewportConfig}>
             <Link href="/onboarding">
@@ -1095,10 +1094,10 @@ export default function LandingPage() {
 
             {/* ML line */}
             <p className="text-center text-[15px] mb-1.5" style={{ color: "#777" }}>
-              Built on machine learning that adapts to how <span className="italic">you</span> work.
+              AI that doesn&apos;t just answer questions — it shapes your entire workspace.
             </p>
             <p className="text-center text-[15px]" style={{ color: "#777" }}>
-              The more you use it, the smarter it gets — <span className="font-semibold" style={{ color: "#7CFE9D" }}>automatically</span>.
+              From onboarding to daily use, it learns how you work and <span className="font-semibold" style={{ color: "#7CFE9D" }}>keeps adapting</span>.
             </p>
           </motion.div>
 
