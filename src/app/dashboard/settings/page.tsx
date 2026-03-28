@@ -6,11 +6,13 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { GeneralSettings } from "@/components/modules/settings/GeneralSettings";
 import { ModuleSettings } from "@/components/modules/settings/ModuleSettings";
 import { DataManagement } from "@/components/modules/settings/DataManagement";
+import { IntegrationSettings } from "@/components/modules/settings/IntegrationSettings";
 
 const TABS = [
   { id: "general", label: "General" },
   { id: "modules", label: "Modules" },
   { id: "data", label: "Data" },
+  { id: "integrations", label: "Integrations" },
 ];
 
 export default function SettingsPage() {
@@ -24,6 +26,7 @@ export default function SettingsPage() {
       {activeTab === "general" && <GeneralSettings />}
       {activeTab === "modules" && <ModuleSettings />}
       {activeTab === "data" && <DataManagement />}
+      {activeTab === "integrations" && <IntegrationSettings />}
     </div>
   );
 }

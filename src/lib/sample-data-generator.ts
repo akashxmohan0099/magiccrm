@@ -39,7 +39,7 @@ function now(): string {
 }
 
 function rec(data: Omit<Record, "id">): Record {
-  return { id: generateId(), createdAt: now(), updatedAt: now(), ...data };
+  return { id: generateId(), createdAt: now(), updatedAt: now(), _isSample: true, ...data };
 }
 
 // ── Persona Data Packs ───────────────────────────────────────

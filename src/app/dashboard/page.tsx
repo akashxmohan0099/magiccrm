@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Check, Mail, Instagram,
@@ -9,7 +9,7 @@ import {
   Zap, GitBranch, Package, Users, User, DollarSign,
   TrendingUp, AlertCircle, Plus, X, LayoutGrid,
   FolderKanban, Inbox,
-  Activity,
+  Activity, ClipboardList,
 } from "lucide-react";
 import Link from "next/link";
 import { useOnboardingStore } from "@/store/onboarding";
@@ -763,6 +763,39 @@ export default function DashboardPage() {
     if (sample.jobs.length && !useJobsStore.getState().jobs.length) useJobsStore.setState({ jobs: sample.jobs.map(a) });
   }, [buildComplete, selectedIndustry, selectedPersona, businessContext.businessName, needs, discoveryAnswers]);
 
+  // ── Sample data banner ──────────────────────────────────
+  const [sampleBannerDismissed, setSampleBannerDismissed] = useState(false);
+
+  const clients = useClientsStore((s) => s.clients);
+  const leads = useLeadsStore((s) => s.leads);
+  const bookings = useBookingsStore((s) => s.bookings);
+  const invoices = useInvoicesStore((s) => s.invoices);
+  const jobs = useJobsStore((s) => s.jobs);
+  const products = useProductsStore((s) => s.products);
+
+  const hasSampleData = useMemo(() => {
+    return (
+      clients.some((c) => c._isSample) ||
+      leads.some((l) => l._isSample) ||
+      bookings.some((b) => b._isSample) ||
+      invoices.some((i) => i._isSample) ||
+      jobs.some((j) => j._isSample) ||
+      products.some((p) => p._isSample)
+    );
+  }, [clients, leads, bookings, invoices, jobs, products]);
+
+  const clearSampleData = useCallback(() => {
+    useClientsStore.setState({ clients: useClientsStore.getState().clients.filter((c) => !c._isSample) });
+    useLeadsStore.setState({ leads: useLeadsStore.getState().leads.filter((l) => !l._isSample) });
+    useBookingsStore.setState({ bookings: useBookingsStore.getState().bookings.filter((b) => !b._isSample) });
+    useInvoicesStore.setState({ invoices: useInvoicesStore.getState().invoices.filter((i) => !i._isSample) });
+    useJobsStore.setState({ jobs: useJobsStore.getState().jobs.filter((j) => !j._isSample) });
+    useProductsStore.setState({ products: useProductsStore.getState().products.filter((p) => !p._isSample) });
+    toast("Sample data cleared");
+  }, []);
+
+  const showSampleBanner = hasSampleData && !sampleBannerDismissed;
+
   const { widgets, addWidget, removeWidget, materializeDefaults, setupDismissed, dismissSetup, completedSetupIds, completeSetupTask } = useDashboardStore();
   const completedIds = useMemo(() => new Set(completedSetupIds), [completedSetupIds]);
   const [isEditing, setIsEditing] = useState(false);
@@ -871,6 +904,41 @@ export default function DashboardPage() {
             : "Here\u2019s what\u2019s happening today."}
         </p>
       </motion.div>
+
+      {/* ── SAMPLE DATA BANNER ── */}
+      <AnimatePresence>
+        {showSampleBanner && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden mb-6"
+          >
+            <div className="bg-primary/5 border border-primary/10 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <ClipboardList className="w-4 h-4 text-primary flex-shrink-0" />
+                <p className="text-[13px] text-text-secondary">
+                  Sample data is loaded so you can explore the platform.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <button
+                  onClick={clearSampleData}
+                  className="px-3 py-1.5 bg-foreground text-white rounded-lg text-xs font-semibold cursor-pointer hover:opacity-90 transition-opacity"
+                >
+                  Clear sample data
+                </button>
+                <button
+                  onClick={() => setSampleBannerDismissed(true)}
+                  className="px-3 py-1.5 text-text-tertiary hover:text-foreground rounded-lg text-xs font-medium cursor-pointer transition-colors"
+                >
+                  Keep exploring
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── SETUP MODE ── */}
       {!setupDone && (

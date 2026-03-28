@@ -18,6 +18,7 @@ export interface Client {
   status: "active" | "inactive" | "prospect" | "vip" | "churned";
   customData?: Record<string, unknown>;
   relationships?: ClientRelationship[];
+  _isSample?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -39,6 +40,7 @@ export interface Lead {
   clientId?: string;
   lastContactedAt?: string;
   nextFollowUpDate?: string;
+  _isSample?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -89,6 +91,7 @@ export interface Job {
   satisfactionRating?: number;
   satisfactionFeedback?: string;
   ratedAt?: string;
+  _isSample?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -132,6 +135,7 @@ export interface Invoice {
   taxRate?: number;
   recurringSchedule?: "weekly" | "fortnightly" | "monthly" | "quarterly";
   lastRecurringDate?: string;
+  _isSample?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -207,6 +211,7 @@ export interface Booking {
   satisfactionRating?: number;
   satisfactionFeedback?: string;
   ratedAt?: string;
+  _isSample?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -248,6 +253,7 @@ export interface Message {
 export interface Conversation {
   id: string;
   clientId?: string;
+  leadId?: string;
   clientName: string;
   channel: Channel;
   subject?: string;
@@ -385,6 +391,7 @@ export interface Product {
   sku?: string;
   inStock: boolean;
   quantity?: number;
+  _isSample?: boolean;
   createdAt: string;
   updatedAt: string;
 }

@@ -1,9 +1,12 @@
 "use client";
 
 import { useState, useMemo, useRef, useEffect } from "react";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, UserPlus, Inbox } from "lucide-react";
 import { useCommunicationStore } from "@/store/communication";
+import { useLeadsStore } from "@/store/leads";
+import { useClientsStore } from "@/store/clients";
 import { FeatureSection } from "@/components/modules/FeatureSection";
+import { toast } from "@/components/ui/Toast";
 import { ComposeMessage } from "./ComposeMessage";
 
 interface MessageThreadProps {
@@ -21,7 +24,7 @@ function formatTimestamp(timestamp: string): string {
 }
 
 export function MessageThread({ conversationId }: MessageThreadProps) {
-  const { conversations } = useCommunicationStore();
+  const { conversations, updateConversation } = useCommunicationStore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [assignee, setAssignee] = useState("");
 
@@ -33,6 +36,36 @@ export function MessageThread({ conversationId }: MessageThreadProps) {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [conversation?.messages.length]);
+
+  const isLinked = !!(conversation?.clientId || conversation?.leadId);
+
+  const handleConvertToLead = () => {
+    if (!conversation || isLinked) return;
+    const lead = useLeadsStore.getState().addLead({
+      name: conversation.clientName,
+      email: "",
+      phone: "",
+      stage: "new",
+      source: "other",
+      notes: `Converted from ${conversation.channel} conversation`,
+    });
+    updateConversation(conversation.id, { leadId: lead.id });
+    toast(`"${conversation.clientName}" converted to inquiry`);
+  };
+
+  const handleConvertToClient = () => {
+    if (!conversation || isLinked) return;
+    const client = useClientsStore.getState().addClient({
+      name: conversation.clientName,
+      email: "",
+      phone: "",
+      tags: [],
+      notes: `Added from ${conversation.channel} conversation`,
+      status: "active",
+    });
+    updateConversation(conversation.id, { clientId: client.id });
+    toast(`"${conversation.clientName}" added as client`);
+  };
 
   if (!conversationId || !conversation) {
     return (
@@ -47,10 +80,35 @@ export function MessageThread({ conversationId }: MessageThreadProps) {
     <>
       {/* Header */}
       <div className="px-5 py-3 border-b border-border-light">
-        <h3 className="text-sm font-semibold text-foreground">{conversation.clientName}</h3>
-        {conversation.subject && (
-          <p className="text-xs text-text-secondary">{conversation.subject}</p>
-        )}
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="text-sm font-semibold text-foreground">{conversation.clientName}</h3>
+            {conversation.subject && (
+              <p className="text-xs text-text-secondary">{conversation.subject}</p>
+            )}
+          </div>
+          {!isLinked && (
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <button
+                onClick={handleConvertToClient}
+                className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-text-secondary hover:text-foreground hover:bg-surface rounded-lg transition-colors cursor-pointer"
+                title="Add as Client"
+              >
+                <UserPlus className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Add as Client</span>
+              </button>
+              <span className="text-border-light">|</span>
+              <button
+                onClick={handleConvertToLead}
+                className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-text-secondary hover:text-foreground hover:bg-surface rounded-lg transition-colors cursor-pointer"
+                title="Convert to Inquiry"
+              >
+                <Inbox className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Convert to Inquiry</span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Conversation Assignment */}
