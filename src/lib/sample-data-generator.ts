@@ -88,6 +88,164 @@ function hairSalonData(): DataPack {
   };
 }
 
+function barberData(): DataPack {
+  const c1 = rec({ name: "Jake R.", email: "", phone: "", status: "active", tags: ["regular"], notes: "Skin fade every 2 weeks", source: "walk-in", customData: { preferredStyle: "skin fade" } });
+  const c2 = rec({ name: "Marcus T.", email: "", phone: "", status: "vip", tags: ["regular", "beard"], notes: "Beard trim with every cut", source: "referral", customData: { preferredStyle: "cut & beard" } });
+  const c3 = rec({ name: "Liam P.", email: "", phone: "", status: "active", tags: [], notes: "Buzz cut, no guard", source: "social" });
+  const c4 = rec({ name: "Daniel W.", email: "", phone: "", status: "prospect", tags: [], notes: "Asked about hot towel shave", source: "walk-in" });
+
+  const p1 = rec({ name: "Skin Fade", description: "Sharp skin fade with lineup", price: 35, category: "Cuts", duration: 30, inStock: true });
+  const p2 = rec({ name: "Cut & Beard", description: "Haircut with full beard shape-up", price: 45, category: "Cuts", duration: 45, inStock: true });
+  const p3 = rec({ name: "Hot Towel Shave", description: "Traditional straight-razor shave", price: 30, category: "Beard", duration: 30, inStock: true });
+  const p4 = rec({ name: "Buzz Cut", description: "All-over clipper cut", price: 25, category: "Cuts", duration: 20, inStock: true });
+
+  return {
+    clients: [c1, c2, c3, c4],
+    products: [p1, p2, p3, p4],
+    bookings: [
+      rec({ title: "Skin Fade", clientId: c1.id, date: daysFromNow(0), startTime: time(10), endTime: time(10, 30), status: "confirmed", price: 35, serviceName: "Skin Fade", serviceId: p1.id, notes: "" }),
+      rec({ title: "Cut & Beard", clientId: c2.id, date: daysFromNow(1), startTime: time(11), endTime: time(11, 45), status: "confirmed", price: 45, serviceName: "Cut & Beard", serviceId: p2.id, notes: "" }),
+      rec({ title: "Buzz Cut", clientId: c3.id, date: daysFromNow(2), startTime: time(14), endTime: time(14, 20), status: "pending", price: 25, serviceName: "Buzz Cut", serviceId: p4.id, notes: "" }),
+    ],
+    invoices: [
+      rec({ number: "RCT-001", clientId: c2.id, lineItems: [{ id: generateId(), description: "Cut & Beard", quantity: 1, unitPrice: 45 }], status: "paid", dueDate: daysAgo(3), notes: "", taxRate: 10, paidAmount: 49.50 }),
+    ],
+    leads: [
+      rec({ name: "Ryan G.", email: "", phone: "", stage: "new", value: 45, source: "walk-in", notes: "Walked in, shop was full — wants to book" }),
+    ],
+  };
+}
+
+function nailTechData(): DataPack {
+  const c1 = rec({ name: "Lisa M.", email: "", phone: "", status: "active", tags: ["regular"], notes: "Gel refills every 3 weeks", source: "referral", customData: { nailType: "gel", preferredShape: "almond" } });
+  const c2 = rec({ name: "Jade K.", email: "", phone: "", status: "vip", tags: ["nail-art"], notes: "Loves intricate nail art", source: "instagram", customData: { nailType: "acrylic", preferredShape: "coffin" } });
+  const c3 = rec({ name: "Sophie P.", email: "", phone: "", status: "active", tags: [], notes: "Prefers neutral tones", source: "social", customData: { nailType: "gel", preferredShape: "square" } });
+
+  const p1 = rec({ name: "Gel Manicure", description: "Full gel manicure with colour", price: 55, category: "Manicure", duration: 45, inStock: true });
+  const p2 = rec({ name: "Acrylic Full Set", description: "Full set acrylic nails with shape", price: 75, category: "Acrylic", duration: 60, inStock: true });
+  const p3 = rec({ name: "Nail Art Add-on", description: "Custom nail art per nail", price: 20, category: "Add-on", duration: 15, inStock: true });
+  const p4 = rec({ name: "Pedicure", description: "Full pedicure with gel polish", price: 50, category: "Pedicure", duration: 45, inStock: true });
+
+  return {
+    clients: [c1, c2, c3],
+    products: [p1, p2, p3, p4],
+    bookings: [
+      rec({ title: "Gel Manicure", clientId: c1.id, date: daysFromNow(0), startTime: time(10), endTime: time(10, 45), status: "confirmed", price: 55, serviceName: "Gel Manicure", serviceId: p1.id, notes: "" }),
+      rec({ title: "Acrylic Full Set + Nail Art", clientId: c2.id, date: daysFromNow(1), startTime: time(13), endTime: time(14, 15), status: "confirmed", price: 95, serviceName: "Acrylic Full Set", serviceId: p2.id, notes: "" }),
+      rec({ title: "Pedicure", clientId: c3.id, date: daysFromNow(3), startTime: time(15), endTime: time(15, 45), status: "pending", price: 50, serviceName: "Pedicure", serviceId: p4.id, notes: "" }),
+    ],
+    invoices: [
+      rec({ number: "RCT-001", clientId: c2.id, lineItems: [{ id: generateId(), description: "Acrylic Full Set + Nail Art", quantity: 1, unitPrice: 95 }], status: "paid", dueDate: daysAgo(5), notes: "", taxRate: 10, paidAmount: 104.50 }),
+    ],
+  };
+}
+
+function electricianData(): DataPack {
+  const c1 = rec({ name: "Steve M.", email: "", phone: "", status: "active", tags: ["residential"], notes: "Older house, needs rewiring", source: "referral", address: "17 Elm St, Hawthorn", customData: { propertyType: "residential" } });
+  const c2 = rec({ name: "Horizon Strata", email: "", phone: "", status: "active", tags: ["commercial"], notes: "Building manager: Paul", source: "website", company: "Horizon Body Corp", address: "200 Collins St, Melbourne", customData: { propertyType: "strata" } });
+  const c3 = rec({ name: "Karen L.", email: "", phone: "", status: "prospect", tags: [], notes: "Wants outdoor lighting quote", source: "google", address: "5 Birch Rd, Camberwell", customData: { propertyType: "residential" } });
+
+  return {
+    clients: [c1, c2, c3],
+    leads: [
+      rec({ name: "Nick R.", email: "", phone: "", stage: "new", value: 1800, source: "website", notes: "Switchboard upgrade — old ceramic fuses", customData: { urgency: "routine" } }),
+      rec({ name: "Jenny B.", email: "", phone: "", stage: "quoted", value: 450, source: "google", notes: "Safety inspection for pre-sale", customData: { urgency: "standard" } }),
+      rec({ name: "Office Hub Co.", email: "", phone: "", stage: "site-visit", value: 3200, source: "referral", notes: "Data cabling for new office fit-out", customData: { urgency: "scheduled" } }),
+    ],
+    jobs: [
+      rec({ title: "Rewiring — 17 Elm St", description: "Full rewire of kitchen and living area", clientId: c1.id, stage: "in-progress", dueDate: daysFromNow(3), tasks: [{ id: generateId(), title: "Isolate power at switchboard", completed: true }, { id: generateId(), title: "Remove old wiring", completed: true }, { id: generateId(), title: "Run new cables", completed: false }, { id: generateId(), title: "Test circuits and tag", completed: false }], timeEntries: [], files: [] }),
+      rec({ title: "Solar install — 5 Birch Rd", description: "6.6kW solar panel system install", clientId: c3.id, stage: "scheduled", dueDate: daysFromNow(10), tasks: [{ id: generateId(), title: "Mount panels on roof", completed: false }, { id: generateId(), title: "Wire inverter", completed: false }, { id: generateId(), title: "Connect to grid and test", completed: false }], timeEntries: [], files: [] }),
+    ],
+    invoices: [
+      rec({ number: "INV-001", clientId: c1.id, lineItems: [{ id: generateId(), description: "Labour — rewiring", quantity: 6, unitPrice: 110 }, { id: generateId(), description: "Cable and fittings", quantity: 1, unitPrice: 320 }], status: "sent", dueDate: daysFromNow(14), notes: "", taxRate: 10 }),
+    ],
+  };
+}
+
+function graphicDesignerData(): DataPack {
+  const c1 = rec({ name: "Acme Corp", email: "", phone: "", status: "active", tags: ["corporate"], notes: "Ongoing brand work", source: "referral", company: "Acme Corporation" });
+  const c2 = rec({ name: "Sarah K.", email: "", phone: "", status: "active", tags: ["small-business"], notes: "Startup founder, needs full brand identity", source: "website" });
+
+  return {
+    clients: [c1, c2],
+    leads: [
+      rec({ name: "Ben T.", email: "", phone: "", stage: "new", value: 3500, source: "website", notes: "Brand refresh for established cafe", customData: { projectType: "brand-refresh" } }),
+      rec({ name: "Maple & Co.", email: "", phone: "", stage: "quoted", value: 2200, source: "referral", notes: "Packaging design for new product line", customData: { projectType: "packaging" } }),
+    ],
+    jobs: [
+      rec({ title: "Brand Identity — Sarah K.", description: "Full brand identity package: logo, palette, typography, guidelines", clientId: c2.id, stage: "in-progress", dueDate: daysFromNow(14), tasks: [{ id: generateId(), title: "Concept moodboard", completed: true }, { id: generateId(), title: "Design logo options", completed: false }, { id: generateId(), title: "Client revisions", completed: false }], timeEntries: [], files: [] }),
+    ],
+    invoices: [
+      rec({ number: "INV-001", clientId: c2.id, lineItems: [{ id: generateId(), description: "Brand Identity Package — deposit", quantity: 1, unitPrice: 1500 }], status: "paid", dueDate: daysAgo(7), notes: "", taxRate: 10, paidAmount: 1650 }),
+    ],
+  };
+}
+
+function tutorData(): DataPack {
+  const c1 = rec({ name: "James P.", email: "", phone: "", status: "active", tags: ["maths"], notes: "Year 10, preparing for Year 11 Methods", source: "referral", customData: { yearLevel: "Year 10", subjects: ["Maths"] } });
+  const c2 = rec({ name: "Lily T.", email: "", phone: "", status: "active", tags: ["english"], notes: "Year 12, needs essay structure help", source: "website", customData: { yearLevel: "Year 12", subjects: ["English"] } });
+  const c3 = rec({ name: "Ravi S.", email: "", phone: "", status: "active", tags: ["maths", "science"], notes: "Year 11, exam prep focus", source: "referral", customData: { yearLevel: "Year 11", subjects: ["Maths", "Physics"] } });
+
+  const p1 = rec({ name: "Year 7-10 Session", description: "1 hour tutoring for Year 7-10 students", price: 60, category: "Session", duration: 60, inStock: true });
+  const p2 = rec({ name: "Year 11-12 Session", description: "1 hour tutoring for Year 11-12 students", price: 75, category: "Session", duration: 60, inStock: true });
+  const p3 = rec({ name: "Exam Prep Session", description: "Intensive exam preparation session", price: 85, category: "Exam Prep", duration: 60, inStock: true });
+
+  return {
+    clients: [c1, c2, c3],
+    products: [p1, p2, p3],
+    bookings: [
+      rec({ title: "Maths lesson — James", clientId: c1.id, date: daysFromNow(0), startTime: time(16), endTime: time(17), status: "confirmed", price: 60, serviceName: "Year 7-10 Session", serviceId: p1.id, notes: "" }),
+      rec({ title: "English lesson — Lily", clientId: c2.id, date: daysFromNow(1), startTime: time(17), endTime: time(18), status: "confirmed", price: 75, serviceName: "Year 11-12 Session", serviceId: p2.id, notes: "" }),
+      rec({ title: "Exam prep — Ravi", clientId: c3.id, date: daysFromNow(2), startTime: time(10), endTime: time(11), status: "pending", price: 85, serviceName: "Exam Prep Session", serviceId: p3.id, notes: "" }),
+    ],
+    leads: [
+      rec({ name: "David L.", email: "", phone: "", stage: "new", value: 75, source: "referral", notes: "Parent inquiry — Year 9 son struggling with algebra" }),
+    ],
+  };
+}
+
+function lifeCoachData(): DataPack {
+  const c1 = rec({ name: "Michael R.", email: "", phone: "", status: "active", tags: ["program"], notes: "Midway through 12-week program", source: "website", customData: { coachingGoal: "career-transition", programName: "12-Week Breakthrough" } });
+  const c2 = rec({ name: "Sarah T.", email: "", phone: "", status: "active", tags: ["casual"], notes: "Monthly check-in sessions", source: "referral", customData: { coachingGoal: "work-life-balance", programName: "Single Sessions" } });
+
+  const p1 = rec({ name: "12-Week Breakthrough", description: "Full coaching program: 12 weekly sessions + workbook", price: 2400, category: "Program", duration: 60, inStock: true });
+  const p2 = rec({ name: "Single Session", description: "One-off coaching session", price: 200, category: "Casual", duration: 60, inStock: true });
+
+  return {
+    clients: [c1, c2],
+    products: [p1, p2],
+    bookings: [
+      rec({ title: "Coaching session — Michael", clientId: c1.id, date: daysFromNow(1), startTime: time(9), endTime: time(10), status: "confirmed", price: 200, serviceName: "12-Week Breakthrough", serviceId: p1.id, notes: "" }),
+      rec({ title: "Discovery call — Sarah", clientId: c2.id, date: daysFromNow(0), startTime: time(14), endTime: time(15), status: "confirmed", price: 0, notes: "" }),
+    ],
+    leads: [
+      rec({ name: "Anna W.", email: "", phone: "", stage: "new", value: 2400, source: "website", notes: "Filled in contact form, interested in 12-week program" }),
+    ],
+  };
+}
+
+function weddingPlannerData(): DataPack {
+  const c1 = rec({ name: "Emma & Josh", email: "", phone: "", status: "active", tags: ["full-planning"], notes: "Garden wedding, 120 guests", source: "referral", customData: { weddingDate: daysFromNow(90), venue: "Yarra Valley Estate", guestCount: 120, budget: 45000 } });
+  const c2 = rec({ name: "Kate & Sam", email: "", phone: "", status: "active", tags: ["day-of"], notes: "Day-of coordination only", source: "website", customData: { weddingDate: daysFromNow(45), venue: "Bayside Pavilion", guestCount: 80, budget: 30000 } });
+
+  const p1 = rec({ name: "Full Planning Package", description: "End-to-end wedding planning, vendor management, and day-of coordination", price: 8000, category: "Package", duration: 0, inStock: true });
+  const p2 = rec({ name: "Day-of Coordination", description: "Timeline management, vendor liaison, and on-the-day support", price: 2500, category: "Package", duration: 0, inStock: true });
+
+  return {
+    clients: [c1, c2],
+    products: [p1, p2],
+    leads: [
+      rec({ name: "Mia & Alex", email: "", phone: "", stage: "new", value: 8000, source: "instagram", notes: "Summer wedding, ~150 guests, looking for full planning", customData: { weddingDate: daysFromNow(180), guestCount: 150 } }),
+    ],
+    jobs: [
+      rec({ title: "Emma & Josh Wedding", description: "Full planning — Yarra Valley Estate, March", clientId: c1.id, stage: "in-progress", dueDate: daysFromNow(90), tasks: [{ id: generateId(), title: "Finalise vendor shortlist", completed: true }, { id: generateId(), title: "Confirm florist and cake", completed: false }, { id: generateId(), title: "Send run sheet to bridal party", completed: false }], timeEntries: [], files: [] }),
+    ],
+    invoices: [
+      rec({ number: "INV-001", clientId: c1.id, lineItems: [{ id: generateId(), description: "Full Planning Package — deposit (50%)", quantity: 1, unitPrice: 4000 }], status: "paid", dueDate: daysAgo(14), notes: "", taxRate: 10, paidAmount: 4400 }),
+    ],
+  };
+}
+
 function plumberData(): DataPack {
   const c1 = rec({ name: "Tom H.", email: "", phone: "", status: "active", tags: ["residential"], notes: "Older house, galvanised pipes", source: "referral", address: "42 Smith St, Richmond", customData: { propertyType: "residential" } });
   const c2 = rec({ name: "Greenfield Strata", email: "", phone: "", status: "active", tags: ["commercial"], notes: "Building manager: Karen", source: "website", company: "Greenfield Body Corp", address: "15 George St, South Yarra", customData: { propertyType: "strata" } });
@@ -204,13 +362,17 @@ function makeupArtistData(): DataPack {
 
 const PERSONA_GENERATORS: { [key: string]: () => DataPack } = {
   "hair-salon": hairSalonData,
-  "barber": hairSalonData,
-  "nail-tech": hairSalonData,
+  "barber": barberData,
+  "nail-tech": nailTechData,
   "makeup-artist": makeupArtistData,
   "plumber": plumberData,
-  "electrician": plumberData,
+  "electrician": electricianData,
   "photographer": photographerData,
+  "graphic-designer": graphicDesignerData,
   "personal-trainer": personalTrainerData,
+  "tutor": tutorData,
+  "life-business-coach": lifeCoachData,
+  "wedding-planner": weddingPlannerData,
 };
 
 /**
