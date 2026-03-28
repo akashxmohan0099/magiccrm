@@ -18,6 +18,7 @@ import { LineItemEditor } from "@/components/ui/LineItemEditor";
 import { TravelCalculator } from "@/components/ui/TravelCalculator";
 import { MilestoneEditor } from "./MilestoneEditor";
 import { FeatureSection } from "@/components/modules/FeatureSection";
+import { SchemaCustomFields } from "@/components/modules/shared/SchemaCustomFields";
 
 interface InvoiceFormProps {
   open: boolean;
@@ -53,6 +54,7 @@ export function InvoiceForm({ open, onClose, invoice }: InvoiceFormProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [applyTax, setApplyTax] = useState(false);
   const [taxRate, setTaxRate] = useState("10");
+  const [customData, setCustomData] = useState<Record<string, unknown>>({});
 
   useEffect(() => {
     if (open) {
@@ -85,6 +87,7 @@ export function InvoiceForm({ open, onClose, invoice }: InvoiceFormProps) {
         setRecurring("");
         setApplyTax(false);
         setTaxRate("10");
+        setCustomData({});
       }
     }
   }, [open, invoice, config.invoiceMode.defaultMode]);
@@ -124,6 +127,9 @@ export function InvoiceForm({ open, onClose, invoice }: InvoiceFormProps) {
 
     const taxField = applyTax ? parseFloat(taxRate) || 0 : 0;
     const recurringSchedule = recurring || undefined;
+    if (Object.keys(customData).length > 0) {
+      extraFields.customData = customData;
+    }
 
     if (invoice) {
       updateInvoice(invoice.id, {
@@ -304,6 +310,12 @@ export function InvoiceForm({ open, onClose, invoice }: InvoiceFormProps) {
             placeholder="Additional notes..."
           />
         </FormField>
+
+        <SchemaCustomFields
+          moduleId="quotes-invoicing"
+          values={customData}
+          onChange={(id, val) => setCustomData(prev => ({ ...prev, [id]: val }))}
+        />
 
         <div className="flex items-center justify-between pt-4 border-t border-border-light">
           <div>

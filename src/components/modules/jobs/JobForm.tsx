@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/Button";
 import { FeatureSection } from "@/components/modules/FeatureSection";
 import { TeamMemberPicker } from "@/components/ui/TeamMemberPicker";
 import { useModuleEnabled } from "@/hooks/useFeature";
+import { SchemaCustomFields } from "@/components/modules/shared/SchemaCustomFields";
 
 interface JobFormProps {
   open: boolean;
@@ -41,6 +42,7 @@ export function JobForm({ open, onClose, job }: JobFormProps) {
   const [assignedToName, setAssignedToName] = useState<string | undefined>(undefined);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [customData, setCustomData] = useState<Record<string, unknown>>({});
 
   useEffect(() => {
     if (open) {
@@ -54,6 +56,7 @@ export function JobForm({ open, onClose, job }: JobFormProps) {
         setPriority((job as unknown as Record<string, string>).priority ?? "");
         setAssignedToId(job.assignedToId);
         setAssignedToName(job.assignedToName);
+        setCustomData((job as unknown as Record<string, unknown>)?.customData as Record<string, unknown> ?? {});
       } else {
         setTitle("");
         setDescription("");
@@ -63,6 +66,7 @@ export function JobForm({ open, onClose, job }: JobFormProps) {
         setPriority("");
         setAssignedToId(undefined);
         setAssignedToName(undefined);
+        setCustomData({});
       }
       setErrors({});
     }
@@ -96,6 +100,7 @@ export function JobForm({ open, onClose, job }: JobFormProps) {
       priority: priority || undefined,
       assignedToId: assignedToId || undefined,
       assignedToName: assignedToName || undefined,
+      ...(Object.keys(customData).length > 0 ? { customData } : {}),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any;
 
@@ -180,6 +185,12 @@ export function JobForm({ open, onClose, job }: JobFormProps) {
             </select>
           </div>
         </FeatureSection>
+
+        <SchemaCustomFields
+          moduleId="jobs-projects"
+          values={customData}
+          onChange={(id, val) => setCustomData(prev => ({ ...prev, [id]: val }))}
+        />
 
         <div className="flex justify-end gap-2 pt-4">
           <Button variant="ghost" type="button" onClick={onClose}>

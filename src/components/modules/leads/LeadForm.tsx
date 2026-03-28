@@ -11,6 +11,7 @@ import { SelectField } from "@/components/ui/SelectField";
 import { TextArea } from "@/components/ui/TextArea";
 import { Button } from "@/components/ui/Button";
 import { FeatureSection } from "@/components/modules/FeatureSection";
+import { SchemaCustomFields } from "@/components/modules/shared/SchemaCustomFields";
 
 interface LeadFormProps {
   open: boolean;
@@ -42,6 +43,7 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
   const [saving, setSaving] = useState(false);
   const [leadScore, setLeadScore] = useState("");
   const [assignedTo, setAssignedTo] = useState("");
+  const [customData, setCustomData] = useState<Record<string, unknown>>({});
 
   useEffect(() => {
     if (open) {
@@ -59,9 +61,11 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
           lostReason: (lead as unknown as Record<string, string>).lostReason ?? "",
         });
         setLeadScore((lead as unknown as Record<string, string>).score ?? "");
+        setCustomData((lead as unknown as Record<string, unknown>)?.customData as Record<string, unknown> ?? {});
       } else {
         setForm(emptyForm);
         setLeadScore("");
+        setCustomData({});
       }
       setErrors({});
     }
@@ -95,6 +99,7 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
       notes: form.notes.trim(),
       lostReason: form.stage === "lost" ? form.lostReason.trim() : undefined,
       assignedTo: assignedTo || undefined,
+      ...(Object.keys(customData).length > 0 ? { customData } : {}),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any;
 
@@ -239,6 +244,12 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
             />
           </FormField>
         </FeatureSection>
+
+        <SchemaCustomFields
+          moduleId="leads-pipeline"
+          values={customData}
+          onChange={(id, val) => setCustomData(prev => ({ ...prev, [id]: val }))}
+        />
 
         <div className="flex justify-end gap-3 pt-4 border-t border-border-light">
           <Button variant="secondary" size="sm" onClick={onClose} type="button">

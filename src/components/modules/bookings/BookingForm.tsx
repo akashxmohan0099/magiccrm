@@ -22,6 +22,7 @@ import { SatisfactionPrompt } from "./SatisfactionPrompt";
 import { StarRating } from "@/components/ui/StarRating";
 import { TeamMemberPicker } from "@/components/ui/TeamMemberPicker";
 import { useModuleEnabled } from "@/hooks/useFeature";
+import { SchemaCustomFields } from "@/components/modules/shared/SchemaCustomFields";
 
 interface BookingFormProps {
   open: boolean;
@@ -81,6 +82,7 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
   const [policyConsent, setPolicyConsent] = useState(false);
   const [newClientName, setNewClientName] = useState("");
   const [newClientEmail, setNewClientEmail] = useState("");
+  const [customData, setCustomData] = useState<Record<string, unknown>>({});
 
   const clientOptions = useMemo(
     () => [
@@ -121,6 +123,7 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
       setPolicyConsent(!!booking?.cancellationPolicyConsent?.accepted);
       setNewClientName("");
       setNewClientEmail("");
+      setCustomData((booking as unknown as Record<string, unknown>)?.customData as Record<string, unknown> ?? {});
     }
   }, [open, booking, defaultDate]);
 
@@ -219,6 +222,10 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
         accepted: true,
         acceptedAt: new Date().toISOString(),
       };
+    }
+
+    if (Object.keys(customData).length > 0) {
+      data.customData = customData;
     }
 
     if (booking) {
@@ -508,6 +515,12 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
             </div>
           )}
         </FeatureSection>
+
+        <SchemaCustomFields
+          moduleId="bookings-calendar"
+          values={customData}
+          onChange={(id, val) => setCustomData(prev => ({ ...prev, [id]: val }))}
+        />
 
         <div className="flex justify-between pt-4 border-t border-border-light">
           <div>

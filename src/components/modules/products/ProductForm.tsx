@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { FormField } from "@/components/ui/FormField";
 import { FeatureSection } from "@/components/modules/FeatureSection";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { SchemaCustomFields } from "@/components/modules/shared/SchemaCustomFields";
 
 interface ProductFormProps {
   open: boolean;
@@ -29,6 +30,7 @@ export function ProductForm({ open, onClose, product }: ProductFormProps) {
   const [variants, setVariants] = useState<{ name: string; price: string }[]>([]);
   const [costPrice, setCostPrice] = useState("");
   const [addons, setAddons] = useState("");
+  const [customData, setCustomData] = useState<Record<string, unknown>>({});
 
   const addVariant = () => setVariants((prev) => [...prev, { name: "", price: "" }]);
   const updateVariant = (index: number, field: "name" | "price", value: string) => {
@@ -50,7 +52,7 @@ export function ProductForm({ open, onClose, product }: ProductFormProps) {
         setAddons("");
       } else {
         setName(""); setDescription(""); setPrice(""); setCategory(""); setSku(""); setQuantity("");
-        setVariants([]); setCostPrice(""); setAddons("");
+        setVariants([]); setCostPrice(""); setAddons(""); setCustomData({});
       }
       setDeleteConfirmOpen(false);
       setErrors({});
@@ -87,6 +89,7 @@ export function ProductForm({ open, onClose, product }: ProductFormProps) {
       costPrice: costPrice ? parseFloat(costPrice) : undefined,
       variants: variants.filter((v) => v.name.trim()).map((v) => ({ name: v.name.trim(), price: parseFloat(v.price) || 0 })),
       addons: addons.trim() ? addons.split(",").map((a) => a.trim()).filter(Boolean) : undefined,
+      ...(Object.keys(customData).length > 0 ? { customData } : {}),
     };
     if (product) {
       updateProduct(product.id, data);
@@ -203,6 +206,12 @@ export function ProductForm({ open, onClose, product }: ProductFormProps) {
             <input type="text" value={sku} onChange={(e) => setSku(e.target.value)} placeholder="Optional product code"
               className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30" />
           </div>
+          <SchemaCustomFields
+            moduleId="products"
+            values={customData}
+            onChange={(id, val) => setCustomData(prev => ({ ...prev, [id]: val }))}
+          />
+
           <div className="pt-2 space-y-2">
             <Button type="submit" loading={saving} className="w-full">{product ? "Save Changes" : "Add Product"}</Button>
             {product && (

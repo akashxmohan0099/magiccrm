@@ -15,6 +15,7 @@ import { useBookingsStore } from "@/store/bookings";
 import { useInvoicesStore } from "@/store/invoices";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { FeatureSection } from "@/components/modules/FeatureSection";
+import { useModuleSchema } from "@/hooks/useModuleSchema";
 import { ActivityFeed } from "./ActivityFeed";
 import { ExportReports } from "./ExportReports";
 import { GoalTracking } from "./GoalTracking";
@@ -41,6 +42,7 @@ function StatCard({ label, value, icon }: StatCardProps) {
 }
 
 export function ReportingPage() {
+  const ms = useModuleSchema("reporting");
   const { clients } = useClientsStore();
   const { leads } = useLeadsStore();
   const { jobs } = useJobsStore();
@@ -59,8 +61,8 @@ export function ReportingPage() {
   return (
     <div>
       <PageHeader
-        title="Reporting"
-        description="See how your business is actually doing"
+        title={ms.label || "Reporting"}
+        description={ms.description || "See how your business is actually doing"}
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">

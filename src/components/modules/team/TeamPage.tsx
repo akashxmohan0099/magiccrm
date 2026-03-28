@@ -14,6 +14,7 @@ import { DataTable, Column } from "@/components/ui/DataTable";
 import { Button } from "@/components/ui/Button";
 import { FeatureSection } from "@/components/modules/FeatureSection";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { useModuleSchema } from "@/hooks/useModuleSchema";
 import { TeamMemberForm } from "./TeamMemberForm";
 import { MemberAvailabilityPanel } from "./MemberAvailabilityPanel";
 import { ShiftScheduler } from "./ShiftScheduler";
@@ -26,6 +27,7 @@ const ROLE_COLORS: Record<string, string> = {
 };
 
 export function TeamPage() {
+  const ms = useModuleSchema("team");
   const { members } = useTeamStore();
   const { workspaceId } = useAuth();
   const { entries } = useActivityStore();
@@ -119,8 +121,8 @@ export function TeamPage() {
   return (
     <div>
       <PageHeader
-        title="Team"
-        description={`${members.length} team member${members.length !== 1 ? "s" : ""}`}
+        title={ms.label || "Team"}
+        description={ms.description || `${members.length} team member${members.length !== 1 ? "s" : ""}`}
         actions={
           <Button variant="primary" size="sm" onClick={handleAdd}>
             <Plus className="w-4 h-4" /> Invite Member
