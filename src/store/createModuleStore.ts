@@ -94,7 +94,7 @@ export function createModuleStore(
   const moduleId = schema.id;
   const moduleName = schema.label;
 
-  return create<GenericModuleState>()(
+  const store = create<GenericModuleState>()(
     persist(
       (set, get) => ({
         records: [],
@@ -183,6 +183,10 @@ export function createModuleStore(
       },
     ),
   );
+
+  storeRegistry.set(moduleId, store);
+
+  return store;
 }
 
 // ── Store Registry ───────────────────────────────────────────

@@ -21,6 +21,7 @@ import { useInvoicesStore } from "@/store/invoices";
 import { useJobsStore } from "@/store/jobs";
 import { useProductsStore } from "@/store/products";
 import { useActivityStore } from "@/store/activity";
+import { useTeamStore } from "@/store/team";
 import { useDashboardStore, DashboardWidget } from "@/store/dashboard";
 import { useVocabulary } from "@/hooks/useVocabulary";
 import { useIndustryConfig } from "@/hooks/useIndustryConfig";
@@ -761,6 +762,7 @@ export default function DashboardPage() {
     if (sample.bookings.length && !useBookingsStore.getState().bookings.length) useBookingsStore.setState({ bookings: sample.bookings.map(a) });
     if (sample.invoices.length && !useInvoicesStore.getState().invoices.length) useInvoicesStore.setState({ invoices: sample.invoices.map(a) });
     if (sample.jobs.length && !useJobsStore.getState().jobs.length) useJobsStore.setState({ jobs: sample.jobs.map(a) });
+    if (sample.team?.length && !useTeamStore.getState().members.length) useTeamStore.setState({ members: sample.team.map(a) });
   }, [buildComplete, selectedIndustry, selectedPersona, businessContext.businessName, needs, discoveryAnswers]);
 
   // ── Sample data banner ──────────────────────────────────

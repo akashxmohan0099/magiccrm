@@ -51,6 +51,7 @@ interface DataPack {
   invoices?: Record[];
   jobs?: Record[];
   products?: Record[];
+  team?: Record[];
 }
 
 function hairSalonData(): DataPack {
@@ -80,6 +81,10 @@ function hairSalonData(): DataPack {
     leads: [
       rec({ name: "Amy N.", email: "", phone: "", stage: "new", value: 250, source: "social", notes: "Interested in bridal package" }),
     ],
+    team: [
+      rec({ name: "You", email: "", phone: "", role: "owner", status: "active", moduleAccess: [] }),
+      rec({ name: "Emma", email: "", phone: "", role: "staff", status: "active", moduleAccess: ["bookings-calendar", "client-database"] }),
+    ],
   };
 }
 
@@ -102,6 +107,9 @@ function plumberData(): DataPack {
     invoices: [
       rec({ number: "INV-001", clientId: c1.id, lineItems: [{ id: generateId(), description: "Labour — pipe replacement", quantity: 4, unitPrice: 120 }, { id: generateId(), description: "Copper pipe + fittings", quantity: 1, unitPrice: 185 }], status: "sent", dueDate: daysFromNow(14), notes: "", taxRate: 10 }),
     ],
+    team: [
+      rec({ name: "You", email: "", phone: "", role: "owner", status: "active", moduleAccess: [] }),
+    ],
   };
 }
 
@@ -121,6 +129,9 @@ function photographerData(): DataPack {
       rec({ name: "Wedding Full Day", description: "8 hours, 2 photographers, 500+ images", price: 4500, category: "Wedding", duration: 480, inStock: true }),
       rec({ name: "Portrait Session", description: "1 hour, 1 location, 30 images", price: 350, category: "Portrait", duration: 60, inStock: true }),
       rec({ name: "Corporate Headshots", description: "Per person, 3 retouched images", price: 150, category: "Commercial", duration: 20, inStock: true }),
+    ],
+    team: [
+      rec({ name: "You", email: "", phone: "", role: "owner", status: "active", moduleAccess: [] }),
     ],
   };
 }
@@ -142,6 +153,9 @@ function personalTrainerData(): DataPack {
     ],
     leads: [
       rec({ name: "Mike C.", email: "", phone: "", stage: "new", value: 700, source: "instagram", notes: "Wants to lose 10kg" }),
+    ],
+    team: [
+      rec({ name: "You", email: "", phone: "", role: "owner", status: "active", moduleAccess: [] }),
     ],
   };
 }
@@ -180,6 +194,9 @@ function makeupArtistData(): DataPack {
     invoices: [
       rec({ number: "INV-001", clientId: c3.id, lineItems: [{ id: generateId(), description: "Editorial Shoot Makeup", quantity: 1, unitPrice: 180 }], status: "paid", dueDate: daysAgo(5), notes: "", taxRate: 10, paidAmount: 198 }),
     ],
+    team: [
+      rec({ name: "You", email: "", phone: "", role: "owner", status: "active", moduleAccess: [] }),
+    ],
   };
 }
 
@@ -207,6 +224,7 @@ export function generateSampleData(config: SampleDataConfig): {
   invoices: Record[];
   jobs: Record[];
   products: Record[];
+  team: Record[];
 } {
   const generator = PERSONA_GENERATORS[config.personaId] || genericData;
   const pack = generator();
@@ -220,5 +238,6 @@ export function generateSampleData(config: SampleDataConfig): {
     invoices: enabled.has("quotes-invoicing") ? (pack.invoices || []) : [],
     jobs: enabled.has("jobs-projects") ? (pack.jobs || []) : [],
     products: enabled.has("products") ? (pack.products || []) : [],
+    team: enabled.has("team") ? (pack.team || []) : [],
   };
 }

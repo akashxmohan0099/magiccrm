@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { createClient } from "@/lib/supabase";
 
 export const PRESET_COLORS = [
   { id: "green", hex: "#34D399", label: "Emerald" },
@@ -22,11 +23,13 @@ interface BrandSettingsStore {
   setLogoBase64: (data: string) => void;
   setTagline: (tagline: string) => void;
   clearLogo: () => void;
+  syncToSupabase: (workspaceId: string) => Promise<void>;
+  loadFromSupabase: (workspaceId: string) => Promise<void>;
 }
 
 export const useBrandSettingsStore = create<BrandSettingsStore>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       brandColor: "#34D399",
       logoBase64: "",
       tagline: "",
@@ -34,6 +37,49 @@ export const useBrandSettingsStore = create<BrandSettingsStore>()(
       setLogoBase64: (data) => set({ logoBase64: data }),
       setTagline: (tagline) => set({ tagline }),
       clearLogo: () => set({ logoBase64: "" }),
+
+      syncToSupabase: async (workspaceId: string) => {
+        try {
+          const { brandColor, tagline, logoBase64 } = get();
+          const supabase = createClient();
+          const { error } = await supabase
+            .from("workspace_settings")
+            .update({ brand: { brandColor, tagline, logoBase64 } })
+            .eq("workspace_id", workspaceId);
+          if (error) throw error;
+        } catch (err) {
+          import("@/lib/sync-error-handler").then((m) =>
+            m.handleSyncError(err, { context: "syncing brand settings to Supabase" })
+          );
+        }
+      },
+
+      loadFromSupabase: async (workspaceId: string) => {
+        try {
+          const supabase = createClient();
+          const { data, error } = await supabase
+            .from("workspace_settings")
+            .select("brand")
+            .eq("workspace_id", workspaceId)
+            .maybeSingle();
+          if (error) throw error;
+
+          const brand = data?.brand as
+            | { brandColor?: string; tagline?: string; logoBase64?: string }
+            | null;
+          if (brand) {
+            set({
+              ...(brand.brandColor ? { brandColor: brand.brandColor } : {}),
+              ...(brand.tagline !== undefined ? { tagline: brand.tagline } : {}),
+              ...(brand.logoBase64 !== undefined ? { logoBase64: brand.logoBase64 } : {}),
+            });
+          }
+        } catch (err) {
+          import("@/lib/sync-error-handler").then((m) =>
+            m.handleSyncError(err, { context: "loading brand settings from Supabase" })
+          );
+        }
+      },
     }),
     { name: "magic-crm-brand-settings" }
   )
