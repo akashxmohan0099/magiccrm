@@ -276,7 +276,10 @@ function DashboardShell({ children }: { children: ReactNode }) {
   };
 
   const navGroups = [
-    { label: "", items: [{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }] },
+    { label: "", items: [
+      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/dashboard/ai", label: "MagicAI", icon: Sparkles },
+    ] },
     ...moduleGroups,
     // Add-ons section
     {
