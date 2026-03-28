@@ -68,10 +68,10 @@ function hairSalonData(): DataPack {
     clients: [c1, c2, c3, c4],
     products: [p1, p2, p3, p4],
     bookings: [
-      rec({ title: "Cut & Blowdry", clientId: c1.id, date: daysFromNow(0), startTime: time(10), endTime: time(10, 45), status: "confirmed", price: 85, serviceName: "Cut & Blowdry", serviceId: p1.id }),
-      rec({ title: "Full Colour", clientId: c2.id, date: daysFromNow(1), startTime: time(13), endTime: time(15), status: "confirmed", price: 180, serviceName: "Full Colour", serviceId: p2.id }),
-      rec({ title: "Balayage", clientId: c3.id, date: daysFromNow(3), startTime: time(9), endTime: time(11, 30), status: "pending", price: 250, serviceName: "Balayage", serviceId: p3.id }),
-      rec({ title: "Cut & Blowdry", clientId: c1.id, date: daysAgo(7), startTime: time(11), endTime: time(11, 45), status: "completed", price: 85, serviceName: "Cut & Blowdry", serviceId: p1.id }),
+      rec({ title: "Cut & Blowdry", clientId: c1.id, date: daysFromNow(0), startTime: time(10), endTime: time(10, 45), status: "confirmed", price: 85, serviceName: "Cut & Blowdry", serviceId: p1.id, notes: "" }),
+      rec({ title: "Full Colour", clientId: c2.id, date: daysFromNow(1), startTime: time(13), endTime: time(15), status: "confirmed", price: 180, serviceName: "Full Colour", serviceId: p2.id, notes: "" }),
+      rec({ title: "Balayage", clientId: c3.id, date: daysFromNow(3), startTime: time(9), endTime: time(11, 30), status: "pending", price: 250, serviceName: "Balayage", serviceId: p3.id, notes: "" }),
+      rec({ title: "Cut & Blowdry", clientId: c1.id, date: daysAgo(7), startTime: time(11), endTime: time(11, 45), status: "completed", price: 85, serviceName: "Cut & Blowdry", serviceId: p1.id, notes: "" }),
     ],
     invoices: [
       rec({ number: "RCT-001", clientId: c1.id, lineItems: [{ id: generateId(), description: "Cut & Blowdry", quantity: 1, unitPrice: 85 }], status: "paid", dueDate: daysAgo(7), notes: "", taxRate: 10, paidAmount: 93.50 }),
@@ -132,9 +132,9 @@ function personalTrainerData(): DataPack {
   return {
     clients: [c1, c2],
     bookings: [
-      rec({ title: "PT Session — Alex", clientId: c1.id, date: daysFromNow(0), startTime: time(6), endTime: time(7), status: "confirmed", price: 80 }),
-      rec({ title: "PT Session — Rachel", clientId: c2.id, date: daysFromNow(0), startTime: time(7, 30), endTime: time(8, 30), status: "confirmed", price: 80 }),
-      rec({ title: "PT Session — Alex", clientId: c1.id, date: daysFromNow(2), startTime: time(6), endTime: time(7), status: "confirmed", price: 80 }),
+      rec({ title: "PT Session — Alex", clientId: c1.id, date: daysFromNow(0), startTime: time(6), endTime: time(7), status: "confirmed", price: 80, notes: "" }),
+      rec({ title: "PT Session — Rachel", clientId: c2.id, date: daysFromNow(0), startTime: time(7, 30), endTime: time(8, 30), status: "confirmed", price: 80, notes: "" }),
+      rec({ title: "PT Session — Alex", clientId: c1.id, date: daysFromNow(2), startTime: time(6), endTime: time(7), status: "confirmed", price: 80, notes: "" }),
     ],
     products: [
       rec({ name: "10-Session Pack", description: "10 x 1-hour PT sessions", price: 700, category: "Session Pack", duration: 60, inStock: true }),
@@ -169,9 +169,9 @@ function makeupArtistData(): DataPack {
     clients: [c1, c2, c3],
     products: [p1, p2, p3],
     bookings: [
-      rec({ title: "Bridal Trial — Jessica", clientId: c1.id, date: daysFromNow(1), startTime: time(9), endTime: time(11), status: "confirmed", price: 150, serviceName: "Bridal Trial", serviceId: p1.id }),
-      rec({ title: "Makeup Lesson — Priya", clientId: c2.id, date: daysFromNow(3), startTime: time(14), endTime: time(15, 30), status: "confirmed", price: 120, serviceName: "Makeup Lesson", serviceId: p3.id }),
-      rec({ title: "Editorial Shoot — Anna", clientId: c3.id, date: daysAgo(5), startTime: time(7), endTime: time(9), status: "completed", price: 180, serviceName: "Event Makeup", serviceId: p2.id }),
+      rec({ title: "Bridal Trial — Jessica", clientId: c1.id, date: daysFromNow(1), startTime: time(9), endTime: time(11), status: "confirmed", price: 150, serviceName: "Bridal Trial", serviceId: p1.id, notes: "" }),
+      rec({ title: "Makeup Lesson — Priya", clientId: c2.id, date: daysFromNow(3), startTime: time(14), endTime: time(15, 30), status: "confirmed", price: 120, serviceName: "Makeup Lesson", serviceId: p3.id, notes: "" }),
+      rec({ title: "Editorial Shoot — Anna", clientId: c3.id, date: daysAgo(5), startTime: time(7), endTime: time(9), status: "completed", price: 180, serviceName: "Event Makeup", serviceId: p2.id, notes: "" }),
     ],
     leads: [
       rec({ name: "Sophie & James", email: "", phone: "", stage: "new", value: 650, source: "instagram", notes: "December wedding, CBD venue, party of 4", customData: { weddingDate: daysFromNow(120), eventType: "wedding", partySize: 4 } }),
