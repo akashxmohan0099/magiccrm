@@ -19,6 +19,7 @@ import { useLeadsStore } from "@/store/leads";
 import { useBookingsStore } from "@/store/bookings";
 import { useInvoicesStore } from "@/store/invoices";
 import { useJobsStore } from "@/store/jobs";
+import { useProductsStore } from "@/store/products";
 import { useActivityStore } from "@/store/activity";
 import { useDashboardStore, DashboardWidget } from "@/store/dashboard";
 import { useVocabulary } from "@/hooks/useVocabulary";
@@ -26,6 +27,7 @@ import { useIndustryConfig } from "@/hooks/useIndustryConfig";
 import { useModuleEnabled } from "@/hooks/useFeature";
 import { computeEnabledModuleIds } from "@/lib/module-registry";
 import { useActiveCombinations } from "@/hooks/useActiveCombinations";
+import { generateSampleData } from "@/lib/sample-data-generator";
 import { RecommendedSetupCard } from "@/components/dashboard/RecommendedSetupCard";
 import { Button } from "@/components/ui/Button";
 import { requestBuilderBrief } from "@/lib/builder-requests";
@@ -726,12 +728,40 @@ function WidgetPreview({ type }: { type: string }) {
 
 export default function DashboardPage() {
   const businessContext = useOnboardingStore((s) => s.businessContext);
+  const selectedIndustry = useOnboardingStore((s) => s.selectedIndustry);
+  const selectedPersona = useOnboardingStore((s) => s.selectedPersona);
+  const buildComplete = useOnboardingStore((s) => s.buildComplete);
   const needs = useOnboardingStore((s) => s.needs);
   const discoveryAnswers = useOnboardingStore((s) => s.discoveryAnswers);
   const teamSize = useOnboardingStore((s) => s.teamSize);
   const vocab = useVocabulary();
   const config = useIndustryConfig();
   const { activeCombinations } = useActiveCombinations();
+
+  // Seed sample data if workspace is empty (covers existing accounts
+  // that onboarded before the sample data feature was added)
+  useEffect(() => {
+    if (!buildComplete || !selectedIndustry) return;
+    const clients = useClientsStore.getState().clients;
+    if (clients.length > 0) return; // already has data
+
+    const enabledIds = Array.from(computeEnabledModuleIds(needs, discoveryAnswers));
+    const sampleData = generateSampleData({
+      industryId: selectedIndustry,
+      personaId: selectedPersona,
+      businessName: businessContext.businessName,
+      enabledModuleIds: enabledIds,
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const a = (x: unknown) => x as any;
+    if (sampleData.clients.length > 0) useClientsStore.setState((s) => ({ clients: [...s.clients, ...sampleData.clients.map(a)] }));
+    if (sampleData.products.length > 0) useProductsStore.setState((s) => ({ products: [...s.products, ...sampleData.products.map(a)] }));
+    if (sampleData.leads.length > 0) useLeadsStore.setState((s) => ({ leads: [...s.leads, ...sampleData.leads.map(a)] }));
+    if (sampleData.bookings.length > 0) useBookingsStore.setState((s) => ({ bookings: [...s.bookings, ...sampleData.bookings.map(a)] }));
+    if (sampleData.invoices.length > 0) useInvoicesStore.setState((s) => ({ invoices: [...s.invoices, ...sampleData.invoices.map(a)] }));
+    if (sampleData.jobs.length > 0) useJobsStore.setState((s) => ({ jobs: [...s.jobs, ...sampleData.jobs.map(a)] }));
+  }, [buildComplete, selectedIndustry, selectedPersona, businessContext.businessName, needs, discoveryAnswers]);
 
   const { widgets, addWidget, removeWidget, materializeDefaults, setupDismissed, dismissSetup, completedSetupIds, completeSetupTask } = useDashboardStore();
   const completedIds = useMemo(() => new Set(completedSetupIds), [completedSetupIds]);
