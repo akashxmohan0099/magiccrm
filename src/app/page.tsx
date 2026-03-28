@@ -161,7 +161,7 @@ export default function LandingPage() {
             transition={{ delay: 0.2, duration: 0.6 }}
             className="text-[13px] text-text-secondary font-medium mb-6"
           >
-            Not another CRM. Your CRM.
+            Not another generic tool. Yours.
           </motion.div>
 
           <motion.h1
@@ -170,8 +170,8 @@ export default function LandingPage() {
             transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
             className="text-[2.25rem] sm:text-[3.5rem] md:text-[4rem] font-bold mb-6 leading-[1.05]"
           >
-            <span className="gradient-text">We don&apos;t give you a CRM.</span><br />
-            <span className="text-text-secondary">We build one around you.</span>
+            <span className="gradient-text">We don&apos;t give you software.</span><br />
+            <span className="text-text-secondary">We build it around you.</span>
           </motion.h1>
 
           <motion.p
@@ -180,7 +180,7 @@ export default function LandingPage() {
             transition={{ delay: 0.15, duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
             className="text-[15px] sm:text-[17px] text-text-secondary mb-8 sm:mb-10 max-w-xl mx-auto leading-relaxed"
           >
-            Answer a few questions about how you work. Our AI assembles the features into modules that speak your language — not generic CRM jargon.
+            Answer a few questions about how you work. We&apos;ll put together a workspace that speaks your language — not generic software jargon.
           </motion.p>
 
           <motion.div
@@ -236,7 +236,7 @@ export default function LandingPage() {
             ))}
           </div>
           <p className="text-center text-[13px] text-text-tertiary mt-4 max-w-md mx-auto">
-            52 personas. 12 tested configurations per persona. One platform that reshapes itself for each.
+            Built for over 50 types of businesses. Tested. Ready to go.
           </p>
         </div>
       </motion.section>
@@ -268,7 +268,7 @@ export default function LandingPage() {
               transition={{ delay: 0.1, ...sectionTransition }}
               className="text-text-secondary text-[15px] max-w-lg mx-auto"
             >
-              A lash tech gets Appointments and Receipts. An electrician gets Jobs and Invoices. A life coach gets Sessions and Programs. Same building blocks, assembled differently — with fields, labels, and workflows that match how you actually work.
+              A lash tech gets Appointments and Receipts. An electrician gets Jobs and Invoices. A life coach gets Sessions and Programs. Same tools, shaped differently — with the words, fields, and workflows that match how you actually run your business.
             </motion.p>
           </div>
 
@@ -371,20 +371,20 @@ export default function LandingPage() {
               {
                 step: "01",
                 title: "Answer a few questions",
-                description: "Not a long form. A smart conversation that adapts to your answers. Our AI detects your persona and understands how you work.",
-                detail: "52 tested personas across 8 industries",
+                description: "Not a long form. A smart conversation that adapts to your answers. It picks up on how you work and what you actually need.",
+                detail: "Works for 50+ types of businesses across 8 industries",
               },
               {
                 step: "02",
                 title: "Watch it assemble",
-                description: "Features combine into modules that speak your language. A lash tech gets Appointments. A plumber gets Job Requests. Same building blocks, your vocabulary.",
-                detail: "10 feature primitives → persona-specific modules",
+                description: "Your tools take shape based on what you told us. A lash tech gets Appointments. A plumber gets Job Requests. Same platform, your words.",
+                detail: "Your workspace, your language",
               },
               {
                 step: "03",
                 title: "Start working",
-                description: "Your dashboard is ready with sample data, personalized labels, and the exact tools you need. Nothing to configure. Nothing to turn off.",
-                detail: "Calendar, lists, pipeline — all populated",
+                description: "Your dashboard is ready with the exact tools you need. Calendars, lists, everything in place. Nothing to set up. Nothing to figure out.",
+                detail: "Ready to use from the first click",
               },
             ].map((item, i) => (
               <motion.div
@@ -426,7 +426,7 @@ export default function LandingPage() {
               transition={sectionTransition}
               className="text-[1.75rem] sm:text-[2.25rem] font-bold text-foreground leading-tight mb-3"
             >
-              Not another CRM with settings you&apos;ll never touch.
+              Not another tool with settings you&apos;ll never touch.
             </motion.h2>
           </div>
 
@@ -441,7 +441,7 @@ export default function LandingPage() {
             >
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-2 h-2 rounded-full bg-red-400" />
-                <span className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">Every other CRM</span>
+                <span className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">Generic software</span>
               </div>
               <div className="space-y-3">
                 {[
@@ -449,7 +449,7 @@ export default function LandingPage() {
                   { label: "Deals", sublabel: "Sales pipeline you don't use" },
                   { label: "Tasks", sublabel: "Project management you didn't ask for" },
                   { label: "Invoicing", sublabel: "One-size-fits-all billing" },
-                  { label: "Settings", sublabel: "200 toggles to figure out yourself" },
+                  { label: "Settings", sublabel: "200 options to figure out yourself" },
                 ].map((item) => (
                   <div key={item.label} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-surface/50">
                     <div className="w-1.5 h-1.5 rounded-full bg-text-tertiary/30" />
@@ -1076,8 +1076,8 @@ export default function LandingPage() {
             </div>
             <div className="space-y-3 mb-8">
               {[
-                "Workspace assembled from your answers",
-                "Persona-specific modules, fields, and labels",
+                "Workspace built from your answers",
+                "Tools, fields, and labels that match your business",
                 "Add-ons — install anytime from your sidebar",
                 "Unlimited team members",
                 "AI-powered workspace tuning",

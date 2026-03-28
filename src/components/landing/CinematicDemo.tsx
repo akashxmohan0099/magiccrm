@@ -33,11 +33,11 @@ const MODULES = [
 // ── Persona presets for the module picker demo ──
 
 const PERSONA_PRESETS = [
-  { label: "Sarah", role: "Lash Tech", context: "Sarah told us she does lash extensions and brow lamination. Our AI assembled Appointments (not generic bookings), a Service Menu (not a product catalog), and Receipts (not invoicing) — because that\u2019s how she works.", modules: ["Clients", "Inquiries", "Messages", "Appointments", "Receipts", "Services", "Marketing", "Automations", "Reporting"] },
-  { label: "Tom", role: "Plumber", context: "Tom said clients call with emergencies. So we built him Job Requests with urgency levels, Site Visits with property addresses, and a Job Board that tracks work from quote to sign-off.", modules: ["Customers", "Job Requests", "Messages", "Jobs", "Invoicing", "Documents", "Team", "Automations", "Reporting"] },
-  { label: "Priya", role: "Consultant", context: "Priya runs a consulting practice. We assembled a prospect pipeline with Discovery Call stages, a Client Portal for project deliverables, and monthly retainer billing.", modules: ["Clients", "Prospects", "Messages", "Sessions", "Projects", "Billing", "Documents", "Support", "Client Portal", "Automations", "Reporting"] },
-  { label: "Jake", role: "Photographer", context: "Jake shoots weddings. So we built Shoots with stages from Booked to Delivered, Wedding Inquiries with event dates and party size, and Photography Packages with day rates.", modules: ["Clients", "Inquiries", "Messages", "Sessions", "Shoots", "Invoicing", "Documents", "Packages", "Marketing", "Automations", "Reporting"] },
-  { label: "Mia", role: "Gym Owner", context: "Mia runs a studio with trainers. We assembled Sessions with types (1-on-1, group, online), Programs instead of products, and Prospects with a gym-specific lead pipeline.", modules: ["Clients", "Prospects", "Messages", "Sessions", "Payments", "Programs", "Marketing", "Team", "Automations", "Reporting"] },
+  { label: "Sarah", role: "Lash Tech", context: "Sarah does lash extensions and brow lamination. So she got Appointments (not generic bookings), a Service Menu (not a product catalog), and Receipts (not invoicing) \u2014 because that\u2019s how she works.", modules: ["Clients", "Inquiries", "Messages", "Appointments", "Receipts", "Services", "Marketing", "Automations", "Reporting"] },
+  { label: "Tom", role: "Plumber", context: "Tom\u2019s clients call with emergencies. So he got Job Requests with urgency levels, Site Visits with property addresses, and a Job Board that tracks work from quote to sign-off.", modules: ["Customers", "Job Requests", "Messages", "Jobs", "Invoicing", "Documents", "Team", "Automations", "Reporting"] },
+  { label: "Priya", role: "Consultant", context: "Priya runs a consulting practice. She got a prospect pipeline with Discovery Call stages, a Client Portal for deliverables, and monthly retainer billing.", modules: ["Clients", "Prospects", "Messages", "Sessions", "Projects", "Billing", "Documents", "Support", "Client Portal", "Automations", "Reporting"] },
+  { label: "Jake", role: "Photographer", context: "Jake shoots weddings. He got Shoots with stages from Booked to Delivered, Wedding Inquiries with event dates and party size, and Photography Packages with day rates.", modules: ["Clients", "Inquiries", "Messages", "Sessions", "Shoots", "Invoicing", "Documents", "Packages", "Marketing", "Automations", "Reporting"] },
+  { label: "Mia", role: "Gym Owner", context: "Mia runs a studio with trainers. She got Sessions with types (1-on-1, group, online), Programs instead of products, and a lead pipeline built for gyms.", modules: ["Clients", "Prospects", "Messages", "Sessions", "Payments", "Programs", "Marketing", "Team", "Automations", "Reporting"] },
 ];
 
 const PERSONA_CYCLE_MS = 6000;
@@ -146,10 +146,10 @@ export function ModulePickerDemo() {
       <div className="max-w-5xl mx-auto px-4 sm:px-6">
         <div className="text-center mb-8">
           <h2 className="text-[1.75rem] sm:text-[2.25rem] font-bold text-foreground leading-tight mb-3">
-            Watch it assemble for you.
+            See what you get.
           </h2>
           <p className="text-text-secondary text-[15px] max-w-md mx-auto mb-6">
-            Same building blocks. Completely different workspace. Click a persona and see what they get.
+            Click a business type and see how their workspace looks. Same platform, completely different setup.
           </p>
 
           {/* Persona preset pills */}
@@ -197,7 +197,7 @@ export function ModulePickerDemo() {
               {PERSONA_PRESETS[activePreset].context}
             </p>
             <p className="text-xs text-primary font-medium mt-2">
-              AI suggested {PERSONA_PRESETS[activePreset].modules.length} modules
+              {PERSONA_PRESETS[activePreset].modules.length} tools, shaped for {PERSONA_PRESETS[activePreset].role.toLowerCase()}s
             </p>
           </motion.div>
         </AnimatePresence>
@@ -205,7 +205,7 @@ export function ModulePickerDemo() {
         {/* Right hint — what you can do */}
         <div className="hidden xl:block absolute -right-52 top-12 w-44">
           <p className="text-xs text-text-tertiary leading-relaxed mb-3">
-            <span className="text-foreground font-semibold">Toggle freely.</span> Turn any module on or off at any time — your data stays safe.
+            <span className="text-foreground font-semibold">Always flexible.</span> Turn any tool on or off at any time — your data stays safe.
           </p>
           <div className="space-y-2">
             <div className="flex items-center gap-2">
@@ -505,10 +505,10 @@ export function FeatureCustomizeDemo() {
       <div className="max-w-5xl mx-auto px-4 sm:px-6">
         <div className="text-center mb-10">
           <h2 className="text-[1.75rem] sm:text-[2.25rem] font-bold text-foreground leading-tight mb-3">
-            Every module is fine-tuned for you.
+            Every tool is set up for how you work.
           </h2>
           <p className="text-text-secondary text-[15px] max-w-md mx-auto">
-            Fields, features, and workflows are configured based on your answers. Not a single toggle you didn&apos;t ask for.
+            Every field, every feature, every workflow — set up based on what you told us. Nothing you didn&apos;t ask for.
           </p>
         </div>
 
