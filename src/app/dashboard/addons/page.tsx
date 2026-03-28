@@ -28,6 +28,26 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Ticket, CalendarRange, Building2, ScrollText, ListOrdered,
 };
 
+/** Gradient accent colors per addon — matches the landing page card style */
+const ADDON_COLORS: Record<string, { gradient: string; iconBg: string; iconText: string }> = {
+  "documents":        { gradient: "#8B5CF6", iconBg: "bg-violet-500/10",  iconText: "text-violet-500" },
+  "support":          { gradient: "#3B82F6", iconBg: "bg-blue-500/10",    iconText: "text-blue-500" },
+  "memberships":      { gradient: "#8B5CF6", iconBg: "bg-purple-500/10",  iconText: "text-purple-500" },
+  "before-after":     { gradient: "#EC4899", iconBg: "bg-pink-500/10",    iconText: "text-pink-500" },
+  "intake-forms":     { gradient: "#EC4899", iconBg: "bg-pink-500/10",    iconText: "text-pink-500" },
+  "soap-notes":       { gradient: "#14B8A6", iconBg: "bg-teal-500/10",    iconText: "text-teal-500" },
+  "loyalty":          { gradient: "#10B981", iconBg: "bg-emerald-500/10", iconText: "text-emerald-500" },
+  "win-back":         { gradient: "#F59E0B", iconBg: "bg-amber-500/10",   iconText: "text-amber-500" },
+  "storefront":       { gradient: "#06B6D4", iconBg: "bg-cyan-500/10",    iconText: "text-cyan-500" },
+  "ai-insights":      { gradient: "#F59E0B", iconBg: "bg-amber-500/10",   iconText: "text-amber-500" },
+  "notes-docs":       { gradient: "#6366F1", iconBg: "bg-indigo-500/10",  iconText: "text-indigo-500" },
+  "gift-cards":       { gradient: "#EC4899", iconBg: "bg-pink-500/10",    iconText: "text-pink-500" },
+  "class-timetable":  { gradient: "#3B82F6", iconBg: "bg-blue-500/10",    iconText: "text-blue-500" },
+  "vendor-management":{ gradient: "#6B7280", iconBg: "bg-gray-500/10",    iconText: "text-gray-500" },
+  "proposals":        { gradient: "#8B5CF6", iconBg: "bg-violet-500/10",  iconText: "text-violet-500" },
+  "waitlist-manager": { gradient: "#F97316", iconBg: "bg-orange-500/10",  iconText: "text-orange-500" },
+};
+
 const ADDON_TAGS: Record<string, string[]> = {
   "memberships": ["Fitness", "Beauty", "Coaching"],
   "before-after": ["Trades", "Beauty", "Cleaning"],
@@ -84,6 +104,7 @@ export default function AddonsPage() {
           const isEnabled = enabledAddons.includes(addon.id);
           const Icon = ICON_MAP[addon.icon] || Lightbulb;
           const tags = ADDON_TAGS[addon.id] || [];
+          const colors = ADDON_COLORS[addon.id] || { gradient: "#6B7280", iconBg: "bg-gray-500/10", iconText: "text-gray-500" };
 
           return (
             <motion.div
@@ -91,18 +112,22 @@ export default function AddonsPage() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.04 }}
-              className={`bg-card-bg rounded-2xl border overflow-hidden transition-all duration-200 ${
+              className={`group relative bg-card-bg rounded-2xl border overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 ${
                 isEnabled
                   ? "border-primary/40 shadow-[0_0_0_1px_rgba(124,254,157,0.15)]"
-                  : "border-border-light hover:border-foreground/20"
+                  : "border-border-light hover:border-foreground/10"
               }`}
             >
-              <div className="p-5">
+              {/* Subtle gradient header */}
+              <div
+                className="absolute top-0 left-0 right-0 h-24 opacity-[0.05] group-hover:opacity-[0.09] transition-opacity pointer-events-none"
+                style={{ background: `linear-gradient(to bottom, ${colors.gradient}, transparent)` }}
+              />
+
+              <div className="relative p-5">
                 <div className="flex items-start justify-between mb-3">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                    isEnabled ? "bg-primary/10" : "bg-surface"
-                  }`}>
-                    <Icon className={`w-5 h-5 ${isEnabled ? "text-primary" : "text-text-secondary"}`} />
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${colors.iconBg}`}>
+                    <Icon className={`w-5 h-5 ${colors.iconText}`} />
                   </div>
                   {isEnabled && (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-primary/10 text-primary">
