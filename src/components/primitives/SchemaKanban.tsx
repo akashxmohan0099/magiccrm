@@ -70,7 +70,7 @@ export function SchemaKanban({
     return (
       <div
         onClick={() => onRecordClick?.(record)}
-        className="bg-white rounded-xl border border-border-light p-3 hover:shadow-md transition-shadow cursor-pointer"
+        className="bg-card-bg rounded-xl border border-border-light p-3 hover:shadow-md transition-shadow cursor-pointer"
       >
         <p className="text-[13px] font-semibold text-foreground mb-1.5 leading-snug">{titleValue}</p>
         <div className="space-y-1">

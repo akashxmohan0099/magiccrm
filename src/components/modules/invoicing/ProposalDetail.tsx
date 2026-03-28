@@ -242,7 +242,7 @@ export function ProposalDetail({ open, onClose, proposalId, onEdit }: ProposalDe
                           ) : (
                             <div
                               className={`w-2 h-2 rounded-full ${
-                                isCompleted ? "bg-white" : "bg-border-light"
+                                isCompleted ? "bg-card-bg" : "bg-border-light"
                               }`}
                             />
                           )}

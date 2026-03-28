@@ -73,7 +73,7 @@ export function SchemaRichText({
   }
 
   return (
-    <div className="border border-border-light rounded-xl overflow-hidden bg-white focus-within:ring-2 focus-within:ring-primary/20">
+    <div className="border border-border-light rounded-xl overflow-hidden bg-card-bg focus-within:ring-2 focus-within:ring-primary/20">
       {/* Toolbar */}
       <div className="flex items-center gap-0.5 px-2 py-1.5 border-b border-border-light bg-surface/30">
         <ToolbarButton icon={<Undo2 className="w-3.5 h-3.5" />} title="Undo" onClick={() => exec("undo")} />

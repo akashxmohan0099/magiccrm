@@ -134,7 +134,7 @@ export default function LandingPage() {
       <nav className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: "var(--logo-green)" }}>
-            <div className="w-3.5 h-3.5 bg-white rounded-sm" />
+            <div className="w-3.5 h-3.5 bg-card-bg rounded-sm" />
           </div>
           <span className="font-bold text-foreground text-[15px] tracking-tight">Magic</span>
         </div>
@@ -247,7 +247,7 @@ export default function LandingPage() {
         whileInView={{ opacity: 1 }}
         viewport={viewportConfig}
         transition={{ duration: 0.5 }}
-        className="py-12 sm:py-20 bg-white"
+        className="py-12 sm:py-20 bg-card-bg"
       >
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-10 sm:mb-14">
@@ -281,7 +281,7 @@ export default function LandingPage() {
                 viewport={viewportConfig}
                 transition={{ delay: i * 0.08, duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
                 onClick={() => setActivePersona(i)}
-                className={`bg-white rounded-2xl border overflow-hidden cursor-pointer transition-all duration-300 glow-border ${
+                className={`bg-card-bg rounded-2xl border overflow-hidden cursor-pointer transition-all duration-300 glow-border ${
                   activePersona === i
                     ? "border-foreground/20 shadow-xl scale-[1.03] -translate-y-1"
                     : "border-border-light hover:border-foreground/10 hover:shadow-lg hover:-translate-y-1"
@@ -375,7 +375,7 @@ export default function LandingPage() {
 
           <div className="flex flex-wrap justify-center gap-5">
             {/* Gift Cards */}
-            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-white rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-pink-200">
+            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-card-bg rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-pink-200">
               <div className="absolute top-0 left-0 right-0 h-32 opacity-[0.06] group-hover:opacity-[0.1] transition-opacity" style={{ background: "linear-gradient(to bottom, #EC4899, transparent)" }} />
               <div className="relative px-5 pt-5 pb-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-pink-500/10 mb-3"><Ticket className="w-5 h-5 text-pink-500" /></div>
@@ -396,7 +396,7 @@ export default function LandingPage() {
             </motion.div>
 
             {/* AI Insights */}
-            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} transition={{ delay: 0.06 }} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-white rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-amber-200">
+            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} transition={{ delay: 0.06 }} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-card-bg rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-amber-200">
               <div className="absolute top-0 left-0 right-0 h-32 opacity-[0.06] group-hover:opacity-[0.1] transition-opacity" style={{ background: "linear-gradient(to bottom, #F59E0B, transparent)" }} />
               <div className="relative px-5 pt-5 pb-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-amber-500/10 mb-3"><Lightbulb className="w-5 h-5 text-amber-500" /></div>
@@ -414,7 +414,7 @@ export default function LandingPage() {
             </motion.div>
 
             {/* Loyalty & Referrals */}
-            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} transition={{ delay: 0.12 }} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-white rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-emerald-200">
+            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} transition={{ delay: 0.12 }} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-card-bg rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-emerald-200">
               <div className="absolute top-0 left-0 right-0 h-32 opacity-[0.06] group-hover:opacity-[0.1] transition-opacity" style={{ background: "linear-gradient(to bottom, #10B981, transparent)" }} />
               <div className="relative px-5 pt-5 pb-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-emerald-500/10 mb-3"><Gift className="w-5 h-5 text-emerald-500" /></div>
@@ -435,7 +435,7 @@ export default function LandingPage() {
             </motion.div>
 
             {/* Memberships */}
-            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} transition={{ delay: 0.04 }} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-white rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-purple-200">
+            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} transition={{ delay: 0.04 }} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-card-bg rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-purple-200">
               <div className="absolute top-0 left-0 right-0 h-32 opacity-[0.06] group-hover:opacity-[0.1] transition-opacity" style={{ background: "linear-gradient(to bottom, #8B5CF6, transparent)" }} />
               <div className="relative px-5 pt-5 pb-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-purple-500/10 mb-3"><Crown className="w-5 h-5 text-purple-500" /></div>
@@ -453,7 +453,7 @@ export default function LandingPage() {
             </motion.div>
 
             {/* Win-Back */}
-            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} transition={{ delay: 0.1 }} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-white rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-amber-200">
+            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} transition={{ delay: 0.1 }} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-card-bg rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-amber-200">
               <div className="absolute top-0 left-0 right-0 h-32 opacity-[0.06] group-hover:opacity-[0.1] transition-opacity" style={{ background: "linear-gradient(to bottom, #F59E0B, transparent)" }} />
               <div className="relative px-5 pt-5 pb-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-amber-500/10 mb-3"><UserCheck className="w-5 h-5 text-amber-500" /></div>
@@ -471,7 +471,7 @@ export default function LandingPage() {
             </motion.div>
 
             {/* Storefront */}
-            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} transition={{ delay: 0.16 }} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-white rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-cyan-200">
+            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} transition={{ delay: 0.16 }} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-card-bg rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-cyan-200">
               <div className="absolute top-0 left-0 right-0 h-32 opacity-[0.06] group-hover:opacity-[0.1] transition-opacity" style={{ background: "linear-gradient(to bottom, #06B6D4, transparent)" }} />
               <div className="relative px-5 pt-5 pb-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-cyan-500/10 mb-3"><Store className="w-5 h-5 text-cyan-500" /></div>
@@ -482,13 +482,13 @@ export default function LandingPage() {
                 <div className="rounded-lg bg-background/80 p-3">
                   <div className="flex items-center justify-between mb-2"><p className="text-[11px] font-bold text-foreground">Your Business</p><span className="text-[8px] px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded-full font-semibold">Live</span></div>
                   <p className="text-[9px] text-text-tertiary mb-2.5">yourbusiness.magic/book</p>
-                  <div className="space-y-1.5">{["Lash Full Set — $150", "Brow Lamination — $65"].map((s) => (<div key={s} className="flex items-center justify-between text-[10px] px-2 py-1.5 bg-white rounded border border-border-light"><span className="text-text-secondary">{s.split(" — ")[0]}</span><span className="font-bold text-foreground">{s.split(" — ")[1]}</span></div>))}</div>
+                  <div className="space-y-1.5">{["Lash Full Set — $150", "Brow Lamination — $65"].map((s) => (<div key={s} className="flex items-center justify-between text-[10px] px-2 py-1.5 bg-card-bg rounded border border-border-light"><span className="text-text-secondary">{s.split(" — ")[0]}</span><span className="font-bold text-foreground">{s.split(" — ")[1]}</span></div>))}</div>
                 </div>
               </div>
             </motion.div>
 
             {/* Intake Forms */}
-            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} transition={{ delay: 0.04 }} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-white rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-pink-200">
+            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} transition={{ delay: 0.04 }} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-card-bg rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-pink-200">
               <div className="absolute top-0 left-0 right-0 h-32 opacity-[0.06] group-hover:opacity-[0.1] transition-opacity" style={{ background: "linear-gradient(to bottom, #EC4899, transparent)" }} />
               <div className="relative px-5 pt-5 pb-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-pink-500/10 mb-3"><FileInput className="w-5 h-5 text-pink-500" /></div>
@@ -497,14 +497,14 @@ export default function LandingPage() {
               </div>
               <div className="relative px-5 pb-5">
                 <div className="rounded-lg bg-background/80 p-3 space-y-2">
-                  {["Full Name *", "Email *", "Any allergies?"].map((field) => (<div key={field}><p className="text-[9px] text-text-tertiary mb-0.5">{field}</p><div className="h-7 bg-white rounded-lg border border-border-light" /></div>))}
+                  {["Full Name *", "Email *", "Any allergies?"].map((field) => (<div key={field}><p className="text-[9px] text-text-tertiary mb-0.5">{field}</p><div className="h-7 bg-card-bg rounded-lg border border-border-light" /></div>))}
                   <div className="h-8 bg-foreground rounded-lg flex items-center justify-center text-[10px] text-white font-semibold">Submit</div>
                 </div>
               </div>
             </motion.div>
 
             {/* Before & After */}
-            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} transition={{ delay: 0.1 }} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-white rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-teal-200">
+            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} transition={{ delay: 0.1 }} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-card-bg rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-teal-200">
               <div className="absolute top-0 left-0 right-0 h-32 opacity-[0.06] group-hover:opacity-[0.1] transition-opacity" style={{ background: "linear-gradient(to bottom, #14B8A6, transparent)" }} />
               <div className="relative px-5 pt-5 pb-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-teal-500/10 mb-3"><Camera className="w-5 h-5 text-teal-500" /></div>
@@ -520,7 +520,7 @@ export default function LandingPage() {
             </motion.div>
 
             {/* Treatment Notes */}
-            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} transition={{ delay: 0.16 }} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-white rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-indigo-200">
+            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} transition={{ delay: 0.16 }} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-card-bg rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-indigo-200">
               <div className="absolute top-0 left-0 right-0 h-32 opacity-[0.06] group-hover:opacity-[0.1] transition-opacity" style={{ background: "linear-gradient(to bottom, #6366F1, transparent)" }} />
               <div className="relative px-5 pt-5 pb-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-indigo-500/10 mb-3"><ClipboardList className="w-5 h-5 text-indigo-500" /></div>
@@ -538,7 +538,7 @@ export default function LandingPage() {
             </motion.div>
 
             {/* Notes & Docs */}
-            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} transition={{ delay: 0.22 }} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-white rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-sky-200">
+            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} transition={{ delay: 0.22 }} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-card-bg rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-sky-200">
               <div className="absolute top-0 left-0 right-0 h-32 opacity-[0.06] group-hover:opacity-[0.1] transition-opacity" style={{ background: "linear-gradient(to bottom, #0EA5E9, transparent)" }} />
               <div className="relative px-5 pt-5 pb-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-sky-500/10 mb-3"><NotebookPen className="w-5 h-5 text-sky-500" /></div>
@@ -569,7 +569,7 @@ export default function LandingPage() {
             </motion.div>
 
             {/* Class Timetable */}
-            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} transition={{ delay: 0.04 }} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-white rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-violet-200">
+            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} transition={{ delay: 0.04 }} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-card-bg rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-violet-200">
               <div className="absolute top-0 left-0 right-0 h-32 opacity-[0.06] group-hover:opacity-[0.10] transition-opacity" style={{ background: "linear-gradient(to bottom, #8B5CF6, transparent)" }} />
               <div className="relative px-5 pt-5 pb-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-violet-500/10 mb-3"><CalendarRange className="w-5 h-5 text-violet-500" /></div>
@@ -590,7 +590,7 @@ export default function LandingPage() {
             </motion.div>
 
             {/* Vendors */}
-            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} transition={{ delay: 0.1 }} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-white rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-orange-200">
+            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} transition={{ delay: 0.1 }} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-card-bg rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-orange-200">
               <div className="absolute top-0 left-0 right-0 h-32 opacity-[0.06] group-hover:opacity-[0.10] transition-opacity" style={{ background: "linear-gradient(to bottom, #F97316, transparent)" }} />
               <div className="relative px-5 pt-5 pb-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-orange-500/10 mb-3"><Building2 className="w-5 h-5 text-orange-500" /></div>
@@ -608,7 +608,7 @@ export default function LandingPage() {
             </motion.div>
 
             {/* Proposals */}
-            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} transition={{ delay: 0.16 }} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-white rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-violet-200">
+            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} transition={{ delay: 0.16 }} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-card-bg rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-violet-200">
               <div className="absolute top-0 left-0 right-0 h-32 opacity-[0.06] group-hover:opacity-[0.10] transition-opacity" style={{ background: "linear-gradient(to bottom, #7C3AED, transparent)" }} />
               <div className="relative px-5 pt-5 pb-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-violet-600/10 mb-3"><ScrollText className="w-5 h-5 text-violet-600" /></div>
@@ -632,7 +632,7 @@ export default function LandingPage() {
             </motion.div>
 
             {/* Waitlist */}
-            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} transition={{ delay: 0.22 }} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-white rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-teal-200">
+            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} transition={{ delay: 0.22 }} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-card-bg rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-teal-200">
               <div className="absolute top-0 left-0 right-0 h-32 opacity-[0.06] group-hover:opacity-[0.10] transition-opacity" style={{ background: "linear-gradient(to bottom, #14B8A6, transparent)" }} />
               <div className="relative px-5 pt-5 pb-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-teal-500/10 mb-3"><ListOrdered className="w-5 h-5 text-teal-500" /></div>
@@ -659,7 +659,7 @@ export default function LandingPage() {
         whileInView={{ opacity: 1 }}
         viewport={viewportConfig}
         transition={{ duration: 0.5 }}
-        className="py-12 sm:py-20 bg-white"
+        className="py-12 sm:py-20 bg-card-bg"
       >
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
@@ -710,7 +710,7 @@ export default function LandingPage() {
             </motion.div>
 
             <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={viewportConfig} transition={{ delay: 0.2, duration: 0.5 }}>
-              <div className="bg-white rounded-2xl border border-border-light overflow-hidden shadow-lg">
+              <div className="bg-card-bg rounded-2xl border border-border-light overflow-hidden shadow-lg">
                 <div className="px-5 py-3 border-b border-border-light flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-purple-500" />
                   <span className="text-[13px] font-semibold text-foreground">AI Builder</span>
@@ -747,7 +747,7 @@ export default function LandingPage() {
         whileInView={{ opacity: 1 }}
         viewport={viewportConfig}
         transition={{ duration: 0.5 }}
-        className="py-12 sm:py-20 bg-white"
+        className="py-12 sm:py-20 bg-card-bg"
       >
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-10 sm:mb-14">
@@ -922,7 +922,7 @@ export default function LandingPage() {
         whileInView={{ opacity: 1 }}
         viewport={viewportConfig}
         transition={{ duration: 0.5 }}
-        className="py-12 sm:py-20 bg-white"
+        className="py-12 sm:py-20 bg-card-bg"
       >
         <div className="max-w-md mx-auto px-4 sm:px-6 text-center">
           <motion.h2
@@ -1105,7 +1105,7 @@ export default function LandingPage() {
           <div className="border-t border-white/[0.06] py-6 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ backgroundColor: "#7CFE9D" }}>
-                <div className="w-2.5 h-2.5 bg-white rounded-sm" />
+                <div className="w-2.5 h-2.5 bg-card-bg rounded-sm" />
               </div>
               <span className="text-sm font-semibold" style={{ color: "#777" }}>Magic</span>
             </div>

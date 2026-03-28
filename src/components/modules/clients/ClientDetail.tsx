@@ -226,7 +226,7 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
               <Link
                 href="/dashboard/invoicing"
                 onClick={onClose}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-[13px] text-foreground hover:bg-white border border-transparent hover:border-border-light transition-all group"
+                className="flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-[13px] text-foreground hover:bg-card-bg border border-transparent hover:border-border-light transition-all group"
               >
                 <Receipt className="w-4 h-4 text-text-secondary group-hover:text-primary transition-colors" />
                 <span>Create Invoice for {client.name}</span>
@@ -235,7 +235,7 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
               <Link
                 href="/dashboard/bookings"
                 onClick={onClose}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-[13px] text-foreground hover:bg-white border border-transparent hover:border-border-light transition-all group"
+                className="flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-[13px] text-foreground hover:bg-card-bg border border-transparent hover:border-border-light transition-all group"
               >
                 <Calendar className="w-4 h-4 text-text-secondary group-hover:text-primary transition-colors" />
                 <span>Book Appointment</span>
@@ -244,7 +244,7 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
               <Link
                 href="/dashboard/jobs"
                 onClick={onClose}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-[13px] text-foreground hover:bg-white border border-transparent hover:border-border-light transition-all group"
+                className="flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-[13px] text-foreground hover:bg-card-bg border border-transparent hover:border-border-light transition-all group"
               >
                 <FolderKanban className="w-4 h-4 text-text-secondary group-hover:text-primary transition-colors" />
                 <span>Create Job</span>

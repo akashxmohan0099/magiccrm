@@ -366,7 +366,7 @@ export function ConfigureStep() {
                     return (
                       <div key={q.id} className="space-y-4">
                         {/* Layer A: Inbound */}
-                        <div className="p-5 rounded-2xl bg-white border border-border-light">
+                        <div className="p-5 rounded-2xl bg-card-bg border border-border-light">
                           <p className="text-[15px] font-medium text-foreground mb-3">
                             Where do {vocab.clients.toLowerCase()} currently message you?
                           </p>
@@ -402,7 +402,7 @@ export function ConfigureStep() {
                               initial={{ opacity: 0, height: 0 }}
                               animate={{ opacity: 1, height: "auto" }}
                               exit={{ opacity: 0, height: 0 }}
-                              className="p-5 rounded-2xl bg-white/80 border border-border-light"
+                              className="p-5 rounded-2xl bg-card-bg/80 border border-border-light"
                             >
                               <p className="text-[15px] font-medium text-foreground mb-3">
                                 Which do you want to manage inside the CRM?
@@ -448,7 +448,7 @@ export function ConfigureStep() {
                   return (
                     <div key={q.id} className="space-y-2">
                       <div className={`p-5 rounded-2xl border transition-all ${
-                        isAnswered ? "bg-white/80 border-border-light" : "bg-white border-primary/15 shadow-sm"
+                        isAnswered ? "bg-card-bg/80 border-border-light" : "bg-card-bg border-primary/15 shadow-sm"
                       }`}>
                         <p className="text-[15px] font-medium text-foreground mb-3">{displayText}</p>
                         <div className="flex gap-2">
@@ -479,7 +479,7 @@ export function ConfigureStep() {
                             animate={{ opacity: 1, height: "auto" }}
                             exit={{ opacity: 0, height: 0 }}
                           >
-                            <div className="p-5 rounded-2xl bg-white/60 border border-border-light ml-4">
+                            <div className="p-5 rounded-2xl bg-card-bg/60 border border-border-light ml-4">
                               <p className="text-sm font-medium text-foreground mb-3">{q.followUp!.question}</p>
                               <div className="flex gap-2">
                                 <button

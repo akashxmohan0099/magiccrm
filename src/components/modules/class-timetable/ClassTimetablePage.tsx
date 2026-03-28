@@ -247,7 +247,7 @@ export function ClassTimetablePage() {
                               </div>
                               <button
                                 onClick={(e) => requestDelete(cls.id, e)}
-                                className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded hover:bg-white/20 cursor-pointer"
+                                className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded hover:bg-card-bg/20 cursor-pointer"
                               >
                                 <Trash2 className="w-3 h-3" />
                               </button>

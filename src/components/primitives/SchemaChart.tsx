@@ -124,7 +124,7 @@ function StatCardView({ stat }: { stat: StatCard }) {
     : `${stat.value || 0}${stat.suffix || ""}`;
 
   return (
-    <div className="bg-white rounded-2xl border border-border-light p-5">
+    <div className="bg-card-bg rounded-2xl border border-border-light p-5">
       <p className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider mb-2">
         {stat.label}
       </p>
@@ -141,7 +141,7 @@ function BreakdownView({ stat, total }: { stat: StatCard; total: number }) {
   if (!stat.breakdown) return null;
 
   return (
-    <div className="bg-white rounded-2xl border border-border-light p-5">
+    <div className="bg-card-bg rounded-2xl border border-border-light p-5">
       <p className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-4">
         {stat.label}
       </p>

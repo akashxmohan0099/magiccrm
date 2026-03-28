@@ -40,7 +40,7 @@ export function RecommendedSetupCard() {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-2xl border border-border-light p-5 shadow-sm"
+      className="bg-card-bg rounded-2xl border border-border-light p-5 shadow-sm"
     >
       <div className="flex items-center gap-2 mb-4">
         <Sparkles className="w-4 h-4 text-primary" />

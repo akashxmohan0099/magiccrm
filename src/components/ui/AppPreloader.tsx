@@ -22,7 +22,7 @@ export function AppPreloader() {
           className="w-20 h-20 rounded-3xl flex items-center justify-center shadow-lg"
           style={{ backgroundColor: "var(--logo-green)", boxShadow: "0 0 40px rgba(124,254,157,0.25), 0 8px 32px rgba(0,0,0,0.08)" }}
         >
-          <div className="w-8 h-8 bg-white rounded-lg" />
+          <div className="w-8 h-8 bg-card-bg rounded-lg" />
         </motion.div>
 
         {/* Brand name */}

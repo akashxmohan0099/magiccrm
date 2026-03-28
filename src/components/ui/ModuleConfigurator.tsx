@@ -179,7 +179,7 @@ export function ModuleConfigurator({ moduleId, moduleName }: ModuleConfiguratorP
                           enabled ? "bg-primary justify-end" : "bg-gray-200 justify-start"
                         }`}
                       >
-                        <div className="w-[18px] h-[18px] bg-white rounded-full shadow-sm" />
+                        <div className="w-[18px] h-[18px] bg-card-bg rounded-full shadow-sm" />
                       </div>
                     </label>
                   );
@@ -234,7 +234,7 @@ export function ModuleConfigurator({ moduleId, moduleName }: ModuleConfiguratorP
                           enabled ? "bg-primary justify-end" : "bg-gray-200 justify-start"
                         }`}
                       >
-                        <div className="w-[18px] h-[18px] bg-white rounded-full shadow-sm" />
+                        <div className="w-[18px] h-[18px] bg-card-bg rounded-full shadow-sm" />
                       </div>
                     </label>
                   );

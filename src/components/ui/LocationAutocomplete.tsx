@@ -168,7 +168,7 @@ export function LocationAutocomplete({ value, onChange, placeholder = "Start typ
 
       {/* Dropdown */}
       {isOpen && results.length > 0 && (
-        <div className="absolute top-full left-0 right-0 mt-1.5 bg-white rounded-xl border border-border-light shadow-lg overflow-hidden z-50">
+        <div className="absolute top-full left-0 right-0 mt-1.5 bg-card-bg rounded-xl border border-border-light shadow-lg overflow-hidden z-50">
           {results.map((result, i) => {
             const { main, sub } = formatResult(result);
             return (

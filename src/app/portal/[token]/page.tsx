@@ -127,7 +127,7 @@ export default function ClientPortalPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200">
+      <header className="bg-card-bg border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-6 py-5 flex items-center justify-between">
           <div>
             <h1 className="text-lg font-bold text-gray-900">{data.businessName}</h1>
@@ -141,7 +141,7 @@ export default function ClientPortalPage() {
 
       <div className="max-w-4xl mx-auto px-6 py-8">
         {/* Welcome */}
-        <div className="mb-8 p-6 rounded-2xl bg-white border border-gray-200">
+        <div className="mb-8 p-6 rounded-2xl bg-card-bg border border-gray-200">
           <p className="text-gray-700">{config.welcomeMessage}</p>
         </div>
 
@@ -154,11 +154,11 @@ export default function ClientPortalPage() {
                 <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Bookings</h2>
               </div>
               {data.bookings.length === 0 ? (
-                <p className="text-sm text-gray-400 p-4 bg-white rounded-xl border border-gray-100">No bookings yet.</p>
+                <p className="text-sm text-gray-400 p-4 bg-card-bg rounded-xl border border-gray-100">No bookings yet.</p>
               ) : (
                 <div className="space-y-2">
                   {data.bookings.map((b) => (
-                    <div key={b.id} className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-100">
+                    <div key={b.id} className="flex items-center justify-between p-4 bg-card-bg rounded-xl border border-gray-100">
                       <div>
                         <p className="text-sm font-medium text-gray-900">{b.service_name}</p>
                         <p className="text-xs text-gray-500">{new Date(b.date).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })} {b.time && `at ${b.time}`}</p>
@@ -181,11 +181,11 @@ export default function ClientPortalPage() {
                 <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Invoices</h2>
               </div>
               {data.invoices.length === 0 ? (
-                <p className="text-sm text-gray-400 p-4 bg-white rounded-xl border border-gray-100">No invoices yet.</p>
+                <p className="text-sm text-gray-400 p-4 bg-card-bg rounded-xl border border-gray-100">No invoices yet.</p>
               ) : (
                 <div className="space-y-2">
                   {data.invoices.map((inv) => (
-                    <div key={inv.id} className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-100">
+                    <div key={inv.id} className="flex items-center justify-between p-4 bg-card-bg rounded-xl border border-gray-100">
                       <div>
                         <p className="text-sm font-medium text-gray-900">{inv.number}</p>
                         <p className="text-xs text-gray-500">
@@ -224,11 +224,11 @@ export default function ClientPortalPage() {
                 <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Documents</h2>
               </div>
               {data.documents.length === 0 ? (
-                <p className="text-sm text-gray-400 p-4 bg-white rounded-xl border border-gray-100">No documents shared.</p>
+                <p className="text-sm text-gray-400 p-4 bg-card-bg rounded-xl border border-gray-100">No documents shared.</p>
               ) : (
                 <div className="space-y-2">
                   {data.documents.map((doc) => (
-                    <div key={doc.id} className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-100">
+                    <div key={doc.id} className="flex items-center justify-between p-4 bg-card-bg rounded-xl border border-gray-100">
                       <div>
                         <p className="text-sm font-medium text-gray-900">{doc.name}</p>
                         <p className="text-xs text-gray-500">{doc.type} — {new Date(doc.created_at).toLocaleDateString("en-AU")}</p>
@@ -253,11 +253,11 @@ export default function ClientPortalPage() {
                 <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Messages</h2>
               </div>
               {data.conversations.length === 0 ? (
-                <p className="text-sm text-gray-400 p-4 bg-white rounded-xl border border-gray-100">No messages yet.</p>
+                <p className="text-sm text-gray-400 p-4 bg-card-bg rounded-xl border border-gray-100">No messages yet.</p>
               ) : (
                 <div className="space-y-2">
                   {data.conversations.map((convo) => (
-                    <div key={convo.id} className="p-4 bg-white rounded-xl border border-gray-100">
+                    <div key={convo.id} className="p-4 bg-card-bg rounded-xl border border-gray-100">
                       <p className="text-sm font-medium text-gray-900">{convo.subject}</p>
                       <p className="text-xs text-gray-500 mt-1">{convo.last_message}</p>
                       <p className="text-xs text-gray-400 mt-1">{new Date(convo.last_message_at).toLocaleDateString("en-AU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</p>
@@ -276,11 +276,11 @@ export default function ClientPortalPage() {
                 <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Projects</h2>
               </div>
               {data.jobs.length === 0 ? (
-                <p className="text-sm text-gray-400 p-4 bg-white rounded-xl border border-gray-100">No active projects.</p>
+                <p className="text-sm text-gray-400 p-4 bg-card-bg rounded-xl border border-gray-100">No active projects.</p>
               ) : (
                 <div className="space-y-2">
                   {data.jobs.map((job) => (
-                    <div key={job.id} className="p-4 bg-white rounded-xl border border-gray-100">
+                    <div key={job.id} className="p-4 bg-card-bg rounded-xl border border-gray-100">
                       <div className="flex items-center justify-between mb-2">
                         <p className="text-sm font-medium text-gray-900">{job.title}</p>
                         <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_COLORS[job.status] || "text-gray-500 bg-gray-50"}`}>

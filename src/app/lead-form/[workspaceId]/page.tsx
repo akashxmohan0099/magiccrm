@@ -81,7 +81,7 @@ export default function LeadFormPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
       <div className="max-w-lg w-full">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+        <div className="bg-card-bg rounded-2xl shadow-sm border border-gray-200 p-8">
           <h1 className="text-xl font-bold text-gray-900 tracking-tight mb-1">
             Get in touch
           </h1>

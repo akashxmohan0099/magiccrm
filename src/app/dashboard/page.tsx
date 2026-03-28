@@ -533,7 +533,7 @@ function WidgetPanel({ open, onClose, onAdd, onRemove, existingTypes, activeWidg
                 {available.map((w) => (
                   <div key={w.type} className="rounded-xl border border-border-light overflow-hidden hover:border-primary/30 transition-all group">
                     {/* Live preview */}
-                    <div className="p-3 bg-white">
+                    <div className="p-3 bg-card-bg">
                       <WidgetPreview type={w.type} />
                     </div>
                     {/* Label + add button */}
@@ -573,7 +573,7 @@ function WidgetPanel({ open, onClose, onAdd, onRemove, existingTypes, activeWidg
                 value={aiPrompt}
                 onChange={(e) => setAiPrompt(e.target.value)}
                 placeholder="e.g. Show my top 5 clients by revenue"
-                className="flex-1 px-3 py-2 bg-white border border-border-light rounded-xl text-[13px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
+                className="flex-1 px-3 py-2 bg-card-bg border border-border-light rounded-xl text-[13px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
               />
               <button
                 onClick={handleWidgetRequest}

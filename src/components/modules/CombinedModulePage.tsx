@@ -45,7 +45,7 @@ export function CombinedModulePage({
   return (
     <div className="flex flex-col h-full">
       {/* Tab bar */}
-      <div className="flex-shrink-0 border-b border-border-light bg-white px-6">
+      <div className="flex-shrink-0 border-b border-border-light bg-card-bg px-6">
         <div className="flex items-center gap-1">
           {tabs.map((tab) => {
             const isActive = tab.id === activeTabId;

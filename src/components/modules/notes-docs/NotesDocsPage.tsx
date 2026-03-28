@@ -274,9 +274,9 @@ export function NotesDocsPage() {
 
       {/* ── Main editor area ── */}
       {activeNote ? (
-        <div className="flex-1 flex flex-col bg-white min-w-0">
+        <div className="flex-1 flex flex-col bg-card-bg min-w-0">
           {/* Toolbar */}
-          <div className="flex items-center gap-0.5 px-5 py-2 border-b border-border-light bg-white sticky top-0 z-10 flex-wrap">
+          <div className="flex items-center gap-0.5 px-5 py-2 border-b border-border-light bg-card-bg sticky top-0 z-10 flex-wrap">
             <ToolBtn icon={Bold} label="Bold (⌘B)" onClick={() => exec("bold")} />
             <ToolBtn icon={Italic} label="Italic (⌘I)" onClick={() => exec("italic")} />
             <ToolBtn icon={Underline} label="Underline (⌘U)" onClick={() => exec("underline")} />
@@ -309,7 +309,7 @@ export function NotesDocsPage() {
                 <Type className="w-3.5 h-3.5" /> Size
               </button>
               {showSizePicker && (
-                <div className="absolute top-full left-0 mt-1 bg-white border border-border-light rounded-xl shadow-xl p-1.5 z-20 min-w-[100px]">
+                <div className="absolute top-full left-0 mt-1 bg-card-bg border border-border-light rounded-xl shadow-xl p-1.5 z-20 min-w-[100px]">
                   {FONT_SIZES.map((size, idx) => (
                     <button
                       key={size}
@@ -339,7 +339,7 @@ export function NotesDocsPage() {
                 <div className="w-4 h-4 rounded-full border-2 border-border-light bg-foreground" />
               </button>
               {showColorPicker && (
-                <div className="absolute top-full right-0 mt-1 bg-white border border-border-light rounded-xl shadow-xl p-2 z-20 flex gap-1.5">
+                <div className="absolute top-full right-0 mt-1 bg-card-bg border border-border-light rounded-xl shadow-xl p-2 z-20 flex gap-1.5">
                   {TEXT_COLORS.map((color) => (
                     <button
                       key={color.label}
@@ -368,7 +368,7 @@ export function NotesDocsPage() {
             <div className="flex justify-center py-8 px-4">
               {/* A4 page */}
               <div
-                className="bg-white shadow-[0_1px_3px_rgba(0,0,0,0.12),0_4px_12px_rgba(0,0,0,0.08)] rounded-sm"
+                className="bg-card-bg shadow-[0_1px_3px_rgba(0,0,0,0.12),0_4px_12px_rgba(0,0,0,0.08)] rounded-sm"
                 style={{ width: 816, minHeight: 1056, padding: "72px 80px" }}
               >
                   <div

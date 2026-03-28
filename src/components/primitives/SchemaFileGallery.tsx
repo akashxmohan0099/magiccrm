@@ -140,7 +140,7 @@ export function SchemaFileGallery({
 
             if (mode === "grid") {
               return (
-                <div key={file.id} className="group relative bg-white rounded-xl border border-border-light overflow-hidden">
+                <div key={file.id} className="group relative bg-card-bg rounded-xl border border-border-light overflow-hidden">
                   {/* Preview */}
                   {isImage(file.type) ? (
                     <div
@@ -186,7 +186,7 @@ export function SchemaFileGallery({
 
             // List mode
             return (
-              <div key={file.id} className="flex items-center gap-3 p-3 rounded-xl bg-white border border-border-light group">
+              <div key={file.id} className="flex items-center gap-3 p-3 rounded-xl bg-card-bg border border-border-light group">
                 <div className="w-10 h-10 rounded-lg bg-surface flex items-center justify-center flex-shrink-0">
                   {isImage(file.type) ? (
                     <img src={file.dataUrl} alt={file.name} className="w-10 h-10 rounded-lg object-cover" />

@@ -64,7 +64,7 @@ function RecordSection<T extends { id: string }>({
           <span className="text-[13px] font-medium text-foreground">
             {label}
           </span>
-          <span className="text-xs text-text-secondary bg-white rounded-full px-1.5 py-0.5 border border-border-light">
+          <span className="text-xs text-text-secondary bg-card-bg rounded-full px-1.5 py-0.5 border border-border-light">
             {items.length}
           </span>
         </div>

@@ -35,7 +35,7 @@ export function SatisfactionPrompt({ booking }: SatisfactionPromptProps) {
         onChange={(e) => setFeedback(e.target.value)}
         placeholder="Optional feedback..."
         rows={2}
-        className="w-full px-3 py-2 bg-white border border-amber-200 rounded-lg text-[13px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-amber-300/40 focus:border-amber-300 resize-none"
+        className="w-full px-3 py-2 bg-card-bg border border-amber-200 rounded-lg text-[13px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-amber-300/40 focus:border-amber-300 resize-none"
       />
       <Button
         variant="primary"

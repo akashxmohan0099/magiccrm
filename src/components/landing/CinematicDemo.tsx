@@ -227,7 +227,7 @@ export function ModulePickerDemo() {
 
         <div
           ref={containerRef}
-          className="relative rounded-2xl border border-border-light overflow-hidden shadow-xl bg-white hidden md:block"
+          className="relative rounded-2xl border border-border-light overflow-hidden shadow-xl bg-card-bg hidden md:block"
           onMouseEnter={() => { setPaused(true); setCursorVisible(false); if (idleTimerRef.current) clearTimeout(idleTimerRef.current); }}
           onMouseLeave={() => { setPaused(false); setCursorVisible(true); if (idleTimerRef.current) clearTimeout(idleTimerRef.current); }}
         >
@@ -264,7 +264,7 @@ export function ModulePickerDemo() {
                       }`}
                     >
                       <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-300 ${
-                        isOn ? "bg-primary border-primary" : "border-gray-300 bg-white"
+                        isOn ? "bg-primary border-primary" : "border-gray-300 bg-card-bg"
                       }`}>
                         <AnimatePresence>
                           {isOn && (
@@ -284,15 +284,15 @@ export function ModulePickerDemo() {
 
             {/* Right: Live sidebar preview */}
             <div className="flex-1 bg-background flex flex-col">
-              <div className="px-5 py-3 border-b border-border-light bg-white flex items-center gap-2">
-                <div className="w-5 h-5 rounded-lg flex items-center justify-center" style={{backgroundColor:"var(--logo-green)"}}><div className="w-2 h-2 bg-white rounded-sm" /></div>
+              <div className="px-5 py-3 border-b border-border-light bg-card-bg flex items-center gap-2">
+                <div className="w-5 h-5 rounded-lg flex items-center justify-center" style={{backgroundColor:"var(--logo-green)"}}><div className="w-2 h-2 bg-card-bg rounded-sm" /></div>
                 <span className="text-xs font-bold text-foreground">Only what you need</span>
                 {!paused && <div className="ml-auto flex items-center gap-1"><div className="w-1.5 h-1.5 bg-primary rounded-full pulse-dot" /><span className="text-[9px] text-text-tertiary">Live</span></div>}
               </div>
-              <div className="flex-1 bg-white mx-4 my-4 rounded-xl border border-border-light overflow-hidden">
+              <div className="flex-1 bg-card-bg mx-4 my-4 rounded-xl border border-border-light overflow-hidden">
                 <div className="px-4 py-3 border-b border-border-light">
                   <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-lg flex items-center justify-center" style={{backgroundColor:"var(--logo-green)"}}><div className="w-2 h-2 bg-white rounded-sm" /></div>
+                    <div className="w-5 h-5 rounded-lg flex items-center justify-center" style={{backgroundColor:"var(--logo-green)"}}><div className="w-2 h-2 bg-card-bg rounded-sm" /></div>
                     <span className="text-[11px] font-bold text-foreground">Magic</span>
                   </div>
                 </div>
@@ -501,7 +501,7 @@ export function FeatureCustomizeDemo() {
   }, [activeModule]);
 
   return (
-    <section className="py-12 sm:py-20 bg-white">
+    <section className="py-12 sm:py-20 bg-card-bg">
       <div className="max-w-5xl mx-auto px-4 sm:px-6">
         <div className="text-center mb-10">
           <h2 className="text-[1.75rem] sm:text-[2.25rem] font-bold text-foreground leading-tight mb-3">
@@ -525,7 +525,7 @@ export function FeatureCustomizeDemo() {
               className="hidden xl:block absolute -left-60 w-52"
               style={{ top: leftCardTop }}
             >
-              <div className="bg-white rounded-2xl border border-border-light shadow-lg p-5">
+              <div className="bg-card-bg rounded-2xl border border-border-light shadow-lg p-5">
                 <p className="text-[10px] text-primary font-semibold uppercase tracking-wider mb-2">{leftInfo.title}</p>
                 <ul className="space-y-1.5">
                   {leftInfo.points.map((pt, i) => (
@@ -536,7 +536,7 @@ export function FeatureCustomizeDemo() {
                   ))}
                 </ul>
               </div>
-              <div className="w-3 h-3 bg-white border-r border-t border-border-light rotate-45 absolute -right-1.5 top-8" />
+              <div className="w-3 h-3 bg-card-bg border-r border-t border-border-light rotate-45 absolute -right-1.5 top-8" />
             </motion.div>
           </AnimatePresence>
         )}
@@ -552,11 +552,11 @@ export function FeatureCustomizeDemo() {
               transition={{ duration: 0.25 }}
               className="hidden xl:block absolute -right-60 top-20 w-52"
             >
-              <div className="bg-white rounded-2xl border border-border-light shadow-lg p-5">
+              <div className="bg-card-bg rounded-2xl border border-border-light shadow-lg p-5">
                 <h4 className="text-[13px] font-bold text-foreground leading-snug mb-2">{info.headline}</h4>
                 <p className="text-[11px] text-text-secondary leading-relaxed">{info.detail}</p>
               </div>
-              <div className="w-3 h-3 bg-white border-l border-b border-border-light rotate-45 absolute -left-1.5 top-8" />
+              <div className="w-3 h-3 bg-card-bg border-l border-b border-border-light rotate-45 absolute -left-1.5 top-8" />
             </motion.div>
           </AnimatePresence>
         )}
@@ -584,7 +584,7 @@ export function FeatureCustomizeDemo() {
             </motion.div>
           )}
           {/* Browser chrome */}
-          <div className="bg-white border-b border-border-light px-4 py-2 flex items-center gap-2">
+          <div className="bg-card-bg border-b border-border-light px-4 py-2 flex items-center gap-2">
             <div className="flex gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-red-400" /><div className="w-2.5 h-2.5 rounded-full bg-yellow-400" /><div className="w-2.5 h-2.5 rounded-full bg-green-400" /></div>
             <div className="flex-1 flex justify-center"><div className="px-3 py-0.5 bg-background rounded text-[10px] text-text-tertiary">app.usemagic.com</div></div>
             {!paused && <div className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 bg-primary rounded-full pulse-dot" /><span className="text-[9px] text-text-tertiary">Live</span></div>}
@@ -592,10 +592,10 @@ export function FeatureCustomizeDemo() {
 
           <div className="flex" style={{ height: 440 }}>
             {/* Sidebar — clickable */}
-            <div className="w-[170px] bg-white border-r border-border-light flex flex-col flex-shrink-0">
+            <div className="w-[170px] bg-card-bg border-r border-border-light flex flex-col flex-shrink-0">
               <div className="px-3 py-3 border-b border-border-light">
                 <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 rounded-lg flex items-center justify-center" style={{backgroundColor:"var(--logo-green)"}}><div className="w-2 h-2 bg-white rounded-sm" /></div>
+                  <div className="w-5 h-5 rounded-lg flex items-center justify-center" style={{backgroundColor:"var(--logo-green)"}}><div className="w-2 h-2 bg-card-bg rounded-sm" /></div>
                   <span className="text-[10px] font-bold text-foreground">Magic</span>
                 </div>
               </div>
@@ -620,7 +620,7 @@ export function FeatureCustomizeDemo() {
 
             {/* Main content — dynamic based on active module */}
             <div className="flex-1 flex flex-col overflow-hidden">
-              <div className="bg-white border-b border-border-light px-4 py-2 flex items-center justify-between flex-shrink-0">
+              <div className="bg-card-bg border-b border-border-light px-4 py-2 flex items-center justify-between flex-shrink-0">
                 <div className="px-3 py-1 bg-background border border-border-light rounded-lg text-[10px] text-text-tertiary w-40 flex items-center gap-1.5">
                   <Search className="w-3 h-3" /> Search...
                 </div>
@@ -652,7 +652,7 @@ export function FeatureCustomizeDemo() {
                 </div>
 
                 {/* Customize panel — dynamic */}
-                <div className="w-[220px] bg-white border-l border-border-light flex-shrink-0 overflow-y-auto">
+                <div className="w-[220px] bg-card-bg border-l border-border-light flex-shrink-0 overflow-y-auto">
                   <div className="px-4 py-3 border-b border-border-light">
                     <p className="text-xs font-bold text-foreground">Customize</p>
                     <p className="text-[9px] text-text-tertiary">{activeModule} features</p>
@@ -664,7 +664,7 @@ export function FeatureCustomizeDemo() {
                         <div key={f} ref={setFeatureRef(f)} onClick={() => toggleFeature(f)} className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg transition-all duration-300 cursor-pointer hover:bg-background ${isOn ? "bg-primary/5" : ""}`}>
                           <span className={`text-[10px] font-medium transition-colors duration-300 ${isOn ? "text-foreground" : "text-text-tertiary"}`}>{f}</span>
                           <div className={`w-7 h-[15px] rounded-full flex items-center px-0.5 transition-all duration-300 ${isOn ? "bg-primary justify-end" : "bg-gray-200 justify-start"}`}>
-                            <motion.div layout transition={{ type: "spring", stiffness: 500, damping: 30 }} className="w-[11px] h-[11px] bg-white rounded-full shadow-sm" />
+                            <motion.div layout transition={{ type: "spring", stiffness: 500, damping: 30 }} className="w-[11px] h-[11px] bg-card-bg rounded-full shadow-sm" />
                           </div>
                         </div>
                       );
@@ -853,7 +853,7 @@ function DemoContent({ module, features, data }: { module: string; features: Rec
               <span className="text-[10px] text-primary font-medium">Public booking page</span>
               <span className="text-[8px] text-primary/50 bg-primary/10 px-1.5 py-0.5 rounded">Live</span>
             </div>
-            <div className="px-3 py-2 bg-white text-[9px] space-y-1">
+            <div className="px-3 py-2 bg-card-bg text-[9px] space-y-1">
               <div className="flex items-center justify-between"><span className="text-text-secondary">yourname.magic/book</span><span className="text-primary font-medium underline">Copy link</span></div>
               <div className="flex gap-1">{["Lash Fill — $80", "Volume Set — $200"].map(s => <span key={s} className="px-1.5 py-0.5 bg-background border border-border-light rounded text-[8px] text-text-tertiary">{s}</span>)}</div>
             </div>
@@ -861,7 +861,7 @@ function DemoContent({ module, features, data }: { module: string; features: Rec
         )}
         <div className="space-y-1.5 mb-2">
           {appts.map((a, i) => (
-            <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white border border-border-light">
+            <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-card-bg border border-border-light">
               <div className={`w-1 h-5 rounded-full ${a.color}`} />
               <span className="text-[10px] text-text-tertiary w-14">{a.time}</span>
               <span className="text-[10px] font-medium text-foreground flex-1">{a.name}</span>
@@ -984,7 +984,7 @@ function DemoContent({ module, features, data }: { module: string; features: Rec
             <div key={col.stage}>
               <div className="flex items-center gap-1 mb-1.5"><div className={`w-2 h-2 rounded-full ${col.color}`} /><span className="text-[9px] font-semibold text-text-tertiary uppercase">{col.stage}</span></div>
               {col.items.map((item, idx) => (
-                <div key={item} className="bg-white rounded-lg px-2 py-1.5 mb-1 border border-border-light">
+                <div key={item} className="bg-card-bg rounded-lg px-2 py-1.5 mb-1 border border-border-light">
                   <p className="text-[10px] font-medium text-foreground">{item}</p>
                   {f("Lead Scoring") && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-1 mt-0.5"><div className="flex-1 h-1 bg-gray-100 rounded-full overflow-hidden"><div className={`h-full rounded-full ${col.stage === "Won" ? "bg-emerald-400" : col.stage === "Proposal" ? "bg-purple-400" : idx === 0 ? "bg-red-400" : "bg-yellow-400"}`} style={{ width: `${col.stage === "Won" ? 95 : col.stage === "Proposal" ? 72 : idx === 0 ? 85 : 40}%` }} /></div><span className={`text-[7px] font-bold ${col.stage === "Won" ? "text-emerald-600" : col.stage === "Proposal" ? "text-purple-600" : idx === 0 ? "text-red-600" : "text-yellow-600"}`}>{col.stage === "Won" ? 95 : col.stage === "Proposal" ? 72 : idx === 0 ? 85 : 40}</span></motion.div>}
                 </div>
@@ -1020,7 +1020,7 @@ function DemoContent({ module, features, data }: { module: string; features: Rec
         )}
         <div className="space-y-1.5">
           {filteredConvos.map((c, i) => (
-            <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white border border-border-light">
+            <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-card-bg border border-border-light">
               <div className="w-6 h-6 bg-surface rounded-full flex items-center justify-center flex-shrink-0"><span className="text-[8px] font-bold">{c.name[0]}</span></div>
               <div className="flex-1 min-w-0"><div className="flex items-center gap-1"><span className="text-[10px] font-semibold text-foreground">{c.name}</span><span className="text-[8px] px-1 bg-surface rounded text-text-tertiary">{c.ch}</span></div><p className="text-[10px] text-text-secondary truncate">{c.msg}</p></div>
               <span className="text-[9px] text-text-tertiary">{c.time}</span>
@@ -1250,7 +1250,7 @@ function DemoContent({ module, features, data }: { module: string; features: Rec
       <div>
         <div className="space-y-2">
           {rules.map((r) => (
-            <div key={r.name} className="px-3 py-2.5 rounded-xl bg-white border border-border-light">
+            <div key={r.name} className="px-3 py-2.5 rounded-xl bg-card-bg border border-border-light">
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-[11px] font-semibold text-foreground">{r.name}</span>
                 <span className={`text-[8px] px-1.5 py-0.5 rounded-full font-medium ${r.status === "active" ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-500"}`}>{r.status}</span>
@@ -1276,7 +1276,7 @@ function DemoContent({ module, features, data }: { module: string; features: Rec
         {f("Revenue Breakdown") && <motion.div key="Revenue Breakdown" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-1.5 mb-3">{["Overview", "Revenue", "Clients"].map((t, i) => <span key={t} className={`px-2 py-1 rounded text-[9px] font-medium ${i === 0 ? "bg-foreground text-white" : "bg-background border border-border-light text-text-secondary"}`}>{t}</span>)}</motion.div>}
         <div className="grid grid-cols-3 gap-2 mb-3">
           {[{ label: "Revenue", value: "$4,280", change: "+12%" }, { label: "Clients", value: "47", change: "+3" }, { label: "Bookings", value: "84", change: "+8%" }].map((stat) => (
-            <div key={stat.label} className="px-3 py-2.5 rounded-xl bg-white border border-border-light">
+            <div key={stat.label} className="px-3 py-2.5 rounded-xl bg-card-bg border border-border-light">
               <p className="text-[9px] text-text-tertiary">{stat.label}</p>
               <p className="text-[15px] font-bold text-foreground">{stat.value}</p>
               {f("Lead Conversion") && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[9px] text-emerald-600 font-medium">{stat.change}</motion.span>}
@@ -1286,7 +1286,7 @@ function DemoContent({ module, features, data }: { module: string; features: Rec
         {f("Goal Tracking") && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2 mb-3">
             {[{ goal: "Monthly revenue", current: 4280, target: 5000, prefix: "$" }, { goal: "New clients", current: 12, target: 15, prefix: "" }].map((g) => (
-              <div key={g.goal} className="px-3 py-2 rounded-lg bg-white border border-border-light">
+              <div key={g.goal} className="px-3 py-2 rounded-lg bg-card-bg border border-border-light">
                 <div className="flex justify-between mb-1"><span className="text-[10px] text-foreground font-medium">{g.goal}</span><span className="text-[9px] text-text-tertiary">{g.prefix}{g.current} / {g.prefix}{g.target}</span></div>
                 <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden"><div className="h-full bg-primary rounded-full" style={{ width: `${(g.current / g.target) * 100}%` }} /></div>
               </div>
@@ -1294,7 +1294,7 @@ function DemoContent({ module, features, data }: { module: string; features: Rec
           </motion.div>
         )}
         {f("Client Retention") && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="px-3 py-3 rounded-xl bg-white border border-border-light mb-3">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="px-3 py-3 rounded-xl bg-card-bg border border-border-light mb-3">
             <p className="text-[10px] font-medium text-foreground mb-2">Retention — Last 7 days</p>
             <div className="flex items-end gap-1 h-14">
               {[40, 65, 45, 80, 55, 70, 90].map((h, i) => (
@@ -1352,7 +1352,7 @@ function DemoContent({ module, features, data }: { module: string; features: Rec
   if (module === "Client Portal") {
     return (
       <div>
-        {f("Custom Branding") && <motion.div key="Custom Branding" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 mb-3 px-3 py-2 bg-primary/5 border border-primary/10 rounded-lg"><div className="w-5 h-5 rounded-lg flex items-center justify-center" style={{ backgroundColor: "var(--logo-green)" }}><div className="w-2 h-2 bg-white rounded-sm" /></div><span className="text-[10px] text-primary font-medium">Your brand colors and logo applied to portal</span></motion.div>}
+        {f("Custom Branding") && <motion.div key="Custom Branding" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 mb-3 px-3 py-2 bg-primary/5 border border-primary/10 rounded-lg"><div className="w-5 h-5 rounded-lg flex items-center justify-center" style={{ backgroundColor: "var(--logo-green)" }}><div className="w-2 h-2 bg-card-bg rounded-sm" /></div><span className="text-[10px] text-primary font-medium">Your brand colors and logo applied to portal</span></motion.div>}
         <div className="border border-border-light rounded-xl overflow-hidden">
           <div className="grid bg-background px-3 py-1.5 border-b border-border-light text-[9px] font-medium text-text-tertiary" style={{ gridTemplateColumns: "1fr 80px 50px" }}>
             <span>Section</span><span>Details</span><span>Status</span>

@@ -118,7 +118,7 @@ export function IndustryStep() {
                       </motion.div>
                     )}
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${
-                      isSelected ? "bg-white/15" : iconConfig.bg
+                      isSelected ? "bg-card-bg/15" : iconConfig.bg
                     }`}>
                       <IconComp className={`w-5 h-5 ${isSelected ? "text-white" : iconConfig.color}`} />
                     </div>

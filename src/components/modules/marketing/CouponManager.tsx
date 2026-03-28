@@ -73,7 +73,7 @@ export function CouponManager() {
           }`}
         >
           <span
-            className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${
+            className={`inline-block h-3.5 w-3.5 rounded-full bg-card-bg transition-transform ${
               c.active ? "translate-x-4.5" : "translate-x-0.5"
             }`}
           />

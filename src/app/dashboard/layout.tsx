@@ -475,7 +475,7 @@ function SidebarContent({
       <div className="px-5 py-4 border-b border-border-light">
         <Link href="/dashboard" className="flex items-center gap-2.5 group" onClick={onNavClick}>
           <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ backgroundColor: "var(--logo-green)" }}>
-            <div className="w-3 h-3 bg-white rounded-[3px]" />
+            <div className="w-3 h-3 bg-card-bg rounded-[3px]" />
           </div>
           <h1 className="font-bold text-foreground text-[13px] tracking-tight leading-tight">
             {businessName || "Magic"}

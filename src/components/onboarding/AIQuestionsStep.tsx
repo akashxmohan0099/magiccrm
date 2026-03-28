@@ -333,7 +333,7 @@ export function AIQuestionsStep() {
             <button onClick={handleBack} className="text-text-tertiary hover:text-foreground transition-colors cursor-pointer">
               <ArrowLeft className="w-4 h-4" />
             </button>
-            <div className="flex-1 h-1.5 bg-white/60 rounded-full overflow-hidden">
+            <div className="flex-1 h-1.5 bg-card-bg/60 rounded-full overflow-hidden">
               <motion.div className="h-full bg-primary rounded-full" animate={{ width: `${progress}%` }} transition={{ duration: 0.4, ease: "easeOut" }} />
             </div>
             {!isLocalSlide && (
@@ -395,7 +395,7 @@ export function AIQuestionsStep() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.08, type: "spring", stiffness: 200, damping: 20 }}
                         className={`p-5 rounded-2xl border transition-all ${
-                          isAnswered ? "bg-white/80 border-border-light" : "bg-white border-primary/15 shadow-sm"
+                          isAnswered ? "bg-card-bg/80 border-border-light" : "bg-card-bg border-primary/15 shadow-sm"
                         }`}
                       >
                         <p className="text-[15px] font-medium text-foreground mb-3">{q.question}</p>
@@ -428,7 +428,7 @@ export function AIQuestionsStep() {
                             exit={{ opacity: 0, height: 0, marginTop: 0 }}
                             transition={{ type: "spring", stiffness: 300, damping: 30 }}
                           >
-                            <div className="p-5 rounded-2xl bg-white/60 border border-border-light ml-4">
+                            <div className="p-5 rounded-2xl bg-card-bg/60 border border-border-light ml-4">
                               <p className="text-sm font-medium text-foreground mb-3">{localQ.followUp.question}</p>
                               <div className="flex gap-2">
                                 <button

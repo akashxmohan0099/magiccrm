@@ -211,8 +211,8 @@ function FieldInput({
   ariaDescribedBy?: string;
 }) {
   const baseClass = compact
-    ? "w-full px-2 py-1 text-xs rounded-lg border border-border-light bg-white focus:outline-none focus:ring-1 focus:ring-primary/30"
-    : "w-full px-3 py-2.5 text-sm rounded-xl border border-border-light bg-white focus:outline-none focus:ring-2 focus:ring-primary/20";
+    ? "w-full px-2 py-1 text-xs rounded-lg border border-border-light bg-card-bg focus:outline-none focus:ring-1 focus:ring-primary/30"
+    : "w-full px-3 py-2.5 text-sm rounded-xl border border-border-light bg-card-bg focus:outline-none focus:ring-2 focus:ring-primary/20";
 
   switch (field.type) {
     case "text":

@@ -325,7 +325,7 @@ export function BuildingScreen() {
             <motion.div
               animate={{ scale: [1, 1.15, 1], rotate: [0, 3, -3, 0] }}
               transition={{ duration: 2.5, repeat: Infinity }}
-              className="w-8 h-8 bg-white rounded-xl"
+              className="w-8 h-8 bg-card-bg rounded-xl"
             />
           </motion.div>
         </div>
@@ -378,7 +378,7 @@ export function BuildingScreen() {
                       initial={{ opacity: 0, scale: 0.5, y: 10 }}
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-border-light rounded-xl shadow-sm"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-card-bg border border-border-light rounded-xl shadow-sm"
                     >
                       <Icon className="w-3.5 h-3.5 text-primary" />
                       <span className="text-[11px] font-medium text-foreground">{label}</span>

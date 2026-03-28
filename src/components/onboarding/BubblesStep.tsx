@@ -345,7 +345,7 @@ export function BubblesStep() {
             <button onClick={handleBack} className="text-text-tertiary hover:text-foreground transition-colors cursor-pointer">
               <ArrowLeft className="w-4 h-4" />
             </button>
-            <div className="flex-1 h-1.5 bg-white/60 rounded-full overflow-hidden">
+            <div className="flex-1 h-1.5 bg-card-bg/60 rounded-full overflow-hidden">
               <motion.div
                 className="h-full bg-primary rounded-full"
                 animate={{ width: `${progress}%` }}
@@ -394,14 +394,14 @@ export function BubblesStep() {
                       className={`w-full flex items-center justify-between px-6 py-4.5 rounded-2xl text-left transition-all duration-200 cursor-pointer ${
                         on
                           ? "bg-primary text-white shadow-lg shadow-primary/20"
-                          : "bg-white/90 border border-white/60 hover:border-primary/20 hover:shadow-md backdrop-blur-sm"
+                          : "bg-card-bg/90 border border-white/60 hover:border-primary/20 hover:shadow-md backdrop-blur-sm"
                       }`}
                     >
                       <span className={`text-[15px] font-medium ${on ? "text-white" : "text-foreground"}`}>
                         {chip.label}
                       </span>
                       <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ml-3 transition-all ${
-                        on ? "bg-white/25" : "border-2 border-border-light"
+                        on ? "bg-card-bg/25" : "border-2 border-border-light"
                       }`}>
                         {on && (
                           <motion.svg initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>

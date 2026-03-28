@@ -56,7 +56,7 @@ export function SchemaCustomFields({ moduleId, values, onChange }: SchemaCustomF
                   value={(values[field.id] as string) || ""}
                   onChange={(e) => onChange(field.id, e.target.value)}
                   placeholder={field.placeholder}
-                  className="w-full px-3 py-2.5 text-sm rounded-xl border border-border-light bg-white focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  className="w-full px-3 py-2.5 text-sm rounded-xl border border-border-light bg-card-bg focus:outline-none focus:ring-2 focus:ring-primary/20"
                 />
               </FormField>
             );

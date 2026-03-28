@@ -72,7 +72,7 @@ export function AutomationList({ rules, onEdit }: AutomationListProps) {
               title={rule.enabled ? "Disable" : "Enable"}
             >
               <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                className={`inline-block h-4 w-4 transform rounded-full bg-card-bg transition-transform ${
                   rule.enabled ? "translate-x-6" : "translate-x-1"
                 }`}
               />

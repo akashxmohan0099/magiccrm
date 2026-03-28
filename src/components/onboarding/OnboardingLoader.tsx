@@ -60,7 +60,7 @@ export function OnboardingLoader({ title, subtitle, step, totalSteps, detail }: 
           <motion.div
             animate={{ scale: [1, 1.1, 1] }}
             transition={{ duration: 2.5, repeat: Infinity }}
-            className="w-7 h-7 bg-white rounded-lg"
+            className="w-7 h-7 bg-card-bg rounded-lg"
           />
         </motion.div>
 

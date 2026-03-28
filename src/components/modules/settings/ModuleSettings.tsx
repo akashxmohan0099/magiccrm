@@ -152,7 +152,7 @@ export function ModuleSettings() {
                     }`}
                   >
                     <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      className={`inline-block h-4 w-4 transform rounded-full bg-card-bg transition-transform ${
                         enabled ? "translate-x-6" : "translate-x-1"
                       }`}
                     />
@@ -190,7 +190,7 @@ export function ModuleSettings() {
                               }`}
                             >
                               <span
-                                className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                                className={`inline-block h-3.5 w-3.5 transform rounded-full bg-card-bg transition-transform ${
                                   feature.selected ? "translate-x-4" : "translate-x-0.5"
                                 }`}
                               />

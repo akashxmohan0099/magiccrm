@@ -333,7 +333,7 @@ export function CommandPalette() {
               role="dialog"
               aria-modal="true"
               aria-label="Command palette"
-              className="w-full max-w-[540px] bg-white rounded-[10px] shadow-2xl shadow-black/10 border border-border-light overflow-hidden"
+              className="w-full max-w-[540px] bg-card-bg rounded-[10px] shadow-2xl shadow-black/10 border border-border-light overflow-hidden"
               onKeyDown={handleKeyDown}
             >
               {/* Search Input */}

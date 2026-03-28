@@ -22,7 +22,7 @@ export function WelcomeStep() {
           className="mb-12"
         >
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto" style={{ backgroundColor: "var(--logo-green)" }}>
-            <div className="w-7 h-7 bg-white rounded-lg" />
+            <div className="w-7 h-7 bg-card-bg rounded-lg" />
           </div>
         </motion.div>
 

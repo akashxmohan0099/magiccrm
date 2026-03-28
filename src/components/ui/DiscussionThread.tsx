@@ -135,7 +135,7 @@ export function DiscussionThread({ entityType, entityId }: DiscussionThreadProps
             onKeyDown={handleKeyDown}
             placeholder="Add a team note..."
             rows={1}
-            className="flex-1 resize-none rounded-lg border border-border-light bg-white px-3 py-2 text-[13px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all"
+            className="flex-1 resize-none rounded-lg border border-border-light bg-card-bg px-3 py-2 text-[13px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all"
           />
           <Button
             size="sm"
