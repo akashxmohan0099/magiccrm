@@ -899,54 +899,6 @@ export default function LandingPage() {
         </div>
       </motion.section>
 
-      {/* How it works */}
-      <motion.section
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={viewportConfig}
-        transition={{ duration: 0.5 }}
-        className="py-12 sm:py-20 bg-white"
-      >
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-10 sm:mb-14">
-            <motion.h2
-              variants={sectionHeadingVariants}
-              initial="hidden"
-              whileInView="visible"
-              viewport={viewportConfig}
-              transition={sectionTransition}
-              className="text-[1.75rem] sm:text-[2.25rem] font-bold text-foreground leading-tight mb-3"
-            >
-              Three steps. Your workspace.
-            </motion.h2>
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={viewportConfig}
-              transition={{ delay: 0.1, ...sectionTransition }}
-              className="text-text-secondary text-[15px]"
-            >
-              No consultants. No migration headaches. No training videos.
-            </motion.p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
-            {[
-              { num: "1", title: "Pick your industry", description: "We pre-select modules and settings that match your type of business. Makeup artist? Plumber? Consultant? We know what you need." },
-              { num: "2", title: "Fine-tune it", description: "Toggle features on or off. Need invoicing but not bookings? Done. Want a lead pipeline but not marketing? Easy." },
-              { num: "3", title: "Start working", description: "Your dashboard is ready with only what you selected. Add clients, send invoices, manage projects. Add more modules anytime from the sidebar." },
-            ].map((item, i) => (
-              <motion.div key={i} initial={{ opacity: 0, y: 30, scale: 0.96 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} transition={{ delay: i * 0.08, duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}>
-                <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center mb-4">
-                  <span className="text-white font-bold text-lg">{item.num}</span>
-                </div>
-                <h3 className="font-semibold text-foreground text-[17px] mb-2">{item.title}</h3>
-                <p className="text-sm text-text-secondary leading-relaxed">{item.description}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </motion.section>
-
       {/* Why not the others */}
       <motion.section
         initial={{ opacity: 0 }}
