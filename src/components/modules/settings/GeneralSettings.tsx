@@ -13,12 +13,14 @@ import {
   Sparkles,
   X,
   ImagePlus,
+  FileText,
 } from "lucide-react";
 import { useOnboardingStore } from "@/store/onboarding";
 import {
   useBrandSettingsStore,
   PRESET_COLORS,
 } from "@/store/brand-settings";
+import { INVOICE_TEMPLATES } from "@/lib/invoice-templates";
 import { INDUSTRIES } from "@/types/onboarding";
 import { SelectField } from "@/components/ui/SelectField";
 import { Button } from "@/components/ui/Button";
@@ -429,6 +431,94 @@ function BrandPreview() {
 }
 
 // ============================================================
+// Invoice Template Picker
+// ============================================================
+function InvoiceTemplatePicker() {
+  const { invoiceTemplate, setInvoiceTemplate, brandColor } = useBrandSettingsStore();
+
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      {INVOICE_TEMPLATES.map((t) => {
+        const isSelected = invoiceTemplate === t.id;
+        const previewAccent = t.id === "clean" || t.id === "bold" ? brandColor : t.preview.accentBg;
+        const headerBg = t.id === "bold" ? brandColor : t.preview.headerBg;
+        return (
+          <button
+            key={t.id}
+            onClick={() => setInvoiceTemplate(t.id)}
+            className={`group relative rounded-xl border-2 p-1 transition-all cursor-pointer ${
+              isSelected
+                ? "border-foreground shadow-sm"
+                : "border-border-light hover:border-foreground/20"
+            }`}
+          >
+            {/* Mini preview */}
+            <div className="aspect-[3/4] rounded-lg overflow-hidden bg-white">
+              {/* Header area */}
+              <div
+                className="h-[28%] flex items-center justify-between px-3"
+                style={{ backgroundColor: headerBg }}
+              >
+                <div className="flex flex-col gap-1">
+                  <div
+                    className="h-1.5 rounded-full"
+                    style={{
+                      width: 28,
+                      backgroundColor: headerBg === "#111111" || headerBg === brandColor ? "#fff" : "#333",
+                      opacity: 0.7,
+                    }}
+                  />
+                  <div
+                    className="h-1 rounded-full"
+                    style={{
+                      width: 18,
+                      backgroundColor: headerBg === "#111111" || headerBg === brandColor ? "#fff" : "#999",
+                      opacity: 0.4,
+                    }}
+                  />
+                </div>
+                <div
+                  className="h-2.5 rounded"
+                  style={{
+                    width: 20,
+                    backgroundColor: previewAccent,
+                    opacity: headerBg === brandColor ? 0.3 : 0.8,
+                  }}
+                />
+              </div>
+              {/* Body lines */}
+              <div className="px-3 pt-2 space-y-1.5">
+                <div className="h-1 bg-gray-200 rounded-full w-full" />
+                <div className="h-1 bg-gray-100 rounded-full w-3/4" />
+                <div className="h-1 bg-gray-100 rounded-full w-5/6" />
+                <div className="h-1 bg-gray-100 rounded-full w-2/3" />
+                <div className="mt-2 h-1 rounded-full w-1/3 ml-auto" style={{ backgroundColor: previewAccent, opacity: 0.6 }} />
+              </div>
+            </div>
+            {/* Label */}
+            <div className="mt-2 mb-1 text-center">
+              <p className={`text-xs font-medium ${isSelected ? "text-foreground" : "text-text-secondary"}`}>
+                {t.name}
+              </p>
+              <p className="text-[10px] text-text-tertiary leading-tight">{t.description}</p>
+            </div>
+            {/* Selected check */}
+            {isSelected && (
+              <div
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center"
+                style={{ backgroundColor: brandColor }}
+              >
+                <Check className="w-3 h-3" style={{ color: getContrastColor(brandColor) }} />
+              </div>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ============================================================
 // Main GeneralSettings
 // ============================================================
 export function GeneralSettings() {
@@ -565,12 +655,22 @@ export function GeneralSettings() {
         </div>
       </SettingsSection>
 
+      {/* ── Invoice Template Section ── */}
+      <SettingsSection
+        icon={FileText}
+        title="Invoice Template"
+        description="Choose how your invoices and quotes look"
+        delay={0.12}
+      >
+        <InvoiceTemplatePicker />
+      </SettingsSection>
+
       {/* ── Business Details Section ── */}
       <SettingsSection
         icon={Briefcase}
         title="Business Details"
         description="Industry and location information"
-        delay={0.15}
+        delay={0.18}
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           {/* Industry */}

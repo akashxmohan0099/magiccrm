@@ -24,25 +24,23 @@ html, body {
   --surface: #F3F3F3;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0A0A0A;
-    --foreground: #EDEDED;
-    --primary: #34D399;
-    --primary-hover: #4ADE80;
-    --primary-muted: rgba(52, 211, 153, 0.12);
-    --primary-subtle: rgba(52, 211, 153, 0.20);
-    --brand: #34D399;
-    --brand-hover: #4ADE80;
-    --brand-light: #052E16;
-    --logo-green: #7CFE9D;
-    --text-secondary: #A1A1A1;
-    --text-tertiary: #737373;
-    --border: #2A2A2A;
-    --border-light: #1F1F1F;
-    --card-bg: #141414;
-    --surface: #1A1A1A;
-  }
+.dark {
+  --background: #0A0A0A;
+  --foreground: #EDEDED;
+  --primary: #34D399;
+  --primary-hover: #4ADE80;
+  --primary-muted: rgba(52, 211, 153, 0.12);
+  --primary-subtle: rgba(52, 211, 153, 0.20);
+  --brand: #34D399;
+  --brand-hover: #4ADE80;
+  --brand-light: #052E16;
+  --logo-green: #7CFE9D;
+  --text-secondary: #A1A1A1;
+  --text-tertiary: #737373;
+  --border: #2A2A2A;
+  --border-light: #1F1F1F;
+  --card-bg: #141414;
+  --surface: #1A1A1A;
 }
 
 @theme inline {
@@ -102,8 +100,8 @@ html { scroll-behavior: smooth; }
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #D1D1D1; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #A3A3A3; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
 
 /* ── Transitions ── */
 button, a, input, select, textarea {
@@ -127,7 +125,7 @@ button, a, input, select, textarea {
   100% { background-position: 200% 0; }
 }
 .skeleton {
-  background: linear-gradient(90deg, #F3F3F3 25%, #E5E5E5 50%, #F3F3F3 75%);
+  background: linear-gradient(90deg, var(--surface) 25%, var(--border) 50%, var(--surface) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
   border-radius: 12px;

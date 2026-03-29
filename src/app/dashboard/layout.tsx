@@ -12,7 +12,7 @@ import {
   Crown, Camera, FileInput, ClipboardList, Gift, UserCheck,
   Store, Globe, Lightbulb, Puzzle, UsersRound,
   Ticket, CalendarRange, Building2, ScrollText, Wrench, Banknote, ImagePlus, ListOrdered,
-  NotebookPen, LogOut, Loader2, User,
+  NotebookPen, LogOut, Loader2, User, Sun, Moon, Monitor,
 } from "lucide-react";
 import { useOnboardingStore } from "@/store/onboarding";
 import { useBuilderStore } from "@/store/builder";
@@ -27,6 +27,7 @@ import { useVocabulary } from "@/hooks/useVocabulary";
 import { getModuleDisplayName, getModuleBySlug, GROUP_LABELS } from "@/lib/module-registry";
 import { ModuleConfigurator } from "@/components/ui/ModuleConfigurator";
 import { ToastContainer } from "@/components/ui/Toast";
+import { useTheme } from "@/hooks/useTheme";
 import { DashboardSkeleton } from "@/components/ui/Skeleton";
 import { AppPreloader } from "@/components/ui/AppPreloader";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
@@ -370,6 +371,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
           </div>
           <div className="flex items-center gap-2 flex-shrink-0 ml-3">
             <NavBarConfigurator pathname={pathname} vocab={vocab} />
+            <ThemeToggle />
             <div className="relative">
               <button
                 onClick={() => setNotifOpen((o) => !o)}
@@ -592,6 +594,53 @@ function NavBarConfigurator({ pathname, vocab }: { pathname: string; vocab: Para
   const displayName = getModuleDisplayName(mod, vocab);
 
   return <ModuleConfigurator moduleId={mod.id} moduleName={displayName} />;
+}
+
+function ThemeToggle() {
+  const { theme, setTheme } = useTheme();
+  const [open, setOpen] = useState(false);
+
+  const options = [
+    { value: "light" as const, label: "Light", icon: Sun },
+    { value: "dark" as const, label: "Dark", icon: Moon },
+    { value: "system" as const, label: "System", icon: Monitor },
+  ];
+
+  const current = options.find((o) => o.value === theme) || options[2];
+  const CurrentIcon = current.icon;
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="p-2 text-text-secondary hover:text-foreground rounded-lg hover:bg-surface cursor-pointer transition-colors"
+        aria-label="Toggle theme"
+      >
+        <CurrentIcon className="w-[17px] h-[17px]" />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-full mt-1 w-36 bg-card-bg border border-border-light rounded-xl shadow-lg z-40 overflow-hidden py-1">
+            {options.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => { setTheme(opt.value); setOpen(false); }}
+                className={`w-full flex items-center gap-2.5 px-4 py-2 text-[13px] transition-colors cursor-pointer ${
+                  theme === opt.value
+                    ? "text-foreground font-medium bg-surface"
+                    : "text-text-secondary hover:text-foreground hover:bg-surface"
+                }`}
+              >
+                <opt.icon className="w-4 h-4" />
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
 }
 
 function DashboardCustomizeButton() {

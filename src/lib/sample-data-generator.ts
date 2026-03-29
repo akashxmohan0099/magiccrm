@@ -319,11 +319,34 @@ function personalTrainerData(): DataPack {
 }
 
 function genericData(): DataPack {
+  const c1 = rec({ name: "Sarah M.", email: "sarah@email.com", phone: "0412 345 678", status: "active", tags: ["regular"], notes: "Loyal client since January", source: "referral" });
+  const c2 = rec({ name: "Tom H.", email: "tom@email.com", phone: "0423 456 789", status: "active", tags: [], notes: "", source: "website" });
+  const c3 = rec({ name: "Emma R.", email: "emma@email.com", phone: "", status: "prospect", tags: [], notes: "Enquired last week", source: "social" });
+
+  const p1 = rec({ name: "Standard Service", description: "Standard session", price: 120, category: "Services", duration: 60, inStock: true });
+  const p2 = rec({ name: "Premium Service", description: "Extended premium session", price: 250, category: "Services", duration: 90, inStock: true });
+
   return {
-    clients: [
-      rec({ name: "Sarah M.", email: "", phone: "", status: "active", tags: [], notes: "", source: "referral" }),
-      rec({ name: "Tom H.", email: "", phone: "", status: "active", tags: [], notes: "", source: "website" }),
-      rec({ name: "Emma R.", email: "", phone: "", status: "prospect", tags: [], notes: "Enquired last week", source: "social" }),
+    clients: [c1, c2, c3],
+    products: [p1, p2],
+    bookings: [
+      rec({ title: "Session — Sarah M.", clientId: c1.id, date: daysFromNow(1), startTime: time(10), endTime: time(11), status: "confirmed", price: 120, serviceName: "Standard Service", serviceId: p1.id, notes: "" }),
+      rec({ title: "Premium Session — Tom H.", clientId: c2.id, date: daysFromNow(3), startTime: time(14), endTime: time(15, 30), status: "pending", price: 250, serviceName: "Premium Service", serviceId: p2.id, notes: "" }),
+      rec({ title: "Consult — Emma R.", clientId: c3.id, date: daysAgo(2), startTime: time(9), endTime: time(9, 30), status: "completed", price: 0, serviceName: "Free Consult", notes: "" }),
+    ],
+    leads: [
+      rec({ name: "Alex P.", email: "alex@email.com", phone: "", stage: "new", value: 500, source: "website", notes: "Interested in premium package" }),
+      rec({ name: "Jordan K.", email: "", phone: "0434 567 890", stage: "contacted", value: 250, source: "referral", notes: "Follow up next week" }),
+    ],
+    invoices: [
+      rec({ number: "INV-001", clientId: c1.id, lineItems: [{ id: generateId(), description: "Standard Service", quantity: 2, unitPrice: 120 }], status: "paid", dueDate: daysAgo(7), notes: "", taxRate: 10, paidAmount: 264 }),
+      rec({ number: "INV-002", clientId: c2.id, lineItems: [{ id: generateId(), description: "Premium Service", quantity: 1, unitPrice: 250 }], status: "sent", dueDate: daysFromNow(7), notes: "" }),
+    ],
+    jobs: [
+      rec({ title: "Website Redesign Project", clientId: c2.id, description: "Full website refresh", stage: "in-progress", dueDate: daysFromNow(14), priority: "high" }),
+    ],
+    team: [
+      rec({ name: "You", email: "", phone: "", role: "owner", status: "active", moduleAccess: [] }),
     ],
   };
 }

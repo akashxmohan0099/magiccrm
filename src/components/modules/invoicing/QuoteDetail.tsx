@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Pencil, Trash2, ArrowRightCircle } from "lucide-react";
+import { Pencil, Trash2, ArrowRightCircle, FileDown, Eye } from "lucide-react";
 import { useInvoicesStore } from "@/store/invoices";
 import { useClientsStore } from "@/store/clients";
+import { useBrandSettingsStore } from "@/store/brand-settings";
+import { useOnboardingStore } from "@/store/onboarding";
 import { Quote } from "@/types/models";
 import { useVocabulary } from "@/hooks/useVocabulary";
 import { SlideOver } from "@/components/ui/SlideOver";
@@ -23,6 +25,13 @@ export function QuoteDetail({ open, onClose, quoteId, onEdit }: QuoteDetailProps
   const { clients } = useClientsStore();
   const vocab = useVocabulary();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+
+  const brandColor = useBrandSettingsStore((s) => s.brandColor);
+  const logoBase64 = useBrandSettingsStore((s) => s.logoBase64);
+  const tagline = useBrandSettingsStore((s) => s.tagline);
+  const invoiceTemplate = useBrandSettingsStore((s) => s.invoiceTemplate);
+  const businessName = useOnboardingStore((s) => s.businessContext.businessName) || "My Business";
 
   const quote = quotes.find((q) => q.id === quoteId);
 
@@ -36,6 +45,58 @@ export function QuoteDetail({ open, onClose, quoteId, onEdit }: QuoteDetailProps
 
   const client = clients.find((c) => c.id === quote.clientId);
   const total = quote.lineItems.reduce((sum, li) => sum + li.quantity * li.unitPrice, 0);
+
+  const buildPdfPayload = () => ({
+    templateId: invoiceTemplate,
+    documentType: "quote",
+    businessName,
+    tagline,
+    logoBase64,
+    brandColor,
+    clientName: client?.name || "",
+    clientEmail: client?.email || "",
+    clientAddress: ((client as unknown as Record<string, unknown>)?.address as string) || "",
+    number: quote.number,
+    date: new Date(quote.createdAt).toLocaleDateString("en-AU", { year: "numeric", month: "long", day: "numeric" }),
+    dueDate: quote.validUntil
+      ? new Date(quote.validUntil).toLocaleDateString("en-AU", { year: "numeric", month: "long", day: "numeric" })
+      : "N/A",
+    status: quote.status.charAt(0).toUpperCase() + quote.status.slice(1),
+    items: quote.lineItems.map((li) => ({
+      description: li.description || "",
+      quantity: li.quantity,
+      unitPrice: li.unitPrice,
+      discount: li.discount ?? 0,
+      amount: li.quantity * li.unitPrice - (li.discount ?? 0),
+    })),
+    subtotal: total,
+    taxRate: 0,
+    taxAmount: 0,
+    total,
+    notes: quote.notes,
+  });
+
+  const handleDownloadPdf = async () => {
+    const res = await fetch("/api/invoices/pdf", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(buildPdfPayload()),
+    });
+    if (!res.ok) return;
+    const html = await res.text();
+    const win = window.open("", "_blank");
+    if (win) { win.document.write(html); win.document.close(); }
+  };
+
+  const handlePreview = async () => {
+    const res = await fetch("/api/invoices/pdf", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(buildPdfPayload()),
+    });
+    if (!res.ok) return;
+    setPreviewHtml(await res.text());
+  };
 
   const handleConvert = () => {
     convertQuoteToInvoice(quote.id);
@@ -117,9 +178,15 @@ export function QuoteDetail({ open, onClose, quoteId, onEdit }: QuoteDetailProps
           )}
 
           {/* Actions */}
-          <div className="flex items-center gap-2 pt-4 border-t border-border-light">
+          <div className="flex flex-wrap items-center gap-2 pt-4 border-t border-border-light">
             <Button variant="primary" size="sm" onClick={handleConvert}>
               <ArrowRightCircle className="w-4 h-4" /> Convert to {vocab.invoice}
+            </Button>
+            <Button variant="secondary" size="sm" onClick={handlePreview}>
+              <Eye className="w-4 h-4" /> Preview
+            </Button>
+            <Button variant="secondary" size="sm" onClick={handleDownloadPdf}>
+              <FileDown className="w-4 h-4" /> PDF
             </Button>
             {onEdit && (
               <Button variant="secondary" size="sm" onClick={() => onEdit(quote)}>
@@ -130,6 +197,24 @@ export function QuoteDetail({ open, onClose, quoteId, onEdit }: QuoteDetailProps
               <Trash2 className="w-4 h-4" /> Delete
             </Button>
           </div>
+
+          {/* PDF Preview */}
+          {previewHtml && (
+            <div className="mt-4">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-medium text-foreground">Preview</p>
+                <button onClick={() => setPreviewHtml(null)} className="text-xs text-text-tertiary hover:text-foreground cursor-pointer">Close</button>
+              </div>
+              <div className="border border-border-light rounded-xl overflow-hidden bg-white" style={{ height: 480 }}>
+                <iframe
+                  srcDoc={previewHtml}
+                  className="w-full h-full"
+                  title="Quote Preview"
+                  style={{ border: "none", transform: "scale(0.65)", transformOrigin: "top left", width: "154%", height: "154%" }}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </SlideOver>
 

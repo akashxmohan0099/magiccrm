@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
-import { Pencil, Trash2, CheckCircle, Send, FileDown } from "lucide-react";
+import { Pencil, Trash2, CheckCircle, Send, FileDown, Eye } from "lucide-react";
 import { useInvoicesStore, calculateInvoiceTotal } from "@/store/invoices";
 import { useClientsStore } from "@/store/clients";
+import { useBrandSettingsStore } from "@/store/brand-settings";
+import { useOnboardingStore } from "@/store/onboarding";
 import { useAuth } from "@/hooks/useAuth";
 import { Invoice } from "@/types/models";
 import { useVocabulary } from "@/hooks/useVocabulary";
@@ -58,10 +60,63 @@ export function InvoiceDetail({ open, onClose, invoiceId, onEdit }: InvoiceDetai
     setSending(false);
   };
 
-  const handleDownloadPdf = () => {
-    if (!workspaceId) return;
-    const url = `/api/invoices/pdf?invoiceId=${encodeURIComponent(invoice.id)}&workspaceId=${encodeURIComponent(workspaceId)}`;
-    window.open(url, "_blank");
+  const brandColor = useBrandSettingsStore((s) => s.brandColor);
+  const logoBase64 = useBrandSettingsStore((s) => s.logoBase64);
+  const tagline = useBrandSettingsStore((s) => s.tagline);
+  const invoiceTemplate = useBrandSettingsStore((s) => s.invoiceTemplate);
+  const businessName = useOnboardingStore((s) => s.businessContext.businessName) || "My Business";
+
+  const buildPdfPayload = () => ({
+    templateId: invoiceTemplate,
+    documentType: "invoice",
+    businessName,
+    tagline,
+    logoBase64,
+    brandColor,
+    clientName: client?.name || "",
+    clientEmail: client?.email || "",
+    clientAddress: ((client as unknown as Record<string, unknown>)?.address as string) || "",
+    number: invoice.number,
+    date: new Date(invoice.createdAt).toLocaleDateString("en-AU", { year: "numeric", month: "long", day: "numeric" }),
+    dueDate: invoice.dueDate
+      ? new Date(invoice.dueDate).toLocaleDateString("en-AU", { year: "numeric", month: "long", day: "numeric" })
+      : "On receipt",
+    status: invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1),
+    items: invoice.lineItems.map((li) => ({
+      description: li.description || "",
+      quantity: li.quantity,
+      unitPrice: li.unitPrice,
+      discount: li.discount ?? 0,
+      amount: li.quantity * li.unitPrice - (li.discount ?? 0),
+    })),
+    subtotal,
+    taxRate: invoice.taxRate ?? 0,
+    taxAmount,
+    total,
+    notes: invoice.notes,
+  });
+
+  const handleDownloadPdf = async () => {
+    const res = await fetch("/api/invoices/pdf", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(buildPdfPayload()),
+    });
+    if (!res.ok) return;
+    const html = await res.text();
+    const win = window.open("", "_blank");
+    if (win) { win.document.write(html); win.document.close(); }
+  };
+
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const handlePreview = async () => {
+    const res = await fetch("/api/invoices/pdf", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(buildPdfPayload()),
+    });
+    if (!res.ok) return;
+    setPreviewHtml(await res.text());
   };
 
   return (
@@ -236,6 +291,9 @@ export function InvoiceDetail({ open, onClose, invoiceId, onEdit }: InvoiceDetai
                 <CheckCircle className="w-4 h-4" /> Mark as Paid
               </Button>
             )}
+            <Button variant="secondary" size="sm" onClick={handlePreview}>
+              <Eye className="w-4 h-4" /> Preview
+            </Button>
             <Button variant="secondary" size="sm" onClick={handleDownloadPdf}>
               <FileDown className="w-4 h-4" /> PDF
             </Button>
@@ -253,6 +311,23 @@ export function InvoiceDetail({ open, onClose, invoiceId, onEdit }: InvoiceDetai
               <Trash2 className="w-4 h-4" /> Delete
             </Button>
           </div>
+          {/* PDF Preview */}
+          {previewHtml && (
+            <div className="mt-4">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-medium text-foreground">Preview</p>
+                <button onClick={() => setPreviewHtml(null)} className="text-xs text-text-tertiary hover:text-foreground cursor-pointer">Close</button>
+              </div>
+              <div className="border border-border-light rounded-xl overflow-hidden bg-white" style={{ height: 480 }}>
+                <iframe
+                  srcDoc={previewHtml}
+                  className="w-full h-full"
+                  title="Invoice Preview"
+                  style={{ border: "none", transform: "scale(0.65)", transformOrigin: "top left", width: "154%", height: "154%" }}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </SlideOver>
 

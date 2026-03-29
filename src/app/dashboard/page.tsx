@@ -741,16 +741,28 @@ export default function DashboardPage() {
 
   // Seed sample data per-store if empty. Runs on dashboard mount.
   // Each store is checked independently — only seeds what's missing.
+  // Also seeds generic data when onboarding hasn't been completed yet (dev/testing).
   const seeded = useRef(false);
   useEffect(() => {
-    if (!buildComplete || !selectedIndustry || seeded.current) return;
+    if (seeded.current) return;
+
+    const allEmpty =
+      !useClientsStore.getState().clients.length &&
+      !useLeadsStore.getState().leads.length &&
+      !useBookingsStore.getState().bookings.length;
+
+    // Seed persona-specific data after onboarding, or generic data if stores are empty
+    if (!buildComplete && !allEmpty) return;
     seeded.current = true;
 
-    const enabledIds = Array.from(computeEnabledModuleIds(needs, discoveryAnswers));
+    const enabledIds = buildComplete && selectedIndustry
+      ? Array.from(computeEnabledModuleIds(needs, discoveryAnswers))
+      : ["client-database", "leads-pipeline", "bookings-calendar", "quotes-invoicing", "jobs-projects", "products", "team"];
+
     const sample = generateSampleData({
-      industryId: selectedIndustry,
-      personaId: selectedPersona,
-      businessName: businessContext.businessName,
+      industryId: selectedIndustry || "generic",
+      personaId: selectedPersona || "generic",
+      businessName: businessContext.businessName || "My Business",
       enabledModuleIds: enabledIds,
     });
 
