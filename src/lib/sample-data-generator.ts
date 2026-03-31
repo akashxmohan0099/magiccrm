@@ -140,6 +140,57 @@ function nailTechData(): DataPack {
   };
 }
 
+function lashBrowTechData(): DataPack {
+  const c1 = rec({ name: "Olivia M.", email: "", phone: "", status: "vip", tags: ["regular"], notes: "Classic lashes, sensitive eyes. Use sensitive adhesive.", source: "instagram", customData: { eyeShape: "almond", lashCondition: "healthy", adhesiveUsed: "Sensitive Bond" } });
+  const c2 = rec({ name: "Sophie L.", email: "", phone: "", status: "active", tags: ["volume"], notes: "Prefers dramatic volume", source: "referral" });
+  const c3 = rec({ name: "Grace W.", email: "", phone: "", status: "active", tags: [], notes: "First-time lash lift", source: "website" });
+
+  const p1 = rec({ name: "Classic Full Set", description: "Individual lash extensions", price: 150, category: "Lashes", duration: 120, inStock: true });
+  const p2 = rec({ name: "Classic Fill", description: "2-3 week infill", price: 65, category: "Lashes", duration: 60, inStock: true });
+  const p3 = rec({ name: "Lash Lift & Tint", description: "Lift + keratin + tint", price: 80, category: "Lashes", duration: 60, inStock: true });
+  const p4 = rec({ name: "Brow Lamination", description: "Shape + laminate + tint", price: 85, category: "Brows", duration: 45, inStock: true });
+
+  return {
+    clients: [c1, c2, c3],
+    products: [p1, p2, p3, p4],
+    bookings: [
+      rec({ title: "Classic Fill — Olivia", clientId: c1.id, date: daysFromNow(1), startTime: time(10), endTime: time(11), status: "confirmed", price: 65, serviceName: "Classic Fill", serviceId: p2.id, notes: "" }),
+      rec({ title: "Lash Lift — Grace", clientId: c3.id, date: daysFromNow(2), startTime: time(14), endTime: time(15), status: "pending", price: 80, serviceName: "Lash Lift & Tint", serviceId: p3.id, notes: "" }),
+      rec({ title: "Classic Full Set — Sophie", clientId: c2.id, date: daysAgo(3), startTime: time(9), endTime: time(11), status: "completed", price: 150, serviceName: "Classic Full Set", serviceId: p1.id, notes: "" }),
+    ],
+    leads: [
+      rec({ name: "Hannah B.", email: "", phone: "", stage: "new", value: 150, source: "instagram", notes: "Wants volume mega set, allergic to latex" }),
+    ],
+    invoices: [
+      rec({ number: "RCT-001", clientId: c2.id, lineItems: [{ id: generateId(), description: "Classic Full Set", quantity: 1, unitPrice: 150 }], status: "paid", dueDate: daysAgo(3), notes: "", taxRate: 10, paidAmount: 165 }),
+    ],
+  };
+}
+
+function spaMassageData(): DataPack {
+  const c1 = rec({ name: "Rachel T.", email: "", phone: "", status: "vip", tags: ["regular"], notes: "Prefers firm pressure. Tension in neck and shoulders.", source: "website", customData: { pressurePreference: "firm", injuriesConditions: "desk worker, upper back tension" } });
+  const c2 = rec({ name: "David K.", email: "", phone: "", status: "active", tags: ["deep-tissue"], notes: "", source: "referral" });
+  const c3 = rec({ name: "Amy L.", email: "", phone: "", status: "active", tags: [], notes: "Enquired about couples massage", source: "social" });
+
+  const p1 = rec({ name: "Relaxation Massage", description: "Full body, light to medium pressure", price: 90, category: "Massage", duration: 60, inStock: true });
+  const p2 = rec({ name: "Deep Tissue", description: "Targeted deep pressure work", price: 110, category: "Massage", duration: 60, inStock: true });
+  const p3 = rec({ name: "Facial", description: "Cleanse, exfoliate, mask, moisturise", price: 85, category: "Skin", duration: 60, inStock: true });
+  const p4 = rec({ name: "Hot Stone Massage", description: "Heated basalt stones + massage", price: 120, category: "Massage", duration: 75, inStock: true });
+
+  return {
+    clients: [c1, c2, c3],
+    products: [p1, p2, p3, p4],
+    bookings: [
+      rec({ title: "Deep Tissue — Rachel", clientId: c1.id, date: daysFromNow(1), startTime: time(10), endTime: time(11), status: "confirmed", price: 110, serviceName: "Deep Tissue", serviceId: p2.id, notes: "" }),
+      rec({ title: "Relaxation — David", clientId: c2.id, date: daysFromNow(3), startTime: time(14), endTime: time(15), status: "pending", price: 90, serviceName: "Relaxation Massage", serviceId: p1.id, notes: "" }),
+      rec({ title: "Facial — Amy", clientId: c3.id, date: daysAgo(1), startTime: time(11), endTime: time(12), status: "completed", price: 85, serviceName: "Facial", serviceId: p3.id, notes: "" }),
+    ],
+    invoices: [
+      rec({ number: "RCT-001", clientId: c1.id, lineItems: [{ id: generateId(), description: "Deep Tissue Massage", quantity: 1, unitPrice: 110 }], status: "paid", dueDate: daysAgo(5), notes: "", taxRate: 10, paidAmount: 121 }),
+    ],
+  };
+}
+
 function genericData(): DataPack {
   const c1 = rec({ name: "Sarah M.", email: "sarah@email.com", phone: "0412 345 678", status: "active", tags: ["regular"], notes: "Loyal client since January", source: "referral" });
   const c2 = rec({ name: "Tom H.", email: "tom@email.com", phone: "0423 456 789", status: "active", tags: [], notes: "", source: "website" });
@@ -209,7 +260,9 @@ const PERSONA_GENERATORS: { [key: string]: () => DataPack } = {
   "hair-salon": hairSalonData,
   "barber": barberData,
   "nail-tech": nailTechData,
+  "lash-brow-tech": lashBrowTechData,
   "makeup-artist": makeupArtistData,
+  "spa-massage": spaMassageData,
 };
 
 /**

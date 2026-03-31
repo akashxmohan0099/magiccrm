@@ -165,7 +165,7 @@ export function VendorManagementPage() {
           setupSteps={[
             {
               label: "Add your first vendor",
-              description: "Add a photographer, florist, caterer, or any vendor",
+              description: "Add a product supplier, equipment vendor, or any partner",
               action: () => setFormOpen(true),
             },
           ]}

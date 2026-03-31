@@ -33,11 +33,11 @@ const MODULES = [
 // ── Persona presets for the module picker demo ──
 
 const PERSONA_PRESETS = [
-  { label: "Sarah", role: "Lash Tech", context: "Sarah does lash extensions and brow lamination. So she got Appointments (not generic bookings), a Service Menu (not a product catalog), and Receipts (not invoicing) \u2014 because that\u2019s how she works.", modules: ["Clients", "Inquiries", "Messages", "Appointments", "Receipts", "Services", "Marketing", "Automations", "Reporting"] },
-  { label: "Tom", role: "Plumber", context: "Tom\u2019s clients call with emergencies. So he got Job Requests with urgency levels, Site Visits with property addresses, and a Job Board that tracks work from quote to sign-off.", modules: ["Customers", "Job Requests", "Messages", "Jobs", "Invoicing", "Documents", "Team", "Automations", "Reporting"] },
-  { label: "Priya", role: "Consultant", context: "Priya runs a consulting practice. She got a prospect pipeline with Discovery Call stages, a Client Portal for deliverables, and monthly retainer billing.", modules: ["Clients", "Prospects", "Messages", "Sessions", "Projects", "Billing", "Documents", "Support", "Client Portal", "Automations", "Reporting"] },
-  { label: "Jake", role: "Photographer", context: "Jake shoots weddings. He got Shoots with stages from Booked to Delivered, Wedding Inquiries with event dates and party size, and Photography Packages with day rates.", modules: ["Clients", "Inquiries", "Messages", "Sessions", "Shoots", "Invoicing", "Documents", "Packages", "Marketing", "Automations", "Reporting"] },
-  { label: "Mia", role: "Gym Owner", context: "Mia runs a studio with trainers. She got Sessions with types (1-on-1, group, online), Programs instead of products, and a lead pipeline built for gyms.", modules: ["Clients", "Prospects", "Messages", "Sessions", "Payments", "Programs", "Marketing", "Team", "Automations", "Reporting"] },
+  { label: "Sarah", role: "Lash Tech", context: "Sarah does lash extensions and brow lamination. She got Appointments (not generic bookings), a Service Menu (not a product catalog), and Receipts \u2014 because that\u2019s how she works.", modules: ["Clients", "Inquiries", "Messages", "Appointments", "Receipts", "Services", "Marketing", "Automations", "Reporting"] },
+  { label: "Emma", role: "Hair Stylist", context: "Emma runs a 3-chair salon. She got a Client list with colour formulas and hair types, Appointments with rebooking prompts, and Receipts that track tips and retail sales.", modules: ["Clients", "Inquiries", "Messages", "Appointments", "Receipts", "Services", "Marketing", "Team", "Automations", "Reporting"] },
+  { label: "Priya", role: "Nail Tech", context: "Priya does gel extensions and nail art from a home studio. She got a Service Menu with durations and pricing, Appointments with no-show protection, and client preferences for nail shape and type.", modules: ["Clients", "Messages", "Appointments", "Receipts", "Services", "Marketing", "Automations", "Reporting"] },
+  { label: "Jessica", role: "Makeup Artist", context: "Jessica does bridal and event makeup. She got Wedding Inquiries with event dates and party size, deposit-based invoicing, and a trial booking workflow.", modules: ["Clients", "Inquiries", "Messages", "Appointments", "Invoicing", "Services", "Marketing", "Automations", "Reporting"] },
+  { label: "Mia", role: "Spa Owner", context: "Mia runs a day spa with massage therapists. She got a treatment menu, client profiles with pressure preferences and contraindications, and team scheduling across multiple rooms.", modules: ["Clients", "Messages", "Appointments", "Receipts", "Services", "Marketing", "Team", "Automations", "Reporting"] },
 ];
 
 const PERSONA_CYCLE_MS = 6000;
@@ -1317,11 +1317,11 @@ function DemoContent({ module, features, data }: { module: string; features: Rec
       { name: "Classic Full Set", price: 150, category: "Lashes", stock: null as number | null },
       { name: "Volume Full Set", price: 200, category: "Lashes", stock: null as number | null },
       { name: "Brow Lamination", price: 65, category: "Brows", stock: 12 },
-      { name: "Lash Glue (retail)", price: 25, category: "Retail", stock: 8 },
+      { name: "Lash Glue", price: 25, category: "Products", stock: 8 },
     ];
     return (
       <div>
-        {f("Duration Variants") && <motion.div key="Duration Variants" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-1.5 mb-3">{["All", "Services", "Retail"].map((c, i) => <span key={c} className={`px-2 py-1 rounded-full text-[9px] font-medium ${i === 0 ? "bg-foreground text-background" : "bg-background border border-border-light text-text-secondary"}`}>{c}</span>)}</motion.div>}
+        {f("Duration Variants") && <motion.div key="Duration Variants" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-1.5 mb-3">{["All", "Services", "Products"].map((c, i) => <span key={c} className={`px-2 py-1 rounded-full text-[9px] font-medium ${i === 0 ? "bg-foreground text-background" : "bg-background border border-border-light text-text-secondary"}`}>{c}</span>)}</motion.div>}
         <div className="border border-border-light rounded-xl overflow-hidden">
           <motion.div layout className="grid bg-background px-3 py-1.5 border-b border-border-light text-[9px] font-medium text-text-tertiary" style={{ gridTemplateColumns: `1fr 50px ${f("Service Add-Ons") ? "55px " : ""}${f("Cost Margins") ? "50px " : ""}${f("Inventory Tracking") ? "40px " : ""}${f("Bundles") ? "50px " : ""}` }}>
             <span>Product</span><span>Price</span>

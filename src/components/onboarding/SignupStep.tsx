@@ -68,9 +68,9 @@ export function SignupStep() {
       window.dispatchEvent(new Event(AUTH_MEMBER_REFRESH_EVENT));
 
       // Don't call nextStep() here — the parent detects auth state change
-      // and advances to step 4 after workspace creation completes.
+      // and enters the building phase when auth + workspace exist.
       // Keep loading=true so the button stays disabled until the parent swaps
-      // this component out for the OnboardingLoader.
+      // this component out for the BuildingScreen.
       return;
     } catch (_err) {
       setError("Something went wrong. Please try again.");

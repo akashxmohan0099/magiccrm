@@ -40,7 +40,7 @@ function OnboardingContent() {
 
   // ── If onboarding was already completed, skip to dashboard ──
   // Uses buildComplete flag OR (authenticated + workspace exists + pre-auth step)
-  // because workspace is created at step 3 but onboarding continues to step 7.
+  // because workspace is created at step 2 (signup) and building phase follows.
   useEffect(() => {
     if (loading || hasRedirected.current) return;
 
