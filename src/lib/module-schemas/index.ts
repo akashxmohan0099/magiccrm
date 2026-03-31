@@ -30,38 +30,16 @@ const BASE_SCHEMAS: Record<string, ModuleSchema> = {
 };
 
 import { hairSalonVariants } from "./variants/hair-salon";
-import { plumberVariants } from "./variants/plumber";
-import { photographerVariants } from "./variants/photographer";
-import { personalTrainerVariants } from "./variants/personal-trainer";
-import { tutorVariants } from "./variants/tutor";
 import { makeupArtistVariants } from "./variants/makeup-artist";
 import { barberVariants } from "./variants/barber";
 import { nailTechVariants } from "./variants/nail-tech";
-import { electricianVariants } from "./variants/electrician";
-import { graphicDesignerVariants } from "./variants/graphic-designer";
-import { weddingPlannerVariants } from "./variants/wedding-planner";
-import { lifeCoachVariants } from "./variants/life-coach";
 
-/** All registered persona variants */
+/** All registered persona variants (beauty-only) */
 const SCHEMA_VARIANTS: SchemaVariant[] = [
-  // beauty-wellness
   ...hairSalonVariants,
   ...barberVariants,
   ...nailTechVariants,
   ...makeupArtistVariants,
-  // trades-construction
-  ...plumberVariants,
-  ...electricianVariants,
-  // creative-services
-  ...photographerVariants,
-  ...graphicDesignerVariants,
-  // health-fitness
-  ...personalTrainerVariants,
-  // education-coaching
-  ...tutorVariants,
-  ...lifeCoachVariants,
-  // hospitality-events
-  ...weddingPlannerVariants,
 ];
 
 // ── Lookup Functions ─────────────────────────────────────────

@@ -63,43 +63,42 @@ const PERSONA_PREVIEWS = [
     fields: ["Allergies", "Skin Type", "Preferred Products"],
   },
   {
-    label: "Electrician",
-    businessName: "Spark Right Electrical",
-    industry: "Trades & Construction",
-    accent: "#3B82F6",
-    nav: ["Clients", "Jobs", "Site Visits", "Invoices", "Quotes"],
-    activeNav: "Jobs",
-    contentTitle: "Active Jobs",
+    label: "Hair Salon",
+    businessName: "Glow Studio",
+    industry: "Beauty & Wellness",
+    accent: "#8B5CF6",
+    nav: ["Clients", "Services", "Appointments", "Receipts", "Inquiries"],
+    activeNav: "Clients",
+    contentTitle: "Client List",
     items: [
-      { name: "Kitchen rewire", meta: "Quoted", value: "$2,400", stageColor: "bg-blue-400" },
-      { name: "Switchboard upgrade", meta: "Scheduled", value: "$850", stageColor: "bg-cyan-400" },
-      { name: "Office fit-out", meta: "In Progress", value: "$6,200", stageColor: "bg-yellow-400" },
-      { name: "Garden lights", meta: "Complete", value: "$1,100", stageColor: "bg-green-400" },
+      { name: "Sarah M.", meta: "VIP", value: "Last: 2 weeks ago" },
+      { name: "Emma R.", meta: "Regular", value: "Last: 5 days ago" },
+      { name: "Jessica T.", meta: "Active", value: "Last: 3 weeks ago" },
+      { name: "Olivia C.", meta: "Prospect", value: "Enquired balayage" },
     ],
-    fields: ["Job Site Address", "Property Type", "Access Notes"],
+    fields: ["Hair Type", "Colour Formula", "Scalp Condition"],
   },
   {
-    label: "Life Coach",
-    businessName: "Elevate Coaching",
-    industry: "Education & Coaching",
-    accent: "#10B981",
-    nav: ["Clients", "Programs", "Sessions", "Invoices", "Leads"],
-    activeNav: "Sessions",
-    contentTitle: "Session Types",
+    label: "Makeup Artist",
+    businessName: "Bridal Glam Co",
+    industry: "Beauty & Wellness",
+    accent: "#F59E0B",
+    nav: ["Clients", "Inquiries", "Appointments", "Invoices", "Services"],
+    activeNav: "Inquiries",
+    contentTitle: "Wedding Inquiries",
     items: [
-      { name: "Discovery Call", meta: "30min", value: "Free" },
-      { name: "Coaching Session", meta: "1hr", value: "$200" },
-      { name: "Group Coaching", meta: "1.5hr", value: "$80" },
-      { name: "VIP Intensive", meta: "3hr", value: "$500" },
+      { name: "Jessica & Ryan", meta: "Trial Booked", value: "$650" },
+      { name: "Sophie & James", meta: "New Inquiry", value: "$850" },
+      { name: "Megan L.", meta: "Quoted", value: "$180" },
+      { name: "Anna K.", meta: "Booked", value: "$300" },
     ],
-    fields: ["Company", "Role / Title", "Coaching Goals"],
+    fields: ["Skin Tone", "Foundation Shade", "Wedding Date"],
   },
 ];
 
 const INDUSTRIES = [
-  "Beauty & Wellness", "Trades & Construction", "Professional Services",
-  "Health & Fitness", "Creative & Design", "Hospitality & Events",
-  "Education & Coaching", "Retail & E-commerce",
+  "Hair Salons", "Nail Techs", "Lash & Brow",
+  "Barbers", "Makeup Artists", "Spas & Massage",
 ];
 
 export default function LandingPage() {
@@ -219,7 +218,7 @@ export default function LandingPage() {
             transition={{ duration: 0.5 }}
             className="text-center text-sm text-text-tertiary mb-4 font-medium"
           >
-            Every industry. Every workflow.
+            Made for Beauty Professionals.
           </motion.p>
           <div className="flex flex-wrap justify-center gap-2">
             {INDUSTRIES.map((industry, i) => (
@@ -236,7 +235,7 @@ export default function LandingPage() {
             ))}
           </div>
           <p className="text-center text-[13px] text-text-tertiary mt-4 max-w-md mx-auto">
-            Built for over 50 types of businesses. Tested. Ready to go.
+            Built for hair, nails, lashes, makeup, and more. Tested. Ready to go.
           </p>
         </div>
       </motion.section>
@@ -268,7 +267,7 @@ export default function LandingPage() {
               transition={{ delay: 0.1, ...sectionTransition }}
               className="text-text-secondary text-[15px] max-w-lg mx-auto"
             >
-              A lash tech gets Appointments and Receipts. An electrician gets Jobs and Invoices. A life coach gets Sessions and Programs. Same tools, shaped differently — with the words, fields, and workflows that match how you actually run your business.
+              A lash tech sees Appointments and Services. A hair salon sees Clients with colour formulas. A makeup artist sees Wedding Inquiries with deposits. Same platform, shaped to how you actually work.
             </motion.p>
           </div>
 
@@ -372,12 +371,12 @@ export default function LandingPage() {
                 step: "01",
                 title: "Answer a few questions",
                 description: "Not a long form. A smart conversation that adapts to your answers. It picks up on how you work and what you actually need.",
-                detail: "Works for 50+ types of businesses across 8 industries",
+                detail: "Built specifically for beauty professionals",
               },
               {
                 step: "02",
                 title: "Watch it assemble",
-                description: "Your tools take shape based on what you told us. A lash tech gets Appointments. A plumber gets Job Requests. Same platform, your words.",
+                description: "Your tools take shape based on what you told us. A lash tech gets Services and Receipts. A makeup artist gets Wedding Inquiries. Your words, your way.",
                 detail: "Your workspace, your language",
               },
               {
@@ -686,7 +685,7 @@ export default function LandingPage() {
                 <p className="text-xs text-text-secondary mt-1">Structured SOAP notes for clinical treatment records.</p>
               </div>
               <div className="relative px-5 pb-5 space-y-1.5">
-                {[{ letter: "S", label: "Subjective", text: "Patient reports lower back pain..." }, { letter: "O", label: "Objective", text: "ROM limited to 40° flexion..." }, { letter: "A", label: "Assessment", text: "Lumbar strain, improving..." }].map((n) => (
+                {[{ letter: "S", label: "Subjective", text: "Client wants fuller brows, previous microblading faded..." }, { letter: "O", label: "Objective", text: "Skin type: normal, no sensitivities noted..." }, { letter: "A", label: "Assessment", text: "Good candidate for combo brows, patch test clear..." }].map((n) => (
                   <div key={n.letter} className="flex items-start gap-2.5 px-3 py-2 rounded-lg bg-background/80">
                     <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 w-5 h-5 rounded flex items-center justify-center flex-shrink-0">{n.letter}</span>
                     <div><p className="text-[10px] font-semibold text-foreground">{n.label}</p><p className="text-[9px] text-text-tertiary">{n.text}</p></div>
@@ -735,7 +734,7 @@ export default function LandingPage() {
                 <p className="text-xs text-text-secondary mt-1">Visual weekly class schedule with capacity limits and check-in.</p>
               </div>
               <div className="relative px-5 pb-5 space-y-1.5">
-                {[{ day: "Mon 9:00", name: "Yoga Flow", cap: "6/12" }, { day: "Wed 6:00", name: "HIIT", cap: "10/15" }, { day: "Fri 10:00", name: "Pilates", cap: "8/10" }].map((cls) => (
+                {[{ day: "Mon 9:00", name: "Lash Masterclass", cap: "4/8" }, { day: "Wed 6:00", name: "Nail Art Workshop", cap: "6/10" }, { day: "Fri 10:00", name: "Brow Lamination", cap: "5/8" }].map((cls) => (
                   <div key={cls.name} className="flex items-center justify-between px-3 py-2 rounded-lg bg-background/80">
                     <div className="flex items-center gap-2.5">
                       <span className="text-[10px] font-mono text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded font-semibold">{cls.day}</span>
@@ -756,7 +755,7 @@ export default function LandingPage() {
                 <p className="text-xs text-text-secondary mt-1">Track suppliers, vendor availability, contracts, and payments.</p>
               </div>
               <div className="relative px-5 pb-5 space-y-1.5">
-                {[{ name: "Bloom & Co", type: "Florist", stars: 5 }, { name: "DJ Marcus", type: "Entertainment", stars: 4 }, { name: "Sweet Table", type: "Caterer", stars: 5 }].map((v) => (
+                {[{ name: "Lash Supplies AU", type: "Lash Products", stars: 5 }, { name: "Salon Essentials", type: "Hair Products", stars: 4 }, { name: "NailCo Wholesale", type: "Nail Supplies", stars: 5 }].map((v) => (
                   <div key={v.name} className="flex items-center justify-between px-3 py-2 rounded-lg bg-background/80">
                     <div><p className="text-[11px] font-semibold text-foreground">{v.name}</p><p className="text-[9px] text-text-tertiary">{v.type}</p></div>
                     <div className="flex gap-0.5">{Array.from({ length: v.stars }).map((_, i) => (<Star key={i} className="w-3 h-3 fill-orange-400 text-orange-400" />))}</div>
@@ -774,7 +773,7 @@ export default function LandingPage() {
                 <p className="text-xs text-text-secondary mt-1">Branded proposal pages with interactive pricing and e-signature.</p>
               </div>
               <div className="relative px-5 pb-5 space-y-1.5">
-                {[{ id: "PROP-001", title: "Website Redesign", status: "Sent", amount: "$4,500", sc: "bg-blue-50 text-blue-600" }, { id: "PROP-002", title: "Brand Package", status: "Viewed", amount: "$2,800", sc: "bg-amber-50 text-amber-700" }, { id: "PROP-003", title: "Event Coverage", status: "Accepted", amount: "$3,200", sc: "bg-emerald-50 text-emerald-700" }].map((p) => (
+                {[{ id: "PROP-001", title: "Bridal Package", status: "Sent", amount: "$650", sc: "bg-blue-50 text-blue-600" }, { id: "PROP-002", title: "Lash Extension Package", status: "Viewed", amount: "$350", sc: "bg-amber-50 text-amber-700" }, { id: "PROP-003", title: "Wedding Party (x5)", status: "Accepted", amount: "$1,200", sc: "bg-emerald-50 text-emerald-700" }].map((p) => (
                   <div key={p.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-background/80">
                     <div className="flex items-center gap-2">
                       <span className="text-[9px] font-mono text-text-tertiary">{p.id}</span>
@@ -927,7 +926,7 @@ export default function LandingPage() {
                 transition={{ delay: 0.1, ...sectionTransition }}
                 className="text-text-secondary text-[15px] leading-relaxed mb-8"
               >
-                Because they weren&apos;t built for a 3-person landscaping crew or a solo makeup artist. You end up paying for 200 features and using 12.
+                Because they weren&apos;t built for a solo lash tech or a 3-chair salon. You end up paying for 200 features and using 12.
               </motion.p>
               <div className="space-y-4">
                 {[
@@ -935,7 +934,7 @@ export default function LandingPage() {
                   { title: "Only your features", desc: "No hidden tabs, no locked modules, no 'upgrade to unlock' walls." },
                   { title: "Everything is customizable", desc: "Every module adapts to your workflow. Turn features on or off as your business grows." },
                   { title: "Add-ons, one click each", desc: "Need gift cards next month? Click install. Need treatment notes? Click install." },
-                  { title: "Industry-native vocabulary", desc: "A plumber sees Jobs and Quotes. A physio sees Patients and Treatment Plans." },
+                  { title: "Beauty-native vocabulary", desc: "A lash tech sees Appointments and Receipts. A makeup artist sees Inquiries and Deposits." },
                 ].map((item, i) => (
                   <motion.div key={i} initial={{ opacity: 0, x: -10 }} whileInView={{ opacity: 1, x: 0 }} viewport={viewportConfig} transition={{ delay: i * 0.08 }} className="flex items-start gap-3">
                     <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -988,13 +987,13 @@ export default function LandingPage() {
                   {[1,2,3,4,5].map((s) => <Star key={s} className="w-4 h-4 fill-primary text-primary" />)}
                 </div>
                 <p className="text-sm text-foreground leading-relaxed mb-4">
-                  Finally a platform that gets trades. Quote, invoice, track the job, done. No nonsense. The add-ons are a bonus.
+                  Switched from Fresha and never looked back. No hidden fees, no surprises. The rebooking nudges alone have paid for themselves.
                 </p>
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-surface rounded-full flex items-center justify-center"><span className="text-xs font-bold text-foreground">MR</span></div>
+                  <div className="w-8 h-8 bg-surface rounded-full flex items-center justify-center"><span className="text-xs font-bold text-foreground">ER</span></div>
                   <div>
-                    <p className="text-[13px] font-semibold text-foreground">Mike R.</p>
-                    <p className="text-[11px] text-text-tertiary">Electrician, Gold Coast</p>
+                    <p className="text-[13px] font-semibold text-foreground">Emma R.</p>
+                    <p className="text-[11px] text-text-tertiary">Lash Tech, Melbourne</p>
                   </div>
                 </div>
               </motion.div>
@@ -1017,7 +1016,7 @@ export default function LandingPage() {
                   <div className="w-8 h-8 bg-surface rounded-full flex items-center justify-center"><span className="text-xs font-bold text-foreground">JT</span></div>
                   <div>
                     <p className="text-[13px] font-semibold text-foreground">Jess T.</p>
-                    <p className="text-[11px] text-text-tertiary">Business coach, Sydney</p>
+                    <p className="text-[11px] text-text-tertiary">Nail Tech, Sydney</p>
                   </div>
                 </div>
               </motion.div>

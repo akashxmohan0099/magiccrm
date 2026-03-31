@@ -236,10 +236,10 @@ describe("variant application", () => {
     expect(variant?.variantId).toContain("hair-salon");
   });
 
-  it("finds plumber leads variant", () => {
-    const variant = findVariant("leads-pipeline", "trades-construction", "plumber");
+  it("finds makeup-artist leads variant", () => {
+    const variant = findVariant("leads-pipeline", "beauty-wellness", "makeup-artist");
     expect(variant).toBeDefined();
-    expect(variant?.overrides.label).toBe("Job Requests");
+    expect(variant?.overrides.label).toBe("Wedding Inquiries");
   });
 
   it("returns undefined for unknown persona", () => {
@@ -249,10 +249,10 @@ describe("variant application", () => {
 
   it("applies label override", () => {
     const base = getBaseSchema("leads-pipeline")!;
-    const variant = findVariant("leads-pipeline", "trades-construction", "plumber")!;
+    const variant = findVariant("leads-pipeline", "beauty-wellness", "makeup-artist")!;
     const result = applyVariant(base, variant);
-    expect(result.label).toBe("Job Requests");
-    expect(result.id).toBe("leads-pipeline"); // ID stays the same
+    expect(result.label).toBe("Wedding Inquiries");
+    expect(result.id).toBe("leads-pipeline");
   });
 
   it("applies field additions", () => {

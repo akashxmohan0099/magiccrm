@@ -31,8 +31,8 @@ import {
 
 // ── Blueprints
 import { nailTechBlueprint } from "@/lib/workspace-blueprints/blueprints/nail-tech";
-import { photographerBlueprint } from "@/lib/workspace-blueprints/blueprints/photographer";
-import { tutorBlueprint } from "@/lib/workspace-blueprints/blueprints/tutor";
+import { hairSalonBlueprint } from "@/lib/workspace-blueprints/blueprints/hair-salon";
+import { makeupArtistBlueprint } from "@/lib/workspace-blueprints/blueprints/makeup-artist";
 
 // ── Types
 import type {
@@ -96,7 +96,7 @@ function makeOverride(
 
 describe("Registry", () => {
   it("ALL_BLUEPRINTS contains all registered blueprints", () => {
-    expect(ALL_BLUEPRINTS.length).toBeGreaterThanOrEqual(36);
+    expect(ALL_BLUEPRINTS.length).toBeGreaterThanOrEqual(7);
   });
 
   it("every blueprint has a valid 'industry:persona' or 'industry:default' ID format", () => {
@@ -125,8 +125,8 @@ describe("Registry", () => {
 
   it("resolveBlueprint finds exact industry+persona match", () => {
     expect(resolveBlueprint("beauty-wellness", "nail-tech")).toBe(nailTechBlueprint);
-    expect(resolveBlueprint("creative-services", "photographer")).toBe(photographerBlueprint);
-    expect(resolveBlueprint("education-coaching", "tutor")).toBe(tutorBlueprint);
+    expect(resolveBlueprint("beauty-wellness", "hair-salon")).toBe(hairSalonBlueprint);
+    expect(resolveBlueprint("beauty-wellness", "makeup-artist")).toBe(makeupArtistBlueprint);
   });
 
   it("resolveBlueprint returns undefined for unknown industry", () => {
@@ -146,9 +146,9 @@ describe("Registry", () => {
   it("getAllBlueprintIds returns all registered IDs", () => {
     const ids = getAllBlueprintIds();
     expect(ids).toContain("beauty-wellness:nail-tech");
-    expect(ids).toContain("creative-services:photographer");
-    expect(ids).toContain("education-coaching:tutor");
-    expect(ids.length).toBeGreaterThanOrEqual(36);
+    expect(ids).toContain("beauty-wellness:hair-salon");
+    expect(ids).toContain("beauty-wellness:makeup-artist");
+    expect(ids.length).toBeGreaterThanOrEqual(7);
   });
 
   it("every blueprint has required top-level fields", () => {
@@ -548,10 +548,9 @@ describe("Resolver — safeBuildDraft", () => {
   });
 
   it("applies presentation patches from adjustable block selection", () => {
-    // photographer: booking-style=yes changes homepage and sidebar
-    const draft = safeBuildDraft(photographerBlueprint, { "booking-style": "yes" });
-    expect(draft.presentation.homePage).toBe("bookings");
-    expect(draft.presentation.sidebarOrder[0]).toBe("bookings");
+    // hair-salon: sell-products=no removes products from sidebar
+    const draft = safeBuildDraft(hairSalonBlueprint, { "sell-products": "no" });
+    expect(draft.presentation.sidebarOrder).not.toContain("products");
   });
 
   it("applies addModules from functionalDelta", () => {
@@ -751,9 +750,9 @@ describe("Resolver — buildBaseResolvedWorkspace", () => {
   });
 
   it("does not share object references with the blueprint", () => {
-    const base = buildBaseResolvedWorkspace(photographerBlueprint);
+    const base = buildBaseResolvedWorkspace(hairSalonBlueprint);
     base.functional.enabledModules.push("marketing");
-    expect(photographerBlueprint.functional.enabledModules).not.toContain("marketing");
+    expect(hairSalonBlueprint.functional.enabledModules).not.toContain("marketing");
   });
 });
 
@@ -762,7 +761,7 @@ describe("Resolver — buildBaseResolvedWorkspace", () => {
 // ─────────────────────────────────────────────────────────────
 
 describe("Blueprint integrity", () => {
-  const allBlueprints = [nailTechBlueprint, photographerBlueprint, tutorBlueprint];
+  const allBlueprints = [nailTechBlueprint, hairSalonBlueprint, makeupArtistBlueprint];
 
   for (const bp of allBlueprints) {
     describe(`${bp.label} (${bp.id})`, () => {
@@ -810,7 +809,7 @@ describe("Blueprint integrity", () => {
 
   it("pairwise: every block option x every other block option in same blueprint is valid (photographer, tutor)", () => {
     // Photographer and tutor have no conflicting block combinations
-    for (const bp of [photographerBlueprint, tutorBlueprint]) {
+    for (const bp of [hairSalonBlueprint, makeupArtistBlueprint]) {
       const blocks = bp.adjustableBlocks;
       for (let i = 0; i < blocks.length; i++) {
         for (let j = i + 1; j < blocks.length; j++) {
@@ -1116,7 +1115,7 @@ describe("User Override — rebaseUserOverride", () => {
 
 describe("AI invariant — functional config is never modified by patches", () => {
   it("applying AI patches does not change the functional config", () => {
-    for (const bp of [nailTechBlueprint, photographerBlueprint, tutorBlueprint]) {
+    for (const bp of [nailTechBlueprint, hairSalonBlueprint, makeupArtistBlueprint]) {
       const draft = safeBuildDraft(bp, {});
       const functionalBefore = structuredClone(draft.functional);
 

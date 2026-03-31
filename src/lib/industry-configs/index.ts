@@ -1,33 +1,15 @@
 import type { IndustryAdaptiveConfig, IndustryAdaptiveOverride, VocabularyMap, ModuleFieldGroups, InvoiceModeConfig, BookingModeConfig, DashboardWidgetConfig } from "@/types/industry-config";
 import { genericConfig } from "./generic";
 import { beautyWellnessConfig, beautyPersonaOverrides } from "./beauty-wellness";
-import { tradesConstructionConfig, tradesPersonaOverrides } from "./trades-construction";
-import { professionalServicesConfig, professionalPersonaOverrides } from "./professional-services";
-import { healthFitnessConfig, healthFitnessPersonaOverrides } from "./health-fitness";
-import { creativeServicesConfig, creativePersonaOverrides } from "./creative-services";
-import { hospitalityEventsConfig, hospitalityPersonaOverrides } from "./hospitality-events";
-import { educationCoachingConfig, educationPersonaOverrides } from "./education-coaching";
 
 /** Registry mapping industry IDs → configs */
 const INDUSTRY_CONFIG_MAP: Record<string, IndustryAdaptiveConfig> = {
   "beauty-wellness": beautyWellnessConfig,
-  "trades-construction": tradesConstructionConfig,
-  "professional-services": professionalServicesConfig,
-  "health-fitness": healthFitnessConfig,
-  "creative-services": creativeServicesConfig,
-  "hospitality-events": hospitalityEventsConfig,
-  "education-coaching": educationCoachingConfig,
 };
 
 /** Registry mapping industry IDs → persona override maps */
 const PERSONA_OVERRIDE_MAP: Record<string, Record<string, IndustryAdaptiveOverride>> = {
   "beauty-wellness": beautyPersonaOverrides,
-  "creative-services": creativePersonaOverrides,
-  "hospitality-events": hospitalityPersonaOverrides,
-  "professional-services": professionalPersonaOverrides,
-  "health-fitness": healthFitnessPersonaOverrides,
-  "trades-construction": tradesPersonaOverrides,
-  "education-coaching": educationPersonaOverrides,
 };
 
 /** Deep-merge a partial override onto a full config */

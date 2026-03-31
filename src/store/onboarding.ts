@@ -25,8 +25,8 @@ interface AIQuestionCategory {
   questions: { question: string; module: string }[];
 }
 
-// Step constants
-const FINAL_STEP_INDEX = 7;
+// Step constants (0=Welcome, 1=Persona+Business, 2=Signup)
+const FINAL_STEP_INDEX = 2;
 export const TOTAL_PROGRESS_STEPS = FINAL_STEP_INDEX + 1;
 
 interface OnboardingStore {
@@ -119,7 +119,7 @@ export const useOnboardingStore = create<OnboardingStore>()(
   persist(
     (set, get) => ({
       step: 0,
-      selectedIndustry: "",
+      selectedIndustry: "beauty-wellness",
       selectedPersona: "",
       businessContext: {
         businessName: "",

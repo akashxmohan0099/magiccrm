@@ -8,12 +8,7 @@ import { useHydration } from "@/hooks/useHydration";
 import { AUTH_MEMBER_REFRESH_EVENT, useAuth } from "@/hooks/useAuth";
 import { WelcomeStep } from "@/components/onboarding/WelcomeStep";
 import { IndustryStep } from "@/components/onboarding/IndustryStep";
-import { BusinessContextStep } from "@/components/onboarding/BusinessContextStep";
 import { SignupStep } from "@/components/onboarding/SignupStep";
-import { BubblesStep } from "@/components/onboarding/BubblesStep";
-import { AIQuestionsStep } from "@/components/onboarding/AIQuestionsStep";
-import { ConfigureStep } from "@/components/onboarding/ConfigureStep";
-import { SummaryStep } from "@/components/onboarding/SummaryStep";
 import { BuildingScreen } from "@/components/onboarding/BuildingScreen";
 import { OnboardingLoader } from "@/components/onboarding/OnboardingLoader";
 
@@ -73,22 +68,21 @@ function OnboardingContent() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [step]);
 
-  // ── If step >= 4 but user is NOT authenticated, clamp back to step 3 ──
+  // ── If step >= 3 but user is NOT authenticated, clamp back to step 2 ──
   useEffect(() => {
-    if (!loading && !user && step >= 4) {
-      useOnboardingStore.getState().setStep(3);
+    if (!loading && !user && step >= 3) {
+      useOnboardingStore.getState().setStep(2);
     }
   }, [loading, user, step]);
 
-  // ── Auth advancement (step 3 → 4) ───────────────────────────
-  // When the authenticated user also has a workspace, advance to step 4.
-  // 800ms delay gives time for the transition loader to feel intentional.
+  // ── Auth advancement (step 2 → building) ───────────────────
+  // When signup completes and workspace exists, start building.
   useEffect(() => {
-    if (step === 3 && !loading && !!user && !!workspaceId) {
+    if (step === 2 && !loading && !!user && !!workspaceId) {
       const t = setTimeout(() => {
-        const currentStep = useOnboardingStore.getState().step;
-        if (currentStep === 3) {
-          useOnboardingStore.getState().setStep(4);
+        const store = useOnboardingStore.getState();
+        if (store.step === 2 && !store.isBuilding) {
+          store.setIsBuilding(true);
         }
       }, 800);
       return () => clearTimeout(t);
@@ -99,7 +93,7 @@ function OnboardingContent() {
   // idempotently re-run bootstrap and ask auth consumers to refetch membership.
   // Retries up to 3 times with increasing delays before showing a fallback.
   useEffect(() => {
-    if (step !== 3 || loading || !user || workspaceId) {
+    if (step !== 2 || loading || !user || workspaceId) {
       setBootstrapFailed(false);
       return;
     }
@@ -182,20 +176,11 @@ function OnboardingContent() {
     );
   }
 
-  // Steps:
-  // 0 = Welcome
-  // 1 = Industry/Persona
-  // 2 = Business Context
-  // 3 = Signup
-  // 4 = Activity Chips (4 slides)
-  // 5 = AI Questions (2 categories)
-  // 6 = Configure (deep-dive sub-features)
-  // 7 = Summary → Launch
+  // Steps: 0 = Welcome, 1 = Persona + Business Name, 2 = Signup
   const renderStep = () => {
     if (step === 0) return <WelcomeStep />;
     if (step === 1) return <IndustryStep />;
-    if (step === 2) return <BusinessContextStep />;
-    if (step === 3) {
+    if (step === 2) {
       if (!user) return <SignupStep />;
       if (bootstrapFailed && !workspaceId) {
         return (
@@ -228,20 +213,17 @@ function OnboardingContent() {
       return (
         <OnboardingLoader
           title={workspaceId ? "Account created" : "Finishing your workspace setup"}
-          subtitle={workspaceId ? "Now let's learn how you work" : "This usually takes a few seconds"}
-          step={3}
-          totalSteps={7}
+          subtitle={workspaceId ? "Setting up your workspace" : "This usually takes a few seconds"}
+          step={2}
+          totalSteps={2}
         />
       );
     }
-    if (step === 4) return <BubblesStep />;
-    if (step === 5) return <AIQuestionsStep />;
-    if (step === 6) return <ConfigureStep />;
-    return <SummaryStep workspaceId={workspaceId} />;
+    return null;
   };
 
-  // Global progress: steps 1-7
-  const showProgress = step >= 1 && step <= 7;
+  // Global progress: steps 1-2
+  const showProgress = step >= 1 && step <= 2;
   const progress = Math.min((step / (TOTAL_PROGRESS_STEPS - 1)) * 100, 100);
 
   return (
