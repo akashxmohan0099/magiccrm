@@ -160,7 +160,7 @@ export default function LandingPage() {
             transition={{ delay: 0.2, duration: 0.6 }}
             className="text-[13px] text-text-secondary font-medium mb-6"
           >
-            Not another generic tool. Yours.
+            The AI-powered CRM for beauty professionals
           </motion.div>
 
           <motion.h1
@@ -169,8 +169,8 @@ export default function LandingPage() {
             transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
             className="text-[2.25rem] sm:text-[3.5rem] md:text-[4rem] font-bold mb-6 leading-[1.05]"
           >
-            <span className="gradient-text">We don&apos;t give you software.</span><br />
-            <span className="text-text-secondary">We build it around you.</span>
+            <span className="gradient-text">Clients, bookings, payments.</span><br />
+            <span className="text-text-secondary">All in one place.</span>
           </motion.h1>
 
           <motion.p
@@ -179,7 +179,7 @@ export default function LandingPage() {
             transition={{ delay: 0.15, duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
             className="text-[15px] sm:text-[17px] text-text-secondary mb-8 sm:mb-10 max-w-xl mx-auto leading-relaxed"
           >
-            Answer a few questions about how you work. We&apos;ll put together a workspace that speaks your language — not generic software jargon.
+            Magic is the CRM that knows your clients, manages your calendar, and tells you who to rebook — built specifically for hairstylists, lash techs, nail artists, and beauty pros.
           </motion.p>
 
           <motion.div
@@ -190,11 +190,11 @@ export default function LandingPage() {
           >
             <Link href="/onboarding">
               <Button size="lg" className="px-10">
-                Build my workspace <ArrowRight className="w-5 h-5" />
+                Get started free <ArrowRight className="w-5 h-5" />
               </Button>
             </Link>
             <p className="text-sm text-text-tertiary">
-              Free to set up. Ready in under 3 minutes.
+              Set up in 60 seconds. No credit card needed.
             </p>
           </motion.div>
         </motion.div>
@@ -258,7 +258,7 @@ export default function LandingPage() {
               transition={sectionTransition}
               className="text-[1.75rem] sm:text-[2.25rem] font-bold text-foreground leading-tight mb-3"
             >
-              Same features. Completely different workspace.
+              One platform. Shaped to your specialty.
             </motion.h2>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -352,7 +352,7 @@ export default function LandingPage() {
               transition={sectionTransition}
               className="text-[1.75rem] sm:text-[2.5rem] font-bold text-foreground leading-tight mb-3"
             >
-              3 minutes. That&apos;s it.
+              Ready in 60 seconds.
             </motion.h2>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -361,7 +361,7 @@ export default function LandingPage() {
               transition={{ delay: 0.1, ...sectionTransition }}
               className="text-text-secondary text-[15px] max-w-lg mx-auto"
             >
-              From &ldquo;what do you do?&rdquo; to a workspace that feels like it was built just for you.
+              Pick your specialty, name your business, and your workspace is ready.
             </motion.p>
           </div>
 
@@ -369,21 +369,21 @@ export default function LandingPage() {
             {[
               {
                 step: "01",
-                title: "Answer a few questions",
-                description: "Not a long form. A smart conversation that adapts to your answers. It picks up on how you work and what you actually need.",
-                detail: "Built specifically for beauty professionals",
+                title: "Tell us what you do",
+                description: "Lash tech? Hairstylist? Makeup artist? Pick your specialty and we set up your workspace with the right services, fields, and vocabulary.",
+                detail: "6 beauty personas, one click",
               },
               {
                 step: "02",
-                title: "Watch it assemble",
-                description: "Your tools take shape based on what you told us. A lash tech gets Services and Receipts. A makeup artist gets Wedding Inquiries. Your words, your way.",
-                detail: "Your workspace, your language",
+                title: "Your workspace builds itself",
+                description: "Clients with colour formulas. Appointments with service menus. Invoices with your branding. All pre-configured for how you actually work.",
+                detail: "Customized to your specialty",
               },
               {
                 step: "03",
-                title: "Start working",
-                description: "Your dashboard is ready with the exact tools you need. Calendars, lists, everything in place. Nothing to set up. Nothing to figure out.",
-                detail: "Ready to use from the first click",
+                title: "Start booking clients",
+                description: "Share your booking link on Instagram. Clients book themselves. You get reminders, smart nudges to rebook, and invoices that send themselves.",
+                detail: "Your clients book, you focus on your craft",
               },
             ].map((item, i) => (
               <motion.div
@@ -917,7 +917,7 @@ export default function LandingPage() {
                 transition={sectionTransition}
                 className="text-[1.75rem] sm:text-[2.25rem] font-bold text-foreground leading-tight mb-4"
               >
-                Why not just use<br />HubSpot or Monday?
+                Why switch from<br />Fresha or Vagaro?
               </motion.h2>
               <motion.p
                 initial={{ opacity: 0, y: 20 }}
@@ -926,15 +926,15 @@ export default function LandingPage() {
                 transition={{ delay: 0.1, ...sectionTransition }}
                 className="text-text-secondary text-[15px] leading-relaxed mb-8"
               >
-                Because they weren&apos;t built for a solo lash tech or a 3-chair salon. You end up paying for 200 features and using 12.
+                Because booking tools don&apos;t know your clients. They schedule appointments — they don&apos;t tell you who&apos;s overdue for a rebook or who hasn&apos;t been back in 6 weeks.
               </motion.p>
               <div className="space-y-4">
                 {[
-                  { title: "No per-seat pricing", desc: "Your whole team gets access. Add people without doing math." },
-                  { title: "Only your features", desc: "No hidden tabs, no locked modules, no 'upgrade to unlock' walls." },
-                  { title: "Everything is customizable", desc: "Every module adapts to your workflow. Turn features on or off as your business grows." },
-                  { title: "Add-ons, one click each", desc: "Need gift cards next month? Click install. Need treatment notes? Click install." },
-                  { title: "Beauty-native vocabulary", desc: "A lash tech sees Appointments and Receipts. A makeup artist sees Inquiries and Deposits." },
+                  { title: "No hidden marketplace fees", desc: "You don't pay 20% when a client finds you on Google and books through your page." },
+                  { title: "AI that works for you", desc: "Smart nudges tell you who to rebook, which invoices are overdue, and when your calendar is empty." },
+                  { title: "Your client data, front and centre", desc: "Colour formulas, lash preferences, skin types — not buried in a tab nobody clicks." },
+                  { title: "Simple, honest pricing", desc: "No per-seat fees, no feature gates, no surprise charges. One plan, everything included." },
+                  { title: "Built for beauty, not for everyone", desc: "Every label, every field, every default is designed for how beauty professionals actually work." },
                 ].map((item, i) => (
                   <motion.div key={i} initial={{ opacity: 0, x: -10 }} whileInView={{ opacity: 1, x: 0 }} viewport={viewportConfig} transition={{ delay: i * 0.08 }} className="flex items-start gap-3">
                     <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -1121,7 +1121,7 @@ export default function LandingPage() {
             transition={{ duration: 0.5 }}
             className="mb-5"
           >
-            <span className="text-[13px] font-medium" style={{ color: "#7CFE9D" }}>Every business works differently</span>
+            <span className="text-[13px] font-medium" style={{ color: "#7CFE9D" }}>Built for beauty professionals</span>
           </motion.div>
           <motion.h2
             variants={sectionHeadingVariants}
@@ -1132,7 +1132,7 @@ export default function LandingPage() {
             className="text-[1.75rem] sm:text-[2.5rem] font-bold mb-5 leading-[1.1]"
             style={{ color: "#fff" }}
           >
-            Yours deserves software that gets that.
+            Stop juggling apps.<br />Start growing your business.
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -1142,7 +1142,7 @@ export default function LandingPage() {
             className="mb-10 text-[15px] max-w-md mx-auto"
             style={{ color: "#888" }}
           >
-            Answer a few questions. Watch your workspace assemble. Start working in under 3 minutes.
+            Clients, bookings, invoices, and AI-powered rebooking — all in one platform that speaks your language.
           </motion.p>
           <motion.div variants={ctaPulseVariants} initial="hidden" whileInView="visible" viewport={viewportConfig}>
             <Link href="/onboarding">
