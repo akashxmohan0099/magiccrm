@@ -570,3 +570,6 @@ CREATE INDEX idx_invoices_overdue ON invoices(workspace_id, due_date) WHERE stat
 CREATE INDEX idx_bookings_pending ON bookings(workspace_id, date) WHERE status = 'pending';
 CREATE INDEX idx_reminders_active ON reminders(workspace_id, due_date) WHERE completed = false;
 CREATE INDEX idx_proposals_token ON proposals(share_token) WHERE share_token IS NOT NULL;
+
+-- v2: Add reminder_sent_at to bookings for automated email reminders
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS reminder_sent_at TIMESTAMPTZ;

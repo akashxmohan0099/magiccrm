@@ -203,6 +203,40 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
             )}
           </div>
 
+          {/* Beauty Profile — Custom Fields (elevated for beauty pros) */}
+          {customFieldDefs.length > 0 && (() => {
+            const customData = client.customData ?? {};
+            const groups: Record<string, typeof customFieldDefs> = {};
+            for (const f of customFieldDefs) {
+              const g = f.group ?? "Profile";
+              if (!groups[g]) groups[g] = [];
+              groups[g].push(f);
+            }
+            return (
+              <div className="bg-surface rounded-lg p-4 border border-border-light">
+                {Object.entries(groups).map(([groupLabel, fields]) => (
+                  <div key={groupLabel} className="mb-3 last:mb-0">
+                    <h4 className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-2">{groupLabel}</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      {fields.map((f) => {
+                        const val = customData[f.id];
+                        const display = val === undefined || val === "" || val === false
+                          ? "—"
+                          : f.type === "toggle" ? "Yes" : String(val);
+                        return (
+                          <div key={f.id} className="py-1">
+                            <p className="text-[11px] text-text-tertiary">{f.label}</p>
+                            <p className="text-sm text-foreground">{display}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+
           {/* Client Credit Balance */}
           <FeatureSection moduleId="client-database" featureId="client-credit-balance" featureLabel="Client Credits">
             <div className="flex items-center justify-between px-4 py-3 bg-surface/50 rounded-xl mb-3">
@@ -272,45 +306,7 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
             </div>
           </div>
 
-          {/* Custom Fields */}
-          {customFieldDefs.length > 0 && (() => {
-            const customData = client.customData ?? {};
-            const hasData = customFieldDefs.some((f) => {
-              const v = customData[f.id];
-              return v !== undefined && v !== "" && v !== false;
-            });
-            if (!hasData) return null;
-            // Group by group property
-            const groups: Record<string, typeof customFieldDefs> = {};
-            for (const f of customFieldDefs) {
-              const g = f.group ?? "Details";
-              if (!groups[g]) groups[g] = [];
-              groups[g].push(f);
-            }
-            return (
-              <div className="bg-surface rounded-lg p-4 border border-border-light">
-                {Object.entries(groups).map(([groupLabel, fields]) => (
-                  <div key={groupLabel} className="mb-3 last:mb-0">
-                    <h4 className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-2">{groupLabel}</h4>
-                    <div className="space-y-1.5">
-                      {fields.map((f) => {
-                        const val = customData[f.id];
-                        if (val === undefined || val === "" || val === false) return null;
-                        return (
-                          <div key={f.id} className="flex items-start gap-3 py-1">
-                            <div>
-                              <p className="text-xs text-text-secondary">{f.label}</p>
-                              <p className="text-sm text-foreground">{f.type === "toggle" ? "Yes" : String(val)}</p>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            );
-          })()}
+          {/* Custom fields already shown above in Beauty Profile section */}
 
           {/* Relationships */}
           {config.relationships.length > 0 && (

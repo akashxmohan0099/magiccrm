@@ -214,6 +214,7 @@ export interface Booking {
   satisfactionRating?: number;
   satisfactionFeedback?: string;
   ratedAt?: string;
+  reminderSentAt?: string;
   customData?: Record<string, unknown>;
   _isSample?: boolean;
   createdAt: string;
