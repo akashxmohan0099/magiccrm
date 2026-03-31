@@ -134,6 +134,9 @@ function nailTechData(): DataPack {
       rec({ title: "Acrylic Full Set + Nail Art", clientId: c2.id, date: daysFromNow(1), startTime: time(13), endTime: time(14, 15), status: "confirmed", price: 95, serviceName: "Acrylic Full Set", serviceId: p2.id, notes: "" }),
       rec({ title: "Pedicure", clientId: c3.id, date: daysFromNow(3), startTime: time(15), endTime: time(15, 45), status: "pending", price: 50, serviceName: "Pedicure", serviceId: p4.id, notes: "" }),
     ],
+    leads: [
+      rec({ name: "Mia T.", email: "", phone: "", stage: "new", value: 75, source: "instagram", notes: "Wants coffin acrylics with nail art, asked about availability" }),
+    ],
     invoices: [
       rec({ number: "RCT-001", clientId: c2.id, lineItems: [{ id: generateId(), description: "Acrylic Full Set + Nail Art", quantity: 1, unitPrice: 95 }], status: "paid", dueDate: daysAgo(5), notes: "", taxRate: 10, paidAmount: 104.50 }),
     ],
