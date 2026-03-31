@@ -6,12 +6,12 @@ import { useProductsStore } from "@/store/products";
 import { Product } from "@/types/models";
 import { FeatureSection } from "@/components/modules/FeatureSection";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { useModuleSchema } from "@/hooks/useModuleSchema";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { DataTable, Column } from "@/components/ui/DataTable";
 import { Button } from "@/components/ui/Button";
 import { ProductForm } from "./ProductForm";
 import { CSVImportWizard } from "@/components/modules/shared/CSVImportWizard";
-import { useModuleSchema } from "@/hooks/useModuleSchema";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 
 export function ProductsPage() {
@@ -56,7 +56,7 @@ export function ProductsPage() {
     <div>
       <PageHeader
         title={ms.label || "Products & Services"}
-        description={ms.description || "Manage your product and service catalog."}
+        description={"Manage your product and service catalog."}
         actions={
           <div className="flex items-center gap-2">
             <FeatureSection moduleId="client-database" featureId="import-export" featureLabel="Import / Export">
@@ -75,8 +75,8 @@ export function ProductsPage() {
       {products.length === 0 ? (
         <EmptyState
           icon={<Package className="w-10 h-10" />}
-          title={ms.emptyTitle || "No products yet"}
-          description={ms.emptyDescription || "Add your products and services to start building your catalog."}
+          title={"No products yet"}
+          description={"Add your products and services to start building your catalog."}
           setupSteps={[
             { label: "Add your first product or service", description: "Name, price, and category", action: () => { setEditingProduct(undefined); setFormOpen(true); } },
           ]}

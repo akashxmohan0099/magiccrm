@@ -84,10 +84,6 @@ function InlineEditCell({ value, onSave, placeholder }: { value: string; onSave:
     if (editing) { inputRef.current?.focus(); inputRef.current?.select(); }
   }, [editing]);
 
-  useEffect(() => {
-    if (!editing) setDraft(value);
-  }, [value, editing]);
-
   const commit = useCallback(() => {
     setEditing(false);
     const trimmed = draft.trim();
@@ -113,7 +109,11 @@ function InlineEditCell({ value, onSave, placeholder }: { value: string; onSave:
 
   return (
     <span
-      onClick={(e) => { e.stopPropagation(); setEditing(true); }}
+      onClick={(e) => {
+        e.stopPropagation();
+        setDraft(value);
+        setEditing(true);
+      }}
       className={`cursor-text text-[13px] truncate block py-0.5 hover:bg-surface/60 rounded px-1 -mx-1 transition-colors ${!value ? "text-text-secondary italic" : "text-foreground"}`}
     >
       {value || placeholder || "—"}
@@ -360,7 +360,7 @@ function TableAddColumnModal({ onAddCustomColumn }: { onAddCustomColumn: (col: C
                 </div>
               )}
               <div className="flex items-center gap-3 pt-2">
-                <button onClick={handleAdd} disabled={!newColName.trim()} className="flex-1 px-4 py-2.5 text-sm font-medium bg-foreground text-white rounded-xl hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">Add Column</button>
+                <button onClick={handleAdd} disabled={!newColName.trim()} className="flex-1 px-4 py-2.5 text-sm font-medium bg-foreground text-background rounded-xl hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">Add Column</button>
                 <button onClick={handleClose} className="px-4 py-2.5 text-sm text-text-secondary hover:text-foreground transition-colors cursor-pointer">Cancel</button>
               </div>
             </div>

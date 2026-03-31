@@ -72,7 +72,7 @@ export function WelcomeStep() {
         >
           <button
             onClick={nextStep}
-            className="px-14 py-4 bg-foreground text-white rounded-full text-[16px] font-semibold cursor-pointer hover:opacity-90 transition-opacity"
+            className="px-14 py-4 bg-foreground text-background rounded-full text-[16px] font-semibold cursor-pointer hover:opacity-90 transition-opacity"
           >
             Get started
           </button>

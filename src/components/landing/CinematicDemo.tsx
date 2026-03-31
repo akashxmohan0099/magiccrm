@@ -160,7 +160,7 @@ export function ModulePickerDemo() {
                 onClick={() => selectPreset(i)}
                 className={`px-4 py-2 rounded-full text-xs transition-all cursor-pointer ${
                   activePreset === i
-                    ? "bg-foreground text-white shadow-md"
+                    ? "bg-foreground text-background shadow-md"
                     : "bg-surface border border-border-light text-text-secondary hover:text-foreground hover:border-foreground/20"
                 }`}
               >
@@ -642,7 +642,7 @@ export function FeatureCustomizeDemo() {
                           <h3 className="text-[15px] font-bold text-foreground">{activeModule}</h3>
                           <p className="text-[10px] text-text-tertiary">{demo?.desc}</p>
                         </div>
-                        <div className="px-3 py-1.5 bg-foreground text-white rounded-xl text-[10px] font-semibold">+ New</div>
+                        <div className="px-3 py-1.5 bg-foreground text-background rounded-xl text-[10px] font-semibold">+ New</div>
                       </div>
 
                       {/* Module-specific reactive content */}
@@ -749,7 +749,7 @@ function DemoContent({ module, features, data }: { module: string; features: Rec
                   transition={{ duration: 0.25 }}
                   onClick={() => setDemoTab(tab)}
                   className={`px-2.5 py-1 rounded-full text-[10px] font-medium transition-colors ${
-                    demoTab === tab ? "bg-foreground text-white" : "bg-background border border-border-light text-text-secondary hover:text-foreground"
+                    demoTab === tab ? "bg-foreground text-background" : "bg-background border border-border-light text-text-secondary hover:text-foreground"
                   }`}
                 >
                   {tab}
@@ -1273,7 +1273,7 @@ function DemoContent({ module, features, data }: { module: string; features: Rec
   if (module === "Reporting") {
     return (
       <div>
-        {f("Revenue Breakdown") && <motion.div key="Revenue Breakdown" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-1.5 mb-3">{["Overview", "Revenue", "Clients"].map((t, i) => <span key={t} className={`px-2 py-1 rounded text-[9px] font-medium ${i === 0 ? "bg-foreground text-white" : "bg-background border border-border-light text-text-secondary"}`}>{t}</span>)}</motion.div>}
+        {f("Revenue Breakdown") && <motion.div key="Revenue Breakdown" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-1.5 mb-3">{["Overview", "Revenue", "Clients"].map((t, i) => <span key={t} className={`px-2 py-1 rounded text-[9px] font-medium ${i === 0 ? "bg-foreground text-background" : "bg-background border border-border-light text-text-secondary"}`}>{t}</span>)}</motion.div>}
         <div className="grid grid-cols-3 gap-2 mb-3">
           {[{ label: "Revenue", value: "$4,280", change: "+12%" }, { label: "Clients", value: "47", change: "+3" }, { label: "Bookings", value: "84", change: "+8%" }].map((stat) => (
             <div key={stat.label} className="px-3 py-2.5 rounded-xl bg-card-bg border border-border-light">
@@ -1321,7 +1321,7 @@ function DemoContent({ module, features, data }: { module: string; features: Rec
     ];
     return (
       <div>
-        {f("Duration Variants") && <motion.div key="Duration Variants" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-1.5 mb-3">{["All", "Services", "Retail"].map((c, i) => <span key={c} className={`px-2 py-1 rounded-full text-[9px] font-medium ${i === 0 ? "bg-foreground text-white" : "bg-background border border-border-light text-text-secondary"}`}>{c}</span>)}</motion.div>}
+        {f("Duration Variants") && <motion.div key="Duration Variants" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-1.5 mb-3">{["All", "Services", "Retail"].map((c, i) => <span key={c} className={`px-2 py-1 rounded-full text-[9px] font-medium ${i === 0 ? "bg-foreground text-background" : "bg-background border border-border-light text-text-secondary"}`}>{c}</span>)}</motion.div>}
         <div className="border border-border-light rounded-xl overflow-hidden">
           <motion.div layout className="grid bg-background px-3 py-1.5 border-b border-border-light text-[9px] font-medium text-text-tertiary" style={{ gridTemplateColumns: `1fr 50px ${f("Service Add-Ons") ? "55px " : ""}${f("Cost Margins") ? "50px " : ""}${f("Inventory Tracking") ? "40px " : ""}${f("Bundles") ? "50px " : ""}` }}>
             <span>Product</span><span>Price</span>

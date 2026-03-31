@@ -129,16 +129,15 @@ function CardFieldValue({ field, value }: { field: FieldDefinition; value: unkno
 
     case "date":
     case "datetime": {
-      try {
-        const d = new Date(value as string);
-        return (
-          <span className="text-[11px] text-text-secondary">
-            {d.toLocaleDateString("en-AU", { day: "numeric", month: "short" })}
-          </span>
-        );
-      } catch {
+      const d = new Date(String(value));
+      if (Number.isNaN(d.getTime())) {
         return <span className="text-[11px] text-text-secondary">{String(value)}</span>;
       }
+      return (
+        <span className="text-[11px] text-text-secondary">
+          {d.toLocaleDateString("en-AU", { day: "numeric", month: "short" })}
+        </span>
+      );
     }
 
     case "relation": {

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Urbanist } from "next/font/google";
 import { AuthProvider } from "@/components/providers/AuthProvider";
+import { ThemeGate } from "@/components/providers/ThemeGate";
 import "./globals.css";
 
 const urbanist = Urbanist({
@@ -42,11 +43,12 @@ export default function RootLayout({
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem("magic-theme")||"system";var d=t==="system"?window.matchMedia("(prefers-color-scheme:dark)").matches:t==="dark";if(d)document.documentElement.classList.add("dark")}catch(e){}})()`,
+            __html: `(function(){try{if(!/^\\/dashboard/.test(location.pathname))return;var t=localStorage.getItem("magic-theme")||"system";var d=t==="system"?window.matchMedia("(prefers-color-scheme:dark)").matches:t==="dark";if(d)document.documentElement.classList.add("dark")}catch(e){}})()`,
           }}
         />
       </head>
       <body className="antialiased">
+        <ThemeGate />
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

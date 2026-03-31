@@ -107,7 +107,7 @@ export default function BuilderPage() {
           <button
             onClick={handleBuild}
             disabled={!prompt.trim() || submitting || credits < 1}
-            className="px-6 py-2.5 bg-foreground text-white rounded-full text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer flex items-center gap-2"
+            className="px-6 py-2.5 bg-foreground text-background rounded-full text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer flex items-center gap-2"
           >
             {submitting ? "Generating..." : "Generate Brief"} <ArrowRight className="w-4 h-4" />
           </button>

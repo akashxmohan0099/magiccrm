@@ -16,7 +16,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 
     const variants = {
       primary:
-        "bg-foreground text-white hover:opacity-90",
+        "bg-foreground text-background hover:opacity-90",
       secondary:
         "bg-card-bg text-foreground border border-border-warm hover:bg-surface",
       ghost:

@@ -2,12 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase-server";
 import { rateLimit } from "@/lib/rate-limit";
 import { generateId } from "@/lib/id";
+import { resolveBookingWorkspaceBySlug } from "@/lib/server/public-booking";
+import { runAutomationRules } from "@/lib/server/automation-runner";
 
 /**
  * Public booking endpoint. No auth required.
  *
  * POST /api/public/book
- * Body: { workspaceId, serviceId, date, time, clientName, clientEmail, clientPhone?, notes? }
+ * Body: { slug, serviceId, date, time, clientName, clientEmail, clientPhone?, notes? }
  *
  * Validates the time slot is available, creates the booking in Supabase,
  * creates or links a client record, fires the "booking-created" automation trigger,
@@ -22,12 +24,12 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { workspaceId, serviceId, date, time, clientName, clientEmail, clientPhone, notes } = body;
+    const { slug, serviceId, date, time, clientName, clientEmail, clientPhone, notes } = body;
 
     // ---- validation ----
-    if (!workspaceId || !serviceId || !date || !time || !clientName || !clientEmail) {
+    if (!slug || !serviceId || !date || !time || !clientName || !clientEmail) {
       return NextResponse.json(
-        { error: "Missing required fields: workspaceId, serviceId, date, time, clientName, clientEmail" },
+        { error: "Missing required fields: slug, serviceId, date, time, clientName, clientEmail" },
         { status: 400 }
       );
     }
@@ -53,18 +55,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Cannot book a time in the past" }, { status: 400 });
     }
 
-    const supabase = await createAdminClient();
-
-    // ---- verify the workspace exists ----
-    const { data: workspace } = await supabase
-      .from("workspaces")
-      .select("id, name")
-      .eq("id", workspaceId)
-      .single();
-
-    if (!workspace) {
-      return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
+    const resolvedWorkspace = await resolveBookingWorkspaceBySlug(slug);
+    if (!resolvedWorkspace) {
+      return NextResponse.json({ error: "Booking page not found" }, { status: 404 });
     }
+
+    const { workspaceId, businessName } = resolvedWorkspace;
+    const supabase = await createAdminClient();
 
     // ---- fetch the service ----
     const { data: service } = await supabase
@@ -206,24 +203,19 @@ export async function POST(req: NextRequest) {
 
     // ---- fire automation trigger (non-critical) ----
     try {
-      const origin = req.nextUrl.origin;
-      await fetch(`${origin}/api/automations/run`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          workspaceId,
-          trigger: "booking-created",
-          entityId: bookingId,
-          entityData: {
-            type: "booking",
-            table: "bookings",
-            clientName,
-            clientEmail,
-            serviceName: service.name,
-            date,
-            time,
-          },
-        }),
+      await runAutomationRules({
+        workspaceId,
+        trigger: "booking-created",
+        entityId: bookingId,
+        entityData: {
+          type: "booking",
+          table: "bookings",
+          clientName,
+          clientEmail,
+          serviceName: service.name,
+          date,
+          time,
+        },
       });
     } catch {
       // Automation failures should not block booking confirmation
@@ -242,7 +234,7 @@ export async function POST(req: NextRequest) {
         });
         await sendSMS({
           to: clientPhone,
-          body: `Hi ${clientName}, your ${service.name} booking is confirmed for ${formattedDate} at ${time}. — ${workspace.name}`,
+          body: `Hi ${clientName}, your ${service.name} booking is confirmed for ${formattedDate} at ${time}. — ${businessName}`,
         });
       } catch {
         // SMS failure should not block booking confirmation

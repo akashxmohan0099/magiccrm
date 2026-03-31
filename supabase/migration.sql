@@ -51,6 +51,8 @@ CREATE TABLE workspace_settings (
   portal_config JSONB DEFAULT '{}',
   storefront_config JSONB DEFAULT '{}',
   communication_config JSONB DEFAULT '{}',
+  booking_page_slug TEXT,
+  google_calendar_tokens JSONB,
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
@@ -476,6 +478,11 @@ $$;
 -- RLS Policies (4 per table)
 -- ═══════════════════════════════════════════════════
 
+ALTER TABLE workspaces ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "workspaces_select" ON workspaces FOR SELECT USING (id = get_my_workspace_id());
+CREATE POLICY "workspaces_update" ON workspaces FOR UPDATE USING (id = get_my_workspace_id()) WITH CHECK (id = get_my_workspace_id());
+CREATE POLICY "workspaces_delete" ON workspaces FOR DELETE USING (id = get_my_workspace_id());
+
 DO $$
 DECLARE
   t TEXT;
@@ -547,6 +554,9 @@ CREATE INDEX idx_jobs_workspace_client ON jobs(workspace_id, client_id);
 CREATE INDEX idx_invoices_workspace_status ON invoices(workspace_id, status);
 CREATE INDEX idx_invoices_workspace_client ON invoices(workspace_id, client_id);
 CREATE INDEX idx_invoices_workspace_due ON invoices(workspace_id, due_date);
+CREATE UNIQUE INDEX idx_workspace_settings_booking_page_slug
+  ON workspace_settings(booking_page_slug)
+  WHERE booking_page_slug IS NOT NULL AND booking_page_slug <> '';
 CREATE INDEX idx_payments_workspace_client ON payments(workspace_id, client_id);
 CREATE INDEX idx_payments_workspace_invoice ON payments(workspace_id, invoice_id);
 CREATE INDEX idx_conversations_workspace ON conversations(workspace_id);

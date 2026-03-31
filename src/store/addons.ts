@@ -7,6 +7,7 @@ import {
   fetchWorkspaceModules,
 } from "@/lib/db/workspace-settings";
 import { FEATURE_BLOCKS } from "@/types/features";
+import { useOnboardingStore } from "@/store/onboarding";
 
 interface AddonsStore {
   enabledAddons: string[]; // module IDs
@@ -32,7 +33,6 @@ export const useAddonsStore = create<AddonsStore>()(
         // Seed default feature selections so useFeature() works for this addon
         const block = FEATURE_BLOCKS.find((b) => b.id === id);
         if (block) {
-          const { useOnboardingStore } = require("@/store/onboarding");
           const store = useOnboardingStore.getState();
           if (!store.featureSelections[id]) {
             store.setFeatureSelections(

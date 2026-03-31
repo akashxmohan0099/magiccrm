@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/Button";
 import { FormField } from "@/components/ui/FormField";
 import { FeatureSection } from "@/components/modules/FeatureSection";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { SchemaCustomFields } from "@/components/modules/shared/SchemaCustomFields";
 
 interface ProductFormProps {
   open: boolean;
@@ -206,11 +205,6 @@ export function ProductForm({ open, onClose, product }: ProductFormProps) {
             <input type="text" value={sku} onChange={(e) => setSku(e.target.value)} placeholder="Optional product code"
               className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30" />
           </div>
-          <SchemaCustomFields
-            moduleId="products"
-            values={customData}
-            onChange={(id, val) => setCustomData(prev => ({ ...prev, [id]: val }))}
-          />
 
           <div className="pt-2 space-y-2">
             <Button type="submit" loading={saving} className="w-full">{product ? "Save Changes" : "Add Product"}</Button>

@@ -166,13 +166,13 @@ export default function PublicBookingPage() {
     const endDays = getDaysInMonth(calYear, calMonth);
     const endDate = `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(endDays).padStart(2, "0")}`;
 
-    fetch(`/api/public/book/info?workspaceId=${workspaceId}&bookingsFrom=${startDate}&bookingsTo=${endDate}`)
+    fetch(`/api/public/book/info?slug=${encodeURIComponent(slug)}&bookingsFrom=${startDate}&bookingsTo=${endDate}`)
       .then((r) => r.json())
       .then((data) => {
         if (data.existingBookings) setExistingBookings(data.existingBookings);
       })
       .catch(() => {});
-  }, [workspaceId, calMonth, calYear]);
+  }, [workspaceId, calMonth, calYear, slug]);
 
   // ---- compute available time slots for the selected date ----
   const availableSlots = useMemo(() => {
@@ -235,7 +235,7 @@ export default function PublicBookingPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            workspaceId,
+            slug,
             serviceId: selectedService.id,
             date: selectedDate,
             time: selectedTime,

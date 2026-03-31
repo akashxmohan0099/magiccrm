@@ -160,7 +160,7 @@ export function SchemaCalendar({
               aria-label={`${m.charAt(0).toUpperCase() + m.slice(1)} view`}
               aria-pressed={mode === m}
               className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer ${
-                mode === m ? "bg-foreground text-white" : "text-text-secondary hover:bg-surface"
+                mode === m ? "bg-foreground text-background" : "text-text-secondary hover:bg-surface"
               }`}
             >
               {m.charAt(0).toUpperCase() + m.slice(1)}

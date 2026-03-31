@@ -30,6 +30,7 @@ import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { FeatureSection } from "@/components/modules/FeatureSection";
 import { LinkedRecords } from "@/components/modules/LinkedRecords";
+import { BookingForm } from "@/components/modules/bookings/BookingForm";
 import { ClientForm } from "./ClientForm";
 import { ClientTags } from "./ClientTags";
 import { SegmentationFilters } from "./SegmentationFilters";
@@ -56,6 +57,14 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
   const customFieldDefs = config.customFields.clients ?? [];
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [rebookOpen, setRebookOpen] = useState(false);
+
+  const lastBooking = useMemo(() => {
+    if (!clientId) return undefined;
+    return bookings
+      .filter((b) => b.clientId === clientId && b.status !== "cancelled")
+      .sort((a, b) => b.date.localeCompare(a.date) || b.startTime.localeCompare(a.startTime))[0];
+  }, [bookings, clientId]);
 
   const client = clientId ? getClient(clientId) : undefined;
 
@@ -241,6 +250,16 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
                 <span>Book Appointment</span>
                 <Plus className="w-3.5 h-3.5 text-text-secondary ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
               </Link>
+              {lastBooking && (
+                <button
+                  onClick={() => setRebookOpen(true)}
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-[13px] text-foreground hover:bg-card-bg border border-transparent hover:border-border-light transition-all group w-full text-left cursor-pointer"
+                >
+                  <Calendar className="w-4 h-4 text-text-secondary group-hover:text-primary transition-colors" />
+                  <span className="truncate">Rebook: {lastBooking.title}</span>
+                  <Plus className="w-3.5 h-3.5 text-text-secondary ml-auto flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </button>
+              )}
               <Link
                 href="/dashboard/jobs"
                 onClick={onClose}
@@ -369,6 +388,20 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
             : `Are you sure you want to delete "${client.name}"? This action cannot be undone.`
         }
       />
+
+      {lastBooking && (
+        <BookingForm
+          open={rebookOpen}
+          onClose={() => setRebookOpen(false)}
+          defaultDate={new Date().toISOString().split("T")[0]}
+          prefill={{
+            title: lastBooking.title,
+            clientId: lastBooking.clientId ?? "",
+            startTime: lastBooking.startTime,
+            endTime: lastBooking.endTime,
+          }}
+        />
+      )}
     </>
   );
 }

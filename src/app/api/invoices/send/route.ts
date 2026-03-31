@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/api-auth";
+import { buildPublicInvoicePaymentUrl } from "@/lib/public-invoice-payments";
+import { runAutomationRules } from "@/lib/server/automation-runner";
 
 /**
  * POST /api/invoices/send
@@ -117,7 +119,15 @@ export async function POST(req: NextRequest) {
     const total = subtotal + taxAmount;
 
     const origin = process.env.NEXT_PUBLIC_APP_URL ?? new URL(req.url).origin;
-    const paymentLink = `${origin}/dashboard/invoicing?pay=${invoice.id}`;
+    const paymentLink =
+      invoice.client_id
+        ? buildPublicInvoicePaymentUrl({
+            origin,
+            invoiceId: invoice.id,
+            workspaceId,
+            clientId: invoice.client_id,
+          })
+        : `${origin}/pay?status=cancelled`;
 
     // Build HTML email
     const emailHtml = buildInvoiceEmailHtml({
@@ -179,7 +189,7 @@ export async function POST(req: NextRequest) {
     // Fire automation trigger (fire-and-forget from API side)
     // The client store will also fire this, but we fire from server for reliability
     try {
-      const automationPayload = {
+      await runAutomationRules({
         workspaceId,
         trigger: "invoice-sent",
         entityId: invoiceId,
@@ -190,16 +200,6 @@ export async function POST(req: NextRequest) {
           clientEmail,
           total: total.toFixed(2),
         },
-      };
-
-      // Internal fetch to our own automation endpoint
-      const automationUrl = `${origin}/api/automations/run`;
-      fetch(automationUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(automationPayload),
-      }).catch((err) => {
-        console.error("[Invoice Send] automation trigger failed:", err);
       });
     } catch {
       // Non-fatal

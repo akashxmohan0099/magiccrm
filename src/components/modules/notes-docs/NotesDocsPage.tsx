@@ -213,7 +213,7 @@ export function NotesDocsPage() {
             <h2 className="text-sm font-bold text-foreground">Notes</h2>
             <button
               onClick={createNote}
-              className="p-1.5 rounded-lg bg-foreground text-white hover:bg-foreground/80 transition-colors"
+              className="p-1.5 rounded-lg bg-foreground text-background hover:bg-foreground/80 transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
             </button>

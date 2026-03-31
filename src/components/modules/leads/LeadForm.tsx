@@ -11,7 +11,7 @@ import { SelectField } from "@/components/ui/SelectField";
 import { TextArea } from "@/components/ui/TextArea";
 import { Button } from "@/components/ui/Button";
 import { FeatureSection } from "@/components/modules/FeatureSection";
-import { SchemaCustomFields } from "@/components/modules/shared/SchemaCustomFields";
+import { CustomFieldsSection } from "@/components/modules/shared/CustomFieldsSection";
 
 interface LeadFormProps {
   open: boolean;
@@ -245,11 +245,18 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
           </FormField>
         </FeatureSection>
 
-        <SchemaCustomFields
-          moduleId="leads-pipeline"
-          values={customData}
-          onChange={(id, val) => setCustomData(prev => ({ ...prev, [id]: val }))}
-        />
+
+        {/* Persona custom fields */}
+        {(config.customFields?.leads ?? []).length > 0 && (
+          <div className="border-t border-border-light pt-5 mt-2">
+            <p className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-3">Additional Details</p>
+            <CustomFieldsSection
+              fields={config.customFields?.leads ?? []}
+              values={customData}
+              onChange={setCustomData}
+            />
+          </div>
+        )}
 
         <div className="flex justify-end gap-3 pt-4 border-t border-border-light">
           <Button variant="secondary" size="sm" onClick={onClose} type="button">

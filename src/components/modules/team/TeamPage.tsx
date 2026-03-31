@@ -9,12 +9,12 @@ import { useJobsStore } from "@/store/jobs";
 import { useAuth } from "@/hooks/useAuth";
 import { TeamMember } from "@/types/models";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { useModuleSchema } from "@/hooks/useModuleSchema";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { DataTable, Column } from "@/components/ui/DataTable";
 import { Button } from "@/components/ui/Button";
 import { FeatureSection } from "@/components/modules/FeatureSection";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { useModuleSchema } from "@/hooks/useModuleSchema";
 import { TeamMemberForm } from "./TeamMemberForm";
 import { MemberAvailabilityPanel } from "./MemberAvailabilityPanel";
 import { ShiftScheduler } from "./ShiftScheduler";
@@ -122,7 +122,7 @@ export function TeamPage() {
     <div>
       <PageHeader
         title={ms.label || "Team"}
-        description={ms.description || `${members.length} team member${members.length !== 1 ? "s" : ""}`}
+        description={`${members.length} team member${members.length !== 1 ? "s" : ""}`}
         actions={
           <Button variant="primary" size="sm" onClick={handleAdd}>
             <Plus className="w-4 h-4" /> Invite Member

@@ -111,7 +111,7 @@ export function TaskList({ jobId }: TaskListProps) {
         <button
           onClick={handleAdd}
           disabled={!newTask.trim()}
-          className="p-2 rounded-lg bg-foreground text-white hover:bg-foreground disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed transition-colors"
+          className="p-2 rounded-lg bg-foreground text-background hover:bg-foreground disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed transition-colors"
         >
           <Plus className="w-4 h-4" />
         </button>

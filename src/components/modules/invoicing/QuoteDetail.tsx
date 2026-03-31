@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Pencil, Trash2, ArrowRightCircle, FileDown, Eye } from "lucide-react";
+import { Pencil, Trash2, ArrowRightCircle, FileDown, Eye, Copy } from "lucide-react";
 import { useInvoicesStore } from "@/store/invoices";
 import { useClientsStore } from "@/store/clients";
 import { useBrandSettingsStore } from "@/store/brand-settings";
 import { useOnboardingStore } from "@/store/onboarding";
 import { Quote } from "@/types/models";
+import { generateId } from "@/lib/id";
 import { useVocabulary } from "@/hooks/useVocabulary";
 import { SlideOver } from "@/components/ui/SlideOver";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -21,7 +22,7 @@ interface QuoteDetailProps {
 }
 
 export function QuoteDetail({ open, onClose, quoteId, onEdit }: QuoteDetailProps) {
-  const { quotes, deleteQuote, convertQuoteToInvoice } = useInvoicesStore();
+  const { quotes, addQuote, deleteQuote, convertQuoteToInvoice } = useInvoicesStore();
   const { clients } = useClientsStore();
   const vocab = useVocabulary();
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -96,6 +97,17 @@ export function QuoteDetail({ open, onClose, quoteId, onEdit }: QuoteDetailProps
     });
     if (!res.ok) return;
     setPreviewHtml(await res.text());
+  };
+
+  const handleDuplicate = () => {
+    if (!quote) return;
+    addQuote({
+      clientId: quote.clientId,
+      lineItems: quote.lineItems.map((li) => ({ ...li, id: generateId() })),
+      status: "draft",
+      notes: quote.notes,
+    });
+    onClose();
   };
 
   const handleConvert = () => {
@@ -188,6 +200,9 @@ export function QuoteDetail({ open, onClose, quoteId, onEdit }: QuoteDetailProps
             <Button variant="secondary" size="sm" onClick={handleDownloadPdf}>
               <FileDown className="w-4 h-4" /> PDF
             </Button>
+            <Button variant="secondary" size="sm" onClick={handleDuplicate}>
+              <Copy className="w-4 h-4" /> Duplicate
+            </Button>
             {onEdit && (
               <Button variant="secondary" size="sm" onClick={() => onEdit(quote)}>
                 <Pencil className="w-4 h-4" /> Edit
@@ -205,7 +220,7 @@ export function QuoteDetail({ open, onClose, quoteId, onEdit }: QuoteDetailProps
                 <p className="text-sm font-medium text-foreground">Preview</p>
                 <button onClick={() => setPreviewHtml(null)} className="text-xs text-text-tertiary hover:text-foreground cursor-pointer">Close</button>
               </div>
-              <div className="border border-border-light rounded-xl overflow-hidden bg-white" style={{ height: 480 }}>
+              <div className="border border-border-light rounded-xl overflow-hidden bg-card-bg" style={{ height: 480 }}>
                 <iframe
                   srcDoc={previewHtml}
                   className="w-full h-full"

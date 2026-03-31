@@ -52,7 +52,7 @@ function makeFunctional(
 ): WorkspaceFunctionalConfig {
   return {
     workflowPattern: "booking-first",
-    enabledModules: ["bookings-calendar"],
+    enabledModules: ["leads-pipeline"],
     enabledAddons: [],
     moduleBehaviors: [],
     ...overrides,
@@ -178,7 +178,9 @@ describe("Validator — validateResolvedWorkspace", () => {
   });
 
   it("invalid workflowPattern fails", () => {
-    const functional = makeFunctional({ workflowPattern: "invalid" as any });
+    const functional = makeFunctional({
+      workflowPattern: "invalid" as unknown as WorkspaceFunctionalConfig["workflowPattern"],
+    });
     const presentation = makePresentation();
     const result = validateResolvedWorkspace(functional, presentation);
     expect(result.valid).toBe(false);
@@ -202,11 +204,11 @@ describe("Validator — validateResolvedWorkspace", () => {
   });
 
   it("sidebar references to disabled modules fail", () => {
-    const functional = makeFunctional({ enabledModules: [] }); // bookings-calendar removed
-    const presentation = makePresentation({ sidebarOrder: ["bookings", "clients"] });
+    const functional = makeFunctional({ enabledModules: [] }); // leads-pipeline not included
+    const presentation = makePresentation({ sidebarOrder: ["leads", "clients"] });
     const result = validateResolvedWorkspace(functional, presentation);
     expect(result.valid).toBe(false);
-    expect(result.errors.some(e => e.includes("bookings") && e.includes("not enabled"))).toBe(true);
+    expect(result.errors.some(e => e.includes("leads") && e.includes("not enabled"))).toBe(true);
   });
 
   it("unknown widget manifests fail", () => {
@@ -737,9 +739,10 @@ describe("Resolver — resolveWorkspace", () => {
 });
 
 describe("Resolver — buildBaseResolvedWorkspace", () => {
-  it("returns base config unchanged from blueprint", () => {
+  it("returns base config with sidebar modules auto-included", () => {
     const base = buildBaseResolvedWorkspace(nailTechBlueprint);
-    expect(base.functional).toEqual(nailTechBlueprint.functional);
+    // Sidebar-referenced modules are auto-included in enabledModules
+    expect(base.functional.enabledModules).toEqual(expect.arrayContaining(nailTechBlueprint.functional.enabledModules));
     expect(base.presentation).toEqual(nailTechBlueprint.presentation);
     expect(base.blueprintId).toBe(nailTechBlueprint.id);
     expect(base.appliedAdjustments).toEqual({});

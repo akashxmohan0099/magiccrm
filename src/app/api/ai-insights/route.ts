@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { requireAuth } from "@/lib/api-auth";
-import { createAdminClient } from "@/lib/supabase-server";
+import { requireWorkspaceAccess } from "@/lib/api-auth";
 import { rateLimit } from "@/lib/rate-limit";
 
 const anthropic = new Anthropic();
@@ -20,48 +19,118 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { user, error: authError } = await requireAuth();
-    if (authError) return authError;
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
     const { workspaceId, personaProfile } = await req.json();
     if (!workspaceId) {
       return NextResponse.json({ error: "Missing workspaceId" }, { status: 400 });
     }
 
-    const supabase = await createAdminClient();
+    const access = await requireWorkspaceAccess(workspaceId, "staff");
+    if (access.error) return access.error;
 
-    // Fetch workspace data for analysis
+    const { supabase } = access;
+
     const [
-      { data: clients },
-      { data: bookings },
-      { data: invoices },
-      { data: leads },
+      { data: clients, error: clientsError },
+      { data: bookings, error: bookingsError },
+      { data: invoices, error: invoicesError },
+      { data: leads, error: leadsError },
+      { data: invoiceLineItems, error: invoiceLineItemsError },
     ] = await Promise.all([
-      supabase.from("clients").select("id, name, status, created_at, last_visit_at, total_spent, visit_count, tags").eq("workspace_id", workspaceId).limit(100),
-      supabase.from("bookings").select("id, client_id, service_name, status, date, created_at, satisfaction_rating, no_show").eq("workspace_id", workspaceId).order("date", { ascending: false }).limit(50),
-      supabase.from("invoices").select("id, number, client_id, status, total, due_date, created_at, paid_at").eq("workspace_id", workspaceId).order("created_at", { ascending: false }).limit(50),
-      supabase.from("leads").select("id, name, status, source, created_at, stage").eq("workspace_id", workspaceId).limit(50),
+      supabase
+        .from("clients")
+        .select("id, name, status, created_at, tags")
+        .eq("workspace_id", workspaceId)
+        .limit(100),
+      supabase
+        .from("bookings")
+        .select("id, client_id, service_name, status, date, created_at, satisfaction_rating, cancellation_reason")
+        .eq("workspace_id", workspaceId)
+        .order("date", { ascending: false })
+        .limit(100),
+      supabase
+        .from("invoices")
+        .select("id, number, client_id, status, due_date, created_at, paid_amount")
+        .eq("workspace_id", workspaceId)
+        .order("created_at", { ascending: false })
+        .limit(50),
+      supabase
+        .from("leads")
+        .select("id, name, source, stage, last_contacted_at, next_follow_up_date, created_at")
+        .eq("workspace_id", workspaceId)
+        .limit(50),
+      supabase
+        .from("invoice_line_items")
+        .select("invoice_id, quantity, unit_price, discount")
+        .eq("workspace_id", workspaceId),
     ]);
 
-    // Build a concise data summary for the AI
+    const queryErrors = [
+      clientsError,
+      bookingsError,
+      invoicesError,
+      leadsError,
+      invoiceLineItemsError,
+    ].filter(Boolean);
+
+    if (queryErrors.length > 0) {
+      console.error("[AI Insights] Failed to load workspace data:", queryErrors);
+      return NextResponse.json({ error: "Failed to load workspace data" }, { status: 500 });
+    }
+
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+
+    const invoiceTotals = new Map<string, number>();
+    for (const item of invoiceLineItems ?? []) {
+      const amount =
+        Number(item.quantity ?? 0) * Number(item.unit_price ?? 0) -
+        Number(item.discount ?? 0);
+      invoiceTotals.set(
+        item.invoice_id,
+        (invoiceTotals.get(item.invoice_id) ?? 0) + amount,
+      );
+    }
+
+    const latestBookingByClient = new Map<string, Date>();
+    for (const booking of bookings ?? []) {
+      if (!booking.client_id || booking.status === "cancelled") continue;
+      const bookingDate = new Date(booking.date);
+      const currentLatest = latestBookingByClient.get(booking.client_id);
+      if (!currentLatest || bookingDate > currentLatest) {
+        latestBookingByClient.set(booking.client_id, bookingDate);
+      }
+    }
 
     const clientCount = clients?.length ?? 0;
     const activeClients = clients?.filter(c => c.status === "active").length ?? 0;
     const recentBookings = bookings?.filter(b => new Date(b.date) >= thirtyDaysAgo).length ?? 0;
-    const noShows = bookings?.filter(b => b.no_show).length ?? 0;
-    const overdueInvoices = invoices?.filter(i => i.status === "sent" && i.due_date && new Date(i.due_date) < now).length ?? 0;
-    const unpaidTotal = invoices?.filter(i => i.status !== "paid").reduce((sum, i) => sum + (i.total || 0), 0) ?? 0;
-    const openLeads = leads?.filter(l => l.status === "open" || l.stage === "new").length ?? 0;
+    const noShows = bookings?.filter(
+      (b) =>
+        b.status === "cancelled" &&
+        typeof b.cancellation_reason === "string" &&
+        /no[- ]show/i.test(b.cancellation_reason),
+    ).length ?? 0;
+    const overdueInvoices = invoices?.filter(
+      (i) =>
+        i.status !== "paid" &&
+        i.status !== "cancelled" &&
+        i.due_date &&
+        new Date(i.due_date) < now,
+    ) ?? [];
+    const unpaidTotal = invoices?.filter(
+      (i) => i.status !== "paid" && i.status !== "cancelled",
+    ).reduce((sum, i) => sum + (invoiceTotals.get(i.id) ?? 0), 0) ?? 0;
+    const openLeads = leads?.filter(
+      (l) => !["won", "lost", "closed", "converted"].includes(String(l.stage ?? "").toLowerCase()),
+    ).length ?? 0;
     const ratedBookings = bookings?.filter(b => b.satisfaction_rating) ?? [];
     const avgRating = ratedBookings.length > 0 ? ratedBookings.reduce((sum, b) => sum + (b.satisfaction_rating ?? 0), 0) / ratedBookings.length : 0;
 
-    // Find clients who haven't visited in 60+ days
     const lapsedClients = clients?.filter(c => {
-      if (!c.last_visit_at) return false;
-      return new Date(c.last_visit_at) < new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+      const lastBooking = latestBookingByClient.get(c.id);
+      if (!lastBooking) return false;
+      return lastBooking < sixtyDaysAgo;
     }) ?? [];
 
     const dataSummary = `
@@ -69,12 +138,12 @@ Workspace snapshot:
 - ${clientCount} total clients (${activeClients} active)
 - ${recentBookings} bookings in last 30 days
 - ${noShows} no-shows in booking history
-- ${overdueInvoices} overdue invoices ($${unpaidTotal.toFixed(2)} unpaid)
+- ${overdueInvoices.length} overdue invoices ($${unpaidTotal.toFixed(2)} unpaid)
 - ${openLeads} open leads
 - ${lapsedClients.length} clients haven't visited in 60+ days
 - Average satisfaction: ${avgRating ? avgRating.toFixed(1) + "/5" : "no ratings yet"}
 ${lapsedClients.length > 0 ? `\nLapsed clients: ${lapsedClients.slice(0, 5).map(c => c.name).join(", ")}${lapsedClients.length > 5 ? ` (+${lapsedClients.length - 5} more)` : ""}` : ""}
-${overdueInvoices > 0 ? `\nOverdue invoices: ${invoices?.filter(i => i.status === "sent" && i.due_date && new Date(i.due_date) < now).slice(0, 3).map(i => `${i.number} ($${i.total})`).join(", ")}` : ""}
+${overdueInvoices.length > 0 ? `\nOverdue invoices: ${overdueInvoices.slice(0, 3).map(i => `${i.number} ($${(invoiceTotals.get(i.id) ?? 0).toFixed(2)})`).join(", ")}` : ""}
     `.trim();
 
     const message = await anthropic.messages.create({

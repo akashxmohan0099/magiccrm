@@ -82,16 +82,15 @@ function FieldValue({
 
     case "date":
     case "datetime": {
-      try {
-        const d = new Date(value as string);
-        return (
-          <span className="text-[13px] text-foreground">
-            {d.toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })}
-          </span>
-        );
-      } catch {
+      const d = new Date(String(value));
+      if (Number.isNaN(d.getTime())) {
         return <span className="text-[13px] text-foreground">{String(value)}</span>;
       }
+      return (
+        <span className="text-[13px] text-foreground">
+          {d.toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })}
+        </span>
+      );
     }
 
     case "rating": {

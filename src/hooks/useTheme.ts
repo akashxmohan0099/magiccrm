@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useSyncExternalStore } from "react";
+import { usePathname } from "next/navigation";
 
 type Theme = "light" | "dark" | "system";
 
@@ -18,7 +19,12 @@ function resolveTheme(theme: Theme): "light" | "dark" {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
-function applyTheme(theme: Theme) {
+function applyTheme(theme: Theme, isDashboard: boolean) {
+  // Only dashboard supports dark mode. Everything else is forced light.
+  if (!isDashboard) {
+    document.documentElement.classList.remove("dark");
+    return;
+  }
   const resolved = resolveTheme(theme);
   document.documentElement.classList.toggle("dark", resolved === "dark");
 }
@@ -38,25 +44,27 @@ function getServerSnapshot(): Theme {
 
 export function useTheme() {
   const theme = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const pathname = usePathname();
+  const isDashboard = pathname.startsWith("/dashboard");
 
   useEffect(() => {
-    applyTheme(theme);
+    applyTheme(theme, isDashboard);
 
-    if (theme === "system") {
+    if (isDashboard && theme === "system") {
       const mql = window.matchMedia("(prefers-color-scheme: dark)");
-      const handler = () => applyTheme("system");
+      const handler = () => applyTheme("system", true);
       mql.addEventListener("change", handler);
       return () => mql.removeEventListener("change", handler);
     }
-  }, [theme]);
+  }, [theme, isDashboard]);
 
   const setTheme = useCallback((next: Theme) => {
     localStorage.setItem(STORAGE_KEY, next);
-    applyTheme(next);
+    applyTheme(next, pathname.startsWith("/dashboard"));
     listeners.forEach((cb) => cb());
-  }, []);
+  }, [pathname]);
 
-  const resolved = resolveTheme(theme);
+  const resolved = isDashboard ? resolveTheme(theme) : "light";
 
   return { theme, resolved, setTheme } as const;
 }

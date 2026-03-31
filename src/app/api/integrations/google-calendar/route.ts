@@ -1,39 +1,88 @@
+import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthUrl, exchangeCode, refreshToken, createEvent, getFreeBusy, deleteEvent } from "@/lib/integrations/google-calendar";
-import { requireAuth } from "@/lib/api-auth";
+import {
+  GOOGLE_CALENDAR_STATE_COOKIE,
+  createEvent,
+  createGoogleCalendarOAuthState,
+  deleteEvent,
+  getAuthUrl,
+  getFreeBusy,
+  refreshToken,
+} from "@/lib/integrations/google-calendar";
+import { requireAuth, requireWorkspaceAccess } from "@/lib/api-auth";
+import { createClient } from "@/lib/supabase-server";
 
-/**
- * Google Calendar API routes.
- * GET: Get OAuth URL, free/busy times, or connection status.
- * POST: Exchange code, create event, delete event, or refresh token.
- */
+const OAUTH_COOKIE_MAX_AGE_SECONDS = 60 * 10;
+
+function getOAuthCookieOptions() {
+  return {
+    httpOnly: true,
+    sameSite: "lax" as const,
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: OAUTH_COOKIE_MAX_AGE_SECONDS,
+  };
+}
+
+type ServerSupabaseClient = Awaited<ReturnType<typeof createClient>>;
+
 export async function GET(req: NextRequest) {
   try {
-    const { user: _user, supabase, error: authError } = await requireAuth();
+    const { user, supabase, error: authError } = await requireAuth();
     if (authError) return authError;
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { searchParams } = new URL(req.url);
     const action = searchParams.get("action");
 
     switch (action) {
       case "auth-url": {
+        const workspaceId = searchParams.get("workspaceId");
+        if (!workspaceId) {
+          return NextResponse.json({ error: "Missing workspaceId" }, { status: 400 });
+        }
+
+        const {
+          error: accessError,
+          user: accessUser,
+        } = await requireWorkspaceAccess(workspaceId, "admin");
+        if (accessError || !accessUser) return accessError;
+
         const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-        // Use the dedicated callback route as redirect URI
         const redirectUri = `${appUrl}/api/integrations/google-calendar/callback`;
-        const workspaceId = searchParams.get("workspaceId") || "";
-        const url = getAuthUrl(redirectUri, workspaceId);
-        return NextResponse.json({ url });
+        const nonce = randomUUID();
+        const state = createGoogleCalendarOAuthState({
+          workspaceId,
+          userId: accessUser.id,
+          nonce,
+        });
+        const response = NextResponse.json({ url: getAuthUrl(redirectUri, state) });
+        response.cookies.set(
+          GOOGLE_CALENDAR_STATE_COOKIE,
+          nonce,
+          getOAuthCookieOptions(),
+        );
+        return response;
       }
       case "status": {
-        // Check if Google Calendar is connected for the workspace
         const workspaceId = searchParams.get("workspaceId");
-        if (!workspaceId) return NextResponse.json({ connected: false });
+        if (!workspaceId) {
+          return NextResponse.json({ error: "Missing workspaceId" }, { status: 400 });
+        }
 
-        const { data: settings } = await supabase
+        const { error: accessError } = await requireWorkspaceAccess(workspaceId, "admin");
+        if (accessError) return accessError;
+
+        const { data: settings, error } = await supabase
           .from("workspace_settings")
           .select("google_calendar_tokens")
           .eq("workspace_id", workspaceId)
           .maybeSingle();
+
+        if (error) {
+          console.error("[Google Calendar API] status lookup failed:", error);
+          return NextResponse.json({ error: "Failed to load Google Calendar status" }, { status: 500 });
+        }
 
         const tokens = settings?.google_calendar_tokens as Record<string, unknown> | null;
         const connected = !!(tokens?.refresh_token);
@@ -60,7 +109,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { user: _user, supabase, error: authError } = await requireAuth();
+    const { supabase, error: authError } = await requireAuth();
     if (authError) return authError;
 
     const { action, ...params } = await req.json();
@@ -68,21 +117,30 @@ export async function POST(req: NextRequest) {
 
     switch (action) {
       case "exchange-code": {
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-        const redirectUri = `${appUrl}/api/integrations/google-calendar/callback`;
-        const tokens = await exchangeCode(params.code, redirectUri);
-        return NextResponse.json(tokens);
+        return NextResponse.json(
+          { error: "Use the OAuth callback route to complete Google Calendar auth" },
+          { status: 410 },
+        );
       }
       case "refresh-token": {
-        // Refresh using stored refresh token from workspace_settings
         const { workspaceId } = params;
-        if (!workspaceId) return NextResponse.json({ error: "Missing workspaceId" }, { status: 400 });
+        if (!workspaceId) {
+          return NextResponse.json({ error: "Missing workspaceId" }, { status: 400 });
+        }
 
-        const { data: settings } = await supabase
+        const { error: accessError } = await requireWorkspaceAccess(workspaceId, "admin");
+        if (accessError) return accessError;
+
+        const { data: settings, error } = await supabase
           .from("workspace_settings")
           .select("google_calendar_tokens")
           .eq("workspace_id", workspaceId)
-          .single();
+          .maybeSingle();
+
+        if (error) {
+          console.error("[Google Calendar API] refresh lookup failed:", error);
+          return NextResponse.json({ error: "Failed to load Google Calendar settings" }, { status: 500 });
+        }
 
         const tokens = settings?.google_calendar_tokens as Record<string, unknown> | null;
         if (!tokens?.refresh_token) {
@@ -91,8 +149,7 @@ export async function POST(req: NextRequest) {
 
         const newTokens = await refreshToken(tokens.refresh_token as string);
 
-        // Update stored tokens
-        await supabase
+        const { error: updateError } = await supabase
           .from("workspace_settings")
           .update({
             google_calendar_tokens: {
@@ -103,75 +160,77 @@ export async function POST(req: NextRequest) {
           })
           .eq("workspace_id", workspaceId);
 
+        if (updateError) {
+          console.error("[Google Calendar API] refresh update failed:", updateError);
+          return NextResponse.json({ error: "Failed to store refreshed token" }, { status: 500 });
+        }
+
         return NextResponse.json({
           access_token: newTokens.access_token,
           expires_in: newTokens.expires_in,
         });
       }
       case "get-token": {
-        // Get a valid access token for the workspace (refresh if expired)
         const { workspaceId } = params;
-        if (!workspaceId) return NextResponse.json({ error: "Missing workspaceId" }, { status: 400 });
+        if (!workspaceId) {
+          return NextResponse.json({ error: "Missing workspaceId" }, { status: 400 });
+        }
 
-        const { data: settings } = await supabase
-          .from("workspace_settings")
-          .select("google_calendar_tokens")
-          .eq("workspace_id", workspaceId)
-          .single();
+        const access = await requireWorkspaceAccess(workspaceId, "admin");
+        if (access.error) return access.error;
 
-        const tokens = settings?.google_calendar_tokens as Record<string, unknown> | null;
-        if (!tokens?.refresh_token) {
+        const token = await getWorkspaceToken(access.supabase, workspaceId);
+        if (!token) {
           return NextResponse.json({ error: "Google Calendar not connected" }, { status: 400 });
         }
-
-        // Check if token is expired (with 5 min buffer)
-        const expiresAt = (tokens.expires_at as number) || 0;
-        if (Date.now() > expiresAt - 5 * 60 * 1000) {
-          const newTokens = await refreshToken(tokens.refresh_token as string);
-          const updatedTokens = {
-            ...tokens,
-            access_token: newTokens.access_token,
-            expires_at: Date.now() + newTokens.expires_in * 1000,
-          };
-          await supabase
-            .from("workspace_settings")
-            .update({ google_calendar_tokens: updatedTokens })
-            .eq("workspace_id", workspaceId);
-
-          return NextResponse.json({ access_token: newTokens.access_token });
-        }
-
-        return NextResponse.json({ access_token: tokens.access_token });
+        return NextResponse.json({ access_token: token });
       }
       case "disconnect": {
         const { workspaceId } = params;
-        if (!workspaceId) return NextResponse.json({ error: "Missing workspaceId" }, { status: 400 });
+        if (!workspaceId) {
+          return NextResponse.json({ error: "Missing workspaceId" }, { status: 400 });
+        }
 
-        await supabase
+        const { error: accessError } = await requireWorkspaceAccess(workspaceId, "admin");
+        if (accessError) return accessError;
+
+        const { error } = await supabase
           .from("workspace_settings")
           .update({ google_calendar_tokens: null })
           .eq("workspace_id", workspaceId);
+
+        if (error) {
+          console.error("[Google Calendar API] disconnect failed:", error);
+          return NextResponse.json({ error: "Failed to disconnect Google Calendar" }, { status: 500 });
+        }
 
         return NextResponse.json({ disconnected: true });
       }
       case "create-event": {
         if (!accessToken) {
-          // Try to get token from workspace
           if (params.workspaceId) {
-            const tokenRes = await getWorkspaceToken(supabase, params.workspaceId);
+            const access = await requireWorkspaceAccess(params.workspaceId, "staff");
+            if (access.error) return access.error;
+            const tokenRes = await getWorkspaceToken(access.supabase, params.workspaceId);
             if (tokenRes) accessToken = tokenRes;
           }
-          if (!accessToken) return NextResponse.json({ error: "Missing access token" }, { status: 401 });
+          if (!accessToken) {
+            return NextResponse.json({ error: "Missing access token" }, { status: 401 });
+          }
         }
         return NextResponse.json(await createEvent(accessToken, params));
       }
       case "delete-event": {
         if (!accessToken) {
           if (params.workspaceId) {
-            const tokenRes = await getWorkspaceToken(supabase, params.workspaceId);
+            const access = await requireWorkspaceAccess(params.workspaceId, "staff");
+            if (access.error) return access.error;
+            const tokenRes = await getWorkspaceToken(access.supabase, params.workspaceId);
             if (tokenRes) accessToken = tokenRes;
           }
-          if (!accessToken) return NextResponse.json({ error: "Missing access token" }, { status: 401 });
+          if (!accessToken) {
+            return NextResponse.json({ error: "Missing access token" }, { status: 401 });
+          }
         }
         await deleteEvent(accessToken, params.eventId);
         return NextResponse.json({ deleted: true });
@@ -185,13 +244,20 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function getWorkspaceToken(supabase: any, workspaceId: string): Promise<string | null> {
-  const { data: settings } = await supabase
+async function getWorkspaceToken(
+  supabase: ServerSupabaseClient,
+  workspaceId: string,
+): Promise<string | null> {
+  const { data: settings, error } = await supabase
     .from("workspace_settings")
     .select("google_calendar_tokens")
     .eq("workspace_id", workspaceId)
-    .single();
+    .maybeSingle();
+
+  if (error) {
+    console.error("[Google Calendar API] token lookup failed:", error);
+    throw new Error("Failed to load workspace Google Calendar token");
+  }
 
   const tokens = settings?.google_calendar_tokens as Record<string, unknown> | null;
   if (!tokens?.refresh_token) return null;
@@ -199,7 +265,7 @@ async function getWorkspaceToken(supabase: any, workspaceId: string): Promise<st
   const expiresAt = (tokens.expires_at as number) || 0;
   if (Date.now() > expiresAt - 5 * 60 * 1000) {
     const newTokens = await refreshToken(tokens.refresh_token as string);
-    await supabase
+    const { error: updateError } = await supabase
       .from("workspace_settings")
       .update({
         google_calendar_tokens: {
@@ -209,6 +275,12 @@ async function getWorkspaceToken(supabase: any, workspaceId: string): Promise<st
         },
       })
       .eq("workspace_id", workspaceId);
+
+    if (updateError) {
+      console.error("[Google Calendar API] token refresh store failed:", updateError);
+      throw new Error("Failed to store refreshed workspace Google Calendar token");
+    }
+
     return newTokens.access_token;
   }
 

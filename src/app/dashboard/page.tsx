@@ -1,15 +1,13 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Check, Mail, Instagram,
-  Palette, Upload, Calendar, Receipt,
-  ArrowRight, Sparkles, ListPlus, Clock, UserPlus,
-  Zap, GitBranch, Package, Users, User, DollarSign,
-  TrendingUp, AlertCircle, Plus, X, LayoutGrid,
+  Calendar, Receipt, Check, Clock,
+  Sparkles, Package, Users, User, DollarSign,
+  TrendingUp, AlertCircle, Plus, X, LayoutGrid, Zap, Lightbulb,
   FolderKanban, Inbox,
-  Activity, ClipboardList,
+  Activity,
 } from "lucide-react";
 import Link from "next/link";
 import { useOnboardingStore } from "@/store/onboarding";
@@ -21,83 +19,13 @@ import { useInvoicesStore } from "@/store/invoices";
 import { useJobsStore } from "@/store/jobs";
 import { useProductsStore } from "@/store/products";
 import { useActivityStore } from "@/store/activity";
-import { useTeamStore } from "@/store/team";
 import { useDashboardStore, DashboardWidget } from "@/store/dashboard";
 import { useVocabulary } from "@/hooks/useVocabulary";
 import { useIndustryConfig } from "@/hooks/useIndustryConfig";
 import { useModuleEnabled } from "@/hooks/useFeature";
-import { computeEnabledModuleIds } from "@/lib/module-registry";
-import { useActiveCombinations } from "@/hooks/useActiveCombinations";
-import { generateSampleData } from "@/lib/sample-data-generator";
-import { RecommendedSetupCard } from "@/components/dashboard/RecommendedSetupCard";
-import { Button } from "@/components/ui/Button";
 import { requestBuilderBrief } from "@/lib/builder-requests";
+import { NudgeWidget } from "@/components/dashboard/NudgeWidget";
 import { toast } from "@/components/ui/Toast";
-import type { IndustryAdaptiveConfig } from "@/types/industry-config";
-import type { VocabularyMap } from "@/types/industry-config";
-
-// ══════════════════════════════════════════════════════
-// SETUP TASKS
-// ══════════════════════════════════════════════════════
-
-interface SetupTask {
-  id: string;
-  label: string;
-  description: string;
-  icon: React.ComponentType<{ className?: string }>;
-  href: string;
-}
-
-function buildSetupTasks(
-  enabledModuleIds: Set<string>,
-  teamSize: string,
-  vocab: VocabularyMap,
-  config: IndustryAdaptiveConfig,
-  moduleRoutes?: Record<string, string>,
-): SetupTask[] {
-  const tasks: SetupTask[] = [];
-  const has = (moduleId: string) => enabledModuleIds.has(moduleId);
-  // Resolve module route: use combined route if module is in a combination
-  const route = (defaultSlug: string, moduleId?: string) => {
-    if (moduleId && moduleRoutes?.[moduleId]) return moduleRoutes[moduleId];
-    return `/dashboard/${defaultSlug}`;
-  };
-
-  tasks.push({ id: "brand", label: "Set up your brand", description: "Logo, colors, and business details", icon: Palette, href: "/dashboard/settings" });
-
-  if (has("bookings-calendar") && config?.bookingMode?.defaultServices?.length) {
-    const word = config.vocabulary.job === "Service" ? "services" : config.vocabulary.booking.toLowerCase() + " types";
-    tasks.push({ id: "services", label: `Add your ${word}`, description: "What you offer, pricing, and duration", icon: ListPlus, href: route("bookings", "bookings-calendar") });
-  }
-
-  if (has("products")) {
-    tasks.push({ id: "products", label: "Add your products", description: "Products, pricing, and categories", icon: Package, href: route("products", "products") });
-  }
-
-  if (has("bookings-calendar")) {
-    tasks.push({ id: "availability", label: "Set your availability", description: "Working hours and days off", icon: Clock, href: route("bookings", "bookings-calendar") });
-  }
-
-  if (has("communication")) {
-    tasks.push({ id: "email", label: "Connect your email", description: "Send and receive from the platform", icon: Mail, href: "/dashboard/settings" });
-  }
-
-  if (has("quotes-invoicing")) {
-    tasks.push({ id: "billing", label: "Set up billing", description: "Payment details and invoice template", icon: Receipt, href: route("invoicing", "quotes-invoicing") });
-  }
-
-  if (has("leads-pipeline")) {
-    tasks.push({ id: "pipeline", label: "Customize your pipeline", description: `Track ${vocab.leads.toLowerCase()} from contact to close`, icon: GitBranch, href: route("leads", "leads-pipeline") });
-  }
-
-  if (teamSize && teamSize !== "Just me") {
-    tasks.push({ id: "team", label: "Invite your team", description: "Add members with roles and permissions", icon: UserPlus, href: route("team", "team") });
-  }
-
-  tasks.push({ id: "contacts", label: `Import your ${vocab.clients.toLowerCase()}`, description: "Upload a CSV or add manually", icon: Upload, href: route("clients", "client-database") });
-
-  return tasks;
-}
 
 // ══════════════════════════════════════════════════════
 // WIDGET CATALOG
@@ -123,6 +51,7 @@ const WIDGET_CATALOG: WidgetDef[] = [
   { type: "active-leads", label: "Active Leads", description: "Leads in your pipeline", icon: Inbox, sizes: ["md"], moduleId: "leads-pipeline" },
   { type: "active-jobs", label: "Active Jobs", description: "Jobs currently in progress", icon: FolderKanban, sizes: ["md"], moduleId: "jobs-projects" },
   { type: "overdue-invoices", label: "Overdue Invoices", description: "Invoices that need attention", icon: AlertCircle, sizes: ["md"], moduleId: "quotes-invoicing" },
+  { type: "nudges", label: "Smart Nudges", description: "Proactive suggestions based on your data", icon: Lightbulb, sizes: ["md"] },
 ];
 
 const DEFAULT_WIDGETS: { type: string; size: "sm" | "md" | "lg" }[] = [
@@ -131,6 +60,7 @@ const DEFAULT_WIDGETS: { type: string; size: "sm" | "md" | "lg" }[] = [
   { type: "stats-outstanding", size: "sm" },
   { type: "stats-revenue", size: "sm" },
   { type: "quick-actions", size: "md" },
+  { type: "nudges", size: "md" },
   { type: "recent-activity", size: "md" },
   { type: "todays-schedule", size: "lg" },
 ];
@@ -247,6 +177,10 @@ function WidgetCard({ widget, onRemove, isEditing }: { widget: DashboardWidget; 
           </div>
         </>
       );
+      break;
+
+    case "nudges":
+      content = <NudgeWidget />;
       break;
 
     case "recent-activity":
@@ -393,7 +327,7 @@ function WidgetCard({ widget, onRemove, isEditing }: { widget: DashboardWidget; 
       {isEditing && (
         <button
           onClick={onRemove}
-          className="absolute -top-2 -right-2 w-6 h-6 bg-foreground text-white rounded-full flex items-center justify-center shadow-lg cursor-pointer hover:bg-red-500 transition-colors z-10"
+          className="absolute -top-2 -right-2 w-6 h-6 bg-foreground text-background rounded-full flex items-center justify-center shadow-lg cursor-pointer hover:bg-red-500 transition-colors z-10"
         >
           <X className="w-3.5 h-3.5" />
         </button>
@@ -548,7 +482,7 @@ function WidgetPanel({ open, onClose, onAdd, onRemove, existingTypes, activeWidg
                       </div>
                       <button
                         onClick={() => onAdd(w.type, w.sizes[0])}
-                        className="flex items-center gap-1 px-3 py-1.5 bg-foreground text-white rounded-lg text-xs font-semibold cursor-pointer hover:opacity-90 transition-opacity"
+                        className="flex items-center gap-1 px-3 py-1.5 bg-foreground text-background rounded-lg text-xs font-semibold cursor-pointer hover:opacity-90 transition-opacity"
                       >
                         <Plus className="w-3 h-3" /> Add
                       </button>
@@ -579,7 +513,7 @@ function WidgetPanel({ open, onClose, onAdd, onRemove, existingTypes, activeWidg
               <button
                 onClick={handleWidgetRequest}
                 disabled={!aiPrompt.trim() || submittingPrompt || credits < 1}
-                className="px-3 py-2 bg-foreground text-white rounded-xl text-[13px] font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-opacity flex-shrink-0"
+                className="px-3 py-2 bg-foreground text-background rounded-xl text-[13px] font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-opacity flex-shrink-0"
               >
                 {submittingPrompt ? "Saving..." : "Submit"}
               </button>
@@ -729,53 +663,8 @@ function WidgetPreview({ type }: { type: string }) {
 
 export default function DashboardPage() {
   const businessContext = useOnboardingStore((s) => s.businessContext);
-  const selectedIndustry = useOnboardingStore((s) => s.selectedIndustry);
-  const selectedPersona = useOnboardingStore((s) => s.selectedPersona);
-  const buildComplete = useOnboardingStore((s) => s.buildComplete);
-  const needs = useOnboardingStore((s) => s.needs);
-  const discoveryAnswers = useOnboardingStore((s) => s.discoveryAnswers);
-  const teamSize = useOnboardingStore((s) => s.teamSize);
   const vocab = useVocabulary();
   const config = useIndustryConfig();
-  const { activeCombinations } = useActiveCombinations();
-
-  // Seed sample data per-store if empty. Runs on dashboard mount.
-  // Each store is checked independently — only seeds what's missing.
-  // Also seeds generic data when onboarding hasn't been completed yet (dev/testing).
-  const seeded = useRef(false);
-  useEffect(() => {
-    if (seeded.current) return;
-
-    const allEmpty =
-      !useClientsStore.getState().clients.length &&
-      !useLeadsStore.getState().leads.length &&
-      !useBookingsStore.getState().bookings.length;
-
-    // Seed persona-specific data after onboarding, or generic data if stores are empty
-    if (!buildComplete && !allEmpty) return;
-    seeded.current = true;
-
-    const enabledIds = buildComplete && selectedIndustry
-      ? Array.from(computeEnabledModuleIds(needs, discoveryAnswers))
-      : ["client-database", "leads-pipeline", "bookings-calendar", "quotes-invoicing", "jobs-projects", "products", "team"];
-
-    const sample = generateSampleData({
-      industryId: selectedIndustry || "generic",
-      personaId: selectedPersona || "generic",
-      businessName: businessContext.businessName || "My Business",
-      enabledModuleIds: enabledIds,
-    });
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const a = (x: unknown) => x as any;
-    if (sample.clients.length && !useClientsStore.getState().clients.length) useClientsStore.setState({ clients: sample.clients.map(a) });
-    if (sample.products.length && !useProductsStore.getState().products.length) useProductsStore.setState({ products: sample.products.map(a) });
-    if (sample.leads.length && !useLeadsStore.getState().leads.length) useLeadsStore.setState({ leads: sample.leads.map(a) });
-    if (sample.bookings.length && !useBookingsStore.getState().bookings.length) useBookingsStore.setState({ bookings: sample.bookings.map(a) });
-    if (sample.invoices.length && !useInvoicesStore.getState().invoices.length) useInvoicesStore.setState({ invoices: sample.invoices.map(a) });
-    if (sample.jobs.length && !useJobsStore.getState().jobs.length) useJobsStore.setState({ jobs: sample.jobs.map(a) });
-    if (sample.team?.length && !useTeamStore.getState().members.length) useTeamStore.setState({ members: sample.team.map(a) });
-  }, [buildComplete, selectedIndustry, selectedPersona, businessContext.businessName, needs, discoveryAnswers]);
 
   // ── Sample data banner ──────────────────────────────────
   const [sampleBannerDismissed, setSampleBannerDismissed] = useState(false);
@@ -810,8 +699,7 @@ export default function DashboardPage() {
 
   const showSampleBanner = hasSampleData && !sampleBannerDismissed;
 
-  const { widgets, addWidget, removeWidget, materializeDefaults, setupDismissed, dismissSetup, completedSetupIds, completeSetupTask } = useDashboardStore();
-  const completedIds = useMemo(() => new Set(completedSetupIds), [completedSetupIds]);
+  const { widgets, addWidget, removeWidget, materializeDefaults } = useDashboardStore();
   const [isEditing, setIsEditing] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
 
@@ -836,32 +724,6 @@ export default function DashboardPage() {
     window.addEventListener("dashboard:toggle-edit", handler);
     return () => window.removeEventListener("dashboard:toggle-edit", handler);
   }, [isEditing]);
-
-  const enabledModuleIds = useMemo(() => computeEnabledModuleIds(needs, discoveryAnswers), [needs, discoveryAnswers]);
-
-  // Build module-to-route mapping for combined modules
-  const moduleRoutes = useMemo(() => {
-    const routes: Record<string, string> = {};
-    for (const combo of activeCombinations) {
-      for (const tab of combo.tabs) {
-        routes[tab.moduleId] = `/dashboard/${combo.slug}?tab=${tab.id}`;
-      }
-    }
-    return routes;
-  }, [activeCombinations]);
-
-  const allTasks = buildSetupTasks(enabledModuleIds, teamSize, vocab, config, moduleRoutes);
-  const completedCount = completedIds.size;
-  const totalCount = allTasks.length;
-  const setupDone = completedCount >= totalCount || setupDismissed;
-  const setupMostlyDone = completedCount >= Math.ceil(totalCount * 0.6);
-  const currentTask = allTasks.find((t) => !completedIds.has(t.id));
-  const remainingTasks = allTasks.filter((t) => !completedIds.has(t.id) && t.id !== currentTask?.id);
-  const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
-
-  const completeTask = (id: string) => {
-    completeSetupTask(id);
-  };
 
   // Initialize default widgets on first visit — filter by enabled modules
   const activeWidgets = widgets.length > 0
@@ -913,111 +775,31 @@ export default function DashboardPage() {
           {name ? `${getGreeting()}, ${name}` : getGreeting()}
         </h2>
         <p className="text-text-secondary text-[15px]">
-          {!setupDone
-            ? "Complete these steps to get your platform ready."
-            : "Here\u2019s what\u2019s happening today."}
+          Here&apos;s what&apos;s happening today.
         </p>
       </motion.div>
 
-      {/* ── SAMPLE DATA BANNER ── */}
+      {/* ── SAMPLE DATA PILL ── */}
       <AnimatePresence>
         {showSampleBanner && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="overflow-hidden mb-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="mb-4"
           >
-            <div className="bg-primary/5 border border-primary/10 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3">
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                <ClipboardList className="w-4 h-4 text-primary flex-shrink-0" />
-                <p className="text-[13px] text-text-secondary">
-                  Sample data is loaded so you can explore the platform.
-                </p>
-              </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <button
-                  onClick={clearSampleData}
-                  className="px-3 py-1.5 bg-foreground text-white rounded-lg text-xs font-semibold cursor-pointer hover:opacity-90 transition-opacity"
-                >
-                  Clear sample data
-                </button>
-                <button
-                  onClick={() => setSampleBannerDismissed(true)}
-                  className="px-3 py-1.5 text-text-tertiary hover:text-foreground rounded-lg text-xs font-medium cursor-pointer transition-colors"
-                >
-                  Keep exploring
-                </button>
-              </div>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-surface border border-border-light rounded-full text-xs text-text-secondary">
+              <span>Viewing sample data</span>
+              <button onClick={clearSampleData} className="font-semibold text-foreground hover:opacity-70 cursor-pointer">Clear</button>
+              <span className="text-border-warm">|</span>
+              <button onClick={() => setSampleBannerDismissed(true)} className="text-text-tertiary hover:text-foreground cursor-pointer">Dismiss</button>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* ── SETUP MODE ── */}
-      {!setupDone && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }} className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="flex-1 h-1.5 bg-border-light rounded-full overflow-hidden">
-              <motion.div className="h-full bg-primary rounded-full" initial={{ width: 0 }} animate={{ width: `${progress}%` }} transition={{ duration: 0.5 }} />
-            </div>
-            <span className="text-xs font-semibold text-text-tertiary tabular-nums">{completedCount}/{totalCount}</span>
-          </div>
-
-          {currentTask && (
-            <motion.div key={currentTask.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="bg-card-bg rounded-2xl border border-border-light p-4 sm:p-5 mb-3">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-                <div className="flex items-center gap-3 sm:gap-4">
-                  <div className="w-10 h-10 bg-primary-muted rounded-xl flex items-center justify-center flex-shrink-0">
-                    <currentTask.icon className="w-5 h-5 text-foreground" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-[15px] font-bold text-foreground">{currentTask.label}</h3>
-                    <p className="text-xs text-text-tertiary">{currentTask.description}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 ml-[52px] sm:ml-0">
-                  <button onClick={() => completeTask(currentTask.id)} className="text-xs text-text-tertiary hover:text-foreground cursor-pointer transition-colors whitespace-nowrap flex items-center gap-1"><Check className="w-3 h-3" /> Mark done</button>
-                  <Link href={currentTask.href}><Button size="sm">Start <ArrowRight className="w-3.5 h-3.5" /></Button></Link>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          <div className="space-y-0.5">
-            {remainingTasks.map((task, i) => (
-              <motion.div key={task.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 + i * 0.02 }}
-                className="flex items-center gap-3 px-5 py-2.5 rounded-xl hover:bg-surface/50 transition-colors group">
-                <div className="w-4 h-4 rounded-full border-2 border-border-light flex-shrink-0" />
-                <span className="text-[13px] text-text-secondary flex-1">{task.label}</span>
-                <button onClick={() => completeTask(task.id)} className="text-[11px] text-text-tertiary opacity-0 group-hover:opacity-100 cursor-pointer hover:text-foreground">skip</button>
-              </motion.div>
-            ))}
-            {allTasks.filter((t) => completedIds.has(t.id)).map((task) => (
-              <div key={task.id} className="flex items-center gap-3 px-5 py-2 opacity-40">
-                <div className="w-4 h-4 rounded-full bg-primary flex items-center justify-center flex-shrink-0"><Check className="w-2.5 h-2.5 text-foreground" /></div>
-                <span className="text-[13px] text-text-tertiary line-through">{task.label}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Skip setup link — only after 60% done */}
-          {setupMostlyDone && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-4 text-center">
-              <button onClick={dismissSetup} className="text-[13px] text-text-tertiary hover:text-foreground cursor-pointer transition-colors">
-                Skip remaining setup and go to dashboard
-              </button>
-            </motion.div>
-          )}
-        </motion.div>
-      )}
-
-      {/* ── RECOMMENDED SETUP ── from deep-dive onboarding */}
-      <RecommendedSetupCard />
-
-      {/* ── WIDGET DASHBOARD ── only shows when setup is done */}
-      {setupDone && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+      {/* ── WIDGET DASHBOARD ── */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
           {/* Editing mode banner */}
           <AnimatePresence>
             {isEditing && (
@@ -1082,7 +864,6 @@ export default function DashboardPage() {
             <span className="text-sm font-medium text-text-tertiary group-hover:text-primary transition-colors">Add Widget</span>
           </motion.button>
         </motion.div>
-      )}
 
       {/* Widget panel — slide-over from right */}
       <AnimatePresence>

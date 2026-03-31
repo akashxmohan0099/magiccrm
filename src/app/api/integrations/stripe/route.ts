@@ -98,6 +98,7 @@ export async function POST(req: NextRequest) {
     const origin = process.env.NEXT_PUBLIC_APP_URL ?? new URL(req.url).origin;
     const session = await createInvoicePaymentSession({
       invoiceId: invoice.id,
+      workspaceId: invoice.workspace_id,
       invoiceNumber: invoice.number,
       amount: Math.round(amount * 100),
       currency: typeof currency === "string" && currency ? currency : "aud",

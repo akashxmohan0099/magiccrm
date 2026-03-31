@@ -111,6 +111,10 @@ export default function AIChatPage() {
   const clearHistory = useAIChatStore((s) => s.clearHistory);
 
   const [input, setInput] = useState("");
+  const [pendingToolCalls, setPendingToolCalls] = useState<{
+    toolCalls: { name: string; input: Record<string, unknown>; result?: string }[];
+    response: string;
+  } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const getContext = useWorkspaceContext();
@@ -160,20 +164,23 @@ export default function AIChatPage() {
         toolCalls: { name: string; input: Record<string, unknown>; result?: string }[];
       };
 
-      // Execute write tool calls on client
-      const executedToolCalls = data.toolCalls.map((tc) => {
-        if (READ_TOOLS.has(tc.name)) {
-          return tc; // Already handled server-side
-        }
-        const result = executeToolCall(tc);
-        return { ...tc, result: result.result };
-      });
+      // Separate read vs write tool calls
+      const readCalls = data.toolCalls.filter((tc) => READ_TOOLS.has(tc.name));
+      const writeCalls = data.toolCalls.filter((tc) => !READ_TOOLS.has(tc.name));
 
-      addMessage({
-        role: "assistant",
-        content: data.response,
-        toolCalls: executedToolCalls.length > 0 ? executedToolCalls : undefined,
-      });
+      if (writeCalls.length > 0) {
+        // Queue write calls for user confirmation
+        setPendingToolCalls({ toolCalls: writeCalls, response: data.response });
+        if (readCalls.length > 0) {
+          addMessage({ role: "assistant", content: "", toolCalls: readCalls });
+        }
+      } else {
+        addMessage({
+          role: "assistant",
+          content: data.response,
+          toolCalls: readCalls.length > 0 ? readCalls : undefined,
+        });
+      }
     } catch {
       addMessage({
         role: "assistant",
@@ -189,6 +196,26 @@ export default function AIChatPage() {
       e.preventDefault();
       handleSubmit(e);
     }
+  };
+
+  const handleConfirmTools = () => {
+    if (!pendingToolCalls) return;
+    const executed = pendingToolCalls.toolCalls.map((tc) => {
+      const result = executeToolCall(tc);
+      return { ...tc, result: result.result };
+    });
+    addMessage({
+      role: "assistant",
+      content: pendingToolCalls.response,
+      toolCalls: executed,
+    });
+    setPendingToolCalls(null);
+  };
+
+  const handleCancelTools = () => {
+    if (!pendingToolCalls) return;
+    addMessage({ role: "assistant", content: "Action cancelled. No changes were made." });
+    setPendingToolCalls(null);
   };
 
   return (
@@ -208,7 +235,7 @@ export default function AIChatPage() {
         </div>
         {messages.length > 0 && (
           <button
-            onClick={clearHistory}
+            onClick={() => { clearHistory(); setPendingToolCalls(null); }}
             className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium text-text-tertiary hover:text-foreground rounded-lg hover:bg-surface transition-colors cursor-pointer"
           >
             <Trash2 className="w-3 h-3" />
@@ -269,6 +296,29 @@ export default function AIChatPage() {
           </div>
         )}
 
+        {pendingToolCalls && (
+          <div className="flex items-start gap-3">
+            <div className="w-7 h-7 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+            </div>
+            <div className="bg-card-bg border border-amber-200 rounded-2xl rounded-tl-md px-4 py-3 max-w-[80%]">
+              <p className="text-xs font-medium text-amber-800 mb-2">MagicAI wants to:</p>
+              <ul className="space-y-1 mb-3">
+                {pendingToolCalls.toolCalls.map((tc, i) => (
+                  <li key={i} className="flex items-center gap-1.5 text-sm text-foreground">
+                    <Wrench className="w-3 h-3 text-text-tertiary" />
+                    {toolDisplayName(tc.name)}
+                  </li>
+                ))}
+              </ul>
+              <div className="flex items-center gap-2">
+                <button onClick={handleConfirmTools} className="px-3 py-1.5 bg-foreground text-background rounded-lg text-xs font-medium cursor-pointer hover:opacity-90">Confirm</button>
+                <button onClick={handleCancelTools} className="px-3 py-1.5 bg-surface border border-border-light text-text-secondary rounded-lg text-xs font-medium cursor-pointer hover:text-foreground">Cancel</button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div ref={messagesEndRef} />
       </div>
 
@@ -285,12 +335,12 @@ export default function AIChatPage() {
           placeholder="Ask MagicAI anything..."
           rows={1}
           className="w-full resize-none bg-transparent px-4 py-3 pr-12 text-sm text-foreground placeholder:text-text-tertiary focus:outline-none"
-          disabled={loading}
+          disabled={loading || !!pendingToolCalls}
         />
         <button
           type="submit"
-          disabled={!input.trim() || loading}
-          className="absolute right-2 bottom-2 p-2 rounded-xl bg-foreground text-white disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90 transition-opacity cursor-pointer"
+          disabled={!input.trim() || loading || !!pendingToolCalls}
+          className="absolute right-2 bottom-2 p-2 rounded-xl bg-foreground text-background disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90 transition-opacity cursor-pointer"
         >
           <Send className="w-3.5 h-3.5" />
         </button>
@@ -303,7 +353,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
   if (message.role === "user") {
     return (
       <div className="flex items-start gap-3 justify-end">
-        <div className="bg-foreground text-white rounded-2xl rounded-tr-md px-4 py-2.5 max-w-[80%]">
+        <div className="bg-foreground text-background rounded-2xl rounded-tr-md px-4 py-2.5 max-w-[80%]">
           <p className="text-sm whitespace-pre-wrap">{message.content}</p>
         </div>
         <div className="w-7 h-7 rounded-lg bg-foreground/10 flex items-center justify-center flex-shrink-0 mt-0.5">

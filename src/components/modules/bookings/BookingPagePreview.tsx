@@ -108,7 +108,7 @@ export function BookingPagePreview() {
                 onClick={() => setSelectedSlot(slot === selectedSlot ? null : slot)}
                 className={`px-2 py-2 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
                   selectedSlot === slot
-                    ? "bg-foreground text-white border-foreground"
+                    ? "bg-foreground text-background border-foreground"
                     : "bg-card-bg border-border-light text-foreground hover:border-foreground"
                 }`}
               >
@@ -120,7 +120,7 @@ export function BookingPagePreview() {
 
         <button
           disabled={!selectedSlot}
-          className="w-full py-2.5 rounded-lg bg-foreground text-white text-sm font-medium disabled:opacity-40 transition-opacity cursor-pointer"
+          className="w-full py-2.5 rounded-lg bg-foreground text-background text-sm font-medium disabled:opacity-40 transition-opacity cursor-pointer"
         >
           Book Appointment
         </button>

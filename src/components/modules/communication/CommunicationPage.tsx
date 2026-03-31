@@ -5,8 +5,8 @@ import { Plus, MessageSquare, Bell, Mail, MessageCircle, Instagram, Phone, Linke
 import { useCommunicationStore } from "@/store/communication";
 import { Channel, ChannelConnectionConfig, ChannelConnectionStatus, Conversation } from "@/types/models";
 import { useFeature } from "@/hooks/useFeature";
-import { useModuleSchema } from "@/hooks/useModuleSchema";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { useModuleSchema } from "@/hooks/useModuleSchema";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { Button } from "@/components/ui/Button";
 import { ConversationList } from "./ConversationList";
@@ -113,6 +113,8 @@ export function CommunicationPage() {
   );
 
   const hasConversationChannels = configuredConversationChannels.length > 0;
+  const emailConfigured = configuredChannels.has("email") || connectedChannels.has("email");
+  const hasEmailChannel = channelSetupList.some((ch) => ch.id === "email");
   const setupChannel = channelSetupList.find((ch) => ch.id === setupChannelId);
   const bulkChannelOptions = channelSetupList.map((channel) => ({
     value: channel.id,
@@ -170,7 +172,7 @@ export function CommunicationPage() {
     <div>
       <PageHeader
         title={ms.label || "Communication"}
-        description={ms.description || "Manage all conversations with your clients in one place."}
+        description={"Manage all conversations with your clients in one place."}
         actions={
           hasConversationChannels ? (
             <Button variant="primary" size="sm" onClick={() => setNewConvoOpen(true)}>
@@ -194,8 +196,25 @@ export function CommunicationPage() {
         </>
       )}
 
-      {/* Channel setup actions */}
-      {channelSetupList.length > 0 && (
+      {/* First-time: focused email setup card */}
+      {!hasConversationChannels && !emailConfigured && hasEmailChannel && (
+        <div className="max-w-md mx-auto mt-12 text-center">
+          <div className="w-12 h-12 mx-auto mb-4 bg-surface rounded-2xl flex items-center justify-center">
+            <Mail className="w-6 h-6 text-text-tertiary" />
+          </div>
+          <h3 className="text-[16px] font-semibold text-foreground mb-1">Connect your email to get started</h3>
+          <p className="text-[13px] text-text-tertiary mb-6 max-w-xs mx-auto">Start messaging clients by connecting your email inbox first.</p>
+          <button
+            onClick={() => openSetup("email")}
+            className="px-6 py-3 bg-foreground text-background rounded-xl text-sm font-semibold cursor-pointer hover:opacity-90 transition-opacity"
+          >
+            Connect Email
+          </button>
+        </div>
+      )}
+
+      {/* Channel setup list (after email is configured, or if no email channel) */}
+      {(emailConfigured || (!hasEmailChannel && !hasConversationChannels)) && channelSetupList.length > 0 && (
         <div className="w-full max-w-md mx-auto space-y-2 mt-4 mb-6">
           {channelSetupList.map((ch) => {
             const channelConfig = channelConfigs[ch.id];
@@ -322,7 +341,7 @@ export function CommunicationPage() {
               <div className="pt-2">
                 <button
                   onClick={() => completeSetup(setupChannel.id)}
-                  className="w-full px-6 py-3 bg-foreground text-white rounded-xl text-sm font-semibold cursor-pointer hover:opacity-90 transition-opacity"
+                  className="w-full px-6 py-3 bg-foreground text-background rounded-xl text-sm font-semibold cursor-pointer hover:opacity-90 transition-opacity"
                 >
                   Save {setupChannel.label} Configuration
                 </button>
@@ -510,7 +529,7 @@ export function CommunicationPage() {
                     </p>
                     <button
                       onClick={() => ch && openSetup(ch.id)}
-                      className="px-5 py-2.5 bg-foreground text-white rounded-xl text-[13px] font-semibold cursor-pointer hover:opacity-90 transition-opacity"
+                      className="px-5 py-2.5 bg-foreground text-background rounded-xl text-[13px] font-semibold cursor-pointer hover:opacity-90 transition-opacity"
                     >
                       Connect {ch?.label || channelFilter}
                     </button>
@@ -528,9 +547,9 @@ export function CommunicationPage() {
               <div className="flex-1 flex items-center justify-center">
                 <div className="text-center">
                   <MessageSquare className="w-8 h-8 text-text-tertiary mx-auto mb-2" />
-                  <p className="text-sm font-medium text-foreground mb-1">{ms.emptyTitle || "No synced conversations yet"}</p>
+                  <p className="text-sm font-medium text-foreground mb-1">{"No synced conversations yet"}</p>
                   <p className="text-xs text-text-tertiary mb-4">
-                    {ms.emptyDescription || "This screen is ready for backend sync, but you can model the workflow manually right now."}
+                    {"This screen is ready for backend sync, but you can model the workflow manually right now."}
                   </p>
                   <Button variant="primary" size="sm" onClick={() => setNewConvoOpen(true)}>
                     <Plus className="w-4 h-4 mr-1.5" />

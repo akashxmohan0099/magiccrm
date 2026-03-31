@@ -8,12 +8,22 @@
  * - Syncing cancellations and reschedules
  */
 
+import { createHmac, timingSafeEqual } from "node:crypto";
+
 interface GoogleCalConfig {
   clientId: string;
   clientSecret: string;
 }
 
 let _config: GoogleCalConfig | null = null;
+
+export const GOOGLE_CALENDAR_STATE_COOKIE = "magic-gcal-oauth";
+
+interface GoogleCalendarOAuthState {
+  workspaceId: string;
+  userId: string;
+  nonce: string;
+}
 
 export function getGoogleCalendarClient(): GoogleCalConfig {
   if (_config) return _config;
@@ -27,6 +37,61 @@ export function getGoogleCalendarClient(): GoogleCalConfig {
 
   _config = { clientId, clientSecret };
   return _config;
+}
+
+function getOAuthStateSecret() {
+  return process.env.GOOGLE_OAUTH_STATE_SECRET || getGoogleCalendarClient().clientSecret;
+}
+
+export function createGoogleCalendarOAuthState(
+  state: GoogleCalendarOAuthState,
+) {
+  const encodedPayload = Buffer.from(JSON.stringify(state)).toString("base64url");
+  const signature = createHmac("sha256", getOAuthStateSecret())
+    .update(encodedPayload)
+    .digest("base64url");
+
+  return `${encodedPayload}.${signature}`;
+}
+
+export function verifyGoogleCalendarOAuthState(state: string) {
+  const [encodedPayload, signature] = state.split(".");
+  if (!encodedPayload || !signature) return null;
+
+  const expectedSignature = createHmac("sha256", getOAuthStateSecret())
+    .update(encodedPayload)
+    .digest("base64url");
+
+  try {
+    if (
+      !timingSafeEqual(
+        Buffer.from(signature),
+        Buffer.from(expectedSignature),
+      )
+    ) {
+      return null;
+    }
+  } catch {
+    return null;
+  }
+
+  try {
+    const payload = JSON.parse(
+      Buffer.from(encodedPayload, "base64url").toString("utf8"),
+    ) as Partial<GoogleCalendarOAuthState>;
+
+    if (!payload.workspaceId || !payload.userId || !payload.nonce) {
+      return null;
+    }
+
+    return {
+      workspaceId: payload.workspaceId,
+      userId: payload.userId,
+      nonce: payload.nonce,
+    };
+  } catch {
+    return null;
+  }
 }
 
 /** Generate the OAuth2 authorization URL */

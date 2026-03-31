@@ -224,24 +224,19 @@ function LogoUpload() {
 // ============================================================
 function ColorPicker() {
   const { brandColor, setBrandColor } = useBrandSettingsStore();
-  const [customHex, setCustomHex] = useState("");
-  const [showCustom, setShowCustom] = useState(false);
-
-  // Check if the current brand color is a preset
   const isPreset = PRESET_COLORS.some((c) => c.hex === brandColor);
-
-  useEffect(() => {
-    if (!isPreset) {
-      setCustomHex(brandColor);
-      setShowCustom(true);
-    }
-  }, [brandColor, isPreset]);
+  const [customHex, setCustomHex] = useState(() => (isPreset ? "" : brandColor));
+  const [customMode, setCustomMode] = useState(() => !isPreset);
+  const showCustom = customMode || !isPreset;
+  const customHexValue = customHex || (!isPreset ? brandColor : "");
 
   const handleCustomSubmit = () => {
-    let hex = customHex.trim();
+    let hex = customHexValue.trim();
     if (!hex.startsWith("#")) hex = "#" + hex;
     if (isValidHex(hex)) {
       setBrandColor(hex);
+      setCustomHex(hex);
+      setCustomMode(true);
     }
   };
 
@@ -260,7 +255,7 @@ function ColorPicker() {
                 key={color.id}
                 onClick={() => {
                   setBrandColor(color.hex);
-                  setShowCustom(false);
+                  setCustomMode(false);
                   setCustomHex("");
                 }}
                 className="group relative cursor-pointer"
@@ -310,7 +305,10 @@ function ColorPicker() {
       <div>
         {!showCustom ? (
           <button
-            onClick={() => setShowCustom(true)}
+            onClick={() => {
+              setCustomMode(true);
+              if (!customHexValue) setCustomHex(brandColor);
+            }}
             className="text-xs font-medium text-text-tertiary hover:text-foreground transition-colors cursor-pointer"
           >
             + Custom color
@@ -325,16 +323,16 @@ function ColorPicker() {
               className="w-9 h-9 rounded-full border border-border-light flex-shrink-0"
               style={{
                 backgroundColor:
-                  isValidHex(customHex) || isValidHex("#" + customHex)
-                    ? customHex.startsWith("#")
-                      ? customHex
-                      : "#" + customHex
+                  isValidHex(customHexValue) || isValidHex("#" + customHexValue)
+                    ? customHexValue.startsWith("#")
+                      ? customHexValue
+                      : "#" + customHexValue
                     : "#E5E5E5",
               }}
             />
             <input
               type="text"
-              value={customHex}
+              value={customHexValue}
               onChange={(e) => setCustomHex(e.target.value)}
               onBlur={handleCustomSubmit}
               onKeyDown={(e) => e.key === "Enter" && handleCustomSubmit()}
@@ -343,7 +341,7 @@ function ColorPicker() {
             />
             <button
               onClick={() => {
-                setShowCustom(false);
+                setCustomMode(false);
                 setCustomHex("");
                 if (!isPreset) setBrandColor(PRESET_COLORS[0].hex);
               }}

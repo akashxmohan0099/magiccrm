@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Loader2, Eye, EyeOff } from "lucide-react";
@@ -30,24 +30,16 @@ function LoginContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    const error = searchParams.get("error");
-    if (!error) return;
-
-    if (error === "auth_callback_failed") {
-      setErrors((prev) => ({
-        ...prev,
-        form: "We couldn't complete sign-in. Please try again from the login page.",
-      }));
-      return;
-    }
-
-    setErrors((prev) => ({
-      ...prev,
-      form: "We couldn't complete sign-in. Please try again.",
-    }));
-  }, [searchParams]);
+  const [dismissAuthCallbackError, setDismissAuthCallbackError] = useState(false);
+  const callbackError = searchParams.get("error");
+  const callbackErrorMessage = dismissAuthCallbackError
+    ? null
+    : callbackError === "auth_callback_failed"
+      ? "We couldn't complete sign-in. Please try again from the login page."
+      : callbackError
+        ? "We couldn't complete sign-in. Please try again."
+        : null;
+  const formError = errors.form ?? callbackErrorMessage;
 
   const inputClass =
     "w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30";
@@ -136,9 +128,9 @@ function LoginContent() {
             </p>
           </div>
 
-          {errors.form && (
+          {formError && (
             <div className="mb-5 px-4 py-3 bg-red-50 border border-red-200 rounded-xl">
-              <p className="text-[13px] text-red-600 font-medium">{errors.form}</p>
+              <p className="text-[13px] text-red-600 font-medium">{formError}</p>
             </div>
           )}
 
@@ -150,6 +142,7 @@ function LoginContent() {
                 type="email"
                 value={email}
                 onChange={(e) => {
+                  setDismissAuthCallbackError(true);
                   setEmail(e.target.value);
                   clearError("email", "form");
                 }}
@@ -182,6 +175,7 @@ function LoginContent() {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => {
+                    setDismissAuthCallbackError(true);
                     setPassword(e.target.value);
                     clearError("password", "form");
                   }}
@@ -208,7 +202,7 @@ function LoginContent() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-foreground text-white text-sm font-semibold rounded-full hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
+              className="w-full py-3 bg-foreground text-background text-sm font-semibold rounded-full hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
               {loading ? "Signing in..." : "Sign In"}

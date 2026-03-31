@@ -656,7 +656,7 @@ export default function LandingPage() {
               <div className="relative px-5 pb-5">
                 <div className="rounded-lg bg-background/80 p-3 space-y-2">
                   {["Full Name *", "Email *", "Any allergies?"].map((field) => (<div key={field}><p className="text-[9px] text-text-tertiary mb-0.5">{field}</p><div className="h-7 bg-card-bg rounded-lg border border-border-light" /></div>))}
-                  <div className="h-8 bg-foreground rounded-lg flex items-center justify-center text-[10px] text-white font-semibold">Submit</div>
+                  <div className="h-8 bg-foreground rounded-lg flex items-center justify-center text-[10px] text-background font-semibold">Submit</div>
                 </div>
               </div>
             </motion.div>
@@ -882,7 +882,7 @@ export default function LandingPage() {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <div className="flex-1 h-9 bg-foreground rounded-xl flex items-center justify-center text-xs text-white font-semibold">Build Feature</div>
+                    <div className="flex-1 h-9 bg-foreground rounded-xl flex items-center justify-center text-xs text-background font-semibold">Build Feature</div>
                   </div>
                   <div className="space-y-2">
                     <p className="text-[10px] text-text-tertiary uppercase tracking-wider font-semibold">What AI can build</p>

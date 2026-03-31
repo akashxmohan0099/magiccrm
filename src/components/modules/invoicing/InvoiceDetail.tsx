@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
-import { Pencil, Trash2, CheckCircle, Send, FileDown, Eye } from "lucide-react";
+import { Pencil, Trash2, CheckCircle, Send, FileDown, Eye, Copy } from "lucide-react";
 import { useInvoicesStore, calculateInvoiceTotal } from "@/store/invoices";
 import { useClientsStore } from "@/store/clients";
 import { useBrandSettingsStore } from "@/store/brand-settings";
 import { useOnboardingStore } from "@/store/onboarding";
 import { useAuth } from "@/hooks/useAuth";
 import { Invoice } from "@/types/models";
+import { generateId } from "@/lib/id";
 import { useVocabulary } from "@/hooks/useVocabulary";
 import { SlideOver } from "@/components/ui/SlideOver";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -23,15 +24,27 @@ interface InvoiceDetailProps {
 }
 
 export function InvoiceDetail({ open, onClose, invoiceId, onEdit }: InvoiceDetailProps) {
-  const { invoices, updateInvoice, deleteInvoice, sendInvoice } = useInvoicesStore();
+  const { invoices, addInvoice, updateInvoice, deleteInvoice, sendInvoice } = useInvoicesStore();
   const { clients } = useClientsStore();
   const { workspaceId } = useAuth();
   const vocab = useVocabulary();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [tipAmount, setTipAmount] = useState(0);
   const [sending, setSending] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const brandColor = useBrandSettingsStore((s) => s.brandColor);
+  const logoBase64 = useBrandSettingsStore((s) => s.logoBase64);
+  const tagline = useBrandSettingsStore((s) => s.tagline);
+  const invoiceTemplate = useBrandSettingsStore((s) => s.invoiceTemplate);
+  const businessName = useOnboardingStore((s) => s.businessContext.businessName) || "My Business";
 
   const invoice = invoices.find((inv) => inv.id === invoiceId);
+  const client = invoice ? clients.find((c) => c.id === invoice.clientId) : undefined;
+  const {
+    subtotal,
+    taxAmount,
+    total,
+  } = invoice ? calculateInvoiceTotal(invoice) : { subtotal: 0, taxAmount: 0, total: 0 };
 
   if (!invoice) {
     return (
@@ -41,66 +54,78 @@ export function InvoiceDetail({ open, onClose, invoiceId, onEdit }: InvoiceDetai
     );
   }
 
-  const client = clients.find((c) => c.id === invoice.clientId);
-  const { subtotal, taxAmount, total } = calculateInvoiceTotal(invoice);
-
   const handleMarkPaid = () => {
+    if (!invoice) return;
     updateInvoice(invoice.id, { status: "paid", updatedAt: new Date().toISOString() });
   };
 
   const handleDelete = () => {
+    if (!invoice) return;
     deleteInvoice(invoice.id);
     onClose();
   };
 
+  const handleDuplicate = () => {
+    if (!invoice) return;
+    addInvoice({
+      clientId: invoice.clientId,
+      lineItems: invoice.lineItems.map((li) => ({ ...li, id: generateId() })),
+      status: "draft",
+      notes: invoice.notes,
+      taxRate: invoice.taxRate,
+    });
+    onClose();
+  };
+
   const handleSend = async () => {
-    if (!workspaceId || sending) return;
+    if (!invoice || !workspaceId || sending) return;
     setSending(true);
     await sendInvoice(invoice.id, workspaceId);
     setSending(false);
   };
 
-  const brandColor = useBrandSettingsStore((s) => s.brandColor);
-  const logoBase64 = useBrandSettingsStore((s) => s.logoBase64);
-  const tagline = useBrandSettingsStore((s) => s.tagline);
-  const invoiceTemplate = useBrandSettingsStore((s) => s.invoiceTemplate);
-  const businessName = useOnboardingStore((s) => s.businessContext.businessName) || "My Business";
+  const buildPdfPayload = () => {
+    if (!invoice) return null;
 
-  const buildPdfPayload = () => ({
-    templateId: invoiceTemplate,
-    documentType: "invoice",
-    businessName,
-    tagline,
-    logoBase64,
-    brandColor,
-    clientName: client?.name || "",
-    clientEmail: client?.email || "",
-    clientAddress: ((client as unknown as Record<string, unknown>)?.address as string) || "",
-    number: invoice.number,
-    date: new Date(invoice.createdAt).toLocaleDateString("en-AU", { year: "numeric", month: "long", day: "numeric" }),
-    dueDate: invoice.dueDate
-      ? new Date(invoice.dueDate).toLocaleDateString("en-AU", { year: "numeric", month: "long", day: "numeric" })
-      : "On receipt",
-    status: invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1),
-    items: invoice.lineItems.map((li) => ({
-      description: li.description || "",
-      quantity: li.quantity,
-      unitPrice: li.unitPrice,
-      discount: li.discount ?? 0,
-      amount: li.quantity * li.unitPrice - (li.discount ?? 0),
-    })),
-    subtotal,
-    taxRate: invoice.taxRate ?? 0,
-    taxAmount,
-    total,
-    notes: invoice.notes,
-  });
+    return {
+      templateId: invoiceTemplate,
+      documentType: "invoice",
+      businessName,
+      tagline,
+      logoBase64,
+      brandColor,
+      clientName: client?.name || "",
+      clientEmail: client?.email || "",
+      clientAddress: ((client as unknown as Record<string, unknown>)?.address as string) || "",
+      number: invoice.number,
+      date: new Date(invoice.createdAt).toLocaleDateString("en-AU", { year: "numeric", month: "long", day: "numeric" }),
+      dueDate: invoice.dueDate
+        ? new Date(invoice.dueDate).toLocaleDateString("en-AU", { year: "numeric", month: "long", day: "numeric" })
+        : "On receipt",
+      status: invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1),
+      items: invoice.lineItems.map((li) => ({
+        description: li.description || "",
+        quantity: li.quantity,
+        unitPrice: li.unitPrice,
+        discount: li.discount ?? 0,
+        amount: li.quantity * li.unitPrice - (li.discount ?? 0),
+      })),
+      subtotal,
+      taxRate: invoice.taxRate ?? 0,
+      taxAmount,
+      total,
+      notes: invoice.notes,
+    };
+  };
 
   const handleDownloadPdf = async () => {
+    const payload = buildPdfPayload();
+    if (!payload) return;
+
     const res = await fetch("/api/invoices/pdf", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(buildPdfPayload()),
+      body: JSON.stringify(payload),
     });
     if (!res.ok) return;
     const html = await res.text();
@@ -108,12 +133,14 @@ export function InvoiceDetail({ open, onClose, invoiceId, onEdit }: InvoiceDetai
     if (win) { win.document.write(html); win.document.close(); }
   };
 
-  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const handlePreview = async () => {
+    const payload = buildPdfPayload();
+    if (!payload) return;
+
     const res = await fetch("/api/invoices/pdf", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(buildPdfPayload()),
+      body: JSON.stringify(payload),
     });
     if (!res.ok) return;
     setPreviewHtml(await res.text());
@@ -128,7 +155,7 @@ export function InvoiceDetail({ open, onClose, invoiceId, onEdit }: InvoiceDetai
               {["draft", "sent", "viewed", "paid"].map((s, i) => (
                 <React.Fragment key={s}>
                   <div className={`px-2 py-1 rounded text-[10px] font-medium capitalize ${
-                    s === invoice.status ? "bg-foreground text-white" :
+                    s === invoice.status ? "bg-foreground text-background" :
                     ["draft","sent","viewed","paid"].indexOf(s) < ["draft","sent","viewed","paid"].indexOf(invoice.status) ? "bg-primary/20 text-foreground" :
                     "bg-surface text-text-tertiary"
                   }`}>{s}</div>
@@ -297,6 +324,9 @@ export function InvoiceDetail({ open, onClose, invoiceId, onEdit }: InvoiceDetai
             <Button variant="secondary" size="sm" onClick={handleDownloadPdf}>
               <FileDown className="w-4 h-4" /> PDF
             </Button>
+            <Button variant="secondary" size="sm" onClick={handleDuplicate}>
+              <Copy className="w-4 h-4" /> Duplicate
+            </Button>
             {invoice.status !== "draft" && invoice.status !== "paid" && (
               <Button variant="secondary" size="sm" onClick={handleSend} loading={sending}>
                 <Send className="w-4 h-4" /> Resend
@@ -318,7 +348,7 @@ export function InvoiceDetail({ open, onClose, invoiceId, onEdit }: InvoiceDetai
                 <p className="text-sm font-medium text-foreground">Preview</p>
                 <button onClick={() => setPreviewHtml(null)} className="text-xs text-text-tertiary hover:text-foreground cursor-pointer">Close</button>
               </div>
-              <div className="border border-border-light rounded-xl overflow-hidden bg-white" style={{ height: 480 }}>
+              <div className="border border-border-light rounded-xl overflow-hidden bg-card-bg" style={{ height: 480 }}>
                 <iframe
                   srcDoc={previewHtml}
                   className="w-full h-full"

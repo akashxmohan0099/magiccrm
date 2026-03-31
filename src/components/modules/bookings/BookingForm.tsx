@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
 import { useBookingsStore } from "@/store/bookings";
 import { useClientsStore } from "@/store/clients";
 import { Booking, BookingStatus } from "@/types/models";
@@ -22,13 +22,21 @@ import { SatisfactionPrompt } from "./SatisfactionPrompt";
 import { StarRating } from "@/components/ui/StarRating";
 import { TeamMemberPicker } from "@/components/ui/TeamMemberPicker";
 import { useModuleEnabled } from "@/hooks/useFeature";
-import { SchemaCustomFields } from "@/components/modules/shared/SchemaCustomFields";
+import { CustomFieldsSection } from "@/components/modules/shared/CustomFieldsSection";
 
 interface BookingFormProps {
   open: boolean;
   onClose: () => void;
   booking?: Booking;
   defaultDate?: string;
+  prefill?: {
+    title?: string;
+    clientId?: string;
+    startTime?: string;
+    endTime?: string;
+    serviceId?: string;
+    serviceName?: string;
+  };
 }
 
 const statusOptions = [
@@ -56,7 +64,7 @@ const emptyForm = {
   recurring: "none",
 };
 
-export function BookingForm({ open, onClose, booking, defaultDate }: BookingFormProps) {
+export function BookingForm({ open, onClose, booking, defaultDate, prefill }: BookingFormProps) {
   const { addBooking, updateBooking, deleteBooking, hasConflict, cancellationPolicy } = useBookingsStore();
   const { clients } = useClientsStore();
   const vocab = useVocabulary();
@@ -83,6 +91,7 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
   const [newClientName, setNewClientName] = useState("");
   const [newClientEmail, setNewClientEmail] = useState("");
   const [customData, setCustomData] = useState<Record<string, unknown>>({});
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const clientOptions = useMemo(
     () => [
@@ -109,14 +118,22 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
         });
         setAssignedToId(booking.assignedToId);
         setAssignedToName(booking.assignedToName);
+        setShowAdvanced(!!(booking.status !== "pending" || booking.recurring || booking.notes.trim()));
       } else {
         setForm({
           ...emptyForm,
           date: defaultDate ?? "",
           recurring: isRecurringLesson ? "weekly" : "none",
+          ...(prefill && {
+            title: prefill.title ?? "",
+            clientId: prefill.clientId ?? "",
+            startTime: prefill.startTime ?? "09:00",
+            endTime: prefill.endTime ?? "10:00",
+          }),
         });
         setAssignedToId(undefined);
         setAssignedToName(undefined);
+        setShowAdvanced(false);
       }
       setErrors({});
       setSelectedService(null);
@@ -125,7 +142,7 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
       setNewClientEmail("");
       setCustomData((booking as unknown as Record<string, unknown>)?.customData as Record<string, unknown> ?? {});
     }
-  }, [open, booking, defaultDate]);
+  }, [open, booking, defaultDate, prefill]);
 
   const conflictDetected = useMemo(() => {
     if (!form.date || !form.startTime || !form.endTime) return false;
@@ -370,6 +387,17 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
           </div>
         )}
 
+        {/* Advanced toggle */}
+        <button
+          type="button"
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className="flex items-center gap-1.5 text-[13px] font-medium text-primary hover:text-primary/80 transition-colors cursor-pointer"
+        >
+          {showAdvanced ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          {showAdvanced ? "Show fewer options" : "Show more options"}
+        </button>
+
+        {showAdvanced && (<>
         <FeatureSection moduleId="bookings-calendar" featureId="booking-deposits" featureLabel="Booking Deposits">
           <div className="space-y-2">
             <label className="flex items-center gap-2 cursor-pointer">
@@ -515,12 +543,19 @@ export function BookingForm({ open, onClose, booking, defaultDate }: BookingForm
             </div>
           )}
         </FeatureSection>
+        </>)}
 
-        <SchemaCustomFields
-          moduleId="bookings-calendar"
-          values={customData}
-          onChange={(id, val) => setCustomData(prev => ({ ...prev, [id]: val }))}
-        />
+        {/* Persona custom fields */}
+        {(config.customFields?.bookings ?? []).length > 0 && (
+          <div className="border-t border-border-light pt-5 mt-2">
+            <p className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-3">Additional Details</p>
+            <CustomFieldsSection
+              fields={config.customFields?.bookings ?? []}
+              values={customData}
+              onChange={setCustomData}
+            />
+          </div>
+        )}
 
         <div className="flex justify-between pt-4 border-t border-border-light">
           <div>

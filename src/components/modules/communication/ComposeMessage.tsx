@@ -102,7 +102,7 @@ export function ComposeMessage({ conversationId }: ComposeMessageProps) {
           <button
             type="submit"
             disabled={!content.trim()}
-            className="p-2 rounded-lg bg-foreground text-white disabled:opacity-40 transition-all cursor-pointer hover:bg-foreground/90 active:scale-95"
+            className="p-2 rounded-lg bg-foreground text-background disabled:opacity-40 transition-all cursor-pointer hover:bg-foreground/90 active:scale-95"
           >
             <Send className="w-4 h-4" />
           </button>

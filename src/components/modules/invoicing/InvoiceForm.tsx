@@ -18,7 +18,7 @@ import { LineItemEditor } from "@/components/ui/LineItemEditor";
 import { TravelCalculator } from "@/components/ui/TravelCalculator";
 import { MilestoneEditor } from "./MilestoneEditor";
 import { FeatureSection } from "@/components/modules/FeatureSection";
-import { SchemaCustomFields } from "@/components/modules/shared/SchemaCustomFields";
+import { CustomFieldsSection } from "@/components/modules/shared/CustomFieldsSection";
 
 interface InvoiceFormProps {
   open: boolean;
@@ -311,11 +311,18 @@ export function InvoiceForm({ open, onClose, invoice }: InvoiceFormProps) {
           />
         </FormField>
 
-        <SchemaCustomFields
-          moduleId="quotes-invoicing"
-          values={customData}
-          onChange={(id, val) => setCustomData(prev => ({ ...prev, [id]: val }))}
-        />
+
+        {/* Persona custom fields */}
+        {(config.customFields?.invoices ?? []).length > 0 && (
+          <div className="border-t border-border-light pt-5 mt-2">
+            <p className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-3">Additional Details</p>
+            <CustomFieldsSection
+              fields={config.customFields?.invoices ?? []}
+              values={customData}
+              onChange={setCustomData}
+            />
+          </div>
+        )}
 
         <div className="flex items-center justify-between pt-4 border-t border-border-light">
           <div>

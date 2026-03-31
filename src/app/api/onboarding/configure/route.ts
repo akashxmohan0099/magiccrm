@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { kimiChat } from "@/lib/integrations/kimi";
+import { rateLimit } from "@/lib/rate-limit";
 
 /**
  * AI rewording endpoint for deep-dive configuration questions.
@@ -11,6 +12,12 @@ import { kimiChat } from "@/lib/integrations/kimi";
  * Fallback: if AI fails, client uses the original question text.
  */
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const { allowed } = rateLimit(`configure:${ip}`, 5, 60_000);
+  if (!allowed) {
+    return NextResponse.json({ error: "Too many requests. Please try again shortly." }, { status: 429 });
+  }
+
   try {
     const { industry, persona, businessName, businessDescription, vocabulary, questions, personaProfile } =
       await req.json();

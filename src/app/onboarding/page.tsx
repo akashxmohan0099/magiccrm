@@ -210,7 +210,7 @@ function OnboardingContent() {
               <div className="flex flex-col gap-2 pt-2">
                 <button
                   onClick={() => setBootstrapFailed(false)}
-                  className="w-full py-3 bg-foreground text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity cursor-pointer"
+                  className="w-full py-3 bg-foreground text-background rounded-xl text-sm font-medium hover:opacity-90 transition-opacity cursor-pointer"
                 >
                   Try again
                 </button>

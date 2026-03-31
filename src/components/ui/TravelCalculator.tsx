@@ -165,7 +165,7 @@ export function TravelCalculator({ onResult, showCost = true }: TravelCalculator
       <button
         onClick={calculate}
         disabled={loading}
-        className="w-full px-4 py-2 bg-foreground text-white rounded-xl text-[13px] font-medium cursor-pointer hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+        className="w-full px-4 py-2 bg-foreground text-background rounded-xl text-[13px] font-medium cursor-pointer hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
       >
         {loading ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Calculating...</> : <><Clock className="w-3.5 h-3.5" /> Calculate Travel</>}
       </button>

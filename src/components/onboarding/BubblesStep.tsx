@@ -428,7 +428,7 @@ export function BubblesStep() {
           <div className="max-w-lg mx-auto">
             <button
               onClick={handleNext}
-              className="w-full py-4 rounded-2xl text-[15px] font-semibold transition-all flex items-center justify-center gap-2 bg-foreground text-white hover:opacity-90 cursor-pointer shadow-lg"
+              className="w-full py-4 rounded-2xl text-[15px] font-semibold transition-all flex items-center justify-center gap-2 bg-foreground text-background hover:opacity-90 cursor-pointer shadow-lg"
             >
               {isLast ? "See my workspace" : "Next"}
               <ArrowRight className="w-4 h-4" />

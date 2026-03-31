@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useState, useMemo, useEffect } from "react";
+import { ReactNode, useState, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -15,20 +15,25 @@ import {
   NotebookPen, LogOut, Loader2, User, Sun, Moon, Monitor,
 } from "lucide-react";
 import { useOnboardingStore } from "@/store/onboarding";
-import { useBuilderStore } from "@/store/builder";
+import { useClientsStore } from "@/store/clients";
+import { useBookingsStore } from "@/store/bookings";
+import { useLeadsStore } from "@/store/leads";
+import { useInvoicesStore } from "@/store/invoices";
+import { useJobsStore } from "@/store/jobs";
+import { useProductsStore } from "@/store/products";
+import { useTeamStore } from "@/store/team";
+import { computeEnabledModuleIds } from "@/lib/module-registry";
+import { generateSampleData } from "@/lib/sample-data-generator";
 import { useEnabledModules, useEnabledAddons } from "@/hooks/useFeature";
 import { useHydration } from "@/hooks/useHydration";
 import { useAuth } from "@/hooks/useAuth";
-import { useActiveCombinations } from "@/hooks/useActiveCombinations";
-import { useAssembledSchemasStore } from "@/store/assembled-schemas";
 import { createClient } from "@/lib/supabase";
 import { useSupabaseSync } from "@/hooks/useSupabaseSync";
 import { useVocabulary } from "@/hooks/useVocabulary";
-import { getModuleDisplayName, getModuleBySlug, GROUP_LABELS } from "@/lib/module-registry";
+import { ALWAYS_ON_MODULES, getModuleDisplayName, getModuleBySlug } from "@/lib/module-registry";
 import { ModuleConfigurator } from "@/components/ui/ModuleConfigurator";
 import { ToastContainer } from "@/components/ui/Toast";
 import { useTheme } from "@/hooks/useTheme";
-import { DashboardSkeleton } from "@/components/ui/Skeleton";
 import { AppPreloader } from "@/components/ui/AppPreloader";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { CommandPalette } from "@/components/ui/CommandPalette";
@@ -67,12 +72,6 @@ function DashboardShell({ children }: { children: ReactNode }) {
   const enabledModules = useEnabledModules();
   const enabledAddons = useEnabledAddons();
   const vocab = useVocabulary();
-  const { activeCombinations, isModuleMerged, tuningModuleMeta } = useActiveCombinations();
-  const assembledSchemas = useAssembledSchemasStore((s) => s.schemas);
-  const hasAssembly = useAssembledSchemasStore((s) => s.assembled);
-  const builderCredits = useBuilderStore((s) => s.credits);
-  const allCustomFeatures = useBuilderStore((s) => s.customFeatures);
-  const customFeatures = useMemo(() => allCustomFeatures.filter((f) => f.status === "ready"), [allCustomFeatures]);
   const { user, workspaceId, loading: authLoading, signOut, refreshMember } = useAuth();
   const { syncing } = useSupabaseSync({ workspaceId, authLoading });
   const [searchFocused, setSearchFocused] = useState(false);
@@ -82,7 +81,41 @@ function DashboardShell({ children }: { children: ReactNode }) {
   const [repairingWorkspace, setRepairingWorkspace] = useState(false);
   const [repairWorkspaceError, setRepairWorkspaceError] = useState("");
   const teamSize = useOnboardingStore((s) => s.teamSize);
-  const isSolo = teamSize === "Just me";
+  const selectedIndustry = useOnboardingStore((s) => s.selectedIndustry);
+  const needs = useOnboardingStore((s) => s.needs);
+  const discoveryAnswers = useOnboardingStore((s) => s.discoveryAnswers);
+
+  // Seed sample data when stores are empty — runs on any dashboard route.
+  const seeded = useRef(false);
+  useEffect(() => {
+    if (seeded.current) return;
+    const allEmpty =
+      !useClientsStore.getState().clients.length &&
+      !useBookingsStore.getState().bookings.length;
+    if (!allEmpty) return;
+    seeded.current = true;
+
+    const enabledIds = selectedIndustry
+      ? Array.from(computeEnabledModuleIds(needs, discoveryAnswers))
+      : ["client-database", "bookings-calendar", "communication", "quotes-invoicing", "leads-pipeline", "jobs-projects", "products", "team"];
+
+    const sample = generateSampleData({
+      industryId: selectedIndustry || "generic",
+      personaId: selectedPersona || "generic",
+      businessName: businessContext.businessName || "My Business",
+      enabledModuleIds: enabledIds,
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const a = (x: unknown) => x as any;
+    if (sample.clients.length && !useClientsStore.getState().clients.length) useClientsStore.setState({ clients: sample.clients.map(a) });
+    if (sample.products.length && !useProductsStore.getState().products.length) useProductsStore.setState({ products: sample.products.map(a) });
+    if (sample.leads.length && !useLeadsStore.getState().leads.length) useLeadsStore.setState({ leads: sample.leads.map(a) });
+    if (sample.bookings.length && !useBookingsStore.getState().bookings.length) useBookingsStore.setState({ bookings: sample.bookings.map(a) });
+    if (sample.invoices.length && !useInvoicesStore.getState().invoices.length) useInvoicesStore.setState({ invoices: sample.invoices.map(a) });
+    if (sample.jobs.length && !useJobsStore.getState().jobs.length) useJobsStore.setState({ jobs: sample.jobs.map(a) });
+    if (sample.team?.length && !useTeamStore.getState().members.length) useTeamStore.setState({ members: sample.team.map(a) });
+  }, [selectedIndustry, selectedPersona, businessContext.businessName, needs, discoveryAnswers]);
 
   const handleWorkspaceRepair = async () => {
     if (repairingWorkspace) return;
@@ -152,7 +185,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
               <button
                 onClick={handleWorkspaceRepair}
                 disabled={repairingWorkspace}
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-foreground text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-70 disabled:cursor-not-allowed w-full cursor-pointer"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-foreground text-background rounded-xl text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-70 disabled:cursor-not-allowed w-full cursor-pointer"
               >
                 {repairingWorkspace ? (
                   <>
@@ -195,102 +228,40 @@ function DashboardShell({ children }: { children: ReactNode }) {
     );
   }
 
-  // Modules to collapse into their parent (not shown as separate sidebar items)
-  const COLLAPSED_MODULES = new Set<string>(); // payments was removed from registry; keep set for future use
+  // ── Core nav items (always visible) ──────────────────────
+  const coreItems = [
+    { href: "/dashboard/clients", label: vocab.clients || "Clients", icon: Users },
+    { href: "/dashboard/bookings", label: "Calendar", icon: Calendar },
+    { href: "/dashboard/communication", label: "Messages", icon: MessageCircle },
+    { href: "/dashboard/invoicing", label: "Invoices", icon: Receipt },
+  ];
 
-  // Track which combined entries we've already inserted (by combination ID)
-  const insertedCombinations = new Set<string>();
-
-  // Group enabled modules by their group, filtering out collapsed, solo-hidden, and merged ones.
-  // Insert combination entries at the position of their primary module.
-  const groupedItems: Record<string, { href: string; label: string; icon: React.ComponentType<{ className?: string }> }[]> = {};
-
-  for (const mod of enabledModules) {
-    if (COLLAPSED_MODULES.has(mod.id)) continue;
-    if (mod.id === "team" && isSolo) continue;
-
-    // Check if this module is merged into a combination
-    if (isModuleMerged(mod.id)) {
-      // Find which combination absorbs this module
-      const combo = activeCombinations.find((c) => c.mergedModuleIds.includes(mod.id));
-      if (combo && !insertedCombinations.has(combo.id)) {
-        // Insert the combination entry at the primary module's group position
-        const group = mod.group;
-        if (!groupedItems[group]) groupedItems[group] = [];
-
-        const meta = tuningModuleMeta[combo.id];
-        groupedItems[group].push({
-          href: `/dashboard/${combo.slug}`,
-          label: meta?.label || combo.defaultLabel,
-          icon: ICON_MAP[combo.icon] || LayoutDashboard,
-        });
-        insertedCombinations.add(combo.id);
-      }
-      continue;
-    }
-
-    // Regular module — use assembled schema label if available
-    const group = mod.group;
-    if (!groupedItems[group]) groupedItems[group] = [];
-    const assembledLabel = hasAssembly ? assembledSchemas[mod.id]?.label : undefined;
-    const meta = tuningModuleMeta[mod.id];
-    groupedItems[group].push({
-      href: `/dashboard/${hasAssembly && assembledSchemas[mod.id] ? assembledSchemas[mod.id].slug : mod.slug}`,
-      label: assembledLabel || meta?.label || getModuleDisplayName(mod, vocab),
+  // ── Opt-in modules (enabled via onboarding or settings, excluding core) ──
+  const optInItems = enabledModules
+    .filter((mod) => !ALWAYS_ON_MODULES.has(mod.id))
+    .map((mod) => ({
+      href: `/dashboard/${mod.slug}`,
+      label: getModuleDisplayName(mod, vocab),
       icon: ICON_MAP[mod.icon] || LayoutDashboard,
-    });
-  }
-
-  // Build nav groups
-  const moduleGroups = ["business", "grow", "system"]
-    .filter((g) => groupedItems[g]?.length)
-    .map((g) => ({
-      label: GROUP_LABELS[g],
-      items: groupedItems[g],
     }));
 
-  // Enabled add-ons show up in their own section
+  // ── Enabled add-ons ──
   const addonItems = enabledAddons.map((mod) => ({
     href: `/dashboard/${mod.slug}`,
     label: getModuleDisplayName(mod, vocab),
     icon: ICON_MAP[mod.icon] || Puzzle,
   }));
 
-  const browseAddonsItem = {
-    href: "/dashboard/addons",
-    label: "Browse Add-ons",
-    icon: Puzzle,
-  };
-
-  // Custom features built by the user show up as nav items too
-  const customItems = customFeatures.map((f) => ({
-    href: `/dashboard/custom/${f.slug}`,
-    label: f.name,
-    icon: Sparkles,
-  }));
-
-  const buildYourOwnItem = {
-    href: "/dashboard/builder",
-    label: "Build Your Own",
-    icon: Wand2,
-    badge: String(builderCredits),
-  };
-
   const navGroups = [
     { label: "", items: [
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
       { href: "/dashboard/ai", label: "MagicAI", icon: Sparkles },
     ] },
-    ...moduleGroups,
-    // Add-ons section
-    {
-      label: "Add-ons",
-      items: [...addonItems, browseAddonsItem],
-    },
-    // Custom features + Build Your Own
-    ...(customItems.length > 0
-      ? [{ label: "Custom", items: [...customItems, buildYourOwnItem] }]
-      : [{ label: "", items: [buildYourOwnItem] }]),
+    { label: "", items: coreItems },
+    // Opt-in modules (only if any are enabled)
+    ...(optInItems.length > 0 ? [{ label: "More", items: optInItems }] : []),
+    // Add-ons (only if user has enabled any)
+    ...(addonItems.length > 0 ? [{ label: "Add-ons", items: addonItems }] : []),
     { label: "", items: [{ href: "/dashboard/settings", label: "Settings", icon: Settings }], isBottom: true },
   ];
 

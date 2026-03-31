@@ -37,6 +37,7 @@ export const stripe = new Proxy({} as Stripe, {
 /** Create a checkout session for a one-time invoice payment */
 export async function createInvoicePaymentSession(params: {
   invoiceId: string;
+  workspaceId: string;
   invoiceNumber?: string;
   amount: number; // in cents
   currency?: string;
@@ -61,7 +62,10 @@ export async function createInvoicePaymentSession(params: {
     ],
     success_url: params.successUrl,
     cancel_url: params.cancelUrl,
-    metadata: { invoiceId: params.invoiceId },
+    metadata: {
+      invoiceId: params.invoiceId,
+      workspaceId: params.workspaceId,
+    },
   });
 }
 

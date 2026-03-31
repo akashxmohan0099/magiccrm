@@ -37,7 +37,7 @@ export function Tabs({ tabs, activeTab, onChange }: TabsProps) {
               <motion.span
                 className={`inline-flex items-center justify-center min-w-[22px] h-5 px-1.5 rounded-full text-[11px] font-semibold transition-colors ${
                   activeTab === tab.id
-                    ? "bg-foreground text-white"
+                    ? "bg-foreground text-background"
                     : "bg-surface text-text-secondary"
                 }`}
                 initial={false}

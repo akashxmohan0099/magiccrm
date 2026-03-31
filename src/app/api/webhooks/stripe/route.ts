@@ -27,8 +27,22 @@ export async function POST(req: NextRequest) {
         const session = event.data.object as unknown as Record<string, unknown>;
         const metadata = session.metadata as Record<string, string> | undefined;
         const invoiceId = metadata?.invoiceId;
-        const workspaceId = metadata?.workspaceId;
+        let workspaceId = metadata?.workspaceId;
         const amountTotal = session.amount_total as number | undefined;
+
+        if (invoiceId && !workspaceId) {
+          const { data: invoice, error: invoiceLookupError } = await supabase
+            .from("invoices")
+            .select("workspace_id")
+            .eq("id", invoiceId)
+            .maybeSingle();
+
+          if (invoiceLookupError) {
+            console.error("[Stripe] Failed to look up workspace for legacy session:", invoiceLookupError.message);
+          } else {
+            workspaceId = invoice?.workspace_id;
+          }
+        }
 
         if (invoiceId && workspaceId) {
           // Mark invoice as paid in Supabase

@@ -13,9 +13,9 @@ import { TextArea } from "@/components/ui/TextArea";
 import { DateField } from "@/components/ui/DateField";
 import { Button } from "@/components/ui/Button";
 import { FeatureSection } from "@/components/modules/FeatureSection";
+import { CustomFieldsSection } from "@/components/modules/shared/CustomFieldsSection";
 import { TeamMemberPicker } from "@/components/ui/TeamMemberPicker";
 import { useModuleEnabled } from "@/hooks/useFeature";
-import { SchemaCustomFields } from "@/components/modules/shared/SchemaCustomFields";
 
 interface JobFormProps {
   open: boolean;
@@ -186,11 +186,18 @@ export function JobForm({ open, onClose, job }: JobFormProps) {
           </div>
         </FeatureSection>
 
-        <SchemaCustomFields
-          moduleId="jobs-projects"
-          values={customData}
-          onChange={(id, val) => setCustomData(prev => ({ ...prev, [id]: val }))}
-        />
+
+        {/* Persona custom fields */}
+        {(config.customFields?.jobs ?? []).length > 0 && (
+          <div className="border-t border-border-light pt-5 mt-2">
+            <p className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-3">Additional Details</p>
+            <CustomFieldsSection
+              fields={config.customFields?.jobs ?? []}
+              values={customData}
+              onChange={setCustomData}
+            />
+          </div>
+        )}
 
         <div className="flex justify-end gap-2 pt-4">
           <Button variant="ghost" type="button" onClick={onClose}>

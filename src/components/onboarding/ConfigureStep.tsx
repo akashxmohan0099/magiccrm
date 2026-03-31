@@ -463,7 +463,7 @@ export function ConfigureStep() {
                           <button
                             onClick={() => handleAnswer(q.id, false)}
                             className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${
-                              isNo ? "bg-foreground text-white" : "bg-surface border border-border-light text-foreground hover:border-foreground/20"
+                              isNo ? "bg-foreground text-background" : "bg-surface border border-border-light text-foreground hover:border-foreground/20"
                             }`}
                           >
                             No
@@ -496,7 +496,7 @@ export function ConfigureStep() {
                                   onClick={() => handleFollowUpAnswer(q.id, false)}
                                   className={`flex-1 py-2 rounded-xl text-[13px] font-medium transition-all cursor-pointer ${
                                     deepDiveAnswers[`${q.id}:followup`] === false
-                                      ? "bg-foreground text-white"
+                                      ? "bg-foreground text-background"
                                       : "bg-surface border border-border-light text-foreground hover:border-foreground/20"
                                   }`}
                                 >
@@ -519,7 +519,7 @@ export function ConfigureStep() {
         <div className="mt-10 space-y-3">
           <button
             onClick={finalize}
-            className="w-full py-4 rounded-2xl text-[15px] font-semibold transition-all flex items-center justify-center gap-2 bg-foreground text-white hover:opacity-90 cursor-pointer shadow-lg"
+            className="w-full py-4 rounded-2xl text-[15px] font-semibold transition-all flex items-center justify-center gap-2 bg-foreground text-background hover:opacity-90 cursor-pointer shadow-lg"
           >
             Continue <ArrowRight className="w-4 h-4" />
           </button>

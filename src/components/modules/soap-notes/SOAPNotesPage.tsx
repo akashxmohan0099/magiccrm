@@ -198,7 +198,7 @@ export function SOAPNotesPage() {
           <h3 className="text-[13px] font-semibold text-text-tertiary uppercase tracking-wider mb-3">Treatment Plans</h3>
           <p className="text-[13px] text-text-tertiary text-center py-4">Create multi-session treatment plans with progress tracking across visits.</p>
           <div className="flex justify-center">
-            <button className="px-4 py-2 bg-foreground text-white rounded-lg text-xs font-medium cursor-pointer hover:opacity-90">New Treatment Plan</button>
+            <button className="px-4 py-2 bg-foreground text-background rounded-lg text-xs font-medium cursor-pointer hover:opacity-90">New Treatment Plan</button>
           </div>
         </div>
       </FeatureSection>

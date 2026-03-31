@@ -318,7 +318,6 @@ CREATE TABLE IF NOT EXISTS portal_access (
 DO $$
 DECLARE
   t TEXT;
-  pol_name TEXT;
 BEGIN
   FOR t IN
     SELECT unnest(ARRAY[
@@ -333,12 +332,29 @@ BEGIN
     ])
   LOOP
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
-    pol_name := 'workspace_isolation_' || t;
-    -- Drop if exists, then create
-    EXECUTE format('DROP POLICY IF EXISTS %I ON %I', pol_name, t);
+    EXECUTE format('DROP POLICY IF EXISTS "%s_select" ON %I', t, t);
+    EXECUTE format('DROP POLICY IF EXISTS "%s_insert" ON %I', t, t);
+    EXECUTE format('DROP POLICY IF EXISTS "%s_update" ON %I', t, t);
+    EXECUTE format('DROP POLICY IF EXISTS "%s_delete" ON %I', t, t);
     EXECUTE format(
-      'CREATE POLICY %I ON %I FOR ALL USING (true)',
-      pol_name, t
+      'CREATE POLICY "%s_select" ON %I FOR SELECT USING (workspace_id = get_my_workspace_id())',
+      t,
+      t
+    );
+    EXECUTE format(
+      'CREATE POLICY "%s_insert" ON %I FOR INSERT WITH CHECK (workspace_id = get_my_workspace_id())',
+      t,
+      t
+    );
+    EXECUTE format(
+      'CREATE POLICY "%s_update" ON %I FOR UPDATE USING (workspace_id = get_my_workspace_id()) WITH CHECK (workspace_id = get_my_workspace_id())',
+      t,
+      t
+    );
+    EXECUTE format(
+      'CREATE POLICY "%s_delete" ON %I FOR DELETE USING (workspace_id = get_my_workspace_id())',
+      t,
+      t
     );
   END LOOP;
 END

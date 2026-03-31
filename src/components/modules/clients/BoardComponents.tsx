@@ -135,10 +135,6 @@ export function EditableCell({ value, onSave, placeholder = "—", className = "
     }
   }, [editing]);
 
-  useEffect(() => {
-    if (!editing) setDraft(value);
-  }, [value, editing]);
-
   const commit = useCallback(() => {
     setEditing(false);
     const trimmed = draft.trim();
@@ -165,7 +161,10 @@ export function EditableCell({ value, onSave, placeholder = "—", className = "
 
   return (
     <span
-      onClick={() => setEditing(true)}
+      onClick={() => {
+        setDraft(value);
+        setEditing(true);
+      }}
       className={`cursor-text text-sm truncate block py-0.5 hover:bg-surface/60 rounded px-1 -mx-1 transition-colors ${!value ? "text-text-secondary italic" : "text-foreground"} ${className}`}
     >
       {value || placeholder}
@@ -583,7 +582,7 @@ export function AddColumnDropdown({ onAddCustomColumn }: AddColumnDropdownProps)
                 <button
                   onClick={handleAdd}
                   disabled={!newColName.trim()}
-                  className="flex-1 px-4 py-2.5 text-sm font-medium bg-foreground text-white rounded-xl hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="flex-1 px-4 py-2.5 text-sm font-medium bg-foreground text-background rounded-xl hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Add Column
                 </button>

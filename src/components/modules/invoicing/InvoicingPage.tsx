@@ -9,6 +9,7 @@ import { useClientsStore } from "@/store/clients";
 import { Invoice, Quote, Proposal } from "@/types/models";
 import { useVocabulary } from "@/hooks/useVocabulary";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { useModuleSchema } from "@/hooks/useModuleSchema";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Tabs } from "@/components/ui/Tabs";
 import { DataTable, Column } from "@/components/ui/DataTable";
@@ -23,15 +24,14 @@ import { ProposalBuilder } from "./ProposalBuilder";
 import { ProposalDetail } from "./ProposalDetail";
 import { FeatureSection } from "@/components/modules/FeatureSection";
 import { useFeature } from "@/hooks/useFeature";
-import { useModuleSchema } from "@/hooks/useModuleSchema";
 
 export function InvoicingPage() {
-  const ms = useModuleSchema("quotes-invoicing");
   const { invoices, quotes, generateRecurringInvoices } = useInvoicesStore();
   const { workspaceId } = useAuth();
   const { proposals } = useProposalsStore();
   const { clients } = useClientsStore();
   const vocab = useVocabulary();
+  const ms = useModuleSchema("quotes-invoicing");
   const creditNotesEnabled = useFeature("quotes-invoicing", "credit-notes");
   const proposalsEnabled = useFeature("quotes-invoicing", "proposals");
   const TABS = [
@@ -178,7 +178,7 @@ export function InvoicingPage() {
     <div>
       <PageHeader
         title={ms.label || "Billing"}
-        description={ms.description || `Create and manage ${vocab.quotes.toLowerCase()} and ${vocab.invoices.toLowerCase()} for your ${vocab.clients.toLowerCase()}.`}
+        description={`Create and manage ${vocab.quotes.toLowerCase()} and ${vocab.invoices.toLowerCase()} for your ${vocab.clients.toLowerCase()}.`}
         actions={
           <div className="flex items-center gap-2">
             {hasRecurring && (
@@ -208,8 +208,8 @@ export function InvoicingPage() {
           {invoices.length === 0 ? (
             <EmptyState
               icon={<Receipt className="w-10 h-10" />}
-              title={ms.emptyTitle || `No ${vocab.invoices.toLowerCase()} yet`}
-              description={ms.emptyDescription || `Set up your billing, then start sending ${vocab.invoices.toLowerCase()}.`}
+              title={`No ${vocab.invoices.toLowerCase()} yet`}
+              description={`Set up your billing, then start sending ${vocab.invoices.toLowerCase()}.`}
               setupSteps={[
                 { label: `Create your first ${vocab.invoice.toLowerCase()}`, description: "Add line items, set payment terms, and send", action: handleNewInvoice },
               ]}

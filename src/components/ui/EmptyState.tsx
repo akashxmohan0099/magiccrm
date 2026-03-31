@@ -86,7 +86,7 @@ export function EmptyState({ icon, title, description, actionLabel, onAction, se
         >
           <button
             onClick={onAction}
-            className="px-6 py-2.5 bg-foreground text-white rounded-full text-sm font-semibold cursor-pointer hover:opacity-90 transition-opacity"
+            className="px-6 py-2.5 bg-foreground text-background rounded-full text-sm font-semibold cursor-pointer hover:opacity-90 transition-opacity"
           >
             {actionLabel}
           </button>

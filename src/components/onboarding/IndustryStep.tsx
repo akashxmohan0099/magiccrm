@@ -104,7 +104,7 @@ export function IndustryStep() {
                     onClick={() => handleSelectIndustry(config.id)}
                     className={`relative text-left p-5 rounded-2xl transition-all duration-200 cursor-pointer w-full ${
                       isSelected
-                        ? "bg-foreground text-white shadow-lg"
+                        ? "bg-foreground text-background shadow-lg"
                         : "bg-card-bg border border-border-light hover:border-foreground/20 hover:shadow-md"
                     }`}
                   >
@@ -142,7 +142,7 @@ export function IndustryStep() {
               disabled={!canContinue}
               className={`w-full py-4 rounded-2xl text-[15px] font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
                 canContinue
-                  ? "bg-foreground text-white hover:opacity-90 cursor-pointer shadow-lg"
+                  ? "bg-foreground text-background hover:opacity-90 cursor-pointer shadow-lg"
                   : "bg-border-light text-text-tertiary cursor-not-allowed"
               }`}
             >
@@ -197,7 +197,7 @@ export function IndustryStep() {
                     onClick={() => setSelectedPersona(persona.id)}
                     className={`w-full text-left px-5 py-4 rounded-2xl transition-all duration-200 cursor-pointer flex items-center gap-4 ${
                       isSelected
-                        ? "bg-foreground text-white shadow-lg"
+                        ? "bg-foreground text-background shadow-lg"
                         : "bg-card-bg border border-border-light hover:border-foreground/20 hover:shadow-md"
                     }`}
                   >
@@ -232,7 +232,7 @@ export function IndustryStep() {
               disabled={!selectedPersona}
               className={`w-full py-4 rounded-2xl text-[15px] font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
                 selectedPersona
-                  ? "bg-foreground text-white hover:opacity-90 cursor-pointer shadow-lg"
+                  ? "bg-foreground text-background hover:opacity-90 cursor-pointer shadow-lg"
                   : "bg-border-light text-text-tertiary cursor-not-allowed"
               }`}
             >

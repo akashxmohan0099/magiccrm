@@ -2,15 +2,9 @@
 
 import { use } from "react";
 import dynamic from "next/dynamic";
-import { notFound, useSearchParams } from "next/navigation";
+import { notFound } from "next/navigation";
 import { getModuleBySlug } from "@/lib/module-registry";
-import { getCombinationBySlug } from "@/lib/module-combinations";
-import { getSchemaBySlug } from "@/lib/module-schemas";
 import { useModuleEnabled } from "@/hooks/useFeature";
-import { useActiveCombinations } from "@/hooks/useActiveCombinations";
-import { useAssembledSchemasStore } from "@/store/assembled-schemas";
-import { CombinedModulePage } from "@/components/modules/CombinedModulePage";
-import { SchemaModuleBridge } from "@/components/SchemaModuleBridge";
 import { PageTransition } from "@/components/ui/PageTransition";
 
 const MODULE_COMPONENTS: Record<string, React.ComponentType> = {
@@ -46,64 +40,18 @@ const MODULE_COMPONENTS: Record<string, React.ComponentType> = {
 
 export default function ModulePage({ params }: { params: Promise<{ moduleSlug: string }> }) {
   const { moduleSlug } = use(params);
-  const searchParams = useSearchParams();
-  const { activeCombinations } = useActiveCombinations();
   const mod = getModuleBySlug(moduleSlug);
-  const isLegacyModuleEnabled = useModuleEnabled(mod?.id ?? "__missing__");
+  const isModuleEnabled = useModuleEnabled(mod?.id ?? "__missing__");
 
-  const assembled = useAssembledSchemasStore((s) => s.assembled);
-  const assembledSchema = useAssembledSchemasStore((s) => s.getSchemaBySlug(moduleSlug));
-  const useSchemaRenderer = searchParams.get("renderer") === "schema";
+  if (!mod) notFound();
+  if (!isModuleEnabled) notFound();
 
-  // 1. Legacy hardcoded components (production default)
-  //    The legacy pages have full feature parity — calendar with drag-to-create,
-  //    setup checklists, widget system, polished forms. Schema renderer is opt-in
-  //    via ?renderer=schema until it reaches full parity.
-  if (mod) {
-    if (!isLegacyModuleEnabled) notFound();
-    const Component = MODULE_COMPONENTS[mod.id];
-    if (!Component) {
-      // No legacy component — try schema renderer as fallback
-      if (assembledSchema) {
-        return (
-          <PageTransition>
-            <SchemaModuleBridge schema={assembledSchema} />
-          </PageTransition>
-        );
-      }
-      notFound();
-    }
-    // Opt-in schema rendering for comparison/testing
-    if (useSchemaRenderer && assembledSchema) {
-      return (
-        <PageTransition>
-          <SchemaModuleBridge schema={assembledSchema} />
-        </PageTransition>
-      );
-    }
-    return (
-      <PageTransition>
-        <Component />
-      </PageTransition>
-    );
-  }
+  const Component = MODULE_COMPONENTS[mod.id];
+  if (!Component) notFound();
 
-  // 3. Combined module slug lookup
-  const combination = getCombinationBySlug(moduleSlug);
-  if (combination) {
-    const isActive = activeCombinations.some((c) => c.id === combination.id);
-    if (!isActive) notFound();
-
-    const initialTab = searchParams.get("tab") || undefined;
-    return (
-      <PageTransition>
-        <CombinedModulePage
-          combination={combination}
-          initialTab={initialTab}
-        />
-      </PageTransition>
-    );
-  }
-
-  notFound();
+  return (
+    <PageTransition>
+      <Component />
+    </PageTransition>
+  );
 }

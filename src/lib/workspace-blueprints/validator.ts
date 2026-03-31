@@ -11,7 +11,7 @@ import { getCombinationById, combinationsConflict } from "@/lib/module-combinati
 /** Always-on modules that don't need to be in enabledModules */
 const ALWAYS_ON_MODULES = new Set([
   "client-database",
-  "leads-pipeline",
+  "bookings-calendar",
   "communication",
   "quotes-invoicing",
 ]);
@@ -19,7 +19,7 @@ const ALWAYS_ON_MODULES = new Set([
 /** All known module IDs (always-on + optional) */
 const KNOWN_MODULES = new Set([
   ...ALWAYS_ON_MODULES,
-  "bookings-calendar",
+  "leads-pipeline",
   "jobs-projects",
   "marketing",
   "team",

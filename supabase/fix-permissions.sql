@@ -11,31 +11,33 @@
 -- Grant schema usage
 GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
 
--- Grant table access to all existing tables
-GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated;
+-- Revoke overly broad anonymous access. Public data should only be exposed
+-- through explicit RLS policies or server-side routes.
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM anon;
+REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM anon;
+REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA public FROM anon;
+
+-- Grant table access to application roles. Authenticated users remain bound
+-- by RLS; service_role bypasses RLS for trusted server-side work.
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO authenticated;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
-GRANT SELECT ON ALL TABLES IN SCHEMA public TO anon;
 
 -- Grant sequence access (needed for inserts with auto-generated IDs)
-GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO authenticated;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO authenticated;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO service_role;
-GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO anon;
 
 -- Grant function execution
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO authenticated;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO service_role;
-GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO anon;
 
--- Set default privileges so FUTURE tables also get grants automatically
+-- Set default privileges so future objects inherit the same access model
 ALTER DEFAULT PRIVILEGES IN SCHEMA public
-  GRANT ALL ON TABLES TO authenticated;
+  GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO authenticated;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public
   GRANT ALL ON TABLES TO service_role;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public
-  GRANT SELECT ON TABLES TO anon;
 
 ALTER DEFAULT PRIVILEGES IN SCHEMA public
-  GRANT ALL ON SEQUENCES TO authenticated;
+  GRANT USAGE, SELECT ON SEQUENCES TO authenticated;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public
   GRANT ALL ON SEQUENCES TO service_role;
 

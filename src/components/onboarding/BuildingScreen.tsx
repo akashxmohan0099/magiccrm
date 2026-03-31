@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useOnboardingStore } from "@/store/onboarding";
 import { useAssembledSchemasStore } from "@/store/assembled-schemas";
 import { computeEnabledModuleIds, getModuleById, getModuleDisplayName } from "@/lib/module-registry";
-import { assembleWorkspace, assembleWorkspaceSync } from "@/lib/assembly-pipeline";
+import { assembleWorkspaceSync } from "@/lib/assembly-pipeline";
 import { generateSampleData } from "@/lib/sample-data-generator";
 import { useClientsStore } from "@/store/clients";
 import { useLeadsStore } from "@/store/leads";
@@ -112,7 +112,6 @@ export function BuildingScreen() {
   const assemblyRan = useRef(false);
   const router = useRouter();
   const { businessContext, getIndustryConfig, needs, discoveryAnswers, selectedIndustry, selectedPersona } = useOnboardingStore();
-  const assembledSchemas = useAssembledSchemasStore((s) => s.schemas);
   const setAssemblyResult = useAssembledSchemasStore((s) => s.setAssemblyResult);
   const vocab = useVocabulary();
 
@@ -122,36 +121,21 @@ export function BuildingScreen() {
     return Array.from(computeEnabledModuleIds(needs, discoveryAnswers));
   }, [needs, discoveryAnswers]);
 
-  const assembledLabels = useMemo(
-    () =>
-      Object.fromEntries(
-        Object.values(assembledSchemas).map((schema) => [schema.id, schema.label]),
-      ),
-    [assembledSchemas],
-  );
-
   const moduleCount = selectedModules.length;
 
-  // ── Run assembly pipeline on mount ──
+  // ── Assemble schemas + seed sample data on mount ──
   useEffect(() => {
     if (assemblyRan.current) return;
     assemblyRan.current = true;
 
-    // Stage 1: run sync assembly immediately so the build UI and dashboard have
-    // deterministic schemas right away.
+    // Deterministic schema assembly (no AI call) — populates useModuleSchema for page headers
     const result = assembleWorkspaceSync({
       enabledModuleIds: selectedModules,
       industryId: selectedIndustry,
       personaId: selectedPersona,
     });
-
-    // Save assembled schemas to store
     setAssemblyResult(result.schemas, result.fallbacks, 0);
 
-    // Seed sample data directly into store state (bypasses validation,
-    // toast, and activity logging — which is exactly what we want for
-    // demo data). The sample records have pre-linked IDs so client
-    // references in bookings/invoices are valid.
     const sampleData = generateSampleData({
       industryId: selectedIndustry,
       personaId: selectedPersona,
@@ -178,32 +162,7 @@ export function BuildingScreen() {
     if (sampleData.jobs.length > 0) {
       useJobsStore.setState((s) => ({ jobs: [...s.jobs, ...sampleData.jobs.map(a)] }));
     }
-
-    // Stage 2: tune labels asynchronously and replace the assembled result
-    // when the personalized schemas are ready.
-    void assembleWorkspace({
-      enabledModuleIds: selectedModules,
-      industryId: selectedIndustry,
-      personaId: selectedPersona,
-      businessContext: {
-        businessName: businessContext.businessName,
-        businessDescription: businessContext.businessDescription,
-        location: businessContext.location,
-      },
-    }).then((tunedResult) => {
-      setAssemblyResult(tunedResult.schemas, tunedResult.fallbacks, tunedResult.durationMs);
-    }).catch(() => {
-      // Sync assembly is already stored. Ignore tuning failures and keep defaults.
-    });
-  }, [
-    selectedModules,
-    selectedIndustry,
-    selectedPersona,
-    businessContext.businessName,
-    businessContext.businessDescription,
-    businessContext.location,
-    setAssemblyResult,
-  ]);
+  }, [selectedModules, selectedIndustry, selectedPersona, businessContext.businessName]);
 
   // Generate deterministic particles (seeded from index to avoid impure Math.random during render)
   const particles = useMemo(() =>
@@ -366,9 +325,7 @@ export function BuildingScreen() {
             {selectedModules.map((modId, i) => {
               const Icon = ICON_MAP[modId] || Package;
               const mod = getModuleById(modId);
-              // Use assembled label (persona-specific) if available, fall back to registry name
-              const label = assembledLabels[modId]
-                || (mod ? getModuleDisplayName(mod, vocab) : (CATEGORY_LABELS[modId] || modId));
+              const label = mod ? getModuleDisplayName(mod, vocab) : (CATEGORY_LABELS[modId] || modId);
               const isRevealed = i < revealedModules;
 
               return (

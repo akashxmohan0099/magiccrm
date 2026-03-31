@@ -41,6 +41,8 @@ export interface ModuleFieldGroups {
   clients?: CustomFieldDefinition[];
   jobs?: CustomFieldDefinition[];
   bookings?: CustomFieldDefinition[];
+  leads?: CustomFieldDefinition[];
+  invoices?: CustomFieldDefinition[];
 }
 
 /** A relationship type between contacts */

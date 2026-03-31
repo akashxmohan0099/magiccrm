@@ -12,8 +12,7 @@ import { SelectField } from "@/components/ui/SelectField";
 import { TextArea } from "@/components/ui/TextArea";
 import { Button } from "@/components/ui/Button";
 import { FeatureSection } from "@/components/modules/FeatureSection";
-import { CustomFieldsSection } from "./CustomFieldsSection";
-import { SchemaCustomFields } from "@/components/modules/shared/SchemaCustomFields";
+import { CustomFieldsSection } from "@/components/modules/shared/CustomFieldsSection";
 
 interface ClientFormProps {
   open: boolean;
@@ -265,11 +264,6 @@ export function ClientForm({ open, onClose, client, onBeforeCreate }: ClientForm
           />
         )}
 
-        <SchemaCustomFields
-          moduleId="client-database"
-          values={form.customData || {}}
-          onChange={(id, val) => setForm((prev) => ({ ...prev, customData: { ...(prev.customData || {}), [id]: val } }))}
-        />
 
         <div className="flex justify-end gap-2 pt-4 border-t border-border-light">
           <Button variant="ghost" onClick={onClose}>

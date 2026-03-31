@@ -198,7 +198,7 @@ export function SignupStep() {
           disabled={!isValid || loading}
           className={`w-full py-4 rounded-2xl text-[15px] font-semibold transition-all duration-200 flex items-center justify-center gap-2 mt-2 ${
             isValid && !loading
-              ? "bg-foreground text-white hover:opacity-90 cursor-pointer shadow-lg"
+              ? "bg-foreground text-background hover:opacity-90 cursor-pointer shadow-lg"
               : "bg-border-light text-text-tertiary cursor-not-allowed"
           }`}
         >

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase-server";
 import { rateLimit } from "@/lib/rate-limit";
 import { generateId } from "@/lib/id";
+import { runAutomationRules } from "@/lib/server/automation-runner";
 
 /**
  * Public lead-capture endpoint. No auth required.
@@ -100,16 +101,11 @@ export async function POST(req: NextRequest) {
 
     // ---- fire automation trigger ----
     try {
-      const origin = req.nextUrl.origin;
-      await fetch(`${origin}/api/automations/run`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          workspaceId,
-          trigger: "lead-created",
-          entityId: leadId,
-          entityData: { type: "lead", table: "leads", name, email },
-        }),
+      await runAutomationRules({
+        workspaceId,
+        trigger: "lead-created",
+        entityId: leadId,
+        entityData: { type: "lead", table: "leads", name, email },
       });
     } catch {
       // Automation failures should not block the lead creation response

@@ -6,11 +6,11 @@ import { useClientsStore, DuplicateMatch } from "@/store/clients";
 import { useTeamStore } from "@/store/team";
 import { Client } from "@/types/models";
 import { useVocabulary } from "@/hooks/useVocabulary";
-import { useModuleSchema } from "@/hooks/useModuleSchema";
 import { useIndustryConfig } from "@/hooks/useIndustryConfig";
 import { useAuth } from "@/hooks/useAuth";
 import { FeatureSection } from "@/components/modules/FeatureSection";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { useModuleSchema } from "@/hooks/useModuleSchema";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { Button } from "@/components/ui/Button";
@@ -266,7 +266,7 @@ export function ClientsPage() {
     <div>
       <PageHeader
         title={ms.label || vocab.clients}
-        description={ms.description || `Manage your ${vocab.client.toLowerCase()} database`}
+        description={`Manage your ${vocab.client.toLowerCase()} database`}
         actions={
           <div className="flex items-center gap-3">
             <SearchInput
@@ -297,7 +297,7 @@ export function ClientsPage() {
         <EmptyState
           icon={<Users className="w-10 h-10" />}
           title={ms.emptyTitle || `No ${vocab.clients.toLowerCase()} yet`}
-          description={ms.emptyDescription || `Get started by importing your existing contacts or adding your first ${vocab.client.toLowerCase()}.`}
+          description={`Get started by importing your existing contacts or adding your first ${vocab.client.toLowerCase()}.`}
           setupSteps={[
             { label: `Add your first ${vocab.client.toLowerCase()}`, description: "Enter their details manually", action: () => setFormOpen(true) },
           ]}

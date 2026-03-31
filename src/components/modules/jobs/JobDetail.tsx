@@ -210,7 +210,7 @@ export function JobDetail({ open, onClose, jobId, onEdit }: JobDetailProps) {
               <div className="flex gap-2">
                 <input type="text" value={expDesc} onChange={(e) => setExpDesc(e.target.value)} placeholder="Description" className="flex-1 px-3 py-1.5 bg-surface border border-border-light rounded-lg text-[13px]" />
                 <input type="number" step="0.01" value={expAmount} onChange={(e) => setExpAmount(e.target.value)} placeholder="$" className="w-20 px-3 py-1.5 bg-surface border border-border-light rounded-lg text-[13px]" />
-                <button onClick={addExpense} className="px-3 py-1.5 bg-foreground text-white rounded-lg text-xs font-medium cursor-pointer">Add</button>
+                <button onClick={addExpense} className="px-3 py-1.5 bg-foreground text-background rounded-lg text-xs font-medium cursor-pointer">Add</button>
               </div>
             </div>
           </FeatureSection>

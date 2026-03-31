@@ -96,7 +96,7 @@ export function getAddonModules(): ModuleDefinition[] {
 
 export const ALWAYS_ON_MODULES = new Set([
   "client-database",
-  "leads-pipeline",
+  "bookings-calendar",
   "communication",
   "quotes-invoicing",
 ]);
@@ -106,7 +106,6 @@ export const MODULE_TO_NEED: Record<string, keyof NeedsAssessment> = {
   "client-database": "manageCustomers",
   "leads-pipeline": "receiveInquiries",
   "communication": "communicateClients",
-  "bookings-calendar": "acceptBookings",
   "quotes-invoicing": "sendInvoices",
   "jobs-projects": "manageProjects",
   "marketing": "runMarketing",

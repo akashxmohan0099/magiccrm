@@ -8,7 +8,7 @@ import type {
   DashboardWidgetInstance,
 } from "@/types/workspace-blueprint";
 import { getCombinationById } from "@/lib/module-combinations";
-import { getModuleById } from "@/lib/module-registry";
+import { getModuleById, getModuleBySlug } from "@/lib/module-registry";
 import { validateResolvedWorkspace, validatePatch } from "./validator";
 
 // ── Patch application ───────────────────────────────────────
@@ -17,7 +17,7 @@ export function applyPatches(
   presentation: WorkspacePresentationConfig,
   patches: PresentationPatch[],
 ): WorkspacePresentationConfig {
-  let result = structuredClone(presentation);
+  const result = structuredClone(presentation);
 
   for (const patch of patches) {
     switch (patch.op) {
@@ -122,7 +122,7 @@ export function safeBuildDraft(
   blueprint: WorkspaceBlueprint,
   adjustments: Record<string, string>,
 ): { functional: WorkspaceFunctionalConfig; presentation: WorkspacePresentationConfig } {
-  let functional = structuredClone(blueprint.functional);
+  const functional = structuredClone(blueprint.functional);
   let presentation = structuredClone(blueprint.presentation);
 
   for (const block of blueprint.adjustableBlocks) {
@@ -191,6 +191,16 @@ export function resolveWorkspace(
     ? safeApplyValidatedPatches(draft, aiPatches)
     : draft;
 
+  // 2b. Auto-include sidebar-referenced modules in enabledModules.
+  // Blueprints reference modules in their sidebar that may not be always-on
+  // (e.g. leads-pipeline). Ensure they're in enabledModules so validation passes.
+  for (const slug of presentation.sidebarOrder) {
+    const mod = getModuleBySlug(slug);
+    if (mod && !functional.enabledModules.includes(mod.id)) {
+      functional.enabledModules.push(mod.id);
+    }
+  }
+
   // 3. Validate the result
   const validation = validateResolvedWorkspace(functional, presentation);
   if (!validation.valid) {
@@ -214,13 +224,24 @@ export function resolveWorkspace(
 export function buildBaseResolvedWorkspace(
   blueprint: WorkspaceBlueprint,
 ): ResolvedWorkspace {
+  const functional = structuredClone(blueprint.functional);
+  const presentation = structuredClone(blueprint.presentation);
+
+  // Auto-include sidebar-referenced modules in enabledModules
+  for (const slug of presentation.sidebarOrder) {
+    const mod = getModuleBySlug(slug);
+    if (mod && !functional.enabledModules.includes(mod.id)) {
+      functional.enabledModules.push(mod.id);
+    }
+  }
+
   return {
     version: 1,
     resolvedAt: new Date().toISOString(),
     blueprintId: blueprint.id,
     appliedAdjustments: {},
     appliedPatches: [],
-    functional: structuredClone(blueprint.functional),
-    presentation: structuredClone(blueprint.presentation),
+    functional,
+    presentation,
   };
 }

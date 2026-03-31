@@ -40,6 +40,7 @@ export interface Lead {
   clientId?: string;
   lastContactedAt?: string;
   nextFollowUpDate?: string;
+  customData?: Record<string, unknown>;
   _isSample?: boolean;
   createdAt: string;
   updatedAt: string;
@@ -91,6 +92,7 @@ export interface Job {
   satisfactionRating?: number;
   satisfactionFeedback?: string;
   ratedAt?: string;
+  customData?: Record<string, unknown>;
   _isSample?: boolean;
   createdAt: string;
   updatedAt: string;
@@ -135,6 +137,7 @@ export interface Invoice {
   taxRate?: number;
   recurringSchedule?: "weekly" | "fortnightly" | "monthly" | "quarterly";
   lastRecurringDate?: string;
+  customData?: Record<string, unknown>;
   _isSample?: boolean;
   createdAt: string;
   updatedAt: string;
@@ -211,6 +214,7 @@ export interface Booking {
   satisfactionRating?: number;
   satisfactionFeedback?: string;
   ratedAt?: string;
+  customData?: Record<string, unknown>;
   _isSample?: boolean;
   createdAt: string;
   updatedAt: string;

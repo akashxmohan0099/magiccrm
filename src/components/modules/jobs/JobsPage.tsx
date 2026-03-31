@@ -10,6 +10,7 @@ import { useVocabulary } from "@/hooks/useVocabulary";
 import { useBaseIndustryConfig, useIndustryConfig } from "@/hooks/useIndustryConfig";
 import { FeatureSection } from "@/components/modules/FeatureSection";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { useModuleSchema } from "@/hooks/useModuleSchema";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { Button } from "@/components/ui/Button";
@@ -19,7 +20,6 @@ import { KanbanBoard, KanbanColumn } from "@/components/ui/KanbanBoard";
 import { ViewToggle } from "@/components/ui/ViewToggle";
 import { useTeamStore } from "@/store/team";
 import { useModuleEnabled } from "@/hooks/useFeature";
-import { useModuleSchema } from "@/hooks/useModuleSchema";
 import { JobForm } from "./JobForm";
 import { JobDetail } from "./JobDetail";
 import { StageSettingsCard } from "@/components/modules/shared/StageSettingsCard";
@@ -27,12 +27,12 @@ import { StageSettingsCard } from "@/components/modules/shared/StageSettingsCard
 type ViewMode = "list" | "board";
 
 export function JobsPage() {
-  const ms = useModuleSchema("jobs-projects");
   const { jobs, moveJob } = useJobsStore();
   const { clients } = useClientsStore();
   const { members } = useTeamStore();
   const teamEnabled = useModuleEnabled("team");
   const vocab = useVocabulary();
+  const ms = useModuleSchema("jobs-projects");
   const baseConfig = useBaseIndustryConfig();
   const config = useIndustryConfig();
   const setJobStages = useWorkflowSettingsStore((s) => s.setJobStages);
@@ -167,7 +167,7 @@ export function JobsPage() {
     <div>
       <PageHeader
         title={ms.label || vocab.jobs}
-        description={ms.description || `Track your ${vocab.jobs.toLowerCase()}, tasks, and progress`}
+        description={`Track your ${vocab.jobs.toLowerCase()}, tasks, and progress`}
         actions={
           <Button onClick={handleNewJob}>
             <Plus className="w-4 h-4" />
@@ -231,8 +231,8 @@ export function JobsPage() {
       {filtered.length === 0 ? (
         <EmptyState
           icon={<Briefcase className="w-10 h-10" />}
-          title={ms.emptyTitle || `No ${vocab.jobs.toLowerCase()} yet`}
-          description={ms.emptyDescription || `Create your first ${vocab.job.toLowerCase()} to start tracking work, tasks, and time.`}
+          title={`No ${vocab.jobs.toLowerCase()} yet`}
+          description={`Create your first ${vocab.job.toLowerCase()} to start tracking work, tasks, and time.`}
           actionLabel={ms.primaryAction || vocab.addJob}
           onAction={handleNewJob}
         />

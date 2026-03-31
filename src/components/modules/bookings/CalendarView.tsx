@@ -482,7 +482,7 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
                     const isToday = dateKey === todayKey;
                     return (
                       <button key={idx} onClick={() => { setCurrentDate(new Date(dateKey + "T00:00:00")); setMode("today"); }} className={`relative min-h-[80px] p-1.5 text-left border-b border-r border-border-light transition-colors cursor-pointer ${!inMonth ? "bg-surface/30" : "hover:bg-surface/50"}`}>
-                        <span className={`text-xs font-medium inline-flex items-center justify-center w-6 h-6 rounded-full ${isToday ? "bg-foreground text-white" : inMonth ? "text-foreground" : "text-text-tertiary/40"}`}>{day}</span>
+                        <span className={`text-xs font-medium inline-flex items-center justify-center w-6 h-6 rounded-full ${isToday ? "bg-foreground text-background" : inMonth ? "text-foreground" : "text-text-tertiary/40"}`}>{day}</span>
                         <div className="mt-0.5 space-y-0.5">
                           {dayBookings.slice(0, 2).map((b) => (
                             <div key={b.id} className={`text-[10px] px-1.5 py-0.5 rounded truncate ${getBookingStyle(b)}`}>
@@ -578,7 +578,7 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
             <div className="flex gap-2">
               <button
                 onClick={() => { closePreview(); onBookingClick(previewBooking); }}
-                className="flex-1 px-3 py-1.5 bg-foreground text-white rounded-lg text-xs font-medium cursor-pointer hover:opacity-90 transition-opacity"
+                className="flex-1 px-3 py-1.5 bg-foreground text-background rounded-lg text-xs font-medium cursor-pointer hover:opacity-90 transition-opacity"
               >
                 Edit
               </button>

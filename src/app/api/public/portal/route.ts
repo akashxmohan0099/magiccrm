@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase-server";
 import { rateLimit } from "@/lib/rate-limit";
+import { buildPublicInvoicePaymentUrl } from "@/lib/public-invoice-payments";
 
 /**
  * Public portal API — serves client-facing portal data.
@@ -67,23 +68,84 @@ export async function GET(req: NextRequest) {
     if (config.showBookings) {
       const { data: bookings } = await supabase
         .from("bookings")
-        .select("id, service_name, date, time, status, duration_minutes")
+        .select("id, service_name, date, start_at, end_at, status")
         .eq("workspace_id", workspaceId)
         .eq("client_id", clientId)
         .order("date", { ascending: false })
         .limit(20);
-      results.bookings = bookings ?? [];
+
+      results.bookings = (bookings ?? []).map((booking) => {
+        const startAt = booking.start_at ? new Date(booking.start_at) : null;
+        const endAt = booking.end_at ? new Date(booking.end_at) : null;
+        const durationMinutes =
+          startAt && endAt
+            ? Math.max(0, Math.round((endAt.getTime() - startAt.getTime()) / 60000))
+            : undefined;
+
+        return {
+          id: booking.id,
+          service_name: booking.service_name,
+          date: booking.date || booking.start_at,
+          time: startAt
+            ? startAt.toLocaleTimeString("en-AU", {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: false,
+              })
+            : undefined,
+          status: booking.status,
+          duration_minutes: durationMinutes,
+        };
+      });
     }
 
     if (config.showInvoices) {
       const { data: invoices } = await supabase
         .from("invoices")
-        .select("id, number, status, total, due_date, paid_at, created_at, payment_link")
+        .select("id, number, status, due_date, paid_at, created_at, client_id")
         .eq("workspace_id", workspaceId)
         .eq("client_id", clientId)
         .order("created_at", { ascending: false })
         .limit(20);
-      results.invoices = invoices ?? [];
+
+      const invoiceIds = (invoices ?? []).map((invoice) => invoice.id);
+      const { data: lineItems } = invoiceIds.length
+        ? await supabase
+            .from("invoice_line_items")
+            .select("invoice_id, quantity, unit_price, discount")
+            .in("invoice_id", invoiceIds)
+        : { data: [] };
+
+      const totals = new Map<string, number>();
+      for (const lineItem of lineItems ?? []) {
+        const amount =
+          Number(lineItem.quantity ?? 0) * Number(lineItem.unit_price ?? 0) -
+          Number(lineItem.discount ?? 0);
+        totals.set(
+          lineItem.invoice_id,
+          (totals.get(lineItem.invoice_id) ?? 0) + amount,
+        );
+      }
+
+      results.invoices = (invoices ?? []).map((invoice) => ({
+        id: invoice.id,
+        number: invoice.number,
+        status: invoice.status,
+        total: totals.get(invoice.id) ?? 0,
+        due_date: invoice.due_date,
+        paid_at: invoice.paid_at,
+        created_at: invoice.created_at,
+        payment_link:
+          invoice.status !== "paid" && invoice.status !== "cancelled"
+            ? buildPublicInvoicePaymentUrl({
+                origin: req.nextUrl.origin,
+                invoiceId: invoice.id,
+                workspaceId,
+                clientId,
+                returnTo: `/portal/${access.id}`,
+              })
+            : undefined,
+      }));
     }
 
     if (config.showDocuments) {

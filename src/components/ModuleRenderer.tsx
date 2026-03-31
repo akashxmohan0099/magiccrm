@@ -177,7 +177,7 @@ export function ModuleRenderer({
             {schema.capabilities.canCreate && (
               <button
                 onClick={() => setFormOpen(true)}
-                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-foreground text-white rounded-xl text-[13px] font-medium hover:opacity-90 transition-opacity cursor-pointer"
+                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-foreground text-background rounded-xl text-[13px] font-medium hover:opacity-90 transition-opacity cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span className="hidden sm:inline">{schema.primaryAction?.label || "Add"}</span>

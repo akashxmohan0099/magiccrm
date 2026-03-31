@@ -14,8 +14,8 @@ import { usePaymentsStore } from "@/store/payments";
 import { useBookingsStore } from "@/store/bookings";
 import { useInvoicesStore } from "@/store/invoices";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { FeatureSection } from "@/components/modules/FeatureSection";
 import { useModuleSchema } from "@/hooks/useModuleSchema";
+import { FeatureSection } from "@/components/modules/FeatureSection";
 import { ActivityFeed } from "./ActivityFeed";
 import { ExportReports } from "./ExportReports";
 import { GoalTracking } from "./GoalTracking";
@@ -62,7 +62,7 @@ export function ReportingPage() {
     <div>
       <PageHeader
         title={ms.label || "Reporting"}
-        description={ms.description || "See how your business is actually doing"}
+        description={"See how your business is actually doing"}
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">

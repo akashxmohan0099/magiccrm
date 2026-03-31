@@ -7,6 +7,7 @@ import { useClientsStore } from "@/store/clients";
 import { Booking } from "@/types/models";
 import { useVocabulary } from "@/hooks/useVocabulary";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { useModuleSchema } from "@/hooks/useModuleSchema";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { DataTable, Column } from "@/components/ui/DataTable";
@@ -23,17 +24,16 @@ import { TextArea } from "@/components/ui/TextArea";
 import { ViewToggle } from "@/components/ui/ViewToggle";
 import { useTeamStore } from "@/store/team";
 import { useModuleEnabled } from "@/hooks/useFeature";
-import { useModuleSchema } from "@/hooks/useModuleSchema";
 
 type ViewMode = "list" | "calendar";
 
 export function BookingsPage() {
-  const ms = useModuleSchema("bookings-calendar");
   const { bookings, deleteBooking: _deleteBooking, cancellationPolicy, setCancellationPolicy } = useBookingsStore();
   const { clients } = useClientsStore();
   const { members } = useTeamStore();
   const teamEnabled = useModuleEnabled("team");
   const vocab = useVocabulary();
+  const ms = useModuleSchema("bookings-calendar");
   const [view, setView] = useState<ViewMode>("calendar");
   const [search, setSearch] = useState("");
   const [teamView, setTeamView] = useState<"my" | "team">("team");
@@ -146,7 +146,7 @@ export function BookingsPage() {
     <div>
       <PageHeader
         title={ms.label || "Scheduling"}
-        description={ms.description || `Schedule ${vocab.bookings.toLowerCase()} and manage your calendar.`}
+        description={`Schedule ${vocab.bookings.toLowerCase()} and manage your calendar.`}
         actions={
           <Button variant="primary" size="sm" onClick={handleAdd}>
             <Plus className="w-4 h-4 mr-1.5" />
@@ -197,8 +197,8 @@ export function BookingsPage() {
       {bookings.length === 0 ? (
         <EmptyState
           icon={<Calendar className="w-10 h-10" />}
-          title={ms.emptyTitle || `No ${vocab.bookings.toLowerCase()} yet`}
-          description={ms.emptyDescription || `Set up your scheduling first, then start taking ${vocab.bookings.toLowerCase()}.`}
+          title={`No ${vocab.bookings.toLowerCase()} yet`}
+          description={`Set up your scheduling first, then start taking ${vocab.bookings.toLowerCase()}.`}
           setupSteps={[
             { label: `Create your first ${vocab.booking.toLowerCase()}`, description: "Or wait for clients to book you", action: handleAdd },
           ]}
