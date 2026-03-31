@@ -63,13 +63,27 @@ export async function POST(req: NextRequest) {
     const { workspaceId, businessName } = resolvedWorkspace;
     const supabase = await createAdminClient();
 
-    // ---- fetch the service ----
-    const { data: service } = await supabase
+    // ---- fetch the service (try services table, fall back to products) ----
+    let service: { id: string; name: string; duration: number; price: number } | null = null;
+
+    const { data: svc } = await supabase
       .from("services")
-      .select("*")
+      .select("id, name, duration, price")
       .eq("id", serviceId)
       .eq("workspace_id", workspaceId)
-      .single();
+      .maybeSingle();
+
+    if (svc) {
+      service = svc;
+    } else {
+      const { data: prod } = await supabase
+        .from("products")
+        .select("id, name, duration, price")
+        .eq("id", serviceId)
+        .eq("workspace_id", workspaceId)
+        .maybeSingle();
+      if (prod) service = prod;
+    }
 
     if (!service) {
       return NextResponse.json({ error: "Service not found" }, { status: 404 });
@@ -240,6 +254,41 @@ export async function POST(req: NextRequest) {
         // SMS failure should not block booking confirmation
         // Twilio may not be configured for all workspaces
       }
+    }
+
+    // ---- send confirmation email via Resend (non-critical) ----
+    try {
+      const resendKey = process.env.RESEND_API_KEY;
+      if (resendKey && clientEmail) {
+        const { Resend } = await import("resend");
+        const resend = new Resend(resendKey);
+        const formattedDate = new Date(`${date}T12:00:00`).toLocaleDateString("en-AU", {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+        await resend.emails.send({
+          from: `${businessName} <bookings@magiccrm.app>`,
+          to: clientEmail,
+          subject: `Booking Confirmed — ${service.name} on ${formattedDate}`,
+          html: `
+            <div style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;">
+              <h1 style="font-size:20px;font-weight:700;color:#111;margin:0 0 8px;">Booking Confirmed</h1>
+              <p style="font-size:14px;color:#666;margin:0 0 24px;">${businessName}</p>
+              <div style="background:#f9f9f9;border-radius:12px;padding:20px;margin-bottom:24px;">
+                <p style="margin:0 0 12px;"><strong style="color:#111;">Service:</strong> <span style="color:#333;">${service.name}</span></p>
+                <p style="margin:0 0 12px;"><strong style="color:#111;">Date:</strong> <span style="color:#333;">${formattedDate}</span></p>
+                <p style="margin:0 0 12px;"><strong style="color:#111;">Time:</strong> <span style="color:#333;">${time} — ${endTime}</span></p>
+                ${service.price ? `<p style="margin:0;"><strong style="color:#111;">Price:</strong> <span style="color:#333;">$${Number(service.price).toFixed(2)}</span></p>` : ""}
+              </div>
+              <p style="font-size:12px;color:#999;margin:0;">Powered by Magic</p>
+            </div>
+          `,
+        });
+      }
+    } catch {
+      // Email failure should not block booking confirmation
     }
 
     return NextResponse.json({

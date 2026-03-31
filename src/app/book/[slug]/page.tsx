@@ -110,6 +110,7 @@ export default function PublicBookingPage() {
   const [error, setError] = useState<string | null>(null);
   const [workspaceId, setWorkspaceId] = useState<string | null>(null);
   const [businessName, setBusinessName] = useState("Business");
+  const [brandColor, setBrandColor] = useState("#34D399");
   const [services, setServices] = useState<Service[]>([]);
   const [availability, setAvailability] = useState<AvailabilitySlot[]>([]);
 
@@ -149,6 +150,7 @@ export default function PublicBookingPage() {
         const data = await res.json();
         setWorkspaceId(data.workspaceId);
         setBusinessName(data.businessName || "Business");
+        setBrandColor(data.brandColor || "#34D399");
         setServices(data.services || []);
         setAvailability(data.availability || []);
       } catch {
@@ -311,14 +313,22 @@ export default function PublicBookingPage() {
 
   // ---- STEP 4: Confirmation ----
   if (step === "confirmation" && confirmation) {
+    // Build Google Calendar link
+    const calStart = `${confirmation.date.replace(/-/g, "")}T${confirmation.time.replace(":", "")}00`;
+    const calEnd = `${confirmation.date.replace(/-/g, "")}T${confirmation.endTime.replace(":", "")}00`;
+    const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(confirmation.serviceName + " at " + businessName)}&dates=${calStart}/${calEnd}&details=${encodeURIComponent("Booked via " + businessName)}`;
+
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
         <div className="max-w-md w-full text-center space-y-5">
-          <div className="mx-auto w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
-            <CheckCircle2 className="w-8 h-8 text-green-600" />
+          <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: `${brandColor}20` }}>
+            <CheckCircle2 className="w-8 h-8" style={{ color: brandColor }} />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Booking Confirmed!</h1>
-          <div className="bg-card-bg rounded-2xl border border-gray-200 p-6 text-left space-y-3">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Booking Confirmed!</h1>
+            <p className="text-sm text-gray-500 mt-1">{businessName}</p>
+          </div>
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 text-left space-y-3">
             <div>
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Service</p>
               <p className="text-sm font-medium text-gray-900">{confirmation.serviceName}</p>
@@ -342,6 +352,16 @@ export default function PublicBookingPage() {
               )}
             </div>
           </div>
+          <a
+            href={gcalUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors hover:opacity-80"
+            style={{ backgroundColor: brandColor, color: "#fff" }}
+          >
+            <Calendar className="w-4 h-4" />
+            Add to Google Calendar
+          </a>
           <p className="text-xs text-gray-400">
             A confirmation has been sent to {clientEmail}.
           </p>
@@ -356,7 +376,7 @@ export default function PublicBookingPage() {
       <div className="max-w-lg mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="w-12 h-12 rounded-full bg-gray-900 flex items-center justify-center mx-auto mb-3">
+          <div style={{ backgroundColor: brandColor }} className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
             <Calendar className="w-5 h-5 text-white" />
           </div>
           <h1 className="text-xl font-bold text-gray-900 tracking-tight">{businessName}</h1>

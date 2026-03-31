@@ -84,16 +84,46 @@ export async function GET(req: NextRequest) {
       ];
     }
 
+    // ---- fetch brand settings ----
+    const { data: wsSettings } = await supabase
+      .from("workspace_settings")
+      .select("brand")
+      .eq("workspace_id", workspaceId)
+      .maybeSingle();
+
+    const brand = (wsSettings?.brand as { brandColor?: string; logoBase64?: string } | null) ?? {};
+
+    // ---- if no services table rows, try products table as fallback ----
+    let serviceList = (services ?? []).map((s) => ({
+      id: s.id,
+      name: s.name,
+      duration: Number(s.duration ?? 60),
+      price: Number(s.price ?? 0),
+      category: s.category as string ?? "",
+    }));
+
+    if (serviceList.length === 0) {
+      const { data: products } = await supabase
+        .from("products")
+        .select("id, name, duration, price, category")
+        .eq("workspace_id", workspaceId)
+        .order("name", { ascending: true });
+
+      serviceList = (products ?? []).map((p) => ({
+        id: p.id,
+        name: p.name,
+        duration: Number(p.duration ?? 60),
+        price: Number(p.price ?? 0),
+        category: (p.category as string) ?? "",
+      }));
+    }
+
     return NextResponse.json({
       workspaceId,
       businessName,
-      services: (services ?? []).map((s) => ({
-        id: s.id,
-        name: s.name,
-        duration: s.duration,
-        price: s.price,
-        category: s.category,
-      })),
+      brandColor: brand.brandColor || "#34D399",
+      logoBase64: brand.logoBase64 || "",
+      services: serviceList,
       availability,
     });
   } catch (error) {

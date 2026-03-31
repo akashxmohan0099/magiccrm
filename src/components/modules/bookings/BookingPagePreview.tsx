@@ -4,6 +4,8 @@ import { useState } from "react";
 import { ExternalLink, Copy, Check, Clock, ArrowUpRight } from "lucide-react";
 import { useBookingsStore } from "@/store/bookings";
 import { useServicesStore } from "@/store/services";
+import { useAuth } from "@/hooks/useAuth";
+import { useOnboardingStore } from "@/store/onboarding";
 import { Button } from "@/components/ui/Button";
 
 const MOCK_SLOTS = ["9:00 AM", "10:00 AM", "11:00 AM", "1:00 PM", "2:00 PM", "3:00 PM"];
@@ -11,25 +13,14 @@ const MOCK_SLOTS = ["9:00 AM", "10:00 AM", "11:00 AM", "1:00 PM", "2:00 PM", "3:
 export function BookingPagePreview() {
   const { availability } = useBookingsStore();
   const { services } = useServicesStore();
+  const { workspaceId } = useAuth();
+  const businessName = useOnboardingStore((s) => s.businessContext.businessName);
   const [copied, setCopied] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
 
   const enabledDays = availability.filter((s) => s.enabled).length;
-
-  // Build the booking page URL using the workspace ID from localStorage or a slug
-  const getBookingUrl = () => {
-    const origin = typeof window !== "undefined" ? window.location.origin : "";
-    // Try to get workspace ID from URL (dashboard/[workspaceId]/...) or use generic path
-    const pathParts = typeof window !== "undefined" ? window.location.pathname.split("/") : [];
-    const dashIdx = pathParts.indexOf("dashboard");
-    // The workspace ID might be stored elsewhere; for now use a generic approach
-    // The booking page supports workspace ID as the slug
-    const wsId = dashIdx >= 0 && pathParts[dashIdx + 1] ? pathParts[dashIdx + 1] : "";
-    // Also check if there's a workspace ID in the page context
-    return `${origin}/book/${wsId || "preview"}`;
-  };
-
-  const bookingUrl = getBookingUrl();
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const bookingUrl = `${origin}/book/${workspaceId || "preview"}`;
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(bookingUrl).catch(() => {});
@@ -90,7 +81,7 @@ export function BookingPagePreview() {
           <div className="w-12 h-12 rounded-full bg-surface flex items-center justify-center mx-auto mb-3">
             <ExternalLink className="w-5 h-5 text-foreground" />
           </div>
-          <h4 className="text-base font-semibold text-foreground">Your Business Name</h4>
+          <h4 className="text-base font-semibold text-foreground">{businessName || "Your Business"}</h4>
           <p className="text-xs text-text-secondary mt-1">
             {enabledDays} day{enabledDays !== 1 ? "s" : ""} available for booking
           </p>
