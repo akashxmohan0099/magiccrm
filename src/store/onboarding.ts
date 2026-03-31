@@ -25,8 +25,8 @@ interface AIQuestionCategory {
   questions: { question: string; module: string }[];
 }
 
-// Step constants (0=Welcome, 1=Persona+Business, 2=Signup)
-const FINAL_STEP_INDEX = 2;
+// Step constants (0=Welcome, 1=Persona+Business, 2=Operating Questions, 3=Signup)
+const FINAL_STEP_INDEX = 3;
 export const TOTAL_PROGRESS_STEPS = FINAL_STEP_INDEX + 1;
 
 interface OnboardingStore {
@@ -36,6 +36,11 @@ interface OnboardingStore {
   businessContext: BusinessContext;
   needs: NeedsAssessment;
   teamSize: TeamSize;
+  operatingModel: {
+    workLocation: "" | "fixed" | "mobile" | "both";
+    clientele: "" | "women" | "men" | "everyone";
+    sellProducts: boolean;
+  };
   featureSelections: Record<string, FeatureDetail[]>;
   discoveryAnswers: Record<string, boolean>;
   isBuilding: boolean;
@@ -66,6 +71,7 @@ interface OnboardingStore {
   toggleNeed: (key: keyof NeedsAssessment) => void;
   applySmartDefaults: () => void;
   setTeamSize: (size: TeamSize) => void;
+  setOperatingModel: (model: Partial<{ workLocation: "" | "fixed" | "mobile" | "both"; clientele: "" | "women" | "men" | "everyone"; sellProducts: boolean }>) => void;
   setFeatureSelections: (categoryId: string, features: FeatureDetail[]) => void;
   toggleFeature: (categoryId: string, featureId: string) => void;
   hasAtLeastOneNeed: () => boolean;
@@ -97,6 +103,7 @@ function getOnboardingData(state: OnboardingStore) {
     businessContext: state.businessContext,
     needs: state.needs,
     teamSize: state.teamSize,
+    operatingModel: state.operatingModel,
     featureSelections: state.featureSelections,
     discoveryAnswers: state.discoveryAnswers,
     // isBuilding is transient UI state (animation only) — always false when persisting
@@ -143,6 +150,11 @@ export const useOnboardingStore = create<OnboardingStore>()(
         manageDocuments: false,
       },
       teamSize: "",
+      operatingModel: {
+        workLocation: "",
+        clientele: "",
+        sellProducts: false,
+      },
       featureSelections: {},
       discoveryAnswers: {},
       isBuilding: false,
@@ -227,6 +239,8 @@ export const useOnboardingStore = create<OnboardingStore>()(
       },
 
       setTeamSize: (size) => set({ teamSize: size }),
+      setOperatingModel: (model: Partial<{ workLocation: "" | "fixed" | "mobile" | "both"; clientele: "" | "women" | "men" | "everyone"; sellProducts: boolean }>) =>
+        set((s) => ({ operatingModel: { ...s.operatingModel, ...model } })),
 
       setFeatureSelections: (categoryId, features) =>
         set((s) => ({

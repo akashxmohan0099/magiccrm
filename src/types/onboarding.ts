@@ -40,14 +40,24 @@ export interface IndustryConfig {
   descriptionPlaceholder: string;
   // Example business names
   namePlaceholder: string;
+  // Persona categories for the two-step picker
+  categories?: PersonaCategory[];
   // Role-specific personas within this industry
   personas?: PersonaConfig[];
+}
+
+export interface PersonaCategory {
+  id: string;
+  label: string;
+  icon: string; // lucide icon name
+  personaIds: string[];
 }
 
 export interface PersonaConfig {
   id: string;
   label: string;
   description: string;
+  category: string; // matches PersonaCategory.id
   // Only specify differences from industry defaults
   smartDefaultOverrides?: Partial<Record<keyof NeedsAssessment, boolean>>;
   questionOverrides?: Partial<Record<keyof NeedsAssessment, { label: string; subtitle: string }>>;
@@ -84,49 +94,94 @@ export const INDUSTRY_CONFIGS: IndustryConfig[] = [
     descriptionPlaceholder: "e.g. Mobile lash technician in Brisbane",
     namePlaceholder: "e.g. Glow Studio",
     suggestedTeamSize: "Just me",
+    categories: [
+      { id: "hair", label: "Hair & Cuts", icon: "Scissors", personaIds: ["hair-salon", "barber"] },
+      { id: "nails", label: "Nails", icon: "Paintbrush", personaIds: ["nail-tech"] },
+      { id: "lashes-brows", label: "Lashes & Brows", icon: "Eye", personaIds: ["lash-brow-tech", "cosmetic-tattoo"] },
+      { id: "skin-body", label: "Skin & Body", icon: "Sparkles", personaIds: ["esthetician", "spa-massage"] },
+      { id: "makeup", label: "Makeup", icon: "Palette", personaIds: ["makeup-artist"] },
+      { id: "multi-service", label: "Multi-Service", icon: "Building2", personaIds: ["beauty-salon"] },
+    ],
     personas: [
+      // ── Hair ──
       {
         id: "hair-salon",
-        label: "Hair Salon / Hairstylist",
-        description: "Solo stylist or multi-chair salon",
+        label: "Hairstylist",
+        description: "Cuts, colour, styling, treatments",
+        category: "hair",
         suggestedTeamSize: "2-5",
         descriptionPlaceholder: "e.g. Boutique hair salon in Surry Hills",
       },
       {
         id: "barber",
-        label: "Barber / Barbershop",
-        description: "Classic cuts and grooming",
+        label: "Barber",
+        description: "Men's cuts, fades, beard grooming",
+        category: "hair",
         suggestedTeamSize: "2-5",
         descriptionPlaceholder: "e.g. Classic barbershop in the CBD",
         namePlaceholder: "e.g. The Sharp Edge",
       },
+      // ── Nails ──
       {
         id: "nail-tech",
-        label: "Nail Tech / Nail Salon",
-        description: "Manicures, acrylics, nail art",
+        label: "Nail Tech",
+        description: "Gel, acrylic, SNS, nail art",
+        category: "nails",
         descriptionPlaceholder: "e.g. Gel nails and nail art in Bondi",
         namePlaceholder: "e.g. Polished by Sarah",
       },
+      // ── Lashes & Brows ──
       {
         id: "lash-brow-tech",
         label: "Lash & Brow Tech",
-        description: "Extensions, lifts, microblading",
+        description: "Extensions, lifts, lamination, tinting",
+        category: "lashes-brows",
         descriptionPlaceholder: "e.g. Lash extensions and brow styling",
         namePlaceholder: "e.g. Lash Lab Co",
       },
       {
-        id: "makeup-artist",
-        label: "Makeup Artist",
-        description: "Bridal, events, editorial",
-        descriptionPlaceholder: "e.g. Bridal and editorial makeup artist in Melbourne",
+        id: "cosmetic-tattoo",
+        label: "Cosmetic Tattoo Artist",
+        description: "Microblading, lip blush, eyeliner",
+        category: "lashes-brows",
+        descriptionPlaceholder: "e.g. Semi-permanent brows and lips",
+        namePlaceholder: "e.g. Ink & Brow Studio",
+      },
+      // ── Skin & Body ──
+      {
+        id: "esthetician",
+        label: "Esthetician / Skin Therapist",
+        description: "Facials, peels, skin treatments",
+        category: "skin-body",
+        descriptionPlaceholder: "e.g. Clinical facials and skin therapy",
+        namePlaceholder: "e.g. Skin by Sarah",
       },
       {
         id: "spa-massage",
-        label: "Spa / Massage",
-        description: "Day spas, remedial, relaxation",
+        label: "Massage Therapist",
+        description: "Remedial, relaxation, deep tissue",
+        category: "skin-body",
         suggestedTeamSize: "2-5",
-        descriptionPlaceholder: "e.g. Relaxation and remedial massage studio",
+        descriptionPlaceholder: "e.g. Relaxation and remedial massage",
         namePlaceholder: "e.g. Serenity Day Spa",
+      },
+      // ── Makeup ──
+      {
+        id: "makeup-artist",
+        label: "Makeup Artist",
+        description: "Bridal, events, editorial, lessons",
+        category: "makeup",
+        descriptionPlaceholder: "e.g. Bridal and editorial makeup artist",
+      },
+      // ── Multi-Service ──
+      {
+        id: "beauty-salon",
+        label: "Beauty Salon / Studio",
+        description: "Hair, nails, skin, and more under one roof",
+        category: "multi-service",
+        suggestedTeamSize: "2-5",
+        descriptionPlaceholder: "e.g. Full-service beauty studio in Bondi",
+        namePlaceholder: "e.g. Glow Beauty Studio",
       },
     ],
   },

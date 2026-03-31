@@ -194,6 +194,77 @@ function spaMassageData(): DataPack {
   };
 }
 
+function cosmeticTattooData(): DataPack {
+  const c1 = rec({ name: "Lauren M.", email: "", phone: "", status: "vip", tags: ["brows"], notes: "Microblading touch-up due in 6 weeks", source: "instagram", customData: { skinType: "combination", pigmentBrand: "PhiBrows" } });
+  const c2 = rec({ name: "Nina S.", email: "", phone: "", status: "active", tags: ["lips"], notes: "Lip blush completed, very happy with result", source: "referral" });
+
+  const p1 = rec({ name: "Microblading", description: "Consultation + procedure + 6-week touch-up", price: 450, category: "Brows", duration: 120, inStock: true });
+  const p2 = rec({ name: "Lip Blush", description: "Natural lip tint with semi-permanent pigment", price: 400, category: "Lips", duration: 120, inStock: true });
+  const p3 = rec({ name: "Consultation", description: "Shape design, colour match, patch test", price: 0, category: "Consults", duration: 30, inStock: true });
+
+  return {
+    clients: [c1, c2],
+    products: [p1, p2, p3],
+    bookings: [
+      rec({ title: "Microblading Touch-Up — Lauren", clientId: c1.id, date: daysFromNow(2), startTime: time(10), endTime: time(11), status: "confirmed", price: 150, serviceName: "Touch-Up", serviceId: p1.id, notes: "" }),
+      rec({ title: "Lip Blush — Nina", clientId: c2.id, date: daysAgo(3), startTime: time(13), endTime: time(15), status: "completed", price: 400, serviceName: "Lip Blush", serviceId: p2.id, notes: "" }),
+    ],
+    leads: [
+      rec({ name: "Kate R.", email: "", phone: "", stage: "new", value: 450, source: "instagram", notes: "Wants microblading, concerned about pain level" }),
+    ],
+    invoices: [
+      rec({ number: "INV-001", clientId: c2.id, lineItems: [{ id: generateId(), description: "Lip Blush Procedure", quantity: 1, unitPrice: 400 }], status: "paid", dueDate: daysAgo(3), notes: "", taxRate: 10, paidAmount: 440 }),
+    ],
+  };
+}
+
+function estheticianData(): DataPack {
+  const c1 = rec({ name: "Chloe W.", email: "", phone: "", status: "vip", tags: ["regular"], notes: "Monthly facial, sensitive to retinol", source: "referral", customData: { skinType: "sensitive", skinConcerns: "rosacea, dehydration" } });
+  const c2 = rec({ name: "Megan T.", email: "", phone: "", status: "active", tags: ["acne"], notes: "6-week peel program", source: "website" });
+
+  const p1 = rec({ name: "Signature Facial", description: "Deep cleanse, extraction, mask, LED", price: 120, category: "Facials", duration: 60, inStock: true });
+  const p2 = rec({ name: "Chemical Peel", description: "AHA/BHA peel with calming recovery", price: 150, category: "Treatments", duration: 45, inStock: true });
+  const p3 = rec({ name: "Skin Consultation", description: "Skin analysis + treatment plan", price: 0, category: "Consults", duration: 30, inStock: true });
+
+  return {
+    clients: [c1, c2],
+    products: [p1, p2, p3],
+    bookings: [
+      rec({ title: "Signature Facial — Chloe", clientId: c1.id, date: daysFromNow(1), startTime: time(10), endTime: time(11), status: "confirmed", price: 120, serviceName: "Signature Facial", serviceId: p1.id, notes: "" }),
+      rec({ title: "Chemical Peel — Megan", clientId: c2.id, date: daysFromNow(4), startTime: time(14), endTime: time(14, 45), status: "pending", price: 150, serviceName: "Chemical Peel", serviceId: p2.id, notes: "" }),
+    ],
+    leads: [
+      rec({ name: "Amy R.", email: "", phone: "", stage: "new", value: 120, source: "instagram", notes: "Asking about anti-ageing facials" }),
+    ],
+    invoices: [
+      rec({ number: "RCT-001", clientId: c1.id, lineItems: [{ id: generateId(), description: "Signature Facial", quantity: 1, unitPrice: 120 }], status: "paid", dueDate: daysAgo(5), notes: "", taxRate: 10, paidAmount: 132 }),
+    ],
+  };
+}
+
+function beautySalonData(): DataPack {
+  const c1 = rec({ name: "Sarah M.", email: "", phone: "", status: "vip", tags: ["regular"], notes: "Hair + nails every 4 weeks", source: "referral", customData: { preferredServices: "colour, gel manicure" } });
+  const c2 = rec({ name: "Emma R.", email: "", phone: "", status: "active", tags: [], notes: "", source: "walk-in" });
+  const c3 = rec({ name: "Jessica T.", email: "", phone: "", status: "active", tags: ["facial"], notes: "New client, booked express facial", source: "website" });
+
+  const p1 = rec({ name: "Women's Cut & Blowdry", description: "Cut, wash, and blowdry", price: 65, category: "Hair", duration: 45, inStock: true });
+  const p2 = rec({ name: "Gel Manicure", description: "Full gel manicure with colour", price: 45, category: "Nails", duration: 45, inStock: true });
+  const p3 = rec({ name: "Express Facial", description: "Quick cleanse, mask, and moisturise", price: 60, category: "Skin", duration: 30, inStock: true });
+
+  return {
+    clients: [c1, c2, c3],
+    products: [p1, p2, p3],
+    bookings: [
+      rec({ title: "Cut & Colour — Sarah", clientId: c1.id, date: daysFromNow(1), startTime: time(10), endTime: time(11, 30), status: "confirmed", price: 120, serviceName: "Colour + Cut", notes: "" }),
+      rec({ title: "Gel Manicure — Emma", clientId: c2.id, date: daysFromNow(2), startTime: time(14), endTime: time(14, 45), status: "pending", price: 45, serviceName: "Gel Manicure", serviceId: p2.id, notes: "" }),
+      rec({ title: "Express Facial — Jessica", clientId: c3.id, date: daysAgo(1), startTime: time(11), endTime: time(11, 30), status: "completed", price: 60, serviceName: "Express Facial", serviceId: p3.id, notes: "" }),
+    ],
+    invoices: [
+      rec({ number: "RCT-001", clientId: c1.id, lineItems: [{ id: generateId(), description: "Colour + Cut + Gel Manicure", quantity: 1, unitPrice: 165 }], status: "paid", dueDate: daysAgo(3), notes: "", taxRate: 10, paidAmount: 181.50 }),
+    ],
+  };
+}
+
 function genericData(): DataPack {
   const c1 = rec({ name: "Sarah M.", email: "sarah@email.com", phone: "0412 345 678", status: "active", tags: ["regular"], notes: "Loyal client since January", source: "referral" });
   const c2 = rec({ name: "Tom H.", email: "tom@email.com", phone: "0423 456 789", status: "active", tags: [], notes: "", source: "website" });
@@ -264,8 +335,11 @@ const PERSONA_GENERATORS: { [key: string]: () => DataPack } = {
   "barber": barberData,
   "nail-tech": nailTechData,
   "lash-brow-tech": lashBrowTechData,
+  "cosmetic-tattoo": cosmeticTattooData,
   "makeup-artist": makeupArtistData,
   "spa-massage": spaMassageData,
+  "esthetician": estheticianData,
+  "beauty-salon": beautySalonData,
 };
 
 /**

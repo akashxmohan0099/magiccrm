@@ -8,6 +8,7 @@ import { useHydration } from "@/hooks/useHydration";
 import { AUTH_MEMBER_REFRESH_EVENT, useAuth } from "@/hooks/useAuth";
 import { WelcomeStep } from "@/components/onboarding/WelcomeStep";
 import { IndustryStep } from "@/components/onboarding/IndustryStep";
+import { OperatingQuestionsStep } from "@/components/onboarding/OperatingQuestionsStep";
 import { SignupStep } from "@/components/onboarding/SignupStep";
 import { BuildingScreen } from "@/components/onboarding/BuildingScreen";
 import { OnboardingLoader } from "@/components/onboarding/OnboardingLoader";
@@ -68,20 +69,20 @@ function OnboardingContent() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [step]);
 
-  // ── If step >= 3 but user is NOT authenticated, clamp back to step 2 ──
+  // ── If step >= 4 but user is NOT authenticated, clamp back to step 3 ──
   useEffect(() => {
-    if (!loading && !user && step >= 3) {
-      useOnboardingStore.getState().setStep(2);
+    if (!loading && !user && step >= 4) {
+      useOnboardingStore.getState().setStep(3);
     }
   }, [loading, user, step]);
 
-  // ── Auth advancement (step 2 → building) ───────────────────
+  // ── Auth advancement (step 3 → building) ───────────────────
   // When signup completes and workspace exists, start building.
   useEffect(() => {
-    if (step === 2 && !loading && !!user && !!workspaceId) {
+    if (step === 3 && !loading && !!user && !!workspaceId) {
       const t = setTimeout(() => {
         const store = useOnboardingStore.getState();
-        if (store.step === 2 && !store.isBuilding) {
+        if (store.step === 3 && !store.isBuilding) {
           store.setIsBuilding(true);
         }
       }, 800);
@@ -93,7 +94,7 @@ function OnboardingContent() {
   // idempotently re-run bootstrap and ask auth consumers to refetch membership.
   // Retries up to 3 times with increasing delays before showing a fallback.
   useEffect(() => {
-    if (step !== 2 || loading || !user || workspaceId) {
+    if (step !== 3 || loading || !user || workspaceId) {
       setBootstrapFailed(false);
       return;
     }
@@ -176,11 +177,12 @@ function OnboardingContent() {
     );
   }
 
-  // Steps: 0 = Welcome, 1 = Persona + Business Name, 2 = Signup
+  // Steps: 0 = Welcome, 1 = Category + Persona + Name, 2 = Operating Questions, 3 = Signup
   const renderStep = () => {
     if (step === 0) return <WelcomeStep />;
     if (step === 1) return <IndustryStep />;
-    if (step === 2) {
+    if (step === 2) return <OperatingQuestionsStep />;
+    if (step === 3) {
       if (!user) return <SignupStep />;
       if (bootstrapFailed && !workspaceId) {
         return (
@@ -214,16 +216,16 @@ function OnboardingContent() {
         <OnboardingLoader
           title={workspaceId ? "Account created" : "Finishing your workspace setup"}
           subtitle={workspaceId ? "Setting up your workspace" : "This usually takes a few seconds"}
-          step={2}
-          totalSteps={2}
+          step={3}
+          totalSteps={3}
         />
       );
     }
     return null;
   };
 
-  // Global progress: steps 1-2
-  const showProgress = step >= 1 && step <= 2;
+  // Global progress: steps 1-3
+  const showProgress = step >= 1 && step <= 3;
   const progress = Math.min((step / (TOTAL_PROGRESS_STEPS - 1)) * 100, 100);
 
   return (

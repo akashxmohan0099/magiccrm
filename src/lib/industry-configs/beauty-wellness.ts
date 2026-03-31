@@ -226,4 +226,64 @@ export const beautyPersonaOverrides: Record<string, IndustryAdaptiveOverride> = 
       ],
     },
   },
+  "cosmetic-tattoo": {
+    customFields: {
+      clients: [
+        { id: "skin-type", label: "Skin Type", type: "select", options: ["Normal", "Oily", "Dry", "Combination", "Sensitive"], group: "Skin Profile" },
+        { id: "pigment-brand", label: "Pigment Brand Used", type: "text", placeholder: "e.g. PhiBrows, Perma Blend", group: "Treatment Notes" },
+        { id: "healed-result", label: "Healed Result Notes", type: "textarea", placeholder: "How the pigment healed, colour retention...", group: "Treatment Notes" },
+      ],
+    },
+    invoiceMode: {
+      defaultMode: "deposit-balance",
+      availableModes: ["one-time", "deposit-balance"],
+    },
+    bookingMode: {
+      defaultMode: "service-menu",
+      defaultServices: [
+        { id: "microblading", name: "Microblading", duration: 120, price: 450, category: "Brows" },
+        { id: "lip-blush", name: "Lip Blush", duration: 120, price: 400, category: "Lips" },
+        { id: "eyeliner-tattoo", name: "Eyeliner Tattoo", duration: 90, price: 350, category: "Eyes" },
+        { id: "brow-correction", name: "Brow Tattoo Correction", duration: 90, price: 300, category: "Brows" },
+        { id: "touch-up", name: "Touch-Up Session", duration: 60, price: 150, category: "Touch-ups" },
+        { id: "consultation", name: "Consultation", duration: 30, price: 0, category: "Consults" },
+      ],
+    },
+  },
+  "esthetician": {
+    customFields: {
+      clients: [
+        { id: "skin-type", label: "Skin Type", type: "select", options: ["Normal", "Oily", "Dry", "Combination", "Sensitive"], group: "Skin Profile" },
+        { id: "skin-concerns", label: "Skin Concerns", type: "text", placeholder: "e.g. acne, ageing, pigmentation, rosacea", group: "Skin Profile" },
+        { id: "product-sensitivities", label: "Product Sensitivities", type: "text", placeholder: "e.g. retinol, AHA, fragrance", group: "Skin Profile" },
+      ],
+    },
+    bookingMode: {
+      defaultMode: "service-menu",
+      defaultServices: [
+        { id: "signature-facial", name: "Signature Facial", duration: 60, price: 120, category: "Facials" },
+        { id: "chemical-peel", name: "Chemical Peel", duration: 45, price: 150, category: "Treatments" },
+        { id: "microdermabrasion", name: "Microdermabrasion", duration: 45, price: 130, category: "Treatments" },
+        { id: "led-therapy", name: "LED Light Therapy", duration: 30, price: 80, category: "Add-ons" },
+        { id: "skin-consult", name: "Skin Consultation", duration: 30, price: 0, category: "Consults" },
+      ],
+    },
+  },
+  "beauty-salon": {
+    customFields: {
+      clients: [
+        { id: "preferred-services", label: "Preferred Services", type: "text", placeholder: "e.g. hair colour, gel nails, facials", group: "Preferences" },
+      ],
+    },
+    bookingMode: {
+      defaultMode: "service-menu",
+      defaultServices: [
+        { id: "womens-cut", name: "Women's Cut & Blowdry", duration: 45, price: 65, category: "Hair" },
+        { id: "colour", name: "Full Colour", duration: 90, price: 120, category: "Hair" },
+        { id: "gel-manicure", name: "Gel Manicure", duration: 45, price: 45, category: "Nails" },
+        { id: "facial", name: "Express Facial", duration: 30, price: 60, category: "Skin" },
+        { id: "waxing", name: "Brow Wax & Tint", duration: 20, price: 35, category: "Brows" },
+      ],
+    },
+  },
 };

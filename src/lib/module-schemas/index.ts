@@ -35,6 +35,9 @@ import { barberVariants } from "./variants/barber";
 import { nailTechVariants } from "./variants/nail-tech";
 import { lashBrowTechVariants } from "./variants/lash-brow-tech";
 import { spaMassageVariants } from "./variants/spa-massage";
+import { cosmeticTattooVariants } from "./variants/cosmetic-tattoo";
+import { estheticianVariants } from "./variants/esthetician";
+import { beautySalonVariants } from "./variants/beauty-salon";
 
 /** All registered persona variants (beauty-only) */
 const SCHEMA_VARIANTS: SchemaVariant[] = [
@@ -42,8 +45,11 @@ const SCHEMA_VARIANTS: SchemaVariant[] = [
   ...barberVariants,
   ...nailTechVariants,
   ...lashBrowTechVariants,
+  ...cosmeticTattooVariants,
   ...makeupArtistVariants,
   ...spaMassageVariants,
+  ...estheticianVariants,
+  ...beautySalonVariants,
 ];
 
 // ── Lookup Functions ─────────────────────────────────────────

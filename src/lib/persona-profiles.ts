@@ -86,6 +86,40 @@ export const PERSONA_PROFILES: PersonaProfile[] = [
     clientInteraction: "Mix of regulars and one-offs. Health fund clients tend to be loyal.",
     commonChallenges: "Therapist availability, room scheduling, health fund paperwork and claims.",
   },
+
+  // ═══════════════════════════════════════════════════
+  // Cosmetic Tattoo, Esthetician, Beauty Salon
+  // ═══════════════════════════════════════════════════
+  {
+    id: "cosmetic-tattoo",
+    industryId: "beauty-wellness",
+    operatingModel: "studio",
+    travelPattern: "Clients come to a dedicated studio. Some artists do home visits for touch-ups.",
+    typicalServices: "Microblading, lip blush, eyeliner tattoo, brow corrections, consultations. Touch-up sessions 6-8 weeks after initial procedure.",
+    paymentModel: "Deposit to secure booking (usually 50%), balance on the day. Touch-up fee included or separate.",
+    clientInteraction: "High-trust, consultative. Clients research heavily before committing. Before/after photos are critical for marketing.",
+    commonChallenges: "Managing consent forms, tracking healed results, scheduling touch-ups, building trust through portfolio.",
+  },
+  {
+    id: "esthetician",
+    industryId: "beauty-wellness",
+    operatingModel: "studio",
+    travelPattern: "Clients come to the clinic or studio. Some offer mobile facials for events.",
+    typicalServices: "Signature facials, chemical peels, microdermabrasion, LED therapy, extractions, skin analysis consultations.",
+    paymentModel: "Per-service. Some sell treatment packages (e.g., 6 facials). Retail product sales add revenue.",
+    clientInteraction: "Regular clients every 4-6 weeks. Skin progress tracking is important. Product recommendations drive retail.",
+    commonChallenges: "Tracking skin conditions over time, product inventory, educating clients on home care routines.",
+  },
+  {
+    id: "beauty-salon",
+    industryId: "beauty-wellness",
+    operatingModel: "studio",
+    travelPattern: "Clients come to the salon. Multiple service areas under one roof.",
+    typicalServices: "Hair, nails, facials, waxing, lashes, and more. Varies by salon. Cross-selling between services is key.",
+    paymentModel: "Per-service at point of sale. Package deals across services. Gift vouchers popular.",
+    clientInteraction: "Mix of walk-ins and regulars. Different staff handle different services. Team scheduling is critical.",
+    commonChallenges: "Managing multiple service types, team scheduling across stations/rooms, inventory for diverse products.",
+  },
 ];
 
 /** Look up a persona profile by ID */
