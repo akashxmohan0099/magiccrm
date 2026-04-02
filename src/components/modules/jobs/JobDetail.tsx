@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import Link from "next/link";
 import { Pencil, Trash2, CalendarDays, User, Receipt } from "lucide-react";
 import { useJobsStore } from "@/store/jobs";
 import { useClientsStore } from "@/store/clients";
-import { Job } from "@/types/models";
+import { Job, LineItem } from "@/types/models";
+import { generateId } from "@/lib/id";
+import { InvoiceForm } from "@/components/modules/invoicing/InvoiceForm";
 import { useVocabulary } from "@/hooks/useVocabulary";
 import { useIndustryConfig } from "@/hooks/useIndustryConfig";
 import { SlideOver } from "@/components/ui/SlideOver";
@@ -36,6 +37,7 @@ export function JobDetail({ open, onClose, jobId, onEdit }: JobDetailProps) {
   const [expenses, setExpenses] = useState<{description: string, amount: number}[]>([]);
   const [expDesc, setExpDesc] = useState("");
   const [expAmount, setExpAmount] = useState("");
+  const [invoiceFormOpen, setInvoiceFormOpen] = useState(false);
 
   const job = useMemo(
     () => (jobId ? jobs.find((j) => j.id === jobId) : undefined),
@@ -52,6 +54,18 @@ export function JobDetail({ open, onClose, jobId, onEdit }: JobDetailProps) {
     const stageDef = config.jobStages.find((s) => s.id === job.stage);
     return stageDef?.isClosed ?? false;
   }, [job, config.jobStages]);
+
+  const invoiceLineItems: LineItem[] = useMemo(() => {
+    if (!job) return [];
+    return job.timeEntries
+      .filter((e) => e.billable !== false && e.billableRate && e.billableRate > 0)
+      .map((e) => ({
+        id: generateId(),
+        description: e.description,
+        quantity: parseFloat((e.minutes / 60).toFixed(2)),
+        unitPrice: e.billableRate!,
+      }));
+  }, [job]);
 
   if (!job) return null;
 
@@ -121,11 +135,9 @@ export function JobDetail({ open, onClose, jobId, onEdit }: JobDetailProps) {
             )}
             {isClosedStage && (
               <FeatureSection moduleId="jobs-projects" featureId="job-to-invoice" featureLabel="Job → Invoice">
-                <Link href="/dashboard/invoicing">
-                  <Button variant="secondary" size="sm">
-                    <Receipt className="w-3.5 h-3.5" /> Generate Invoice
-                  </Button>
-                </Link>
+                <Button variant="secondary" size="sm" onClick={() => setInvoiceFormOpen(true)}>
+                  <Receipt className="w-3.5 h-3.5" /> Generate Invoice
+                </Button>
               </FeatureSection>
             )}
             <Button
@@ -225,6 +237,16 @@ export function JobDetail({ open, onClose, jobId, onEdit }: JobDetailProps) {
         message={`Are you sure you want to delete "${job.title}"? This action cannot be undone.`}
         confirmLabel="Delete"
         variant="danger"
+      />
+
+      <InvoiceForm
+        open={invoiceFormOpen}
+        onClose={() => setInvoiceFormOpen(false)}
+        prefill={{
+          clientId: job.clientId,
+          jobId: job.id,
+          lineItems: invoiceLineItems,
+        }}
       />
     </>
   );

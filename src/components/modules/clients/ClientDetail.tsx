@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import Link from "next/link";
 import {
   Mail,
   Phone,
@@ -31,6 +30,8 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { FeatureSection } from "@/components/modules/FeatureSection";
 import { LinkedRecords } from "@/components/modules/LinkedRecords";
 import { BookingForm } from "@/components/modules/bookings/BookingForm";
+import { InvoiceForm } from "@/components/modules/invoicing/InvoiceForm";
+import { JobForm } from "@/components/modules/jobs/JobForm";
 import { ClientForm } from "./ClientForm";
 import { ClientTags } from "./ClientTags";
 import { SegmentationFilters } from "./SegmentationFilters";
@@ -58,6 +59,9 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [rebookOpen, setRebookOpen] = useState(false);
+  const [invoiceFormOpen, setInvoiceFormOpen] = useState(false);
+  const [bookingFormOpen, setBookingFormOpen] = useState(false);
+  const [jobFormOpen, setJobFormOpen] = useState(false);
 
   const lastBooking = useMemo(() => {
     if (!clientId) return undefined;
@@ -266,24 +270,22 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
               Quick Actions
             </h4>
             <div className="space-y-2">
-              <Link
-                href="/dashboard/invoicing"
-                onClick={onClose}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-[13px] text-foreground hover:bg-card-bg border border-transparent hover:border-border-light transition-all group"
+              <button
+                onClick={() => setInvoiceFormOpen(true)}
+                className="flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-[13px] text-foreground hover:bg-card-bg border border-transparent hover:border-border-light transition-all group w-full text-left cursor-pointer"
               >
                 <Receipt className="w-4 h-4 text-text-secondary group-hover:text-primary transition-colors" />
                 <span>Create Invoice for {client.name}</span>
                 <Plus className="w-3.5 h-3.5 text-text-secondary ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
-              </Link>
-              <Link
-                href="/dashboard/bookings"
-                onClick={onClose}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-[13px] text-foreground hover:bg-card-bg border border-transparent hover:border-border-light transition-all group"
+              </button>
+              <button
+                onClick={() => setBookingFormOpen(true)}
+                className="flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-[13px] text-foreground hover:bg-card-bg border border-transparent hover:border-border-light transition-all group w-full text-left cursor-pointer"
               >
                 <Calendar className="w-4 h-4 text-text-secondary group-hover:text-primary transition-colors" />
                 <span>Book Appointment</span>
                 <Plus className="w-3.5 h-3.5 text-text-secondary ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
-              </Link>
+              </button>
               {lastBooking && (
                 <button
                   onClick={() => setRebookOpen(true)}
@@ -294,15 +296,14 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
                   <Plus className="w-3.5 h-3.5 text-text-secondary ml-auto flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </button>
               )}
-              <Link
-                href="/dashboard/jobs"
-                onClick={onClose}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-[13px] text-foreground hover:bg-card-bg border border-transparent hover:border-border-light transition-all group"
+              <button
+                onClick={() => setJobFormOpen(true)}
+                className="flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-[13px] text-foreground hover:bg-card-bg border border-transparent hover:border-border-light transition-all group w-full text-left cursor-pointer"
               >
                 <FolderKanban className="w-4 h-4 text-text-secondary group-hover:text-primary transition-colors" />
                 <span>Create Job</span>
                 <Plus className="w-3.5 h-3.5 text-text-secondary ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
-              </Link>
+              </button>
             </div>
           </div>
 
@@ -398,6 +399,25 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
           }}
         />
       )}
+
+      <InvoiceForm
+        open={invoiceFormOpen}
+        onClose={() => setInvoiceFormOpen(false)}
+        prefill={{ clientId: client.id }}
+      />
+
+      <BookingForm
+        open={bookingFormOpen}
+        onClose={() => setBookingFormOpen(false)}
+        defaultDate={new Date().toISOString().split("T")[0]}
+        prefill={{ clientId: client.id }}
+      />
+
+      <JobForm
+        open={jobFormOpen}
+        onClose={() => setJobFormOpen(false)}
+        prefill={{ clientId: client.id }}
+      />
     </>
   );
 }

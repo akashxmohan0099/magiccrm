@@ -95,15 +95,18 @@ export const INDUSTRY_CONFIGS: IndustryConfig[] = [
     namePlaceholder: "e.g. Glow Studio",
     suggestedTeamSize: "Just me",
     categories: [
-      { id: "hair", label: "Hair & Cuts", icon: "Scissors", personaIds: ["hair-salon", "barber"] },
+      { id: "hair", label: "Hair Salon", icon: "Scissors", personaIds: ["hair-salon"] },
+      { id: "barber", label: "Barber", icon: "Blade", personaIds: ["barber"] },
       { id: "nails", label: "Nails", icon: "Paintbrush", personaIds: ["nail-tech"] },
-      { id: "lashes-brows", label: "Lashes & Brows", icon: "Eye", personaIds: ["lash-brow-tech", "cosmetic-tattoo"] },
-      { id: "skin-body", label: "Skin & Body", icon: "Sparkles", personaIds: ["esthetician", "spa-massage"] },
+      { id: "lashes-brows", label: "Lashes & Brows", icon: "Eye", personaIds: ["lash-brow-tech"] },
+      { id: "cosmetic-tattoo", label: "Cosmetic Tattoo", icon: "PenTool", personaIds: ["cosmetic-tattoo"] },
+      { id: "skin-clinic", label: "Skin Clinic", icon: "Sparkles", personaIds: ["esthetician"] },
+      { id: "spa-massage", label: "Spa & Massage", icon: "Flower2", personaIds: ["spa-massage"] },
       { id: "makeup", label: "Makeup", icon: "Palette", personaIds: ["makeup-artist"] },
       { id: "multi-service", label: "Multi-Service", icon: "Building2", personaIds: ["beauty-salon"] },
     ],
     personas: [
-      // ── Hair ──
+      // ── Hair Salon ──
       {
         id: "hair-salon",
         label: "Hairstylist",
@@ -112,11 +115,12 @@ export const INDUSTRY_CONFIGS: IndustryConfig[] = [
         suggestedTeamSize: "2-5",
         descriptionPlaceholder: "e.g. Boutique hair salon in Surry Hills",
       },
+      // ── Barber ──
       {
         id: "barber",
         label: "Barber",
         description: "Men's cuts, fades, beard grooming",
-        category: "hair",
+        category: "barber",
         suggestedTeamSize: "2-5",
         descriptionPlaceholder: "e.g. Classic barbershop in the CBD",
         namePlaceholder: "e.g. The Sharp Edge",
@@ -139,28 +143,30 @@ export const INDUSTRY_CONFIGS: IndustryConfig[] = [
         descriptionPlaceholder: "e.g. Lash extensions and brow styling",
         namePlaceholder: "e.g. Lash Lab Co",
       },
+      // ── Cosmetic Tattoo ──
       {
         id: "cosmetic-tattoo",
         label: "Cosmetic Tattoo Artist",
-        description: "Microblading, lip blush, eyeliner",
-        category: "lashes-brows",
+        description: "Microblading, lip blush, eyeliner, scalp micropigmentation",
+        category: "cosmetic-tattoo",
         descriptionPlaceholder: "e.g. Semi-permanent brows and lips",
         namePlaceholder: "e.g. Ink & Brow Studio",
       },
-      // ── Skin & Body ──
+      // ── Skin Clinic ──
       {
         id: "esthetician",
-        label: "Esthetician / Skin Therapist",
-        description: "Facials, peels, skin treatments",
-        category: "skin-body",
+        label: "Skin Therapist / Aesthetician",
+        description: "Facials, peels, skin treatments, injectables",
+        category: "skin-clinic",
         descriptionPlaceholder: "e.g. Clinical facials and skin therapy",
         namePlaceholder: "e.g. Skin by Sarah",
       },
+      // ── Spa & Massage ──
       {
         id: "spa-massage",
-        label: "Massage Therapist",
-        description: "Remedial, relaxation, deep tissue",
-        category: "skin-body",
+        label: "Spa / Massage Therapist",
+        description: "Remedial, relaxation, deep tissue, day spa packages",
+        category: "spa-massage",
         suggestedTeamSize: "2-5",
         descriptionPlaceholder: "e.g. Relaxation and remedial massage",
         namePlaceholder: "e.g. Serenity Day Spa",

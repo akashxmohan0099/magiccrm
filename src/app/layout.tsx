@@ -11,21 +11,21 @@ const urbanist = Urbanist({
 });
 
 export const metadata: Metadata = {
-  title: "Magic - Your Custom Business Software, Built in Minutes",
+  title: "Magic — CRM Built for Beauty & Wellness Professionals",
   description:
-    "Stop paying for features you don't use. Magic builds personalized business software tailored to your exact needs.",
+    "The CRM built specifically for hairstylists, lash techs, nail artists, makeup artists, and spa owners. Bookings, clients, invoicing, and AI — shaped to your specialty. $49/mo flat.",
   openGraph: {
-    title: "Magic - Your Custom Business Software, Built in Minutes",
+    title: "Magic — CRM Built for Beauty & Wellness Professionals",
     description:
-      "Stop paying for features you don't use. Magic builds personalized business software tailored to your exact needs.",
+      "The CRM built specifically for hairstylists, lash techs, nail artists, makeup artists, and spa owners. Bookings, clients, invoicing, and AI — shaped to your specialty.",
     type: "website",
     siteName: "Magic",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Magic - Your Custom Business Software, Built in Minutes",
+    title: "Magic — CRM Built for Beauty & Wellness Professionals",
     description:
-      "Stop paying for features you don't use. Magic builds personalized business software tailored to your exact needs.",
+      "The CRM built specifically for hairstylists, lash techs, nail artists, makeup artists, and spa owners. Bookings, clients, invoicing, and AI — shaped to your specialty.",
   },
   robots: {
     index: true,
@@ -40,8 +40,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={urbanist.variable} suppressHydrationWarning>
-      <head>
+      <head suppressHydrationWarning>
         <script
+          suppressHydrationWarning
           dangerouslySetInnerHTML={{
             __html: `(function(){try{if(!/^\\/dashboard/.test(location.pathname))return;var t=localStorage.getItem("magic-theme")||"system";var d=t==="system"?window.matchMedia("(prefers-color-scheme:dark)").matches:t==="dark";if(d)document.documentElement.classList.add("dark")}catch(e){}})()`,
           }}

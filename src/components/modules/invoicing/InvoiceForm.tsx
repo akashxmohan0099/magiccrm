@@ -24,6 +24,7 @@ interface InvoiceFormProps {
   open: boolean;
   onClose: () => void;
   invoice?: Invoice;
+  prefill?: { clientId?: string; jobId?: string; lineItems?: LineItem[] };
 }
 
 const STATUS_OPTIONS: { value: InvoiceStatus; label: string }[] = [
@@ -34,7 +35,7 @@ const STATUS_OPTIONS: { value: InvoiceStatus; label: string }[] = [
   { value: "cancelled", label: "Cancelled" },
 ];
 
-export function InvoiceForm({ open, onClose, invoice }: InvoiceFormProps) {
+export function InvoiceForm({ open, onClose, invoice, prefill }: InvoiceFormProps) {
   const { addInvoice, updateInvoice } = useInvoicesStore();
   const { clients } = useClientsStore();
   const vocab = useVocabulary();
@@ -55,6 +56,7 @@ export function InvoiceForm({ open, onClose, invoice }: InvoiceFormProps) {
   const [applyTax, setApplyTax] = useState(false);
   const [taxRate, setTaxRate] = useState("10");
   const [customData, setCustomData] = useState<Record<string, unknown>>({});
+  const [jobId, setJobId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (open) {
@@ -75,11 +77,16 @@ export function InvoiceForm({ open, onClose, invoice }: InvoiceFormProps) {
         setApplyTax((invoice.taxRate ?? 0) > 0);
         setTaxRate(String(invoice.taxRate ?? 10));
       } else {
-        setClientId("");
+        setClientId(prefill?.clientId ?? "");
+        setJobId(prefill?.jobId);
         setDueDate("");
         setNotes("");
         setStatus("draft");
-        setLineItems([{ id: generateId(), description: "", quantity: 1, unitPrice: 0 }]);
+        setLineItems(
+          prefill?.lineItems && prefill.lineItems.length > 0
+            ? prefill.lineItems
+            : [{ id: generateId(), description: "", quantity: 1, unitPrice: 0 }]
+        );
         setPaymentSchedule(config.invoiceMode.defaultMode);
         setDepositPercent(50);
         setMilestones([]);
@@ -90,7 +97,7 @@ export function InvoiceForm({ open, onClose, invoice }: InvoiceFormProps) {
         setCustomData({});
       }
     }
-  }, [open, invoice, config.invoiceMode.defaultMode]);
+  }, [open, invoice, prefill, config.invoiceMode.defaultMode]);
 
   const clientOptions = [
     { value: "", label: "Select a client..." },
@@ -146,6 +153,7 @@ export function InvoiceForm({ open, onClose, invoice }: InvoiceFormProps) {
     } else {
       addInvoice({
         clientId: clientId || undefined,
+        jobId: jobId || undefined,
         lineItems,
         status,
         dueDate: dueDate || undefined,

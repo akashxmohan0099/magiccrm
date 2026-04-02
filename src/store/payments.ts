@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { Payment } from "@/types/models";
+import { useInvoicesStore, calculateInvoiceTotal } from "@/store/invoices";
 import { generateId } from "@/lib/id";
 import { logActivity } from "@/lib/activity-logger";
 import { toast } from "@/components/ui/Toast";
@@ -40,6 +41,23 @@ export const usePaymentsStore = create<PaymentsStore>()(
         set((s) => ({ payments: [...s.payments, payment] }));
         logActivity("create", "payments", `Recorded payment of $${data.amount.toFixed(2)}`);
         toast(`Created payment of $${data.amount.toFixed(2)}`);
+
+        // Payment → Invoice status cascade
+        if (data.invoiceId) {
+          const invoiceStore = useInvoicesStore.getState();
+          const invoice = invoiceStore.invoices.find((inv) => inv.id === data.invoiceId);
+          if (invoice) {
+            const totalPaid = get().payments
+              .filter((p) => p.invoiceId === data.invoiceId && !p.isRefund && !p.isWriteOff)
+              .reduce((sum, p) => sum + p.amount, 0);
+            const { total: invoiceTotal } = calculateInvoiceTotal(invoice);
+            if (totalPaid >= invoiceTotal) {
+              invoiceStore.updateInvoice(invoice.id, { paidAmount: totalPaid, status: "paid" }, workspaceId);
+            } else {
+              invoiceStore.updateInvoice(invoice.id, { paidAmount: totalPaid }, workspaceId);
+            }
+          }
+        }
 
         if (workspaceId) {
           dbCreatePayment(workspaceId, payment).catch((err) => {

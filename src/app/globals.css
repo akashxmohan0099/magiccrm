@@ -81,8 +81,8 @@ h1, h2, h3, h4 {
 }
 h1 { letter-spacing: -0.03em; }
 
-/* ── Smooth scrolling ── */
-html { scroll-behavior: smooth; }
+/* ── Smooth scrolling (only for anchor links, not all scroll) ── */
+html { scroll-behavior: auto; }
 
 /* ── Selection ── */
 ::selection {

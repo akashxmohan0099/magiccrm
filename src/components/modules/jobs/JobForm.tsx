@@ -21,9 +21,10 @@ interface JobFormProps {
   open: boolean;
   onClose: () => void;
   job?: Job;
+  prefill?: { clientId?: string };
 }
 
-export function JobForm({ open, onClose, job }: JobFormProps) {
+export function JobForm({ open, onClose, job, prefill }: JobFormProps) {
   const { addJob, updateJob } = useJobsStore();
   const { clients } = useClientsStore();
   const vocab = useVocabulary();
@@ -60,7 +61,7 @@ export function JobForm({ open, onClose, job }: JobFormProps) {
       } else {
         setTitle("");
         setDescription("");
-        setClientId("");
+        setClientId(prefill?.clientId ?? "");
         setStage(defaultStage);
         setDueDate("");
         setPriority("");
@@ -70,7 +71,7 @@ export function JobForm({ open, onClose, job }: JobFormProps) {
       }
       setErrors({});
     }
-  }, [open, job]);
+  }, [open, job, prefill]);
 
   const clientOptions = [
     { value: "", label: "No client" },

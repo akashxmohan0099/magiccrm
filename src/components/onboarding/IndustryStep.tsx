@@ -5,12 +5,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, ArrowRight, Check,
   Scissors, Paintbrush, Eye, Sparkles, Palette, Building2,
+  PenTool, Flower2, Slash,
 } from "lucide-react";
 import { useOnboardingStore } from "@/store/onboarding";
 import { INDUSTRY_CONFIGS, type PersonaCategory } from "@/types/onboarding";
 
 const CATEGORY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  Scissors, Paintbrush, Eye, Sparkles, Palette, Building2,
+  Scissors, Paintbrush, Eye, Sparkles, Palette, Building2, PenTool, Flower2, Blade: Slash,
 };
 
 export function IndustryStep() {

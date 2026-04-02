@@ -89,10 +89,14 @@ export function ModulePickerDemo() {
   // Cursor plays with unchecked modules — toggles one on, waits, toggles it off, moves to next
   useEffect(() => {
     if (paused) return;
-    const getUnchecked = () => MODULES.map((m) => m.name).filter((n) => !enabledSet.has(n));
+    const baseModules = new Set(PERSONA_PRESETS[activePreset].modules);
+    const getUnchecked = () => MODULES.map((m) => m.name).filter((n) => !baseModules.has(n));
     let idx = 0;
     let phase: "move" | "click-on" | "pause" | "click-off" = "move";
     let currentTarget = "";
+
+    // Reset to preset defaults when this effect starts
+    setEnabledSet(new Set(baseModules));
 
     const tick = () => {
       const unchecked = getUnchecked();
@@ -109,16 +113,12 @@ export function ModulePickerDemo() {
         }
         phase = "click-on";
       } else if (phase === "click-on") {
-        setEnabledSet((prev) => new Set(prev).add(currentTarget));
+        setEnabledSet(new Set([...baseModules, currentTarget]));
         phase = "pause";
       } else if (phase === "pause") {
         phase = "click-off";
       } else if (phase === "click-off") {
-        setEnabledSet((prev) => {
-          const next = new Set(prev);
-          next.delete(currentTarget);
-          return next;
-        });
+        setEnabledSet(new Set(baseModules));
         idx++;
         phase = "move";
       }
@@ -126,7 +126,8 @@ export function ModulePickerDemo() {
 
     const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
-  }, [paused, enabledSet]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paused, activePreset]);
 
   const toggleModule = (name: string) => {
     setPaused(true);

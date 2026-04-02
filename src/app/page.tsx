@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import {
   ArrowRight, Check, Star,
   Zap, Crown, Camera, FileInput,
@@ -24,7 +24,7 @@ const sectionTransition = {
   ease: [0.25, 0.1, 0.25, 1] as const,
 };
 
-const viewportConfig = { once: false, margin: "-80px" as const };
+const viewportConfig = { once: true, margin: "-40px" as const };
 
 const ctaPulseVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -100,6 +100,251 @@ const INDUSTRIES = [
   "Hair Salons", "Nail Techs", "Lash & Brow",
   "Barbers", "Makeup Artists", "Spas & Massage",
 ];
+
+// ── Comparison section data ──
+
+const COMPARISON_PERSONAS = [
+  {
+    label: "Hair Salon",
+    accent: "#8B5CF6",
+    items: [
+      { label: "Clients", sublabel: "With hair type, colour formula, allergies" },
+      { label: "Appointments", sublabel: "Calendar with services and rebooking" },
+      { label: "Services", sublabel: "Your cuts, colours, and treatments with pricing" },
+      { label: "Receipts", sublabel: "Pay-at-chair billing, no quotes or proposals" },
+      { label: "Inquiries", sublabel: "Instagram DMs \u2192 leads, one click" },
+    ],
+  },
+  {
+    label: "Lash Tech",
+    accent: "#EC4899",
+    items: [
+      { label: "Clients", sublabel: "Allergies, skin type, preferred products" },
+      { label: "Appointments", sublabel: "With set durations and no-show deposits" },
+      { label: "Service Menu", sublabel: "Classic, volume, lifts \u2014 with pricing" },
+      { label: "Receipts", sublabel: "Pay after service, tips included" },
+      { label: "Aftercare", sublabel: "Auto-send care instructions post-appointment" },
+    ],
+  },
+  {
+    label: "Makeup Artist",
+    accent: "#F59E0B",
+    items: [
+      { label: "Inquiries", sublabel: "Wedding date, party size, budget \u2014 captured upfront" },
+      { label: "Proposals", sublabel: "Branded quotes with packages and e-signature" },
+      { label: "Invoicing", sublabel: "Deposit-based billing with milestone payments" },
+      { label: "Clients", sublabel: "Skin tone, foundation shade, allergy notes" },
+      { label: "Trial Bookings", sublabel: "Separate trial and wedding-day scheduling" },
+    ],
+  },
+  {
+    label: "Nail Tech",
+    accent: "#10B981",
+    items: [
+      { label: "Clients", sublabel: "Nail shape, gel vs acrylic, allergy flags" },
+      { label: "Service Menu", sublabel: "Manicure, pedicure, nail art \u2014 with durations" },
+      { label: "Appointments", sublabel: "Home studio + mobile bookings" },
+      { label: "Receipts", sublabel: "Card and cash tracking per session" },
+      { label: "Reminders", sublabel: "Auto nudge when fill or maintenance is due" },
+    ],
+  },
+  {
+    label: "Spa Owner",
+    accent: "#6366F1",
+    items: [
+      { label: "Clients", sublabel: "Pressure preferences, contraindications, history" },
+      { label: "Team Schedule", sublabel: "Multi-therapist calendar across rooms" },
+      { label: "Treatment Menu", sublabel: "Massages, facials, body wraps with pricing" },
+      { label: "Receipts", sublabel: "Front-desk checkout with tips and upsells" },
+      { label: "Reporting", sublabel: "Revenue by therapist, utilisation, rebooking rate" },
+    ],
+  },
+];
+
+// ── Add-ons section data with persona tags ──
+
+const ADDON_PERSONAS = ["All", "Hair Salon", "Lash Tech", "Makeup Artist", "Nail Tech", "Spa Owner"] as const;
+
+const ADDONS_DATA = [
+  { name: "Gift Cards", icon: Ticket, color: "pink", gradient: "#EC4899", desc: "Create, sell, and track digital gift vouchers. A revenue channel that markets itself.", personas: ["Hair Salon", "Lash Tech", "Nail Tech", "Spa Owner"] },
+  { name: "AI Insights", icon: Lightbulb, color: "amber", gradient: "#F59E0B", desc: "Smart suggestions — overdue rebookings, revenue forecasts, and churn risk.", personas: ["Hair Salon", "Lash Tech", "Makeup Artist", "Nail Tech", "Spa Owner"] },
+  { name: "Loyalty & Referrals", icon: Gift, color: "emerald", gradient: "#10B981", desc: "Points per visit, referral codes, and reward tiers for repeat clients.", personas: ["Hair Salon", "Lash Tech", "Nail Tech", "Spa Owner"] },
+  { name: "Memberships", icon: Crown, color: "purple", gradient: "#8B5CF6", desc: "Session packs, recurring plans, and member tracking with auto-billing.", personas: ["Hair Salon", "Spa Owner"] },
+  { name: "Win-Back", icon: UserCheck, color: "amber", gradient: "#F59E0B", desc: "Detect lapsed clients and auto-send re-engagement messages.", personas: ["Hair Salon", "Lash Tech", "Nail Tech", "Spa Owner"] },
+  { name: "Storefront", icon: Store, color: "cyan", gradient: "#06B6D4", desc: "A public page showcasing your services with pricing and booking links.", personas: ["Hair Salon", "Lash Tech", "Nail Tech", "Spa Owner"] },
+  { name: "Intake Forms", icon: FileInput, color: "pink", gradient: "#EC4899", desc: "Custom questionnaires with conditional logic for client intake.", personas: ["Lash Tech", "Makeup Artist", "Spa Owner"] },
+  { name: "Before & After", icon: Camera, color: "teal", gradient: "#14B8A6", desc: "Capture proof of work with photos and digital checklists.", personas: ["Hair Salon", "Lash Tech", "Nail Tech"] },
+  { name: "Treatment Notes", icon: ClipboardList, color: "indigo", gradient: "#6366F1", desc: "Structured SOAP notes for clinical treatment records.", personas: ["Lash Tech", "Spa Owner"] },
+  { name: "Notes & Docs", icon: NotebookPen, color: "sky", gradient: "#0EA5E9", desc: "Write notes, create docs, and share with your team. Simple formatting, no bloat.", personas: ["Hair Salon", "Makeup Artist", "Spa Owner"] },
+  { name: "Class Timetable", icon: CalendarRange, color: "violet", gradient: "#8B5CF6", desc: "Visual weekly class schedule with capacity limits and check-in.", personas: ["Spa Owner"] },
+  { name: "Vendors", icon: Building2, color: "orange", gradient: "#F97316", desc: "Track suppliers, vendor availability, contracts, and payments.", personas: ["Hair Salon", "Spa Owner"] },
+  { name: "Proposals", icon: ScrollText, color: "violet", gradient: "#7C3AED", desc: "Branded proposal pages with interactive pricing and e-signature.", personas: ["Makeup Artist"] },
+  { name: "Waitlist", icon: ListOrdered, color: "teal", gradient: "#14B8A6", desc: "Manage walk-in queues and auto-notify clients when spots open up.", personas: ["Hair Salon", "Nail Tech", "Spa Owner"] },
+];
+
+const ADDON_BORDER_COLORS: Record<string, string> = {
+  pink: "hover:border-pink-200", amber: "hover:border-amber-200", emerald: "hover:border-emerald-200",
+  purple: "hover:border-purple-200", cyan: "hover:border-cyan-200", teal: "hover:border-teal-200",
+  indigo: "hover:border-indigo-200", sky: "hover:border-sky-200", violet: "hover:border-violet-200",
+  orange: "hover:border-orange-200",
+};
+
+function AddonsGrid({ viewportConfig }: { viewportConfig: { once: boolean; margin: string } }) {
+  const [filter, setFilter] = useState<string>("All");
+
+  const filtered = filter === "All" ? ADDONS_DATA : ADDONS_DATA.filter((a) => a.personas.includes(filter));
+
+  return (
+    <>
+      <div className="flex flex-wrap justify-center gap-2 mb-10">
+        {ADDON_PERSONAS.map((p) => (
+          <button
+            key={p}
+            onClick={() => setFilter(p)}
+            className={`px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+              filter === p
+                ? "bg-foreground text-background shadow-md"
+                : "bg-surface border border-border-light text-text-secondary hover:text-foreground hover:border-foreground/20"
+            }`}
+          >
+            {p}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex flex-wrap justify-center gap-5">
+        <AnimatePresence mode="popLayout">
+          {filtered.map((addon) => {
+            const Icon = addon.icon;
+            return (
+              <motion.div
+                key={addon.name}
+                layout
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.25 }}
+                className={`w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-card-bg rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ${ADDON_BORDER_COLORS[addon.color] ?? ""}`}
+              >
+                <div className="absolute top-0 left-0 right-0 h-32 opacity-[0.06] group-hover:opacity-[0.1] transition-opacity" style={{ background: `linear-gradient(to bottom, ${addon.gradient}, transparent)` }} />
+                <div className="relative px-5 pt-5 pb-3">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ backgroundColor: addon.gradient + "18" }}>
+                    <Icon className="w-5 h-5" style={{ color: addon.gradient }} />
+                  </div>
+                  <h3 className="text-[15px] font-bold text-foreground">{addon.name}</h3>
+                  <p className="text-xs text-text-secondary mt-1">{addon.desc}</p>
+                </div>
+                <div className="relative px-5 pb-4">
+                  <div className="flex flex-wrap gap-1">
+                    {addon.personas.map((p) => (
+                      <span key={p} className="text-[9px] px-1.5 py-0.5 bg-surface border border-border-light rounded-full text-text-tertiary font-medium">{p}</span>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
+      </div>
+
+      {filter !== "All" && (
+        <p className="text-center text-xs text-text-tertiary mt-6">
+          Showing {filtered.length} of {ADDONS_DATA.length} add-ons relevant to {filter}s.{" "}
+          <button onClick={() => setFilter("All")} className="text-primary font-medium hover:underline cursor-pointer">Show all</button>
+        </p>
+      )}
+    </>
+  );
+}
+
+function ComparisonToggle({ viewportConfig }: { viewportConfig: { once: boolean; margin: string } }) {
+  const [active, setActive] = useState(0);
+  const persona = COMPARISON_PERSONAS[active];
+
+  return (
+    <>
+      <div className="flex flex-wrap justify-center gap-2 mb-8">
+        {COMPARISON_PERSONAS.map((p, i) => (
+          <button
+            key={p.label}
+            onClick={() => setActive(i)}
+            className={`px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+              active === i
+                ? "text-white shadow-md"
+                : "bg-surface border border-border-light text-text-secondary hover:text-foreground hover:border-foreground/20"
+            }`}
+            style={active === i ? { backgroundColor: p.accent } : undefined}
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Generic CRM */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={viewportConfig}
+          transition={{ duration: 0.5 }}
+          className="rounded-2xl border border-border-light p-6 bg-card-bg"
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-2 h-2 rounded-full bg-red-400" />
+            <span className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">Generic software</span>
+          </div>
+          <div className="space-y-3">
+            {[
+              { label: "Contacts", sublabel: "Generic contact database" },
+              { label: "Deals", sublabel: "Sales pipeline you don\u2019t use" },
+              { label: "Tasks", sublabel: "Project management you didn\u2019t ask for" },
+              { label: "Invoicing", sublabel: "One-size-fits-all billing" },
+              { label: "Settings", sublabel: "200 options to figure out yourself" },
+            ].map((item) => (
+              <div key={item.label} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-surface/50">
+                <div className="w-1.5 h-1.5 rounded-full bg-text-tertiary/30" />
+                <div>
+                  <p className="text-sm font-medium text-text-secondary">{item.label}</p>
+                  <p className="text-xs text-text-tertiary">{item.sublabel}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Magic CRM — persona-specific */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={persona.label}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+            className="rounded-2xl border-2 p-6 bg-card-bg relative overflow-hidden"
+            style={{ borderColor: persona.accent + "33" }}
+          >
+            <div className="absolute top-0 left-0 right-0 h-24 opacity-[0.06]" style={{ background: `linear-gradient(to bottom, ${persona.accent}, transparent)` }} />
+            <div className="relative flex items-center gap-2 mb-4">
+              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: persona.accent }} />
+              <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: persona.accent }}>Magic for a {persona.label}</span>
+            </div>
+            <div className="relative space-y-3">
+              {persona.items.map((item) => (
+                <div key={item.label} className="flex items-center gap-3 px-3 py-2.5 rounded-xl border" style={{ backgroundColor: persona.accent + "08", borderColor: persona.accent + "18" }}>
+                  <Check className="w-3.5 h-3.5 flex-shrink-0" style={{ color: persona.accent }} />
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{item.label}</p>
+                    <p className="text-[13px] font-medium" style={{ color: persona.accent }}>{item.sublabel}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    </>
+  );
+}
 
 export default function LandingPage() {
   const [activePersona, setActivePersona] = useState(0);
@@ -290,8 +535,11 @@ export default function LandingPage() {
                   <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ backgroundColor: persona.accent + "18" }}>
                     <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: persona.accent }} />
                   </div>
-                  <div>
-                    <p className="text-[13px] font-semibold text-foreground leading-none">{persona.businessName}</p>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="text-[13px] font-semibold text-foreground leading-none">{persona.businessName}</p>
+                      <span className="text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full" style={{ backgroundColor: persona.accent + "15", color: persona.accent }}>{persona.label}</span>
+                    </div>
                     <p className="text-[10px] text-text-tertiary mt-0.5">{persona.industry}</p>
                   </div>
                 </div>
@@ -394,7 +642,7 @@ export default function LandingPage() {
                 transition={{ delay: i * 0.1, duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
                 className="relative"
               >
-                <div className="text-[48px] sm:text-[56px] font-bold text-foreground/[0.04] leading-none mb-3">{item.step}</div>
+                <div className="text-[48px] sm:text-[56px] font-bold text-foreground/[0.12] leading-none mb-3">{item.step}</div>
                 <h3 className="text-[17px] font-bold text-foreground mb-2">{item.title}</h3>
                 <p className="text-sm text-text-secondary leading-relaxed mb-3">{item.description}</p>
                 <p className="text-xs text-text-tertiary font-medium">{item.detail}</p>
@@ -429,70 +677,7 @@ export default function LandingPage() {
             </motion.h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Generic CRM */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={viewportConfig}
-              transition={{ duration: 0.5 }}
-              className="rounded-2xl border border-border-light p-6 bg-card-bg"
-            >
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-2 h-2 rounded-full bg-red-400" />
-                <span className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">Generic software</span>
-              </div>
-              <div className="space-y-3">
-                {[
-                  { label: "Contacts", sublabel: "Generic contact database" },
-                  { label: "Deals", sublabel: "Sales pipeline you don't use" },
-                  { label: "Tasks", sublabel: "Project management you didn't ask for" },
-                  { label: "Invoicing", sublabel: "One-size-fits-all billing" },
-                  { label: "Settings", sublabel: "200 options to figure out yourself" },
-                ].map((item) => (
-                  <div key={item.label} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-surface/50">
-                    <div className="w-1.5 h-1.5 rounded-full bg-text-tertiary/30" />
-                    <div>
-                      <p className="text-sm font-medium text-text-secondary">{item.label}</p>
-                      <p className="text-xs text-text-tertiary">{item.sublabel}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-
-            {/* Magic CRM for a Hair Salon */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={viewportConfig}
-              transition={{ delay: 0.1, duration: 0.5 }}
-              className="rounded-2xl border-2 border-primary/20 p-6 bg-card-bg relative overflow-hidden"
-            >
-              <div className="absolute top-0 left-0 right-0 h-24 opacity-[0.04]" style={{ background: "linear-gradient(to bottom, var(--primary), transparent)" }} />
-              <div className="relative flex items-center gap-2 mb-4">
-                <div className="w-2 h-2 rounded-full bg-primary" />
-                <span className="text-xs font-semibold text-primary uppercase tracking-wider">Magic for a Hair Salon</span>
-              </div>
-              <div className="relative space-y-3">
-                {[
-                  { label: "Clients", sublabel: "With hair type, colour formula, allergies" },
-                  { label: "Appointments", sublabel: "Calendar with services and rebooking" },
-                  { label: "Services", sublabel: "Your cuts, colours, and treatments with pricing" },
-                  { label: "Receipts", sublabel: "Pay-at-chair billing, no quotes or proposals" },
-                  { label: "Inquiries", sublabel: "Instagram DMs → leads, one click" },
-                ].map((item) => (
-                  <div key={item.label} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-primary/[0.03] border border-primary/10">
-                    <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{item.label}</p>
-                      <p className="text-xs text-text-secondary">{item.sublabel}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          </div>
+          <ComparisonToggle viewportConfig={viewportConfig} />
         </div>
       </motion.section>
 
@@ -530,8 +715,8 @@ export default function LandingPage() {
             </motion.p>
           </div>
 
-          <div className="flex flex-wrap justify-center gap-5">
-            {/* Gift Cards */}
+          <AddonsGrid viewportConfig={viewportConfig} />
+          <div className="hidden">{/* Gift Cards - legacy block start */}
             <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-card-bg rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-pink-200">
               <div className="absolute top-0 left-0 right-0 h-32 opacity-[0.06] group-hover:opacity-[0.1] transition-opacity" style={{ background: "linear-gradient(to bottom, #EC4899, transparent)" }} />
               <div className="relative px-5 pt-5 pb-3">

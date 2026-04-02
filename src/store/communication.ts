@@ -255,6 +255,14 @@ export const useCommunicationStore = create<CommunicationStore>()(
           ),
         }));
 
+        // Log outbound messages to activity timeline
+        if (sender === "user") {
+          const conversation = get().conversations.find((c) => c.id === conversationId);
+          if (conversation) {
+            logActivity("message", "communication", `Sent message to ${conversation.clientName}`, conversationId);
+          }
+        }
+
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
           dbCreateMessage(conversationId, message).catch((err) => {
