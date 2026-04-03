@@ -12,9 +12,12 @@ export interface Client {
   phone: string;
   company?: string;
   address?: string;
+  instagram?: string;
+  birthday?: string;          // MM-DD format for annual reminders
   tags: string[];
   notes: string;
   source?: "referral" | "website" | "social" | "other";
+  referredBy?: string;        // client ID of referrer
   status: "active" | "inactive" | "prospect" | "vip" | "churned";
   customData?: Record<string, unknown>;
   relationships?: ClientRelationship[];
@@ -187,7 +190,7 @@ export interface Payment {
 
 // ── Bookings & Calendar ───────────────────────────────────
 
-export type BookingStatus = "confirmed" | "pending" | "cancelled" | "completed";
+export type BookingStatus = "confirmed" | "pending" | "cancelled" | "completed" | "no-show";
 export type BookingType = "appointment" | "break" | "unavailable" | "walkin";
 
 export interface Booking {
