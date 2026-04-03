@@ -417,7 +417,13 @@ export type AutomationTrigger =
   | "invoice-sent"
   | "invoice-overdue"
   | "booking-created"
+  | "booking-completed"
   | "booking-cancelled"
+  | "booking-no-show"
+  | "booking-reminder"
+  | "rebooking-due"
+  | "client-inactive"
+  | "client-birthday"
   | "job-completed"
   | "ticket-created";
 
@@ -426,7 +432,27 @@ export type AutomationAction =
   | "create-task"
   | "update-status"
   | "send-notification"
-  | "create-follow-up";
+  | "create-follow-up"
+  | "flag-for-review"
+  | "send-aftercare"
+  | "request-review";
+
+// ── Email Templates ──────────────────────────────────────
+
+export type EmailTemplateCategory = "reminders" | "aftercare" | "follow-up" | "invoicing" | "marketing" | "review-request" | "custom";
+
+export interface EmailTemplate {
+  id: string;
+  name: string;
+  subject: string;
+  body: string;           // HTML content with {{variables}}
+  category: EmailTemplateCategory;
+  variables: string[];    // e.g. ["clientName", "businessName", "bookingDate", "serviceName"]
+  isDefault: boolean;     // built-in templates
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface AutomationRule {
   id: string;

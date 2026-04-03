@@ -165,6 +165,37 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
             </div>
           </div>
 
+          {/* Client Snapshot */}
+          {(() => {
+            const clientBookingsList = bookings.filter((b) => b.clientId === client.id);
+            const completedCount = clientBookingsList.filter((b) => b.status === "completed").length;
+            const lastBooking2 = clientBookingsList.filter((b) => b.status === "completed").sort((a, b) => b.date.localeCompare(a.date))[0];
+            const nextBooking = clientBookingsList.filter((b) => (b.status === "confirmed" || b.status === "pending") && b.date >= new Date().toISOString().split("T")[0]).sort((a, b) => a.date.localeCompare(b.date))[0];
+            const clientInvoicesList = invoices.filter((i) => i.clientId === client.id && i.status === "paid");
+            const totalSpent = clientInvoicesList.reduce((sum, inv) => sum + inv.lineItems.reduce((s, li) => s + li.quantity * li.unitPrice, 0), 0);
+
+            return (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="bg-surface rounded-lg p-3 border border-border-light text-center">
+                  <p className="text-[18px] font-bold text-foreground">{completedCount}</p>
+                  <p className="text-[10px] text-text-tertiary">Visits</p>
+                </div>
+                <div className="bg-surface rounded-lg p-3 border border-border-light text-center">
+                  <p className="text-[18px] font-bold text-foreground">${totalSpent.toLocaleString()}</p>
+                  <p className="text-[10px] text-text-tertiary">Lifetime Value</p>
+                </div>
+                <div className="bg-surface rounded-lg p-3 border border-border-light text-center">
+                  <p className="text-[13px] font-semibold text-foreground truncate">{lastBooking2?.serviceName || "—"}</p>
+                  <p className="text-[10px] text-text-tertiary">{lastBooking2 ? `Last: ${new Date(lastBooking2.date).toLocaleDateString("en-AU", { day: "numeric", month: "short" })}` : "No visits"}</p>
+                </div>
+                <div className="bg-surface rounded-lg p-3 border border-border-light text-center">
+                  <p className="text-[13px] font-semibold text-foreground truncate">{nextBooking?.title || "—"}</p>
+                  <p className="text-[10px] text-text-tertiary">{nextBooking ? `Next: ${new Date(nextBooking.date).toLocaleDateString("en-AU", { day: "numeric", month: "short" })}` : "None booked"}</p>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Contact Info */}
           <div className="bg-surface rounded-lg p-4 border border-border-light">
             <h4 className="text-sm font-medium text-foreground mb-2">
