@@ -44,7 +44,7 @@ export default function RootLayout({
         <script
           suppressHydrationWarning
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{if(!/^\\/dashboard/.test(location.pathname))return;var t=localStorage.getItem("magic-theme")||"system";var d=t==="system"?window.matchMedia("(prefers-color-scheme:dark)").matches:t==="dark";if(d)document.documentElement.classList.add("dark")}catch(e){}})()`,
+            __html: `(function(){try{if(!/^\\/dashboard/.test(location.pathname))return;var t=localStorage.getItem("magic-theme")||"light";if(t==="dark"||(t==="system"&&window.matchMedia("(prefers-color-scheme:dark)").matches))document.documentElement.classList.add("dark")}catch(e){}})()`,
           }}
         />
       </head>

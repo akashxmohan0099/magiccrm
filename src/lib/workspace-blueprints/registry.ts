@@ -8,6 +8,9 @@ import { hairSalonBlueprint } from "./blueprints/hair-salon";
 import { barberBlueprint } from "./blueprints/barber";
 import { spaMassageBlueprint } from "./blueprints/spa-massage";
 import { makeupArtistBlueprint } from "./blueprints/makeup-artist";
+import { cosmeticTattooBlueprint } from "./blueprints/cosmetic-tattoo";
+import { estheticianBlueprint } from "./blueprints/esthetician";
+import { beautySalonBlueprint } from "./blueprints/beauty-salon";
 
 // ── Blueprint Registry ──────────────────────────────────────
 
@@ -19,6 +22,9 @@ const BLUEPRINT_MAP: Record<string, WorkspaceBlueprint> = {
   [barberBlueprint.id]: barberBlueprint,
   [spaMassageBlueprint.id]: spaMassageBlueprint,
   [makeupArtistBlueprint.id]: makeupArtistBlueprint,
+  [cosmeticTattooBlueprint.id]: cosmeticTattooBlueprint,
+  [estheticianBlueprint.id]: estheticianBlueprint,
+  [beautySalonBlueprint.id]: beautySalonBlueprint,
 };
 
 /** All registered blueprints */

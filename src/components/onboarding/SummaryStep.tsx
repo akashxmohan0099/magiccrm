@@ -112,15 +112,15 @@ function getDisplayForModule(moduleId: string): { icon: React.ComponentType<{ cl
   return { icon: Zap, bg: "bg-gray-500/10", color: "text-gray-500", gradient: "#6B7280", hoverBorder: "hover:border-gray-200" };
 }
 
-export function SummaryStep({ workspaceId }: { workspaceId: string | null }) {
+export function SummaryStep({ workspaceId: _workspaceId }: { workspaceId: string | null }) {
   const {
-    businessContext, prevStep, setIsBuilding, getIndustryConfig, needs,
-    setDiscoveryAnswer, syncToSupabase,
+    businessContext, prevStep, nextStep, getIndustryConfig, needs,
+    setDiscoveryAnswer,
   } = useOnboardingStore();
   const vocab = useVocabulary();
   const config = getIndustryConfig();
   const [launching, setLaunching] = useState(false);
-  const [launchError, setLaunchError] = useState("");
+  const [launchError] = useState("");
 
   const selectedIndustry = useOnboardingStore((s) => s.selectedIndustry);
   const selectedPersona = useOnboardingStore((s) => s.selectedPersona);
@@ -158,25 +158,10 @@ export function SummaryStep({ workspaceId }: { workspaceId: string | null }) {
 
   const IndustryIcon = config ? INDUSTRY_ICONS[config.id] : null;
 
-  const handleLaunch = async () => {
+  const handleLaunch = () => {
     if (launching) return;
-
-    if (!workspaceId) {
-      setLaunchError("Your workspace is still finishing setup. Please wait a moment and try again.");
-      return;
-    }
-
-    setLaunchError("");
     setLaunching(true);
-
-    const synced = await syncToSupabase(workspaceId);
-    if (synced) {
-      setIsBuilding(true);
-      return;
-    }
-
-    setLaunchError("We couldn't save your setup yet. Please try again.");
-    setLaunching(false);
+    nextStep(); // Advance to signup step — workspace gets created there
   };
 
   const totalModuleCount = enabledModules.length + enabledAddons.length;

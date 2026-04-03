@@ -36,20 +36,17 @@ export interface LocalFollowUpQuestion {
 
 export const LOCAL_FOLLOWUP_QUESTIONS: LocalFollowUpQuestion[] = [
   // ── Travel ──────────────────────────────────────────
-  // Triggered by the universal "visit-clients" chip.
-  // The chip already enables bookings-calendar and jobs-projects.
-  // This follow-up refines whether they CHARGE for travel.
   {
     id: "travel-charge",
     triggerChipId: "visit-clients",
-    question: "Do you charge clients for travel?",
+    question: "Do you add a travel fee to your pricing?",
     moduleId: "quotes-invoicing",
     enables: [
       { featureId: "travel-costs", action: "auto" },
     ],
     followUp: {
       condition: "yes",
-      question: "Should travel be calculated based on distance from your base?",
+      question: "Should we calculate travel cost based on distance?",
       enables: [
         { featureId: "travel-costs", action: "auto" },
       ],
@@ -58,12 +55,10 @@ export const LOCAL_FOLLOWUP_QUESTIONS: LocalFollowUpQuestion[] = [
   },
 
   // ── Memberships / Session Packs ─────────────────────
-  // The "memberships" chip activates the automations module.
-  // This follow-up determines if they need prepaid credit tracking.
   {
     id: "memberships-packs",
     triggerChipId: "memberships",
-    question: "Do you sell session packs with a set number of visits?",
+    question: "Do clients prepay for a set number of sessions?",
     moduleId: "client-database",
     enables: [
       { featureId: "client-credit-balance", action: "auto" },
@@ -71,12 +66,10 @@ export const LOCAL_FOLLOWUP_QUESTIONS: LocalFollowUpQuestion[] = [
   },
 
   // ── Deposits ────────────────────────────────────────
-  // The "deposits" chip (industry-specific add) activates automations.
-  // This follow-up determines if auto-calculation is wanted.
   {
     id: "deposits-auto",
     triggerChipId: "deposits",
-    question: "Do you want the deposit amount calculated automatically?",
+    question: "Should deposits be added automatically when clients book?",
     moduleId: "bookings-calendar",
     enables: [
       { featureId: "booking-deposits", action: "auto" },
@@ -84,15 +77,46 @@ export const LOCAL_FOLLOWUP_QUESTIONS: LocalFollowUpQuestion[] = [
   },
 
   // ── Team Services ───────────────────────────────────
-  // The "team" chip activates the team module.
-  // This follow-up determines if members have different service menus.
   {
     id: "team-services",
-    triggerChipId: "team",
-    question: "Do different team members offer different services?",
+    triggerChipId: "op-team",
+    question: "Do different team members specialise in different services?",
     moduleId: "team",
     enables: [
       { featureId: "availability-per-member", action: "auto" },
+    ],
+  },
+
+  // ── Aftercare ───────────────────────────────────────
+  {
+    id: "aftercare-auto",
+    triggerChipId: "aftercare",
+    question: "Should aftercare instructions be sent automatically after each appointment?",
+    moduleId: "bookings-calendar",
+    enables: [
+      { featureId: "booking-reminders", action: "auto" },
+    ],
+  },
+
+  // ── Bridal parties ──────────────────────────────────
+  {
+    id: "bridal-party-size",
+    triggerChipId: "bridal-parties",
+    question: "Do you need to track each person in the party separately?",
+    moduleId: "bookings-calendar",
+    enables: [
+      { featureId: "group-class-booking", action: "auto" },
+    ],
+  },
+
+  // ── Patch tests ─────────────────────────────────────
+  {
+    id: "patch-test-auto",
+    triggerChipId: "patch-tests",
+    question: "Should we automatically schedule a patch test before a new client's first appointment?",
+    moduleId: "bookings-calendar",
+    enables: [
+      { featureId: "pre-booking-form", action: "auto" },
     ],
   },
 ];

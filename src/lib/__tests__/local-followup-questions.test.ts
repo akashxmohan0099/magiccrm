@@ -14,14 +14,14 @@ describe("local-followup-questions", () => {
     expect(results[0].question).toContain("travel");
   });
 
-  it("returns team-services question when team chip is selected", () => {
-    const results = getLocalFollowUps(["team"]);
+  it("returns team-services question when op-team chip is selected", () => {
+    const results = getLocalFollowUps(["op-team"]);
     expect(results).toHaveLength(1);
     expect(results[0].id).toBe("team-services");
   });
 
   it("returns multiple questions when multiple chips are selected", () => {
-    const results = getLocalFollowUps(["visit-clients", "memberships", "team"]);
+    const results = getLocalFollowUps(["visit-clients", "memberships", "op-team"]);
     expect(results).toHaveLength(3);
     const ids = results.map((q) => q.id);
     expect(ids).toContain("travel-charge");

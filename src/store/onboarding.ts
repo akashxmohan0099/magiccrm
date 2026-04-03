@@ -25,8 +25,8 @@ interface AIQuestionCategory {
   questions: { question: string; module: string }[];
 }
 
-// Step constants (0=Welcome, 1=Persona+Business, 2=Operating Questions, 3=Signup)
-const FINAL_STEP_INDEX = 3;
+// Step constants (0=Welcome, 1=Persona+Business, 2=Bubbles, 3=Follow-ups+Channels, 4=Summary, 5=Signup)
+const FINAL_STEP_INDEX = 5;
 export const TOTAL_PROGRESS_STEPS = FINAL_STEP_INDEX + 1;
 
 interface OnboardingStore {

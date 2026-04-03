@@ -89,7 +89,7 @@ export const makeupArtistBlueprint: WorkspaceBlueprint = {
           ],
         },
       ],
-      default: "no",
+      default: "yes",
     },
     {
       id: "booking-style",

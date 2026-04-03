@@ -32,6 +32,8 @@ import { LinkedRecords } from "@/components/modules/LinkedRecords";
 import { BookingForm } from "@/components/modules/bookings/BookingForm";
 import { InvoiceForm } from "@/components/modules/invoicing/InvoiceForm";
 import { JobForm } from "@/components/modules/jobs/JobForm";
+import { LashMapSection } from "./LashMapSection";
+import { useOnboardingStore } from "@/store/onboarding";
 import { ClientForm } from "./ClientForm";
 import { ClientTags } from "./ClientTags";
 import { SegmentationFilters } from "./SegmentationFilters";
@@ -56,6 +58,7 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
   const vocab = useVocabulary();
   const config = useIndustryConfig();
   const customFieldDefs = config.customFields.clients ?? [];
+  const selectedPersona = useOnboardingStore((s) => s.selectedPersona);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [rebookOpen, setRebookOpen] = useState(false);
@@ -259,6 +262,15 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
                 {client.notes}
               </p>
             </div>
+          )}
+
+          {/* Lash Map — persona gated */}
+          {selectedPersona === "lash-brow-tech" && client.id && (
+            <LashMapSection
+              clientId={client.id}
+              customData={client.customData ?? {}}
+              onUpdate={(newCustomData) => updateClient(client.id, { customData: newCustomData }, workspaceId ?? undefined)}
+            />
           )}
 
           {/* Linked Records */}

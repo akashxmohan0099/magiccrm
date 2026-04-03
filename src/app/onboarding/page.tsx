@@ -8,7 +8,9 @@ import { useHydration } from "@/hooks/useHydration";
 import { AUTH_MEMBER_REFRESH_EVENT, useAuth } from "@/hooks/useAuth";
 import { WelcomeStep } from "@/components/onboarding/WelcomeStep";
 import { IndustryStep } from "@/components/onboarding/IndustryStep";
-import { OperatingQuestionsStep } from "@/components/onboarding/OperatingQuestionsStep";
+import { BubblesStep } from "@/components/onboarding/BubblesStep";
+import { AIQuestionsStep } from "@/components/onboarding/AIQuestionsStep";
+import { SummaryStep } from "@/components/onboarding/SummaryStep";
 import { SignupStep } from "@/components/onboarding/SignupStep";
 import { BuildingScreen } from "@/components/onboarding/BuildingScreen";
 import { OnboardingLoader } from "@/components/onboarding/OnboardingLoader";
@@ -54,14 +56,12 @@ function OnboardingContent() {
       return;
     }
 
-    // Case 2: User is authenticated and has a workspace but localStorage was
-    // reset (migration, cleared, new device). They're at a pre-auth step (0-2)
-    // which means onboarding state is stale. Send them to the dashboard.
-    if (user && workspaceId && step <= 2) {
-      hasRedirected.current = true;
-      router.replace("/dashboard");
-      return;
-    }
+    // Case 2: User has auth + workspace but localStorage onboarding state was
+    // cleared (migration, new device). Check if assembled schemas exist in the
+    // store — if they do, the workspace was fully built previously. If not, let
+    // them go through onboarding again so the workspace gets properly assembled.
+    // NOTE: Removed the aggressive `step <= 2` redirect that was skipping
+    // onboarding for users who hadn't completed it yet.
   }, [loading, user, workspaceId, buildComplete, step, router]);
 
   // ── Scroll to top on every step change ──
@@ -69,20 +69,20 @@ function OnboardingContent() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [step]);
 
-  // ── If step >= 4 but user is NOT authenticated, clamp back to step 3 ──
+  // ── If step >= 6 but user is NOT authenticated, clamp back to step 5 ──
   useEffect(() => {
-    if (!loading && !user && step >= 4) {
-      useOnboardingStore.getState().setStep(3);
+    if (!loading && !user && step >= 6) {
+      useOnboardingStore.getState().setStep(5);
     }
   }, [loading, user, step]);
 
-  // ── Auth advancement (step 3 → building) ───────────────────
+  // ── Auth advancement (step 5 → building) ───────────────────
   // When signup completes and workspace exists, start building.
   useEffect(() => {
-    if (step === 3 && !loading && !!user && !!workspaceId) {
+    if (step === 5 && !loading && !!user && !!workspaceId) {
       const t = setTimeout(() => {
         const store = useOnboardingStore.getState();
-        if (store.step === 3 && !store.isBuilding) {
+        if (store.step === 5 && !store.isBuilding) {
           store.setIsBuilding(true);
         }
       }, 800);
@@ -94,7 +94,7 @@ function OnboardingContent() {
   // idempotently re-run bootstrap and ask auth consumers to refetch membership.
   // Retries up to 3 times with increasing delays before showing a fallback.
   useEffect(() => {
-    if (step !== 3 || loading || !user || workspaceId) {
+    if (step !== 5 || loading || !user || workspaceId) {
       setBootstrapFailed(false);
       return;
     }
@@ -177,12 +177,14 @@ function OnboardingContent() {
     );
   }
 
-  // Steps: 0 = Welcome, 1 = Category + Persona + Name, 2 = Operating Questions, 3 = Signup
+  // Steps: 0=Welcome, 1=Persona+Business, 2=Bubbles, 3=Follow-ups+Channels, 4=Summary, 5=Signup
   const renderStep = () => {
     if (step === 0) return <WelcomeStep />;
     if (step === 1) return <IndustryStep />;
-    if (step === 2) return <OperatingQuestionsStep />;
-    if (step === 3) {
+    if (step === 2) return <BubblesStep />;
+    if (step === 3) return <AIQuestionsStep />;
+    if (step === 4) return <SummaryStep workspaceId={workspaceId} />;
+    if (step === 5) {
       if (!user) return <SignupStep />;
       if (bootstrapFailed && !workspaceId) {
         return (

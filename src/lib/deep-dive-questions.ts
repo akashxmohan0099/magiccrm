@@ -20,8 +20,10 @@ export interface DeepDiveQuestion {
   relevantTo?: string[];       // industry IDs where especially relevant
   excludeFrom?: string[];      // industry IDs where irrelevant
   weight: number;              // base weight for scoring (1-5)
-  /** Skip this question if any of these local follow-up IDs were already asked in Step 5 */
+  /** Skip this question if any of these local follow-up IDs were already asked */
   skipIfLocalAsked?: string[];
+  /** Skip this question if any of these chip IDs were selected in BubblesStep (already answered) */
+  skipIfChipSelected?: string[];
   followUp?: {
     condition: "yes";
     question: string;
@@ -39,7 +41,7 @@ export const DEEP_DIVE_QUESTIONS: DeepDiveQuestion[] = [
   {
     id: "bookings-recurring",
     moduleId: "bookings-calendar",
-    question: "Do clients rebook on a regular cycle?",
+    question: "Do clients come back on a regular schedule?",
     enables: [
       { featureId: "recurring-bookings", action: "auto" },
       { featureId: "rebooking-prompts", action: "recommend" },
@@ -47,32 +49,35 @@ export const DEEP_DIVE_QUESTIONS: DeepDiveQuestion[] = [
     requiresModules: ["bookings-calendar"],
     relevantTo: ["beauty-wellness", "health-fitness"],
     weight: 5,
+    skipIfChipSelected: ["recurring-clients"],
   },
   {
     id: "bookings-no-show",
     moduleId: "bookings-calendar",
-    question: "Do you need to protect against no-shows?",
+    question: "Do you want automatic reminders to reduce no-shows?",
     enables: [
       { featureId: "booking-deposits", action: "auto" },
     ],
     requiresModules: ["bookings-calendar"],
     weight: 4,
+    skipIfChipSelected: ["deposits"],
     followUp: {
       condition: "yes",
-      question: "Should clients fill out a form before booking?",
+      question: "Should new clients fill out a form before their first visit?",
       enables: [{ featureId: "pre-booking-form", action: "auto" }],
     },
   },
   {
     id: "bookings-travel",
     moduleId: "bookings-calendar",
-    question: "Do you travel between appointments?",
+    question: "Do you need buffer time between appointments for travel?",
     enables: [
       { featureId: "travel-time", action: "auto" },
       { featureId: "buffer-time", action: "auto" },
     ],
     requiresModules: ["bookings-calendar"],
     skipIfLocalAsked: ["travel-charge"],
+    skipIfChipSelected: ["visit-clients", "op-mobile"],
     relevantTo: ["trades-construction", "health-fitness", "education-coaching"],
     excludeFrom: ["hospitality-events"],
     weight: 4,
@@ -80,7 +85,7 @@ export const DEEP_DIVE_QUESTIONS: DeepDiveQuestion[] = [
   {
     id: "bookings-group",
     moduleId: "bookings-calendar",
-    question: "Do you run group sessions or classes?",
+    question: "Do you handle group bookings or multi-person appointments?",
     enables: [
       { featureId: "group-class-booking", action: "auto" },
       { featureId: "waitlist", action: "recommend" },
@@ -89,18 +94,19 @@ export const DEEP_DIVE_QUESTIONS: DeepDiveQuestion[] = [
     relevantTo: ["health-fitness", "education-coaching"],
     excludeFrom: ["trades-construction", "professional-services"],
     weight: 4,
+    skipIfChipSelected: ["bridal-parties", "couples-bookings", "group-classes"],
   },
 
   // ── quotes-invoicing ───────────────────────────────────
   {
     id: "billing-quotes",
     moduleId: "quotes-invoicing",
-    question: "Do you send quotes before starting work?",
+    question: "Do you send quotes or estimates before the appointment?",
     enables: [
       { featureId: "quote-builder", action: "auto" },
       { featureId: "quote-to-invoice", action: "auto" },
     ],
-    requiresModules: [],  // always-on module
+    requiresModules: [],
     relevantTo: ["trades-construction", "creative-services", "professional-services"],
     excludeFrom: ["beauty-wellness"],
     weight: 5,
@@ -108,26 +114,27 @@ export const DEEP_DIVE_QUESTIONS: DeepDiveQuestion[] = [
   {
     id: "billing-recurring",
     moduleId: "quotes-invoicing",
-    question: "Do you bill on a recurring schedule?",
+    question: "Do you bill clients on a recurring schedule?",
     enables: [
       { featureId: "recurring-invoices", action: "auto" },
     ],
     requiresModules: [],
     relevantTo: ["professional-services", "education-coaching"],
+    excludeFrom: ["beauty-wellness"],
     weight: 4,
   },
   {
     id: "billing-proposals",
     moduleId: "quotes-invoicing",
-    question: "Do you create branded proposals?",
+    question: "Do you send branded proposals or packages to clients?",
     enables: [
       { featureId: "proposals", action: "auto" },
       { featureId: "proposal-e-signature", action: "recommend" },
     ],
     requiresModules: [],
     relevantTo: ["creative-services", "professional-services", "hospitality-events"],
-    excludeFrom: ["beauty-wellness", "health-fitness"],
     weight: 3,
+    skipIfChipSelected: ["proposals"],
   },
 
   // ── jobs-projects ──────────────────────────────────────
@@ -270,20 +277,22 @@ export function selectQuestionsForUser(
   enabledModules: string[],
   industry: string,
   chipSelections: string[],
-  /** IDs of local follow-up questions already asked in Step 5. Questions with
+  /** IDs of local follow-up questions already asked. Questions with
    *  matching skipIfLocalAsked entries are excluded to avoid duplication. */
   answeredLocalIds?: string[],
 ): DeepDiveQuestion[] {
   const enabledSet = new Set(enabledModules);
   const localSet = new Set(answeredLocalIds || []);
+  const chipSet = new Set(chipSelections);
 
   // Filter: must have ALL required modules enabled, not excluded for this industry,
-  // and not already covered by a local follow-up question in Step 5
+  // not already covered by a local follow-up, and not already answered via chips
   const candidates = DEEP_DIVE_QUESTIONS.filter((q) => {
     if (DEEP_DIVE_SKIP_MODULES.has(q.moduleId)) return false;
     if (q.requiresModules.length > 0 && !q.requiresModules.every((m) => enabledSet.has(m))) return false;
     if (q.excludeFrom?.includes(industry)) return false;
     if (q.skipIfLocalAsked?.some((id) => localSet.has(id))) return false;
+    if (q.skipIfChipSelected?.some((id) => chipSet.has(id))) return false;
     return true;
   });
 

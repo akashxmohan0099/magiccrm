@@ -73,7 +73,8 @@ export interface FileAttachment {
   name: string;
   size: number;
   type: string;
-  dataUrl: string;
+  dataUrl: string;         // Supabase public URL for new uploads; base64 data URI for legacy
+  storagePath?: string;    // Supabase storage path, used for deletion
   uploadedAt: string;
 }
 
@@ -187,7 +188,7 @@ export interface Payment {
 // ── Bookings & Calendar ───────────────────────────────────
 
 export type BookingStatus = "confirmed" | "pending" | "cancelled" | "completed";
-export type BookingType = "appointment" | "break" | "unavailable";
+export type BookingType = "appointment" | "break" | "unavailable" | "walkin";
 
 export interface Booking {
   id: string;
@@ -225,12 +226,15 @@ export interface WaitlistEntry {
   id: string;
   clientId?: string;
   clientName: string;
+  clientPhone?: string;
   date: string;
   startTime?: string;
   endTime?: string;
   serviceId?: string;
   serviceName?: string;
-  status: "waiting" | "notified" | "booked" | "expired";
+  status: "waiting" | "notified" | "booked" | "expired" | "in-service" | "completed" | "no-show";
+  entryType?: "waitlist" | "walkin";
+  startedServiceAt?: string;
   notifiedAt?: string;
   createdAt: string;
 }
@@ -450,7 +454,7 @@ export interface SOAPNote {
 
 // ── Intake Forms ─────────────────────────────────────────
 
-export type IntakeFieldType = "text" | "textarea" | "select" | "checkbox" | "date" | "number" | "email" | "phone";
+export type IntakeFieldType = "text" | "textarea" | "select" | "checkbox" | "date" | "number" | "email" | "phone" | "file" | "signature";
 
 export interface IntakeFormField {
   id: string;
@@ -460,6 +464,8 @@ export interface IntakeFormField {
   placeholder?: string;
   options?: string[];
   conditionalOn?: { fieldId: string; value: string };
+  fileAccept?: string;       // for "file" type, e.g. "image/*,.pdf"
+  fileMaxSizeMB?: number;    // for "file" type, default 10
 }
 
 export interface IntakeForm {
@@ -480,7 +486,7 @@ export interface IntakeSubmission {
   formName: string;
   clientId?: string;
   clientName: string;
-  responses: Record<string, string | boolean>;
+  responses: Record<string, string | boolean | string[]>;
   submittedAt: string;
 }
 

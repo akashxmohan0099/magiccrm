@@ -113,7 +113,7 @@ export const INDUSTRY_CONFIGS: IndustryConfig[] = [
         description: "Cuts, colour, styling, treatments",
         category: "hair",
         suggestedTeamSize: "2-5",
-        descriptionPlaceholder: "e.g. Boutique hair salon in Surry Hills",
+        descriptionPlaceholder: "e.g. I run a 3-chair salon in Surry Hills. We do cuts, colour, and styling. Most clients rebook every 6 weeks.",
       },
       // ── Barber ──
       {
@@ -122,7 +122,7 @@ export const INDUSTRY_CONFIGS: IndustryConfig[] = [
         description: "Men's cuts, fades, beard grooming",
         category: "barber",
         suggestedTeamSize: "2-5",
-        descriptionPlaceholder: "e.g. Classic barbershop in the CBD",
+        descriptionPlaceholder: "e.g. I run a barbershop with 2 other barbers. Walk-ins and appointments. Fades, cuts, and beard trims.",
         namePlaceholder: "e.g. The Sharp Edge",
       },
       // ── Nails ──
@@ -131,7 +131,7 @@ export const INDUSTRY_CONFIGS: IndustryConfig[] = [
         label: "Nail Tech",
         description: "Gel, acrylic, SNS, nail art",
         category: "nails",
-        descriptionPlaceholder: "e.g. Gel nails and nail art in Bondi",
+        descriptionPlaceholder: "e.g. Solo nail tech working from my home studio. I do gel, acrylic, and nail art. Clients book via Instagram.",
         namePlaceholder: "e.g. Polished by Sarah",
       },
       // ── Lashes & Brows ──
@@ -140,7 +140,7 @@ export const INDUSTRY_CONFIGS: IndustryConfig[] = [
         label: "Lash & Brow Tech",
         description: "Extensions, lifts, lamination, tinting",
         category: "lashes-brows",
-        descriptionPlaceholder: "e.g. Lash extensions and brow styling",
+        descriptionPlaceholder: "e.g. I do lash extensions and brow lamination from a home studio. Most clients come every 2\u20133 weeks for fills.",
         namePlaceholder: "e.g. Lash Lab Co",
       },
       // ── Cosmetic Tattoo ──
@@ -149,7 +149,7 @@ export const INDUSTRY_CONFIGS: IndustryConfig[] = [
         label: "Cosmetic Tattoo Artist",
         description: "Microblading, lip blush, eyeliner, scalp micropigmentation",
         category: "cosmetic-tattoo",
-        descriptionPlaceholder: "e.g. Semi-permanent brows and lips",
+        descriptionPlaceholder: "e.g. I specialise in microblading and lip blush. Clients need a consult first, then a session, then a touch-up 6 weeks later.",
         namePlaceholder: "e.g. Ink & Brow Studio",
       },
       // ── Skin Clinic ──
@@ -158,7 +158,7 @@ export const INDUSTRY_CONFIGS: IndustryConfig[] = [
         label: "Skin Therapist / Aesthetician",
         description: "Facials, peels, skin treatments, injectables",
         category: "skin-clinic",
-        descriptionPlaceholder: "e.g. Clinical facials and skin therapy",
+        descriptionPlaceholder: "e.g. I run a skin clinic doing facials, chemical peels, and LED therapy. Clients are on treatment plans over 3\u20136 months.",
         namePlaceholder: "e.g. Skin by Sarah",
       },
       // ── Spa & Massage ──
@@ -168,7 +168,7 @@ export const INDUSTRY_CONFIGS: IndustryConfig[] = [
         description: "Remedial, relaxation, deep tissue, day spa packages",
         category: "spa-massage",
         suggestedTeamSize: "2-5",
-        descriptionPlaceholder: "e.g. Relaxation and remedial massage",
+        descriptionPlaceholder: "e.g. I own a day spa with 3 massage therapists. We offer relaxation, remedial, and hot stone. Gift vouchers are big for us.",
         namePlaceholder: "e.g. Serenity Day Spa",
       },
       // ── Makeup ──
@@ -177,7 +177,7 @@ export const INDUSTRY_CONFIGS: IndustryConfig[] = [
         label: "Makeup Artist",
         description: "Bridal, events, editorial, lessons",
         category: "makeup",
-        descriptionPlaceholder: "e.g. Bridal and editorial makeup artist",
+        descriptionPlaceholder: "e.g. I\u2019m a freelance MUA specialising in weddings. I do trials, then the wedding day. Most bookings come through referrals.",
       },
       // ── Multi-Service ──
       {
@@ -186,7 +186,7 @@ export const INDUSTRY_CONFIGS: IndustryConfig[] = [
         description: "Hair, nails, skin, and more under one roof",
         category: "multi-service",
         suggestedTeamSize: "2-5",
-        descriptionPlaceholder: "e.g. Full-service beauty studio in Bondi",
+        descriptionPlaceholder: "e.g. We\u2019re a full-service beauty studio \u2014 hair, nails, lashes, and facials. 5 staff, mix of bookings and walk-ins.",
         namePlaceholder: "e.g. Glow Beauty Studio",
       },
     ],

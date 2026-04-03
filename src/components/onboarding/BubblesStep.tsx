@@ -13,6 +13,7 @@ import type { VocabularyMap } from "@/types/industry-config";
 interface Chip {
   id: string;
   label: string;
+  description?: string;
   activates: string[];
   needsKeys: (keyof NeedsAssessment)[];
 }
@@ -23,7 +24,20 @@ interface Slide {
   chips: Chip[];
 }
 
+// ── All slides: operating context + workflow discovery ──
+
 const SLIDES: Slide[] = [
+  {
+    title: "Tell us about your setup",
+    subtitle: "Select everything that applies to you",
+    chips: [
+      { id: "op-solo", label: "I work solo", activates: [], needsKeys: [] },
+      { id: "op-team", label: "I have a team or staff", activates: ["team"], needsKeys: [] },
+      { id: "op-fixed", label: "I work from a fixed location", activates: [], needsKeys: [] },
+      { id: "op-mobile", label: "I travel to clients", activates: [], needsKeys: [] },
+      { id: "op-products", label: "I sell retail products", activates: ["products"], needsKeys: [] },
+    ],
+  },
   {
     title: "How do clients reach you?",
     subtitle: "Select all that apply",
@@ -51,6 +65,7 @@ const SLIDES: Slide[] = [
     subtitle: "Select all that apply",
     chips: [
       { id: "hourly-billing", label: "I bill clients by the hour or track time", activates: ["jobs-projects", "quotes-invoicing"], needsKeys: ["manageProjects", "sendInvoices"] },
+      { id: "deposits", label: "I collect deposits before appointments", activates: ["automations"], needsKeys: [] },
       { id: "memberships", label: "I sell packages, memberships, or subscriptions", activates: ["automations"], needsKeys: [] },
       { id: "products", label: "I sell products alongside my services", activates: ["products"], needsKeys: [] },
       { id: "campaigns", label: "I run promotions, campaigns, or offers", activates: ["marketing"], needsKeys: ["runMarketing"] },
@@ -81,6 +96,124 @@ interface IndustryChipConfig {
   add?: { slide: number; chip: Chip }[];
 }
 
+// ── Persona-specific overrides (applied ON TOP of industry overrides) ──
+
+const PERSONA_OVERRIDES: Record<string, IndustryChipConfig> = {
+  "makeup-artist": {
+    hide: ["walk-ins", "group-classes", "hourly-billing", "op-fixed", "memberships", "client-portal", "inquiries", "projects"],
+    relabel: {
+      "visit-clients": "I travel to venues and client locations",
+      "deposits": "I collect non-refundable deposits to hold dates",
+      "contracts": "Clients sign contracts before I lock in their date",
+      "recurring-clients": "I have regular clients for lessons or touch-ups",
+      "op-mobile": "I\u2019m fully mobile \u2014 I go to clients and venues",
+      "campaigns": "I promote my work on Instagram and social media",
+    },
+    add: [
+      { slide: 0, chip: { id: "op-home-studio", label: "I have a home studio for trials and lessons", activates: [], needsKeys: [] } },
+      { slide: 1, chip: { id: "mua-inquiries", label: "Brides and event clients inquire before booking", activates: ["leads-pipeline"], needsKeys: ["receiveInquiries"] } },
+      { slide: 1, chip: { id: "wedding-inquiries", label: "I get wedding and bridal party inquiries", activates: ["leads-pipeline"], needsKeys: ["receiveInquiries"] } },
+      { slide: 1, chip: { id: "long-lead", label: "Clients book 6\u201312 months in advance", activates: ["leads-pipeline"], needsKeys: ["receiveInquiries"] } },
+      { slide: 2, chip: { id: "mua-weddings", label: "I manage weddings with trials and day-of", activates: ["leads-pipeline"], needsKeys: ["receiveInquiries"] } },
+      { slide: 2, chip: { id: "bridal-parties", label: "I do bridal parties (3\u20138 people per wedding)", activates: ["bookings-calendar"], needsKeys: ["acceptBookings"] } },
+      { slide: 2, chip: { id: "trials", label: "I do makeup trials before the wedding day", activates: ["bookings-calendar"], needsKeys: ["acceptBookings"] } },
+      { slide: 2, chip: { id: "early-mornings", label: "I start at 5\u20136am on wedding days", activates: [], needsKeys: [] } },
+      { slide: 3, chip: { id: "proposals", label: "I send branded proposals with pricing", activates: ["documents"], needsKeys: [] } },
+      { slide: 3, chip: { id: "vendor-referrals", label: "I get referrals from planners, photographers, and venues", activates: ["marketing"], needsKeys: ["runMarketing"] } },
+    ],
+  },
+  "barber": {
+    hide: ["group-classes", "inquiries", "projects", "hourly-billing", "contracts", "client-portal", "op-mobile"],
+    relabel: {
+      "walk-ins": "Clients walk in without booking",
+      "recurring-clients": "I see the same clients every 2\u20134 weeks",
+      "team": "I have other barbers working with me",
+      "at-my-place": "Clients come to my barbershop",
+    },
+  },
+  "nail-tech": {
+    hide: ["walk-ins", "group-classes", "inquiries", "projects", "hourly-billing", "client-portal"],
+    relabel: {
+      "recurring-clients": "Clients come back every 2\u20133 weeks for fills",
+      "deposits": "I require deposits to hold appointment slots",
+      "op-mobile": "I offer mobile nail services at client homes",
+    },
+    add: [
+      { slide: 1, chip: { id: "instagram-booking", label: "Most of my bookings come through Instagram", activates: ["marketing"], needsKeys: ["runMarketing"] } },
+      { slide: 0, chip: { id: "home-studio", label: "I work from a home studio", activates: [], needsKeys: [] } },
+    ],
+  },
+  "lash-brow-tech": {
+    hide: ["walk-ins", "group-classes", "inquiries", "projects", "hourly-billing", "client-portal"],
+    relabel: {
+      "recurring-clients": "Clients come back every 2\u20133 weeks for fills",
+      "deposits": "I require deposits for new clients",
+      "op-mobile": "I offer mobile lash services",
+    },
+    add: [
+      { slide: 0, chip: { id: "home-studio", label: "I work from a home studio", activates: [], needsKeys: [] } },
+      { slide: 0, chip: { id: "patch-tests", label: "New clients need a patch test first", activates: [], needsKeys: [] } },
+      { slide: 1, chip: { id: "instagram-booking", label: "Most of my bookings come through Instagram", activates: ["marketing"], needsKeys: ["runMarketing"] } },
+      { slide: 2, chip: { id: "aftercare", label: "I send aftercare instructions after appointments", activates: ["automations"], needsKeys: [] } },
+    ],
+  },
+  "cosmetic-tattoo": {
+    hide: ["walk-ins", "group-classes", "hourly-billing", "memberships", "client-portal"],
+    relabel: {
+      "inquiries": "Clients inquire and book a consultation first",
+      "projects": "Each client needs multiple sessions (initial + touch-up)",
+      "deposits": "I collect deposits before procedures",
+      "contracts": "Clients sign consent forms and medical history",
+      "recurring-clients": "Clients come back for annual colour refreshes",
+    },
+    add: [
+      { slide: 0, chip: { id: "home-studio", label: "I work from a home studio", activates: [], needsKeys: [] } },
+      { slide: 2, chip: { id: "healing-timeline", label: "Touch-ups require a healing period (4\u20138 weeks)", activates: [], needsKeys: [] } },
+      { slide: 2, chip: { id: "aftercare", label: "I send aftercare instructions after procedures", activates: ["automations"], needsKeys: [] } },
+    ],
+  },
+  "esthetician": {
+    hide: ["walk-ins", "group-classes", "hourly-billing"],
+    relabel: {
+      "inquiries": "New clients book a skin consultation first",
+      "recurring-clients": "Clients are on treatment plans over several months",
+      "contracts": "Clients fill out medical history and consent forms",
+      "products": "I sell skincare products to clients",
+    },
+    add: [
+      { slide: 2, chip: { id: "treatment-plans", label: "I create multi-session treatment plans", activates: [], needsKeys: [] } },
+      { slide: 2, chip: { id: "skin-progress", label: "I track skin progress with photos over time", activates: [], needsKeys: [] } },
+    ],
+  },
+  "spa-massage": {
+    hide: ["inquiries", "projects", "hourly-billing"],
+    relabel: {
+      "walk-ins": "Walk-ins are welcome",
+      "recurring-clients": "Clients book regular treatments",
+      "team": "I have therapists working with me",
+      "memberships": "I sell spa memberships or treatment packages",
+      "contracts": "Clients complete health screening forms",
+    },
+    add: [
+      { slide: 3, chip: { id: "gift-vouchers", label: "I sell gift vouchers", activates: [], needsKeys: [] } },
+      { slide: 2, chip: { id: "couples-bookings", label: "I offer couples or group treatments", activates: [], needsKeys: [] } },
+      { slide: 0, chip: { id: "multiple-rooms", label: "I have multiple treatment rooms", activates: [], needsKeys: [] } },
+    ],
+  },
+  "beauty-salon": {
+    hide: ["inquiries", "projects", "hourly-billing"],
+    relabel: {
+      "walk-ins": "We accept walk-ins",
+      "recurring-clients": "We see the same clients regularly",
+      "team": "We have multiple specialists (hair, nails, lashes, etc.)",
+      "products": "We sell retail beauty products",
+    },
+    add: [
+      { slide: 0, chip: { id: "multi-service", label: "We offer multiple service categories", activates: [], needsKeys: [] } },
+    ],
+  },
+};
+
 const INDUSTRY_OVERRIDES: Record<string, IndustryChipConfig> = {
   "beauty-wellness": {
     hide: ["inquiries", "projects", "hourly-billing"],
@@ -92,7 +225,7 @@ const INDUSTRY_OVERRIDES: Record<string, IndustryChipConfig> = {
       "team": "I have stylists or therapists working with me",
     },
     add: [
-      { slide: 0, chip: { id: "messaging", label: "They DM me on Instagram or WhatsApp", activates: ["marketing"], needsKeys: ["runMarketing"] } },
+      { slide: 1, chip: { id: "messaging", label: "They DM me on Instagram or WhatsApp", activates: ["marketing"], needsKeys: ["runMarketing"] } },
     ],
   },
   "trades-construction": {
@@ -201,20 +334,30 @@ function applyVocab(label: string, vocab: VocabularyMap): string {
 }
 
 /** Apply industry overrides + vocabulary to the base slides */
-function getSlidesForIndustry(industryId: string, vocab: VocabularyMap): Slide[] {
-  const config = INDUSTRY_OVERRIDES[industryId];
-  const base = config ? SLIDES : SLIDES;
+function getSlidesForIndustry(industryId: string, personaId: string, vocab: VocabularyMap): Slide[] {
+  const industryConfig = INDUSTRY_OVERRIDES[industryId];
+  const personaConfig = PERSONA_OVERRIDES[personaId];
 
-  const hideSet = new Set(config?.hide || []);
-  const relabel = config?.relabel || {};
+  // Merge: persona overrides take precedence over industry
+  const hideSet = new Set([
+    ...(industryConfig?.hide || []),
+    ...(personaConfig?.hide || []),
+  ]);
+  // If persona un-hides something industry hid (by relabeling it), remove from hide set
+  if (personaConfig?.relabel) {
+    Object.keys(personaConfig.relabel).forEach(id => hideSet.delete(id));
+  }
 
-  const slides = base.map((slide, slideIdx) => {
+  const relabel = { ...(industryConfig?.relabel || {}), ...(personaConfig?.relabel || {}) };
+  const addChips = [...(industryConfig?.add || []), ...(personaConfig?.add || [])];
+
+  const slides = SLIDES.map((slide, slideIdx) => {
     let chips = slide.chips
       .filter(c => !hideSet.has(c.id))
       .map(c => relabel[c.id] ? { ...c, label: relabel[c.id] } : c);
 
-    // Add industry-specific chips
-    const extras = (config?.add || []).filter(a => a.slide === slideIdx);
+    // Add industry + persona specific chips
+    const extras = addChips.filter(a => a.slide === slideIdx);
     if (extras.length > 0) {
       chips = [...chips, ...extras.map(e => e.chip)];
     }
@@ -230,18 +373,20 @@ function getSlidesForIndustry(industryId: string, vocab: VocabularyMap): Slide[]
     };
   });
 
-  return slides;
+  // Remove empty slides (all chips hidden)
+  return slides.filter(s => s.chips.length > 0);
 }
 
 export function BubblesStep() {
   const { nextStep, prevStep } = useOnboardingStore();
   const selectedIndustry = useOnboardingStore((s) => s.selectedIndustry);
+  const selectedPersona = useOnboardingStore((s) => s.selectedPersona);
   const setNeed = useOnboardingStore((s) => s.setNeed);
   const persistedChips = useOnboardingStore((s) => s.chipSelections);
   const toggleChipStore = useOnboardingStore((s) => s.toggleChip);
   const vocab = useVocabulary();
 
-  const slides = getSlidesForIndustry(selectedIndustry, vocab);
+  const slides = getSlidesForIndustry(selectedIndustry, selectedPersona, vocab);
   const allChips = slides.flatMap(s => s.chips);
 
   // Derive selected set from persisted store (survives back/refresh)
@@ -253,9 +398,17 @@ export function BubblesStep() {
   const isLast = slideIndex === slides.length - 1;
   const progress = ((slideIndex + 1) / slides.length) * 100;
 
+  // Mutually exclusive chip pairs
+  const EXCLUSIVE_PAIRS: [string, string][] = [["op-solo", "op-team"]];
+
   const toggle = useCallback((id: string) => {
-    toggleChipStore(id); // Persists to Zustand immediately
-  }, [toggleChipStore]);
+    // If selecting one side of an exclusive pair, deselect the other
+    for (const [a, b] of EXCLUSIVE_PAIRS) {
+      if (id === a && persistedChips.includes(b)) toggleChipStore(b);
+      if (id === b && persistedChips.includes(a)) toggleChipStore(a);
+    }
+    toggleChipStore(id);
+  }, [toggleChipStore, persistedChips]);
 
   const handleNext = () => {
     if (isLast) {
@@ -276,7 +429,24 @@ export function BubblesStep() {
   };
 
   const finalize = () => {
-    // Collect activated modules and needs from selected chips only
+    // ── Map operating chips to store ──
+    const store = useOnboardingStore.getState();
+    if (selected.has("op-solo")) store.setTeamSize("Just me");
+    else if (selected.has("op-team")) store.setTeamSize("2-5");
+
+    if (selected.has("op-fixed") && selected.has("op-mobile")) {
+      store.setOperatingModel({ workLocation: "both" });
+    } else if (selected.has("op-mobile")) {
+      store.setOperatingModel({ workLocation: "mobile" });
+    } else if (selected.has("op-fixed")) {
+      store.setOperatingModel({ workLocation: "fixed" });
+    }
+
+    if (selected.has("op-products")) {
+      store.setOperatingModel({ sellProducts: true });
+    }
+
+    // ── Collect activated modules and needs from selected chips ──
     const mods = new Set<string>();
     const needsToSet = new Set<keyof NeedsAssessment>();
     for (const chip of allChips) {
@@ -291,13 +461,9 @@ export function BubblesStep() {
       .forEach(n => needsToSet.add(n));
 
     // Reset ALL non-always-on needs to false first, then set only the selected ones.
-    // This clears stale smart defaults (handleSupport, manageDocuments) too.
     (["acceptBookings", "manageProjects", "runMarketing", "handleSupport", "manageDocuments"] as const)
       .forEach(n => setNeed(n, false));
     needsToSet.forEach(n => setNeed(n, true));
-
-    // Clear ALL old chip + module discovery answers, then write fresh
-    const store = useOnboardingStore.getState();
     store.setAICategories([]);
     // Reset: mark all possible modules as false, then overwrite selected ones
     for (const chip of allChips) {

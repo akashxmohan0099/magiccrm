@@ -342,7 +342,6 @@ function DashboardShell({ children }: { children: ReactNode }) {
           </div>
           <div className="flex items-center gap-2 flex-shrink-0 ml-3">
             <NavBarConfigurator pathname={pathname} vocab={vocab} />
-            <ThemeToggle />
             <div className="relative">
               <button
                 onClick={() => setNotifOpen((o) => !o)}

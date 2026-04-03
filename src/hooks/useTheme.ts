@@ -10,7 +10,7 @@ const listeners = new Set<() => void>();
 
 function getStoredTheme(): Theme {
   if (typeof window === "undefined") return "system";
-  return (localStorage.getItem(STORAGE_KEY) as Theme) || "system";
+  return (localStorage.getItem(STORAGE_KEY) as Theme) || "light";
 }
 
 function resolveTheme(theme: Theme): "light" | "dark" {

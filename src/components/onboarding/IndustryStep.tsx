@@ -10,8 +10,21 @@ import {
 import { useOnboardingStore } from "@/store/onboarding";
 import { INDUSTRY_CONFIGS, type PersonaCategory } from "@/types/onboarding";
 
-const CATEGORY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const CATEGORY_ICONS: Record<string, any> = {
   Scissors, Paintbrush, Eye, Sparkles, Palette, Building2, PenTool, Flower2, Blade: Slash,
+};
+
+const CATEGORY_COLORS: Record<string, { accent: string; bg: string }> = {
+  hair:              { accent: "#8B5CF6", bg: "#8B5CF620" },
+  barber:            { accent: "#1E293B", bg: "#1E293B15" },
+  nails:             { accent: "#EC4899", bg: "#EC489920" },
+  "lashes-brows":    { accent: "#F59E0B", bg: "#F59E0B20" },
+  "cosmetic-tattoo": { accent: "#7C3AED", bg: "#7C3AED20" },
+  "skin-clinic":     { accent: "#10B981", bg: "#10B98120" },
+  "spa-massage":     { accent: "#06B6D4", bg: "#06B6D420" },
+  makeup:            { accent: "#F43F5E", bg: "#F43F5E20" },
+  "multi-service":   { accent: "#6366F1", bg: "#6366F120" },
 };
 
 export function IndustryStep() {
@@ -85,12 +98,10 @@ export function IndustryStep() {
     nextStep();
   };
 
-  // Show business name input when persona is selected
-  const showBusinessName = !!selectedPersona;
-  // Show persona picker when category is selected and has multiple personas
-  const showPersonas = selectedCategory && categoryPersonas.length > 1 && !selectedPersona;
-  // Show category picker when nothing selected
+  // Three mutually exclusive states — only ONE can be true at a time
   const showCategories = !selectedCategory;
+  const showPersonas = !!selectedCategory && categoryPersonas.length > 1 && !selectedPersona;
+  const showBusinessName = !!selectedCategory && !!selectedPersona;
 
   return (
     <motion.div
@@ -128,24 +139,36 @@ export function IndustryStep() {
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {categories.map((cat, i) => {
                 const IconComp = CATEGORY_ICONS[cat.icon] || Sparkles;
+                const colors = CATEGORY_COLORS[cat.id] || { accent: "#6B7280", bg: "#6B728015" };
                 return (
                   <motion.button
                     key={cat.id}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.04 }}
-                    whileHover={{ y: -2 }}
+                    whileHover={{ y: -3, boxShadow: `0 8px 25px -5px ${colors.accent}20` }}
                     whileTap={{ scale: 0.97 }}
                     onClick={() => handleCategorySelect(cat.id)}
-                    className="text-center px-4 py-6 rounded-2xl transition-all duration-200 cursor-pointer bg-card-bg border border-border-light hover:border-foreground/20 hover:shadow-md"
+                    className="relative text-center px-4 py-7 rounded-2xl transition-all duration-200 cursor-pointer bg-card-bg border border-border-light overflow-hidden group"
+                    style={{ borderColor: undefined }}
                   >
-                    <div className="w-10 h-10 bg-surface rounded-xl flex items-center justify-center mx-auto mb-3">
-                      <IconComp className="w-5 h-5 text-text-secondary" />
+                    <div
+                      className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                      style={{ background: `linear-gradient(135deg, ${colors.accent}08 0%, ${colors.accent}15 100%)` }}
+                    />
+                    <div
+                      className="absolute top-0 left-0 right-0 h-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-t-2xl"
+                      style={{ backgroundColor: colors.accent }}
+                    />
+                    <div className="relative">
+                      <div
+                        className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
+                        style={{ backgroundColor: colors.bg }}
+                      >
+                        <IconComp className="w-5.5 h-5.5" style={{ color: colors.accent }} />
+                      </div>
+                      <p className="font-semibold text-[14px] text-foreground">{cat.label}</p>
                     </div>
-                    <p className="font-semibold text-sm text-foreground">{cat.label}</p>
-                    <p className="text-[11px] text-text-tertiary mt-0.5">
-                      {cat.personaIds.length === 1 ? "1 type" : `${cat.personaIds.length} types`}
-                    </p>
                   </motion.button>
                 );
               })}
@@ -210,25 +233,37 @@ export function IndustryStep() {
               </span>
             </div>
 
-            <div className="text-center mb-8">
+            <div className="text-center mb-6">
               <h2 className="text-[28px] font-bold text-foreground tracking-tight mb-2">
-                What&apos;s your business called?
+                Tell us about your business
               </h2>
               <p className="text-text-secondary text-[15px]">
-                This is what your clients will see.
+                This helps us set up the right tools for how you work.
               </p>
             </div>
 
-            <div className="mb-8">
-              <input
-                type="text"
-                value={businessName}
-                onChange={(e) => setBusinessName(e.target.value)}
-                placeholder={allPersonas.find((p) => p.id === selectedPersona)?.namePlaceholder || "e.g. Glow Studio"}
-                className="w-full px-4 py-3.5 bg-card-bg border border-border-light rounded-2xl text-[15px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all"
-                onKeyDown={(e) => e.key === "Enter" && canContinue && handleContinue()}
-                autoFocus
-              />
+            <div className="space-y-4 mb-8">
+              <div>
+                <label className="block text-[13px] font-medium text-foreground mb-1.5">Business name</label>
+                <input
+                  type="text"
+                  value={businessName}
+                  onChange={(e) => setBusinessName(e.target.value)}
+                  placeholder={allPersonas.find((p) => p.id === selectedPersona)?.namePlaceholder || "e.g. Glow Studio"}
+                  className="w-full px-4 py-3.5 bg-card-bg border border-border-light rounded-2xl text-[15px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block text-[13px] font-medium text-foreground mb-1.5">Describe what you do <span className="text-text-tertiary font-normal">(optional)</span></label>
+                <textarea
+                  value={businessContext.businessDescription}
+                  onChange={(e) => setBusinessContext({ ...businessContext, businessDescription: e.target.value })}
+                  placeholder={allPersonas.find((p) => p.id === selectedPersona)?.descriptionPlaceholder || "e.g. Mobile lash technician in Brisbane"}
+                  rows={3}
+                  className="w-full px-4 py-3.5 bg-card-bg border border-border-light rounded-2xl text-[15px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all resize-none"
+                />
+              </div>
             </div>
 
             <button

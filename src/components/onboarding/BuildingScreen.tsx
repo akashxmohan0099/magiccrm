@@ -144,23 +144,24 @@ export function BuildingScreen() {
     });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const a = (x: unknown) => x as any;
+    // Clear existing data and seed fresh sample data — no duplicates
     if (sampleData.clients.length > 0) {
-      useClientsStore.setState((s) => ({ clients: [...s.clients, ...sampleData.clients.map(a)] }));
+      useClientsStore.setState({ clients: sampleData.clients.map(a) });
     }
     if (sampleData.products.length > 0) {
-      useProductsStore.setState((s) => ({ products: [...s.products, ...sampleData.products.map(a)] }));
+      useProductsStore.setState({ products: sampleData.products.map(a) });
     }
     if (sampleData.leads.length > 0) {
-      useLeadsStore.setState((s) => ({ leads: [...s.leads, ...sampleData.leads.map(a)] }));
+      useLeadsStore.setState({ leads: sampleData.leads.map(a) });
     }
     if (sampleData.bookings.length > 0) {
-      useBookingsStore.setState((s) => ({ bookings: [...s.bookings, ...sampleData.bookings.map(a)] }));
+      useBookingsStore.setState({ bookings: sampleData.bookings.map(a) });
     }
     if (sampleData.invoices.length > 0) {
-      useInvoicesStore.setState((s) => ({ invoices: [...s.invoices, ...sampleData.invoices.map(a)] }));
+      useInvoicesStore.setState({ invoices: sampleData.invoices.map(a) });
     }
     if (sampleData.jobs.length > 0) {
-      useJobsStore.setState((s) => ({ jobs: [...s.jobs, ...sampleData.jobs.map(a)] }));
+      useJobsStore.setState({ jobs: sampleData.jobs.map(a) });
     }
   }, [selectedModules, selectedIndustry, selectedPersona, businessContext.businessName]);
 
