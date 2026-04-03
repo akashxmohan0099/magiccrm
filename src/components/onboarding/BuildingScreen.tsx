@@ -129,19 +129,36 @@ export function BuildingScreen() {
     assemblyRan.current = true;
 
     // Deterministic schema assembly (no AI call) — populates useModuleSchema for page headers
-    const result = assembleWorkspaceSync({
-      enabledModuleIds: selectedModules,
-      industryId: selectedIndustry,
-      personaId: selectedPersona,
-    });
+    let result;
+    try {
+      result = assembleWorkspaceSync({
+        enabledModuleIds: selectedModules,
+        industryId: selectedIndustry,
+        personaId: selectedPersona,
+      });
+    } catch (err) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("[BuildingScreen] Assembly failed:", err);
+      }
+      // Use empty schemas as fallback — dashboard will still load with base defaults
+      result = { schemas: [] as never[], fallbacks: selectedModules.map((id) => ({ moduleId: id, reason: "Assembly error" })), durationMs: 0 };
+    }
     setAssemblyResult(result.schemas, result.fallbacks, 0);
 
-    const sampleData = generateSampleData({
-      industryId: selectedIndustry,
-      personaId: selectedPersona,
-      businessName: businessContext.businessName,
-      enabledModuleIds: selectedModules,
-    });
+    let sampleData;
+    try {
+      sampleData = generateSampleData({
+        industryId: selectedIndustry,
+        personaId: selectedPersona,
+        businessName: businessContext.businessName,
+        enabledModuleIds: selectedModules,
+      });
+    } catch (err) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("[BuildingScreen] Sample data generation failed:", err);
+      }
+      sampleData = { clients: [], products: [], leads: [], bookings: [], invoices: [], jobs: [], team: [] };
+    }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const a = (x: unknown) => x as any;
     // Clear existing data and seed fresh sample data — no duplicates

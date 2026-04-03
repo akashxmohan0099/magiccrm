@@ -338,7 +338,7 @@ export const useOnboardingStore = create<OnboardingStore>()(
             tuningLoaded: true,
           });
         } catch (err) {
-          console.error("[onboarding] requestTuning failed:", err);
+          if (process.env.NODE_ENV === "development") console.error("[onboarding] requestTuning failed:", err);
           set({ tuningLoaded: true });
         }
       },
@@ -421,7 +421,7 @@ export const useOnboardingStore = create<OnboardingStore>()(
             });
           }
         } catch (err) {
-          console.error("[onboarding] loadFromSupabase failed:", err);
+          if (process.env.NODE_ENV === "development") console.error("[onboarding] loadFromSupabase failed:", err);
           // Don't toast on load — user may be offline or first-time
         }
       },

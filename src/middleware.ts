@@ -43,7 +43,7 @@ export async function middleware(request: NextRequest) {
     error: authError,
   } = await supabase.auth.getUser();
 
-  if (authError) {
+  if (authError && process.env.NODE_ENV === "development") {
     console.error("[middleware] getUser error:", authError.message);
   }
 

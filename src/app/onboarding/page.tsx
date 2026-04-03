@@ -14,6 +14,7 @@ import { SummaryStep } from "@/components/onboarding/SummaryStep";
 import { SignupStep } from "@/components/onboarding/SignupStep";
 import { BuildingScreen } from "@/components/onboarding/BuildingScreen";
 import { OnboardingLoader } from "@/components/onboarding/OnboardingLoader";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 
 export default function OnboardingPage() {
   const hydrated = useHydration();
@@ -125,15 +126,20 @@ function OnboardingContent() {
         if (cancelled) return;
 
         if (!res.ok) {
+          if (cancelled) return;
           const result = await res.json().catch(() => ({}));
-          console.warn(`[onboarding] workspace bootstrap attempt ${attempt + 1} failed:`, result.error || res.statusText);
+          if (process.env.NODE_ENV === "development") {
+            console.warn(`[onboarding] workspace bootstrap attempt ${attempt + 1} failed:`, result.error || res.statusText);
+          }
           return tryBootstrap(attempt + 1);
         }
 
         window.dispatchEvent(new Event(AUTH_MEMBER_REFRESH_EVENT));
       } catch (error) {
         if (cancelled) return;
-        console.warn(`[onboarding] workspace bootstrap attempt ${attempt + 1} failed:`, error);
+        if (process.env.NODE_ENV === "development") {
+          console.warn(`[onboarding] workspace bootstrap attempt ${attempt + 1} failed:`, error);
+        }
         return tryBootstrap(attempt + 1);
       }
     };
@@ -164,7 +170,11 @@ function OnboardingContent() {
   }
 
   if (isBuilding) {
-    return <BuildingScreen />;
+    return (
+      <ErrorBoundary>
+        <BuildingScreen />
+      </ErrorBoundary>
+    );
   }
 
   // Don't render steps while auth is loading or redirecting
