@@ -415,7 +415,37 @@ function DashboardShell({ children }: { children: ReactNode }) {
         <ErrorBoundary>
           <div className="p-4 lg:p-8">{children}</div>
         </ErrorBoundary>
+        {/* Add bottom padding on mobile for bottom nav */}
+        <div className="h-16 lg:hidden" />
       </main>
+
+      {/* Mobile Bottom Nav */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-card-bg border-t border-border-light z-20 lg:hidden">
+        <div className="flex items-center justify-around h-14">
+          {[
+            { href: "/dashboard", label: "Home", icon: LayoutDashboard },
+            { href: "/dashboard/clients", label: vocab.clients || "Clients", icon: Users },
+            { href: "/dashboard/bookings", label: "Calendar", icon: Calendar },
+            { href: "/dashboard/communication", label: "Messages", icon: MessageCircle },
+            { href: "/dashboard/invoicing", label: "Invoices", icon: Receipt },
+          ].map((item) => {
+            const isActive = item.href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(item.href);
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex flex-col items-center justify-center gap-0.5 px-2 py-1 min-w-[56px] transition-colors ${
+                  isActive ? "text-foreground" : "text-text-tertiary"
+                }`}
+              >
+                <Icon className="w-5 h-5" />
+                <span className="text-[9px] font-medium">{item.label}</span>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
 
       <CommandPalette />
     </div>
