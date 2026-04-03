@@ -9,12 +9,16 @@ import {
   Flame,
   Clock,
   Inbox,
+  Calendar,
+  Receipt,
 } from "lucide-react";
 import { useLeadsStore } from "@/store/leads";
 import { Lead } from "@/types/models";
 import { useIndustryConfig } from "@/hooks/useIndustryConfig";
 import { KanbanBoard, KanbanColumn } from "@/components/ui/KanbanBoard";
 import { Button } from "@/components/ui/Button";
+import { BookingForm } from "@/components/modules/bookings/BookingForm";
+import { InvoiceForm } from "@/components/modules/invoicing/InvoiceForm";
 
 interface PipelineBoardProps {
   leads?: Lead[];
@@ -118,6 +122,28 @@ export function PipelineBoard({ leads: externalLeads }: PipelineBoardProps) {
   const config = useIndustryConfig();
   const leads = externalLeads ?? store.leads;
 
+  // ── Lead action state ──
+  const [bookingLeadId, setBookingLeadId] = useState<string | null>(null);
+  const [invoiceLeadId, setInvoiceLeadId] = useState<string | null>(null);
+
+  const bookingLead = bookingLeadId ? leads.find((l) => l.id === bookingLeadId) : null;
+  const invoiceLead = invoiceLeadId ? leads.find((l) => l.id === invoiceLeadId) : null;
+
+  // Convert lead to client first if needed, then open the form
+  const handleConvertAndBook = (lead: Lead) => {
+    if (!lead.clientId) {
+      store.convertToClient(lead.id);
+    }
+    setBookingLeadId(lead.id);
+  };
+
+  const handleConvertAndInvoice = (lead: Lead) => {
+    if (!lead.clientId) {
+      store.convertToClient(lead.id);
+    }
+    setInvoiceLeadId(lead.id);
+  };
+
   const columns: KanbanColumn<Lead>[] = useMemo(() => {
     const stageIds = new Set(config.leadStages.map((s) => s.id));
     const fallbackStageId =
@@ -159,6 +185,7 @@ export function PipelineBoard({ leads: externalLeads }: PipelineBoardProps) {
   }));
 
   return (
+    <>
     <KanbanBoard<Lead>
       columns={columns}
       keyExtractor={(lead) => lead.id}
@@ -211,6 +238,24 @@ export function PipelineBoard({ leads: externalLeads }: PipelineBoardProps) {
               />
             </div>
 
+            {/* Lead actions */}
+            <div className="flex gap-1.5 pt-1">
+              <button
+                onClick={(e) => { e.stopPropagation(); handleConvertAndBook(lead); }}
+                className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-[10px] font-semibold bg-foreground text-background rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+              >
+                <Calendar className="w-3 h-3" />
+                Book
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); handleConvertAndInvoice(lead); }}
+                className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-[10px] font-semibold bg-surface border border-border-light text-foreground rounded-lg cursor-pointer hover:bg-card-bg transition-colors"
+              >
+                <Receipt className="w-3 h-3" />
+                Quote
+              </button>
+            </div>
+
             {/* Convert button for won leads */}
             {lead.stage === "won" && !lead.clientId && (
               <Button
@@ -254,5 +299,30 @@ export function PipelineBoard({ leads: externalLeads }: PipelineBoardProps) {
         </div>
       )}
     />
+
+      {/* Inline booking form — pre-filled from lead */}
+      {bookingLead && (
+        <BookingForm
+          open={!!bookingLeadId}
+          onClose={() => setBookingLeadId(null)}
+          defaultDate={new Date().toISOString().split("T")[0]}
+          prefill={{
+            title: bookingLead.name,
+            clientId: bookingLead.clientId ?? "",
+          }}
+        />
+      )}
+
+      {/* Inline invoice form — pre-filled from lead */}
+      {invoiceLead && (
+        <InvoiceForm
+          open={!!invoiceLeadId}
+          onClose={() => setInvoiceLeadId(null)}
+          prefill={{
+            clientId: invoiceLead.clientId ?? "",
+          }}
+        />
+      )}
+    </>
   );
 }
