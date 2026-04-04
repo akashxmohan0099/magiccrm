@@ -6,6 +6,7 @@ import { useInvoicesStore } from "@/store/invoices";
 import { useClientsStore } from "@/store/clients";
 import { useBrandSettingsStore } from "@/store/brand-settings";
 import { useOnboardingStore } from "@/store/onboarding";
+import { useAuth } from "@/hooks/useAuth";
 import { Quote } from "@/types/models";
 import { generateId } from "@/lib/id";
 import { useVocabulary } from "@/hooks/useVocabulary";
@@ -24,6 +25,7 @@ interface QuoteDetailProps {
 export function QuoteDetail({ open, onClose, quoteId, onEdit }: QuoteDetailProps) {
   const { quotes, addQuote, deleteQuote, convertQuoteToInvoice } = useInvoicesStore();
   const { clients } = useClientsStore();
+  const { workspaceId } = useAuth();
   const vocab = useVocabulary();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
@@ -48,6 +50,7 @@ export function QuoteDetail({ open, onClose, quoteId, onEdit }: QuoteDetailProps
   const total = quote.lineItems.reduce((sum, li) => sum + li.quantity * li.unitPrice, 0);
 
   const buildPdfPayload = () => ({
+    workspaceId,
     templateId: invoiceTemplate,
     documentType: "quote",
     businessName,
@@ -78,6 +81,8 @@ export function QuoteDetail({ open, onClose, quoteId, onEdit }: QuoteDetailProps
   });
 
   const handleDownloadPdf = async () => {
+    if (!workspaceId) return;
+
     const res = await fetch("/api/invoices/pdf", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -90,6 +95,8 @@ export function QuoteDetail({ open, onClose, quoteId, onEdit }: QuoteDetailProps
   };
 
   const handlePreview = async () => {
+    if (!workspaceId) return;
+
     const res = await fetch("/api/invoices/pdf", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

@@ -88,6 +88,7 @@ export function InvoiceDetail({ open, onClose, invoiceId, onEdit }: InvoiceDetai
     if (!invoice) return null;
 
     return {
+      workspaceId,
       templateId: invoiceTemplate,
       documentType: "invoice",
       businessName,
@@ -119,6 +120,8 @@ export function InvoiceDetail({ open, onClose, invoiceId, onEdit }: InvoiceDetai
   };
 
   const handleDownloadPdf = async () => {
+    if (!workspaceId) return;
+
     const payload = buildPdfPayload();
     if (!payload) return;
 
@@ -134,6 +137,8 @@ export function InvoiceDetail({ open, onClose, invoiceId, onEdit }: InvoiceDetai
   };
 
   const handlePreview = async () => {
+    if (!workspaceId) return;
+
     const payload = buildPdfPayload();
     if (!payload) return;
 

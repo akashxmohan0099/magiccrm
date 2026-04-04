@@ -13,9 +13,16 @@ import { createAdminClient } from "@/lib/supabase-server";
  * Protect with CRON_SECRET header in production.
  */
 export async function GET(req: NextRequest) {
-  // Verify cron secret in production
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret && req.headers.get("x-cron-secret") !== cronSecret) {
+  const bearerToken = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+  const providedSecret = bearerToken || req.headers.get("x-cron-secret");
+
+  if (!cronSecret) {
+    console.error("[cron/reminders] CRON_SECRET is not configured");
+    return NextResponse.json({ error: "Cron secret is not configured" }, { status: 500 });
+  }
+
+  if (providedSecret !== cronSecret) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

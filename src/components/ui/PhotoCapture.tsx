@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Camera, RotateCcw, Check, X } from "lucide-react";
 
 interface PhotoCaptureProps {
@@ -15,26 +15,38 @@ export function PhotoCapture({ onCapture, onClose }: PhotoCaptureProps) {
   const [captured, setCaptured] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const startCamera = useCallback(async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 960 } },
-      });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-    } catch {
-      setError("Camera not available. Please use file upload instead.");
-    }
-  }, []);
-
   useEffect(() => {
-    startCamera();
+    let active = true;
+
+    async function openCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 960 } },
+        });
+
+        if (!active) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      } catch {
+        if (active) {
+          setError("Camera not available. Please use file upload instead.");
+        }
+      }
+    }
+
+    void openCamera();
+
     return () => {
+      active = false;
       streamRef.current?.getTracks().forEach((t) => t.stop());
     };
-  }, [startCamera]);
+  }, []);
 
   const capture = () => {
     const video = videoRef.current;

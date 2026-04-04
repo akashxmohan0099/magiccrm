@@ -78,9 +78,33 @@ function esc(str: string): string {
     .replace(/"/g, "&quot;");
 }
 
+function sanitizeColor(color: string): string {
+  const trimmed = color.trim();
+  return /^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(trimmed)
+    ? trimmed
+    : "#34D399";
+}
+
+function sanitizeImageSrc(src: string): string {
+  const trimmed = src.trim();
+
+  if (
+    /^data:image\/(?:png|jpe?g|gif|webp|svg\+xml);base64,[a-z0-9+/=_-]+$/i.test(trimmed)
+  ) {
+    return trimmed;
+  }
+
+  if (/^https:\/\/[^\s"'<>]+$/i.test(trimmed)) {
+    return trimmed;
+  }
+
+  return "";
+}
+
 function logoImg(base64: string, maxH = 40): string {
-  if (!base64) return "";
-  return `<img src="${base64}" style="max-height:${maxH}px;max-width:180px;object-fit:contain;" alt="Logo" />`;
+  const safeSrc = sanitizeImageSrc(base64);
+  if (!safeSrc) return "";
+  return `<img src="${esc(safeSrc)}" style="max-height:${maxH}px;max-width:180px;object-fit:contain;" alt="Logo" />`;
 }
 
 function statusBadge(status: string, color: string): string {
@@ -98,7 +122,7 @@ function statusBadge(status: string, color: string): string {
   return `<span style="display:inline-block;background:${bg}18;color:${bg};padding:5px 14px;border-radius:20px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">${esc(status)}</span>`;
 }
 
-function itemRows(items: PdfLineItem[], color: string): string {
+function itemRows(items: PdfLineItem[], _color: string): string {
   return items
     .map(
       (item) => `
@@ -178,8 +202,10 @@ function pageShell(title: string, body: string): string {
 // ── Template: Clean ─────────────────────────────────────────
 
 function renderClean(d: PdfData): string {
-  const c = d.brandColor;
+  const c = sanitizeColor(d.brandColor);
   const label = docLabel(d.documentType);
+  const dateText = esc(d.date);
+  const dueDateText = esc(d.dueDate);
   const body = `
   <div class="page" style="max-width:800px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 8px rgba(0,0,0,0.08);">
     <!-- Accent bar -->
@@ -208,8 +234,8 @@ function renderClean(d: PdfData): string {
       </div>
       <div style="text-align:right;">
         <div style="margin-bottom:10px;"><p style="margin:0 0 2px;font-size:10px;color:#999;text-transform:uppercase;letter-spacing:0.5px;font-weight:500;">${label} Number</p><p style="margin:0;font-size:14px;color:#111;font-weight:600;">${esc(d.number)}</p></div>
-        <div style="margin-bottom:10px;"><p style="margin:0 0 2px;font-size:10px;color:#999;text-transform:uppercase;letter-spacing:0.5px;font-weight:500;">Date</p><p style="margin:0;font-size:12px;color:#333;">${d.date}</p></div>
-        <div><p style="margin:0 0 2px;font-size:10px;color:#999;text-transform:uppercase;letter-spacing:0.5px;font-weight:500;">${dueDateLabel(d.documentType)}</p><p style="margin:0;font-size:12px;color:#333;font-weight:500;">${d.dueDate}</p></div>
+        <div style="margin-bottom:10px;"><p style="margin:0 0 2px;font-size:10px;color:#999;text-transform:uppercase;letter-spacing:0.5px;font-weight:500;">Date</p><p style="margin:0;font-size:12px;color:#333;">${dateText}</p></div>
+        <div><p style="margin:0 0 2px;font-size:10px;color:#999;text-transform:uppercase;letter-spacing:0.5px;font-weight:500;">${dueDateLabel(d.documentType)}</p><p style="margin:0;font-size:12px;color:#333;font-weight:500;">${dueDateText}</p></div>
       </div>
     </div>
 
@@ -241,8 +267,10 @@ function renderClean(d: PdfData): string {
 // ── Template: Modern ────────────────────────────────────────
 
 function renderModern(d: PdfData): string {
-  const c = d.brandColor;
+  const c = sanitizeColor(d.brandColor);
   const label = docLabel(d.documentType);
+  const dateText = esc(d.date);
+  const dueDateText = esc(d.dueDate);
   const body = `
   <div class="page" style="max-width:800px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 8px rgba(0,0,0,0.08);">
     <!-- Dark header -->
@@ -260,7 +288,7 @@ function renderModern(d: PdfData): string {
     <!-- Status bar -->
     <div style="padding:12px 40px;background:${c}12;border-bottom:1px solid ${c}25;display:flex;justify-content:space-between;align-items:center;">
       ${statusBadge(d.status, c)}
-      <span style="font-size:12px;color:#666;">Date: ${d.date} &nbsp;·&nbsp; ${dueDateLabel(d.documentType)}: ${d.dueDate}</span>
+      <span style="font-size:12px;color:#666;">Date: ${dateText} &nbsp;·&nbsp; ${dueDateLabel(d.documentType)}: ${dueDateText}</span>
     </div>
 
     <!-- Client -->
@@ -298,8 +326,10 @@ function renderModern(d: PdfData): string {
 // ── Template: Classic ───────────────────────────────────────
 
 function renderClassic(d: PdfData): string {
-  const c = d.brandColor;
+  const c = sanitizeColor(d.brandColor);
   const label = docLabel(d.documentType);
+  const dateText = esc(d.date);
+  const dueDateText = esc(d.dueDate);
   const body = `
   <div class="page" style="max-width:800px;margin:0 auto;background:#fff;border-radius:4px;overflow:hidden;box-shadow:0 1px 8px rgba(0,0,0,0.08);border:1px solid #e0e0e0;">
     <!-- Header -->
@@ -317,8 +347,8 @@ function renderClassic(d: PdfData): string {
 
     <!-- Meta row -->
     <div style="padding:16px 40px;background:#fafafa;border-bottom:1px solid #e0e0e0;display:flex;justify-content:space-between;font-size:12px;color:#555;">
-      <span>Date: <strong style="color:#333;">${d.date}</strong></span>
-      <span>${dueDateLabel(d.documentType)}: <strong style="color:#333;">${d.dueDate}</strong></span>
+      <span>Date: <strong style="color:#333;">${dateText}</strong></span>
+      <span>${dueDateLabel(d.documentType)}: <strong style="color:#333;">${dueDateText}</strong></span>
       <span>Status: ${statusBadge(d.status, c)}</span>
     </div>
 
@@ -357,8 +387,10 @@ function renderClassic(d: PdfData): string {
 // ── Template: Bold ──────────────────────────────────────────
 
 function renderBold(d: PdfData): string {
-  const c = d.brandColor;
+  const c = sanitizeColor(d.brandColor);
   const label = docLabel(d.documentType);
+  const dateText = esc(d.date);
+  const dueDateText = esc(d.dueDate);
   const body = `
   <div class="page" style="max-width:800px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 8px rgba(0,0,0,0.08);">
     <!-- Full-color header -->
@@ -382,8 +414,8 @@ function renderBold(d: PdfData): string {
         ${d.clientAddress ? `<p style="margin:3px 0 0;font-size:12px;color:#666;white-space:pre-wrap;">${esc(d.clientAddress)}</p>` : ""}
       </div>
       <div style="text-align:right;font-size:12px;color:#666;">
-        <p style="margin:0;">Date: <strong style="color:#333;">${d.date}</strong></p>
-        <p style="margin:4px 0;">${dueDateLabel(d.documentType)}: <strong style="color:#333;">${d.dueDate}</strong></p>
+        <p style="margin:0;">Date: <strong style="color:#333;">${dateText}</strong></p>
+        <p style="margin:4px 0;">${dueDateLabel(d.documentType)}: <strong style="color:#333;">${dueDateText}</strong></p>
         <div style="margin-top:4px;">${statusBadge(d.status, c)}</div>
       </div>
     </div>
