@@ -1,0 +1,471 @@
+Sheet,Industry,Persona ID,Persona Label,Field,Value
+,,,,,
+=== SHEET 1: PERSONA OVERVIEW ===,,,,,
+Overview,Beauty & Wellness,hair-salon,Hair Salon / Hairstylist,Suggested Team Size,2-5
+Overview,Beauty & Wellness,hair-salon,Hair Salon / Hairstylist,Workflow Pattern,booking-first
+Overview,Beauty & Wellness,hair-salon,Hair Salon / Hairstylist,Home Page,bookings
+Overview,Beauty & Wellness,hair-salon,Hair Salon / Hairstylist,Primary Action,"Book Appointment"
+Overview,Beauty & Wellness,barber,Barber / Barbershop,Suggested Team Size,2-5
+Overview,Beauty & Wellness,barber,Barber / Barbershop,Workflow Pattern,booking-first
+Overview,Beauty & Wellness,barber,Barber / Barbershop,Home Page,bookings
+Overview,Beauty & Wellness,barber,Barber / Barbershop,Primary Action,"Book Appointment"
+Overview,Beauty & Wellness,nail-tech,Nail Tech / Nail Salon,Suggested Team Size,Just me
+Overview,Beauty & Wellness,nail-tech,Nail Tech / Nail Salon,Workflow Pattern,booking-first
+Overview,Beauty & Wellness,nail-tech,Nail Tech / Nail Salon,Home Page,bookings
+Overview,Beauty & Wellness,nail-tech,Nail Tech / Nail Salon,Primary Action,"Book Appointment"
+Overview,Beauty & Wellness,lash-brow-tech,Lash & Brow Tech,Suggested Team Size,Just me
+Overview,Beauty & Wellness,lash-brow-tech,Lash & Brow Tech,Workflow Pattern,booking-first
+Overview,Beauty & Wellness,lash-brow-tech,Lash & Brow Tech,Home Page,bookings
+Overview,Beauty & Wellness,lash-brow-tech,Lash & Brow Tech,Primary Action,"Book Appointment"
+Overview,Beauty & Wellness,makeup-artist,Makeup Artist,Suggested Team Size,Just me
+Overview,Beauty & Wellness,makeup-artist,Makeup Artist,Workflow Pattern,inquiry-first
+Overview,Beauty & Wellness,makeup-artist,Makeup Artist,Home Page,leads
+Overview,Beauty & Wellness,makeup-artist,Makeup Artist,Primary Action,"New Inquiry"
+Overview,Beauty & Wellness,spa-massage,Spa / Massage,Suggested Team Size,2-5
+Overview,Beauty & Wellness,spa-massage,Spa / Massage,Workflow Pattern,booking-first
+Overview,Beauty & Wellness,spa-massage,Spa / Massage,Home Page,bookings
+Overview,Beauty & Wellness,spa-massage,Spa / Massage,Primary Action,"Book Appointment"
+Overview,Trades & Construction,electrician,Electrician,Suggested Team Size,2-5
+Overview,Trades & Construction,electrician,Electrician,Workflow Pattern,inquiry-first
+Overview,Trades & Construction,electrician,Electrician,Home Page,leads
+Overview,Trades & Construction,electrician,Electrician,Primary Action,"New Lead"
+Overview,Trades & Construction,plumber,Plumber,Suggested Team Size,2-5
+Overview,Trades & Construction,plumber,Plumber,Workflow Pattern,inquiry-first
+Overview,Trades & Construction,plumber,Plumber,Home Page,leads
+Overview,Trades & Construction,plumber,Plumber,Primary Action,"New Lead"
+Overview,Trades & Construction,hvac-technician,HVAC Technician,Suggested Team Size,2-5
+Overview,Trades & Construction,hvac-technician,HVAC Technician,Workflow Pattern,inquiry-first
+Overview,Trades & Construction,hvac-technician,HVAC Technician,Home Page,leads
+Overview,Trades & Construction,hvac-technician,HVAC Technician,Primary Action,"New Lead"
+Overview,Trades & Construction,cleaner,Cleaner,Suggested Team Size,Just me
+Overview,Trades & Construction,cleaner,Cleaner,Workflow Pattern,booking-first
+Overview,Trades & Construction,cleaner,Cleaner,Home Page,bookings
+Overview,Trades & Construction,cleaner,Cleaner,Primary Action,"Schedule Clean"
+Overview,Professional Services,lawyer-solicitor,Lawyer / Solicitor,Suggested Team Size,2-5
+Overview,Professional Services,lawyer-solicitor,Lawyer / Solicitor,Workflow Pattern,inquiry-first
+Overview,Professional Services,lawyer-solicitor,Lawyer / Solicitor,Home Page,leads
+Overview,Professional Services,lawyer-solicitor,Lawyer / Solicitor,Primary Action,"New Prospect"
+Overview,Professional Services,real-estate-agent,Real Estate Agent,Suggested Team Size,2-5
+Overview,Professional Services,real-estate-agent,Real Estate Agent,Workflow Pattern,inquiry-first
+Overview,Professional Services,real-estate-agent,Real Estate Agent,Home Page,leads
+Overview,Professional Services,real-estate-agent,Real Estate Agent,Primary Action,"New Prospect"
+Overview,Health & Fitness,personal-trainer,Personal Trainer,Suggested Team Size,Just me
+Overview,Health & Fitness,personal-trainer,Personal Trainer,Workflow Pattern,booking-first
+Overview,Health & Fitness,personal-trainer,Personal Trainer,Home Page,bookings
+Overview,Health & Fitness,personal-trainer,Personal Trainer,Primary Action,"Book Session"
+Overview,Health & Fitness,physio-chiro,Physio / Chiro,Suggested Team Size,2-5
+Overview,Health & Fitness,physio-chiro,Physio / Chiro,Workflow Pattern,booking-first
+Overview,Health & Fitness,physio-chiro,Physio / Chiro,Home Page,bookings
+Overview,Health & Fitness,physio-chiro,Physio / Chiro,Primary Action,"Book Session"
+Overview,Health & Fitness,therapist,Therapist / Counsellor,Suggested Team Size,Just me
+Overview,Health & Fitness,therapist,Therapist / Counsellor,Workflow Pattern,booking-first
+Overview,Health & Fitness,therapist,Therapist / Counsellor,Home Page,bookings
+Overview,Health & Fitness,therapist,Therapist / Counsellor,Primary Action,"Book Session"
+Overview,Creative & Design,photographer,Photographer,Suggested Team Size,Just me
+Overview,Creative & Design,photographer,Photographer,Workflow Pattern,inquiry-first
+Overview,Creative & Design,photographer,Photographer,Home Page,leads
+Overview,Creative & Design,photographer,Photographer,Primary Action,"New Inquiry"
+Overview,Creative & Design,graphic-designer,Graphic Designer,Suggested Team Size,Just me
+Overview,Creative & Design,graphic-designer,Graphic Designer,Workflow Pattern,inquiry-first
+Overview,Creative & Design,graphic-designer,Graphic Designer,Home Page,leads
+Overview,Creative & Design,graphic-designer,Graphic Designer,Primary Action,"New Inquiry"
+Overview,Creative & Design,web-designer-developer,Web Designer / Developer,Suggested Team Size,Just me
+Overview,Creative & Design,web-designer-developer,Web Designer / Developer,Workflow Pattern,inquiry-first
+Overview,Creative & Design,web-designer-developer,Web Designer / Developer,Home Page,leads
+Overview,Creative & Design,web-designer-developer,Web Designer / Developer,Primary Action,"New Inquiry"
+Overview,Hospitality & Events,wedding-planner,Wedding Planner,Suggested Team Size,2-5
+Overview,Hospitality & Events,wedding-planner,Wedding Planner,Workflow Pattern,inquiry-first
+Overview,Hospitality & Events,wedding-planner,Wedding Planner,Home Page,leads
+Overview,Hospitality & Events,wedding-planner,Wedding Planner,Primary Action,"New Inquiry"
+Overview,Hospitality & Events,florist,Florist,Suggested Team Size,2-5
+Overview,Hospitality & Events,florist,Florist,Workflow Pattern,inquiry-first
+Overview,Hospitality & Events,florist,Florist,Home Page,leads
+Overview,Hospitality & Events,florist,Florist,Primary Action,"New Inquiry"
+Overview,Education & Coaching,tutor,Tutor,Suggested Team Size,Just me
+Overview,Education & Coaching,tutor,Tutor,Workflow Pattern,recurring
+Overview,Education & Coaching,tutor,Tutor,Home Page,bookings
+Overview,Education & Coaching,tutor,Tutor,Primary Action,"Schedule Lesson"
+Overview,Education & Coaching,life-business-coach,Life / Business Coach,Suggested Team Size,Just me
+Overview,Education & Coaching,life-business-coach,Life / Business Coach,Workflow Pattern,recurring
+Overview,Education & Coaching,life-business-coach,Life / Business Coach,Home Page,bookings
+Overview,Education & Coaching,life-business-coach,Life / Business Coach,Primary Action,"Book Session"
+Overview,Education & Coaching,music-teacher,Music Teacher,Suggested Team Size,Just me
+Overview,Education & Coaching,music-teacher,Music Teacher,Workflow Pattern,recurring
+Overview,Education & Coaching,music-teacher,Music Teacher,Home Page,bookings
+Overview,Education & Coaching,music-teacher,Music Teacher,Primary Action,"Schedule Lesson"
+Overview,Education & Coaching,driving-instructor,Driving Instructor,Suggested Team Size,Just me
+Overview,Education & Coaching,driving-instructor,Driving Instructor,Workflow Pattern,recurring
+Overview,Education & Coaching,driving-instructor,Driving Instructor,Home Page,bookings
+Overview,Education & Coaching,driving-instructor,Driving Instructor,Primary Action,"Schedule Lesson"
+Overview,Retail & E-commerce,online-store,Online Store,Suggested Team Size,Just me
+Overview,Retail & E-commerce,online-store,Online Store,Workflow Pattern,inquiry-first
+Overview,Retail & E-commerce,online-store,Online Store,Home Page,leads
+Overview,Retail & E-commerce,online-store,Online Store,Primary Action,"New Order"
+Overview,Retail & E-commerce,boutique-shop,Boutique Shop,Suggested Team Size,Just me
+Overview,Retail & E-commerce,boutique-shop,Boutique Shop,Workflow Pattern,booking-first
+Overview,Retail & E-commerce,boutique-shop,Boutique Shop,Home Page,bookings
+Overview,Retail & E-commerce,boutique-shop,Boutique Shop,Primary Action,"Book Appointment"
+,,,,,
+=== SHEET 2: VOCABULARY PER PERSONA ===,,,,,
+Vocabulary,Industry,Persona ID,Term,Default Label,Persona Label
+Vocabulary,Beauty & Wellness,hair-salon,client,Client,Client
+Vocabulary,Beauty & Wellness,hair-salon,booking,Booking,Appointment
+Vocabulary,Beauty & Wellness,hair-salon,invoice,Invoice,Receipt
+Vocabulary,Beauty & Wellness,hair-salon,lead,Lead,Lead
+Vocabulary,Beauty & Wellness,hair-salon,job,Job,Service
+Vocabulary,Beauty & Wellness,hair-salon,quote,Quote,Quote
+Vocabulary,Beauty & Wellness,barber,client,Client,Client
+Vocabulary,Beauty & Wellness,barber,booking,Booking,Appointment
+Vocabulary,Beauty & Wellness,barber,invoice,Invoice,Receipt
+Vocabulary,Beauty & Wellness,barber,job,Job,Service
+Vocabulary,Beauty & Wellness,makeup-artist,client,Client,Client
+Vocabulary,Beauty & Wellness,makeup-artist,booking,Booking,Appointment
+Vocabulary,Beauty & Wellness,makeup-artist,invoice,Invoice,Invoice
+Vocabulary,Beauty & Wellness,makeup-artist,lead,Lead,Inquiry
+Vocabulary,Beauty & Wellness,makeup-artist,job,Job,Job
+Vocabulary,Beauty & Wellness,makeup-artist,quote,Quote,Quote
+Vocabulary,Beauty & Wellness,spa-massage,client,Client,Client
+Vocabulary,Beauty & Wellness,spa-massage,booking,Booking,Appointment
+Vocabulary,Beauty & Wellness,spa-massage,invoice,Invoice,Invoice
+Vocabulary,Beauty & Wellness,spa-massage,job,Job,Treatment
+Vocabulary,Trades & Construction,electrician,client,Client,Client
+Vocabulary,Trades & Construction,electrician,booking,Booking,Site Visit
+Vocabulary,Trades & Construction,electrician,invoice,Invoice,Invoice
+Vocabulary,Trades & Construction,electrician,lead,Lead,Lead
+Vocabulary,Trades & Construction,electrician,job,Job,Job
+Vocabulary,Trades & Construction,electrician,quote,Quote,Quote
+Vocabulary,Trades & Construction,plumber,client,Client,Client
+Vocabulary,Trades & Construction,plumber,booking,Booking,Site Visit
+Vocabulary,Trades & Construction,plumber,invoice,Invoice,Invoice
+Vocabulary,Trades & Construction,plumber,lead,Lead,Lead
+Vocabulary,Trades & Construction,plumber,job,Job,Job
+Vocabulary,Trades & Construction,cleaner,client,Client,Client
+Vocabulary,Trades & Construction,cleaner,booking,Booking,Clean
+Vocabulary,Trades & Construction,cleaner,invoice,Invoice,Invoice
+Vocabulary,Trades & Construction,cleaner,job,Job,Job
+Vocabulary,Professional Services,lawyer-solicitor,client,Client,Client
+Vocabulary,Professional Services,lawyer-solicitor,booking,Meeting,Consultation
+Vocabulary,Professional Services,lawyer-solicitor,invoice,Invoice,Invoice
+Vocabulary,Professional Services,lawyer-solicitor,lead,Prospect,Inquiry
+Vocabulary,Professional Services,lawyer-solicitor,job,Project,Matter
+Vocabulary,Professional Services,lawyer-solicitor,quote,Proposal,Engagement Letter
+Vocabulary,Professional Services,real-estate-agent,client,Client,Client
+Vocabulary,Professional Services,real-estate-agent,booking,Meeting,Inspection
+Vocabulary,Professional Services,real-estate-agent,lead,Prospect,Lead
+Vocabulary,Professional Services,real-estate-agent,job,Project,Listing
+Vocabulary,Professional Services,real-estate-agent,quote,Proposal,Appraisal
+Vocabulary,Health & Fitness,personal-trainer,client,Client,Client
+Vocabulary,Health & Fitness,personal-trainer,booking,Session,Session
+Vocabulary,Health & Fitness,personal-trainer,invoice,Invoice,Invoice
+Vocabulary,Health & Fitness,personal-trainer,job,Program,Program
+Vocabulary,Health & Fitness,physio-chiro,client,Client,Patient
+Vocabulary,Health & Fitness,physio-chiro,booking,Session,Appointment
+Vocabulary,Health & Fitness,physio-chiro,invoice,Invoice,Invoice
+Vocabulary,Health & Fitness,physio-chiro,lead,Lead,Referral
+Vocabulary,Health & Fitness,physio-chiro,job,Program,Treatment Plan
+Vocabulary,Health & Fitness,therapist,client,Client,Client
+Vocabulary,Health & Fitness,therapist,booking,Session,Session
+Vocabulary,Health & Fitness,therapist,lead,Lead,Referral
+Vocabulary,Health & Fitness,therapist,job,Program,Treatment Plan
+Vocabulary,Health & Fitness,gym-studio-owner,client,Client,Member
+Vocabulary,Creative & Design,photographer,client,Client,Client
+Vocabulary,Creative & Design,photographer,booking,Session,Session
+Vocabulary,Creative & Design,photographer,lead,Inquiry,Inquiry
+Vocabulary,Creative & Design,photographer,job,Project,Project
+Vocabulary,Creative & Design,photographer,quote,Proposal,Proposal
+Vocabulary,Creative & Design,graphic-designer,client,Client,Client
+Vocabulary,Creative & Design,graphic-designer,lead,Inquiry,Inquiry
+Vocabulary,Creative & Design,graphic-designer,job,Project,Project
+Vocabulary,Creative & Design,web-designer-developer,client,Client,Client
+Vocabulary,Creative & Design,web-designer-developer,booking,Session,Call
+Vocabulary,Creative & Design,web-designer-developer,lead,Inquiry,Inquiry
+Vocabulary,Creative & Design,interior-designer,booking,Session,Consultation
+Vocabulary,Hospitality & Events,wedding-planner,client,Client,Client
+Vocabulary,Hospitality & Events,wedding-planner,booking,Booking,Booking
+Vocabulary,Hospitality & Events,wedding-planner,lead,Inquiry,Inquiry
+Vocabulary,Hospitality & Events,wedding-planner,job,Event,Event
+Vocabulary,Hospitality & Events,florist,client,Client,Client
+Vocabulary,Hospitality & Events,florist,lead,Inquiry,Inquiry
+Vocabulary,Hospitality & Events,florist,job,Event,Order
+Vocabulary,Education & Coaching,tutor,client,Student,Student
+Vocabulary,Education & Coaching,tutor,booking,Lesson,Lesson
+Vocabulary,Education & Coaching,tutor,job,Course,Course
+Vocabulary,Education & Coaching,tutor,lead,Inquiry,Inquiry
+Vocabulary,Education & Coaching,life-business-coach,client,Student,Client
+Vocabulary,Education & Coaching,life-business-coach,booking,Lesson,Session
+Vocabulary,Education & Coaching,life-business-coach,job,Course,Program
+Vocabulary,Education & Coaching,life-business-coach,lead,Inquiry,Lead
+Vocabulary,Education & Coaching,music-teacher,client,Student,Student
+Vocabulary,Education & Coaching,music-teacher,booking,Lesson,Lesson
+Vocabulary,Education & Coaching,driving-instructor,client,Student,Student
+Vocabulary,Education & Coaching,driving-instructor,booking,Lesson,Lesson
+Vocabulary,Retail & E-commerce,online-store,client,Customer,Customer
+Vocabulary,Retail & E-commerce,online-store,job,Order,Order
+Vocabulary,Retail & E-commerce,online-store,booking,Appointment,Delivery
+Vocabulary,Retail & E-commerce,boutique-shop,client,Customer,Customer
+Vocabulary,Retail & E-commerce,boutique-shop,job,Order,Order
+Vocabulary,Retail & E-commerce,handmade-artisan,client,Customer,Customer
+Vocabulary,Retail & E-commerce,handmade-artisan,job,Order,Custom Order
+Vocabulary,Retail & E-commerce,handmade-artisan,booking,Appointment,Consultation
+Vocabulary,Retail & E-commerce,handmade-artisan,lead,Lead,Inquiry
+Vocabulary,Retail & E-commerce,food-beverage,client,Customer,Customer
+Vocabulary,Retail & E-commerce,food-beverage,job,Order,Order
+Vocabulary,Retail & E-commerce,food-beverage,lead,Lead,Wholesale Lead
+,,,,,
+=== SHEET 3: CUSTOM FIELDS PER PERSONA ===,,,,,
+Custom Fields,Industry,Persona ID,Module,Field ID,Field Label,Field Type,Options (if select)
+Custom Fields,Beauty & Wellness,hair-salon,clients,hairType,Hair Type,select,"Fine, Medium, Thick, Curly, Coily"
+Custom Fields,Beauty & Wellness,hair-salon,clients,colourFormula,Colour Formula,textarea,
+Custom Fields,Beauty & Wellness,hair-salon,clients,allergies,Allergies,text,
+Custom Fields,Beauty & Wellness,nail-tech,clients,nailType,Nail Type,select,"Natural, Biters, Thin/Weak, Damaged"
+Custom Fields,Beauty & Wellness,nail-tech,clients,preferredShape,Preferred Shape,select,"Almond, Coffin, Stiletto, Square, Round, Oval"
+Custom Fields,Beauty & Wellness,nail-tech,clients,allergies,Allergies,text,
+Custom Fields,Beauty & Wellness,lash-brow-tech,clients,eyeShape,Eye Shape,text,
+Custom Fields,Beauty & Wellness,lash-brow-tech,clients,lashCondition,Lash Condition,text,
+Custom Fields,Beauty & Wellness,lash-brow-tech,clients,adhesiveUsed,Adhesive Used,text,
+Custom Fields,Beauty & Wellness,lash-brow-tech,clients,curlDiameterLength,Curl/Diameter/Length,text,
+Custom Fields,Beauty & Wellness,makeup-artist,clients,skinType,Skin Type,select,"Dry, Oily, Combination, Sensitive, Normal"
+Custom Fields,Beauty & Wellness,makeup-artist,clients,foundationShade,Foundation Shade,text,
+Custom Fields,Beauty & Wellness,makeup-artist,clients,skinTone,Skin Tone,select,"Fair, Light, Medium, Tan, Dark, Deep"
+Custom Fields,Beauty & Wellness,makeup-artist,clients,undertone,Undertone,select,"Cool, Warm, Neutral, Olive"
+Custom Fields,Beauty & Wellness,makeup-artist,clients,clientType,Client Type,select,"Bride, Bridal Party, Event, Editorial, Lesson, Regular"
+Custom Fields,Beauty & Wellness,makeup-artist,leads,weddingDate,Wedding Date,date,
+Custom Fields,Beauty & Wellness,makeup-artist,leads,venue,Venue,text,
+Custom Fields,Beauty & Wellness,makeup-artist,leads,partySize,Party Size,number,
+Custom Fields,Beauty & Wellness,makeup-artist,leads,eventType,Event Type,select,"Wedding, Engagement, Editorial, Corporate, Other"
+Custom Fields,Beauty & Wellness,makeup-artist,bookings,appointmentType,Appointment Type,select,"Bridal Trial, Event Makeup, Lesson, Editorial, Regular"
+Custom Fields,Beauty & Wellness,spa-massage,clients,pressurePreference,Pressure Preference,select,"Light, Medium, Firm, Deep"
+Custom Fields,Beauty & Wellness,spa-massage,clients,injuriesConditions,Injuries/Conditions,text,
+Custom Fields,Beauty & Wellness,spa-massage,clients,contraindications,Contraindications,text,
+Custom Fields,Trades & Construction,electrician,clients,switchboardDetails,Switchboard Details,textarea,
+Custom Fields,Trades & Construction,electrician,clients,circuitInfo,Circuit Info,textarea,
+Custom Fields,Trades & Construction,electrician,clients,safetyCertNumber,Safety Certificate Number,text,
+Custom Fields,Trades & Construction,electrician,clients,complianceStatus,Compliance Status,select,"Compliant, Non-Compliant, Pending Inspection, Expired"
+Custom Fields,Trades & Construction,electrician,jobs,siteAddress,Site Address,text,
+Custom Fields,Trades & Construction,electrician,jobs,certificateRequired,Certificate Required,boolean,
+Custom Fields,Trades & Construction,plumber,clients,propertyType,Property Type,select,"Residential, Commercial, Strata, Rental"
+Custom Fields,Trades & Construction,plumber,clients,accessNotes,Access Notes,textarea,
+Custom Fields,Trades & Construction,plumber,leads,urgency,Urgency,select,"Emergency, Urgent, Standard, Flexible"
+Custom Fields,Trades & Construction,plumber,jobs,siteAddress,Site Address,text,
+Custom Fields,Trades & Construction,hvac-technician,clients,unitMakeModel,Unit Make & Model,text,
+Custom Fields,Trades & Construction,hvac-technician,clients,serialNumber,Serial Number,text,
+Custom Fields,Trades & Construction,hvac-technician,clients,refrigerantType,Refrigerant Type,select,"R-410A, R-32, R-134a, R-407C, R-22, Other"
+Custom Fields,Trades & Construction,hvac-technician,clients,installDate,Install Date,date,
+Custom Fields,Trades & Construction,hvac-technician,clients,warrantyExpiry,Warranty Expiry,date,
+Custom Fields,Trades & Construction,cleaner,clients,keyAccessCode,Key / Access Code,text,
+Custom Fields,Trades & Construction,cleaner,clients,bedrooms,Bedrooms,number,
+Custom Fields,Trades & Construction,cleaner,clients,bathrooms,Bathrooms,number,
+Custom Fields,Trades & Construction,cleaner,clients,petsInHome,Pets in Home,select,"None, Dog, Cat, Other"
+Custom Fields,Trades & Construction,cleaner,clients,productPreference,Product Preference,select,"Standard, Eco-Friendly, Client Supplies"
+Custom Fields,Health & Fitness,personal-trainer,clients,fitnessGoal,Fitness Goal,select,"Weight Loss, Muscle Gain, General Fitness, Rehab, Sports Performance, Flexibility"
+Custom Fields,Health & Fitness,personal-trainer,clients,injuries,Injuries,textarea,
+Custom Fields,Health & Fitness,personal-trainer,clients,preferredTime,Preferred Time,select,"Early Morning, Morning, Midday, Afternoon, Evening"
+Custom Fields,Health & Fitness,personal-trainer,bookings,sessionType,Session Type,select,"1on1, Small Group, Online, Assessment"
+Custom Fields,Health & Fitness,personal-trainer,bookings,location,Location,select,"Gym, Park, Home, Online"
+Custom Fields,Health & Fitness,physio-chiro,clients,referringGP,Referring GP,text,
+Custom Fields,Health & Fitness,physio-chiro,clients,healthFund,Health Fund,text,
+Custom Fields,Health & Fitness,physio-chiro,clients,diagnosisCondition,Diagnosis / Condition,textarea,
+Custom Fields,Health & Fitness,physio-chiro,clients,medicareNumber,Medicare Number,text,
+Custom Fields,Health & Fitness,therapist,clients,referralSource,Referral Source,text,
+Custom Fields,Health & Fitness,therapist,clients,presentingConcerns,Presenting Concerns,textarea,
+Custom Fields,Health & Fitness,therapist,clients,gpDetails,GP / Doctor Details,text,
+Custom Fields,Health & Fitness,therapist,clients,mentalHealthPlan,Mental Health Plan,text,
+Custom Fields,Creative & Design,photographer,clients,shootType,Shoot Type,select,"Wedding, Portrait, Event, Commercial, Headshot"
+Custom Fields,Creative & Design,photographer,leads,eventDate,Event Date,date,
+Custom Fields,Creative & Design,photographer,leads,shootType,Shoot Type,select,"Wedding, Portrait, Event, Commercial"
+Custom Fields,Creative & Design,photographer,jobs,shootDate,Shoot Date,date,
+Custom Fields,Creative & Design,photographer,jobs,location,Location,text,
+Custom Fields,Creative & Design,graphic-designer,leads,projectType,Project Type,select,"Branding, Packaging, Social, Print, Web, Other"
+Custom Fields,Education & Coaching,tutor,clients,yearLevel,Year Level,select,"Primary, Year 7-8, Year 9-10, Year 11-12, Uni, Adult"
+Custom Fields,Education & Coaching,tutor,clients,subjects,Subjects,text,
+Custom Fields,Education & Coaching,tutor,clients,learningNotes,Learning Notes,textarea,
+Custom Fields,Education & Coaching,tutor,bookings,subject,Subject,text,
+Custom Fields,Education & Coaching,tutor,bookings,lessonLocation,Lesson Location,select,"Student Home, Library, Online, My Place"
+Custom Fields,Education & Coaching,life-business-coach,clients,coachingGoal,Coaching Goal,select,"Career, Business, Leadership, Life Balance, Mindset, Other"
+Custom Fields,Education & Coaching,life-business-coach,clients,programName,Program Name,text,
+Custom Fields,Education & Coaching,life-business-coach,bookings,sessionFormat,Session Format,select,"1on1 Video, 1on1 Phone, Group, In-Person, Workshop"
+Custom Fields,Education & Coaching,music-teacher,clients,instrument,Instrument,text,
+Custom Fields,Education & Coaching,music-teacher,clients,currentGradeLevel,Current Grade/Level,text,
+Custom Fields,Education & Coaching,music-teacher,clients,examBoard,Exam Board,select,"AMEB, ABRSM, Trinity, Rockschool, LCM, Other, N/A"
+Custom Fields,Education & Coaching,music-teacher,clients,practiceLogNotes,Practice Log Notes,textarea,
+Custom Fields,Education & Coaching,driving-instructor,clients,permitNumber,Learner Permit Number,text,
+Custom Fields,Education & Coaching,driving-instructor,clients,hoursLogged,Hours Logged,number,
+Custom Fields,Education & Coaching,driving-instructor,clients,testDate,Test Date,date,
+Custom Fields,Education & Coaching,driving-instructor,clients,vehiclePref,Vehicle Preference,select,"Auto, Manual"
+Custom Fields,Education & Coaching,driving-instructor,clients,licenceClass,Licence Class,select,"C, LR, MR, HR, HC, MC, R, RE"
+Custom Fields,Hospitality & Events,wedding-planner,clients,weddingDate,Wedding Date,date,
+Custom Fields,Hospitality & Events,wedding-planner,clients,venue,Venue,text,
+Custom Fields,Hospitality & Events,wedding-planner,clients,guestCount,Guest Count,number,
+Custom Fields,Hospitality & Events,wedding-planner,clients,budget,Budget,currency,
+Custom Fields,Hospitality & Events,florist,clients,eventDate,Event Date,date,
+Custom Fields,Hospitality & Events,florist,clients,eventType,Event Type,select,"Wedding, Corporate, Funeral, Birthday, Other"
+Custom Fields,Hospitality & Events,florist,clients,flowerPrefs,Flower Preferences,textarea,
+Custom Fields,Hospitality & Events,florist,clients,colorPalette,Colour Palette,text,
+Custom Fields,Retail & E-commerce,online-store,clients,shippingAddress,Shipping Address,textarea,
+Custom Fields,Retail & E-commerce,online-store,clients,preferredShipping,Preferred Shipping Method,text,
+Custom Fields,Retail & E-commerce,boutique-shop,clients,sizePreferences,Size Preferences,text,
+Custom Fields,Retail & E-commerce,boutique-shop,clients,styleProfile,Style Profile,textarea,
+Custom Fields,Retail & E-commerce,handmade-artisan,clients,customBrief,Custom Brief,textarea,
+Custom Fields,Retail & E-commerce,handmade-artisan,clients,materialsPref,Materials Preference,text,
+Custom Fields,Retail & E-commerce,food-beverage,clients,dietaryRequirements,Dietary Requirements,textarea,
+Custom Fields,Retail & E-commerce,food-beverage,clients,allergenInfo,Allergen Info,textarea,
+,,,,,,
+=== SHEET 4: DEFAULT SERVICES PER PERSONA ===,,,,,,
+Default Services,Industry,Persona ID,Service Name,Duration (min),Price,Category
+Default Services,Beauty & Wellness,hair-salon,Women's Cut,45,$65,Hair
+Default Services,Beauty & Wellness,hair-salon,Men's Cut,30,$40,Hair
+Default Services,Beauty & Wellness,hair-salon,Colour,90,$120,Hair
+Default Services,Beauty & Wellness,hair-salon,Highlights,120,$160,Hair
+Default Services,Beauty & Wellness,hair-salon,Blow Dry,30,$35,Hair
+Default Services,Beauty & Wellness,hair-salon,Treatment,30,$45,Hair
+Default Services,Beauty & Wellness,barber,Men's Cut,30,$35,Cuts
+Default Services,Beauty & Wellness,barber,Beard Trim,15,$20,Grooming
+Default Services,Beauty & Wellness,barber,Hot Towel Shave,30,$35,Grooming
+Default Services,Beauty & Wellness,barber,Cut and Beard,45,$50,Combos
+Default Services,Beauty & Wellness,barber,Kids Cut,20,$25,Cuts
+Default Services,Beauty & Wellness,nail-tech,Gel Manicure,60,$55,Nails
+Default Services,Beauty & Wellness,nail-tech,Acrylic Full Set,90,$75,Nails
+Default Services,Beauty & Wellness,nail-tech,Acrylic Fill,60,$45,Nails
+Default Services,Beauty & Wellness,nail-tech,Pedicure,60,$50,Nails
+Default Services,Beauty & Wellness,nail-tech,Nail Art,30,$25,Add-ons
+Default Services,Beauty & Wellness,nail-tech,Removal,30,$20,Nails
+Default Services,Beauty & Wellness,lash-brow-tech,Classic Full Set,120,$150,Lashes
+Default Services,Beauty & Wellness,lash-brow-tech,Classic Fill,60,$65,Lashes
+Default Services,Beauty & Wellness,lash-brow-tech,Volume Full Set,150,$200,Lashes
+Default Services,Beauty & Wellness,lash-brow-tech,Volume Fill,75,$85,Lashes
+Default Services,Beauty & Wellness,lash-brow-tech,Removal,30,$25,Lashes
+Default Services,Beauty & Wellness,lash-brow-tech,Lash Lift,60,$80,Lashes
+Default Services,Beauty & Wellness,lash-brow-tech,Microblading,120,$450,Brows
+Default Services,Beauty & Wellness,lash-brow-tech,Brow Lamination,45,$85,Brows
+Default Services,Beauty & Wellness,lash-brow-tech,Brow Wax & Tint,30,$45,Brows
+Default Services,Beauty & Wellness,lash-brow-tech,Brow Tint,15,$25,Brows
+Default Services,Beauty & Wellness,makeup-artist,Bridal Makeup,90,$250,Bridal
+Default Services,Beauty & Wellness,makeup-artist,Trial Run,75,$150,Bridal
+Default Services,Beauty & Wellness,makeup-artist,Evening Look,60,$120,Events
+Default Services,Beauty & Wellness,makeup-artist,Editorial,120,$300,Editorial
+Default Services,Beauty & Wellness,makeup-artist,Makeup Lesson,90,$180,Lessons
+Default Services,Beauty & Wellness,spa-massage,Relaxation Massage,60,$90,Massage
+Default Services,Beauty & Wellness,spa-massage,Deep Tissue,60,$100,Massage
+Default Services,Beauty & Wellness,spa-massage,Hot Stone,75,$120,Massage
+Default Services,Beauty & Wellness,spa-massage,Facial,60,$85,Skin
+Default Services,Beauty & Wellness,spa-massage,Body Wrap,90,$130,Body
+Default Services,Trades & Construction,cleaner,Regular Clean,120,$120,Cleaning
+Default Services,Trades & Construction,cleaner,Deep Clean,240,$280,Cleaning
+Default Services,Trades & Construction,cleaner,End of Lease,360,$450,Cleaning
+Default Services,Trades & Construction,cleaner,Oven Clean,60,$80,Add-ons
+Default Services,Trades & Construction,cleaner,Window Clean,90,$100,Add-ons
+Default Services,Health & Fitness,personal-trainer,PT Session,60,$80,Training
+Default Services,Health & Fitness,personal-trainer,Group Class,45,$25,Classes
+Default Services,Health & Fitness,personal-trainer,Assessment,90,$100,Assessment
+Default Services,Health & Fitness,personal-trainer,Nutrition Consult,45,$70,Nutrition
+Default Services,Health & Fitness,physio-chiro,Initial Consult,60,$120,Consultations
+Default Services,Health & Fitness,physio-chiro,Standard Treatment,30,$80,Treatments
+Default Services,Health & Fitness,physio-chiro,Extended Treatment,45,$110,Treatments
+Default Services,Health & Fitness,physio-chiro,Follow-Up,20,$65,Consultations
+Default Services,Health & Fitness,therapist,Initial Consult,60,$150,Consultations
+Default Services,Health & Fitness,therapist,Standard Session,50,$120,Sessions
+Default Services,Health & Fitness,therapist,Extended Session,80,$180,Sessions
+Default Services,Health & Fitness,therapist,Couples Session,75,$200,Sessions
+Default Services,Creative & Design,photographer,6hr Coverage,360,$2500,Packages
+Default Services,Creative & Design,photographer,Full Day,600,$4000,Packages
+Default Services,Creative & Design,photographer,Elopement,180,$1500,Packages
+Default Services,Creative & Design,photographer,Engagement Session,90,$500,Sessions
+Default Services,Hospitality & Events,wedding-planner,Full Planning,480,$8000,Packages
+Default Services,Hospitality & Events,wedding-planner,Month-Of Coordination,480,$3000,Packages
+Default Services,Hospitality & Events,wedding-planner,Day-Of Coordination,720,$2000,Packages
+Default Services,Hospitality & Events,wedding-planner,Consultation,60,$150,Sessions
+Default Services,Education & Coaching,tutor,Private Lesson,60,$80,Lessons
+Default Services,Education & Coaching,tutor,Group Lesson,60,$40,Lessons
+Default Services,Education & Coaching,tutor,Assessment,45,$60,Assessment
+Default Services,Education & Coaching,tutor,Trial Lesson,45,$0,Trial
+Default Services,Education & Coaching,life-business-coach,Discovery Call,30,$0,Sessions
+Default Services,Education & Coaching,life-business-coach,Coaching Session,60,$200,Sessions
+Default Services,Education & Coaching,life-business-coach,Group Coaching,90,$80,Sessions
+Default Services,Education & Coaching,life-business-coach,VIP Intensive,180,$500,Sessions
+,,,,,,
+=== SHEET 5: INVOICE & BOOKING MODES ===,,,,,,
+Modes,Industry,Persona ID,Default Invoice Mode,Available Invoice Modes,Default Booking Mode
+Modes,Beauty & Wellness,(industry default),one-time,"one-time, session-pack",service-menu
+Modes,Beauty & Wellness,makeup-artist,deposit-balance,"one-time, deposit-balance",service-menu
+Modes,Trades & Construction,(industry default),milestone,"one-time, milestone, deposit-balance",appointment
+Modes,Trades & Construction,cleaner,one-time,"one-time",appointment
+Modes,Professional Services,(industry default),recurring,"one-time, recurring, milestone",appointment
+Modes,Health & Fitness,(industry default),session-pack,"one-time, recurring, session-pack",service-menu
+Modes,Health & Fitness,physio-chiro,session-pack,"one-time, recurring, session-pack",appointment
+Modes,Health & Fitness,therapist,session-pack,"one-time, recurring, session-pack",appointment
+Modes,Creative & Design,(industry default),deposit-balance,"one-time, deposit-balance, milestone",date-exclusive
+Modes,Hospitality & Events,(industry default),milestone,"one-time, milestone, deposit-balance",date-exclusive
+Modes,Education & Coaching,(industry default),recurring,"one-time, recurring, session-pack",recurring-lesson
+Modes,Education & Coaching,life-business-coach,recurring,"one-time, recurring, session-pack",service-menu
+Modes,Retail & E-commerce,(industry default),one-time,"one-time",appointment
+,,,,,,
+=== SHEET 6: SMART DEFAULTS (AUTO-ENABLED NEEDS) ===,,,,,,
+Smart Defaults,Industry,Persona ID,manageCustomers,acceptBookings,sendInvoices,communicateClients,receiveInquiries,manageProjects,runMarketing,handleSupport,manageDocuments
+Smart Defaults,Beauty & Wellness,(industry default),TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,TRUE,FALSE,FALSE
+Smart Defaults,Trades & Construction,(industry default),TRUE,FALSE,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,TRUE
+Smart Defaults,Trades & Construction,cleaner,TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,TRUE,FALSE,FALSE
+Smart Defaults,Professional Services,(industry default),TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,TRUE,TRUE
+Smart Defaults,Professional Services,accountant-bookkeeper,TRUE,FALSE,TRUE,TRUE,TRUE,TRUE,FALSE,TRUE,TRUE
+Smart Defaults,Professional Services,real-estate-agent,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE
+Smart Defaults,Professional Services,marketing-agency,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE
+Smart Defaults,Health & Fitness,(industry default),TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,TRUE,FALSE,FALSE
+Smart Defaults,Health & Fitness,physio-chiro,TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,TRUE,FALSE,TRUE
+Smart Defaults,Creative & Design,(industry default),TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,TRUE
+Smart Defaults,Creative & Design,web-designer-developer,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE
+Smart Defaults,Hospitality & Events,(industry default),TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE
+Smart Defaults,Education & Coaching,(industry default),TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,TRUE,TRUE
+Smart Defaults,Education & Coaching,online-course-creator,TRUE,FALSE,TRUE,TRUE,TRUE,FALSE,TRUE,TRUE,TRUE
+,,,,,,
+=== SHEET 7: MODULES (CORE vs OPT-IN) ===,,,,,,
+Modules,Module ID,Slug,Display Name,Group,Kind,Always On,Gated By Need
+Modules,client-database,clients,Clients,business,core,YES,manageCustomers
+Modules,bookings-calendar,bookings,Scheduling / Calendar,business,core,YES,(always on)
+Modules,communication,communication,Messages,business,core,YES,communicateClients
+Modules,quotes-invoicing,invoicing,Billing / Invoices,business,core,YES,sendInvoices
+Modules,leads-pipeline,leads,Leads,business,core,NO,receiveInquiries
+Modules,jobs-projects,jobs,Projects / Jobs,business,core,NO,manageProjects
+Modules,products,products,Products,business,core,NO,(discovery answers)
+Modules,marketing,marketing,Marketing,grow,core,NO,runMarketing
+Modules,team,team,Team,grow,core,NO,(discovery answers)
+Modules,client-portal,portal,Client Portal,grow,core,NO,(discovery answers)
+Modules,automations,automations,Automations,system,core,NO,(discovery answers)
+Modules,reporting,reporting,Reporting,system,core,NO,(discovery answers)
+Modules,documents,documents,Documents,business,addon,NO,—
+Modules,support,support,Support,grow,addon,NO,—
+Modules,memberships,memberships,Memberships,business,addon,NO,—
+Modules,before-after,before-after,Before & After,business,addon,NO,—
+Modules,intake-forms,forms,Forms,business,addon,NO,—
+Modules,soap-notes,soap-notes,Treatment Notes,business,addon,NO,—
+Modules,loyalty,loyalty,Loyalty & Referrals,grow,addon,NO,—
+Modules,win-back,win-back,Win-Back,grow,addon,NO,—
+Modules,storefront,storefront,Storefront,grow,addon,NO,—
+Modules,ai-insights,insights,AI Insights,system,addon,NO,—
+Modules,notes-docs,notes,Notes & Docs,business,addon,NO,—
+Modules,gift-cards,gift-cards,Gift Cards,grow,addon,NO,—
+Modules,class-timetable,timetable,Class Timetable,business,addon,NO,—
+Modules,vendor-management,vendors,Vendors,business,addon,NO,—
+Modules,proposals,proposals,Proposals,business,addon,NO,—
+Modules,waitlist-manager,waitlist,Waitlist,business,addon,NO,—
+,,,,,,
+=== SHEET 8: ONBOARDING QUESTIONS (BUBBLE CHIPS) ===,,,,,,
+Bubbles,Slide,Chip ID,Default Label,Activates Modules,Sets Needs,Industry Override Label (if different)
+Bubbles,0 - How do clients reach you?,clients-book,They book appointments or sessions,bookings-calendar,acceptBookings,
+Bubbles,0 - How do clients reach you?,walk-ins,They walk in or call directly,bookings-calendar,acceptBookings,
+Bubbles,0 - How do clients reach you?,online-booking,I want an online booking page,bookings-calendar,acceptBookings,
+Bubbles,0 - How do clients reach you?,inquiries,They request quotes or send project briefs,jobs-projects,manageProjects,
+Bubbles,0 - How do clients reach you?,referrals,Most of my clients come from referrals,marketing,runMarketing,
+Bubbles,1 - How do you deliver your work?,at-my-place,Clients visit my location,bookings-calendar,acceptBookings,
+Bubbles,1 - How do you deliver your work?,visit-clients,I travel to the client,"bookings-calendar, jobs-projects","acceptBookings, manageProjects",
+Bubbles,1 - How do you deliver your work?,group-classes,I run group classes or workshops,bookings-calendar,acceptBookings,
+Bubbles,1 - How do you deliver your work?,projects,I manage multi-step jobs or projects,jobs-projects,manageProjects,
+Bubbles,1 - How do you deliver your work?,recurring-clients,I see the same clients regularly,"bookings-calendar, automations",acceptBookings,
+Bubbles,2 - How do you get paid and grow?,hourly-billing,I bill clients by the hour,"jobs-projects, quotes-invoicing","manageProjects, sendInvoices",
+Bubbles,2 - How do you get paid and grow?,memberships,I sell packages or subscriptions,automations,,
+Bubbles,2 - How do you get paid and grow?,products,I sell products alongside services,products,,
+Bubbles,2 - How do you get paid and grow?,campaigns,I run promotions or campaigns,marketing,runMarketing,
+Bubbles,2 - How do you get paid and grow?,referral-program,I want a referral or loyalty program,marketing,runMarketing,
+Bubbles,3 - How do you manage?,team,I have staff or contractors,team,,
+Bubbles,3 - How do you manage?,automate,I want to automate reminders,automations,,
+Bubbles,3 - How do you manage?,reports,I want to track revenue,reporting,,
+Bubbles,3 - How do you manage?,contracts,I use contracts or agreements,documents,,
+Bubbles,3 - How do you manage?,client-portal,I want clients to self-serve,client-portal,,
