@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { getProposalStyle } from "@/lib/proposal-styles";
 import { decodePublicProposalData, type PublicProposalData } from "@/lib/proposal-share";
+import { getEffectiveProposalStatus } from "@/lib/proposal-status";
 import type { Proposal, ProposalSection, LineItem, ProposalSignature } from "@/types/models";
 import { SignaturePad } from "@/components/ui/SignaturePad";
 
@@ -620,6 +621,9 @@ export default function PublicProposalPage() {
   const viewRecorded = useRef(false);
 
   const proposal = proposalData?.proposal;
+  const proposalStatus = proposal
+    ? getEffectiveProposalStatus(proposal.status, proposal.validUntil)
+    : null;
 
   useEffect(() => {
     let active = true;
@@ -688,7 +692,7 @@ export default function PublicProposalPage() {
   useEffect(() => {
     if (portableMode) return;
     if (!proposal || viewRecorded.current) return;
-    if (proposal.status !== "sent" && proposal.status !== "viewed") return;
+    if (proposalStatus !== "sent" && proposalStatus !== "viewed") return;
 
     let active = true;
     viewRecorded.current = true;
@@ -719,7 +723,7 @@ export default function PublicProposalPage() {
     return () => {
       active = false;
     };
-  }, [portableMode, proposal, token]);
+  }, [portableMode, proposal, proposalStatus, token]);
 
   if (loading) {
     return <LoadingPage />;
@@ -739,7 +743,7 @@ export default function PublicProposalPage() {
     proposalData?.businessName ||
     "Our Company";
 
-  if (proposal.status === "draft") {
+  if (proposalStatus === "draft") {
     return (
       <StatusGatePage
         title="Proposal In Progress"
@@ -748,7 +752,7 @@ export default function PublicProposalPage() {
       />
     );
   }
-  if (proposal.status === "declined") {
+  if (proposalStatus === "declined") {
     return (
       <StatusGatePage
         title="Proposal Declined"
@@ -757,7 +761,7 @@ export default function PublicProposalPage() {
       />
     );
   }
-  if (proposal.status === "expired") {
+  if (proposalStatus === "expired") {
     return (
       <StatusGatePage
         title="Proposal Expired"
@@ -771,6 +775,15 @@ export default function PublicProposalPage() {
 
   async function handleAccept(name: string, dataUrl: string) {
     setAcceptError(null);
+
+    if (proposalStatus !== "sent" && proposalStatus !== "viewed") {
+      setAcceptError(
+        proposalStatus === "expired"
+          ? "This proposal has expired and can no longer be accepted."
+          : "This proposal is no longer available for acceptance.",
+      );
+      return false;
+    }
 
     const signature: ProposalSignature = {
       signedBy: name,

@@ -2,6 +2,7 @@ import "server-only";
 
 import { createAdminClient } from "@/lib/supabase-server";
 import type { PublicProposalData } from "@/lib/proposal-share";
+import { getEffectiveProposalStatus } from "@/lib/proposal-status";
 import type { Proposal, ProposalSection, ProposalSignature } from "@/types/models";
 
 function mapSectionFromDB(row: Record<string, unknown>): ProposalSection {
@@ -105,8 +106,16 @@ function toPublicProposalData(args: {
   businessName?: string;
 }): PublicProposalData {
   const { proposalRow, sectionRows, businessName } = args;
+  const effectiveProposalRow = {
+    ...proposalRow,
+    status: getEffectiveProposalStatus(
+      proposalRow.status as Proposal["status"],
+      proposalRow.valid_until as string | undefined,
+    ),
+  };
+
   return {
-    proposal: mapProposalFromDB(proposalRow, sectionRows.map(mapSectionFromDB)),
+    proposal: mapProposalFromDB(effectiveProposalRow, sectionRows.map(mapSectionFromDB)),
     businessName,
   };
 }
@@ -123,7 +132,10 @@ export async function recordPublicProposalViewByToken(
   const rows = await loadPublicProposalRows(token);
   if (!rows) return null;
 
-  const currentStatus = rows.proposalRow.status as Proposal["status"];
+  const currentStatus = getEffectiveProposalStatus(
+    rows.proposalRow.status as Proposal["status"],
+    rows.proposalRow.valid_until as string | undefined,
+  );
   if (currentStatus !== "sent" && currentStatus !== "viewed") {
     return toPublicProposalData(rows);
   }
@@ -153,8 +165,11 @@ export async function acceptPublicProposalByToken(
   const rows = await loadPublicProposalRows(token);
   if (!rows) return null;
 
-  const currentStatus = rows.proposalRow.status as Proposal["status"];
-  if (!["sent", "viewed", "accepted"].includes(currentStatus)) {
+  const currentStatus = getEffectiveProposalStatus(
+    rows.proposalRow.status as Proposal["status"],
+    rows.proposalRow.valid_until as string | undefined,
+  );
+  if (currentStatus !== "sent" && currentStatus !== "viewed") {
     return null;
   }
 
