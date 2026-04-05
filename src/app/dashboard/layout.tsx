@@ -228,22 +228,12 @@ function DashboardShell({ children }: { children: ReactNode }) {
     );
   }
 
-  // ── Core nav items (always visible) ──────────────────────
-  const coreItems = [
-    { href: "/dashboard/clients", label: vocab.clients || "Clients", icon: Users },
-    { href: "/dashboard/bookings", label: "Calendar", icon: Calendar },
-    { href: "/dashboard/communication", label: "Messages", icon: MessageCircle },
-    { href: "/dashboard/invoicing", label: "Invoices", icon: Receipt },
-  ];
-
-  // ── Opt-in modules (enabled via onboarding or settings, excluding core) ──
-  const optInItems = enabledModules
-    .filter((mod) => !ALWAYS_ON_MODULES.has(mod.id))
-    .map((mod) => ({
-      href: `/dashboard/${mod.slug}`,
-      label: getModuleDisplayName(mod, vocab),
-      icon: ICON_MAP[mod.icon] || LayoutDashboard,
-    }));
+  // ── All enabled modules in one list ──────────────────────
+  const moduleItems = enabledModules.map((mod) => ({
+    href: `/dashboard/${mod.slug}`,
+    label: getModuleDisplayName(mod, vocab),
+    icon: ICON_MAP[mod.icon] || LayoutDashboard,
+  }));
 
   // ── Enabled add-ons ──
   const addonItems = enabledAddons.map((mod) => ({
@@ -257,9 +247,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
       { href: "/dashboard/ai", label: "MagicAI", icon: Sparkles },
     ] },
-    { label: "", items: coreItems },
-    // Opt-in modules (only if any are enabled)
-    ...(optInItems.length > 0 ? [{ label: "More", items: optInItems }] : []),
+    { label: "", items: moduleItems },
     // Add-ons (only if user has enabled any)
     ...(addonItems.length > 0 ? [{ label: "Add-ons", items: addonItems }] : []),
     { label: "", items: [{ href: "/dashboard/settings", label: "Settings", icon: Settings }], isBottom: true },
