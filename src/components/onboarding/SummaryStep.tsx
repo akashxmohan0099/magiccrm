@@ -1,307 +1,363 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useMemo, useState } from "react";
+import { motion } from "framer-motion";
 import {
-  Users, Inbox, Calendar, Receipt, FolderKanban,
+  Users, Inbox, Calendar, Receipt,
   Megaphone, MessageCircle, Package,
-  Zap, BarChart3, ArrowRight, Globe, UsersRound,
-  Scissors, Wrench, Briefcase, Dumbbell, PenTool,
-  CalendarDays, GraduationCap,
-  Check, Plus, Layers, ChevronDown, ChevronUp, X,
+  Zap, BarChart3, ArrowRight, UsersRound,
+  FileText, Check,
 } from "lucide-react";
 import { useOnboardingStore } from "@/store/onboarding";
 import { useVocabulary } from "@/hooks/useVocabulary";
-import { MODULE_REGISTRY, ALWAYS_ON_MODULES, computeEnabledModuleIds, getModuleDisplayName } from "@/lib/module-registry";
-import type { VocabularyMap } from "@/types/industry-config";
+import {
+  MODULE_REGISTRY,
+  ALWAYS_ON_MODULES,
+  computeEnabledModuleIds,
+  getModuleDisplayName,
+} from "@/lib/module-registry";
 
-const MODULE_DISPLAY: Record<string, {
-  icon: React.ComponentType<{ className?: string }>;
-  bg: string;
-  color: string;
-  gradient: string;
-  hoverBorder: string;
-  tagline: string;
-  preview: { label: string; detail: string }[];
-}> = {
-  "client-database": {
-    icon: Users, bg: "bg-blue-500/10", color: "text-blue-500", gradient: "#3B82F6", hoverBorder: "hover:border-blue-200",
-    tagline: "Manage contacts, tags, notes, and history",
-    preview: [{ label: "Sarah M.", detail: "VIP" }, { label: "Tom K.", detail: "New" }, { label: "Emma R.", detail: "Regular" }],
-  },
-  "leads-pipeline": {
-    icon: Inbox, bg: "bg-indigo-500/10", color: "text-indigo-500", gradient: "#6366F1", hoverBorder: "hover:border-indigo-200",
-    tagline: "Track inquiries and convert them to clients",
-    preview: [{ label: "New inquiry", detail: "Website" }, { label: "Follow-up due", detail: "Referral" }],
-  },
-  "communication": {
-    icon: MessageCircle, bg: "bg-violet-500/10", color: "text-violet-500", gradient: "#8B5CF6", hoverBorder: "hover:border-violet-200",
-    tagline: "Email, SMS, and social — one unified inbox",
-    preview: [{ label: "Email", detail: "Connected" }, { label: "SMS", detail: "Ready" }, { label: "Instagram", detail: "Ready" }],
-  },
-  "bookings-calendar": {
-    icon: Calendar, bg: "bg-emerald-500/10", color: "text-emerald-600", gradient: "#10B981", hoverBorder: "hover:border-emerald-200",
-    tagline: "Appointments, availability, and reminders",
-    preview: [{ label: "Mon 10:00am", detail: "Sarah M." }, { label: "Tue 2:30pm", detail: "Available" }],
-  },
-  "quotes-invoicing": {
-    icon: Receipt, bg: "bg-amber-500/10", color: "text-amber-600", gradient: "#F59E0B", hoverBorder: "hover:border-amber-200",
-    tagline: "Quotes, invoices, and payment tracking",
-    preview: [{ label: "INV-001", detail: "$450.00" }, { label: "QT-003", detail: "$1,200.00" }],
-  },
-  "jobs-projects": {
-    icon: FolderKanban, bg: "bg-orange-500/10", color: "text-orange-500", gradient: "#F97316", hoverBorder: "hover:border-orange-200",
-    tagline: "Tasks, deadlines, and time tracking",
-    preview: [{ label: "Website redesign", detail: "In progress" }, { label: "Brand shoot", detail: "Scheduled" }],
-  },
-  "products": {
-    icon: Package, bg: "bg-cyan-500/10", color: "text-cyan-600", gradient: "#06B6D4", hoverBorder: "hover:border-cyan-200",
-    tagline: "Your product and service catalog",
-    preview: [{ label: "Full Set", detail: "$120" }, { label: "Touch-up", detail: "$65" }],
-  },
-  "marketing": {
-    icon: Megaphone, bg: "bg-pink-500/10", color: "text-pink-500", gradient: "#EC4899", hoverBorder: "hover:border-pink-200",
-    tagline: "Campaigns, coupons, and referrals",
-    preview: [{ label: "Summer promo", detail: "Active" }, { label: "Referral code", detail: "FRIEND10" }],
-  },
-  "team": {
-    icon: UsersRound, bg: "bg-rose-500/10", color: "text-rose-500", gradient: "#F43F5E", hoverBorder: "hover:border-rose-200",
-    tagline: "Roles, permissions, and schedules",
-    preview: [{ label: "You", detail: "Owner" }, { label: "Invite team", detail: "+" }],
-  },
-  "client-portal": {
-    icon: Globe, bg: "bg-teal-500/10", color: "text-teal-600", gradient: "#14B8A6", hoverBorder: "hover:border-teal-200",
-    tagline: "Self-service hub for your clients",
-    preview: [{ label: "Booking history", detail: "Visible" }, { label: "Invoices", detail: "Visible" }],
-  },
-  "automations": {
-    icon: Zap, bg: "bg-yellow-500/10", color: "text-yellow-600", gradient: "#EAB308", hoverBorder: "hover:border-yellow-200",
-    tagline: "Auto-send reminders and follow-ups",
-    preview: [{ label: "Booking reminder", detail: "24h before" }, { label: "Follow-up", detail: "3 days after" }],
-  },
-  "reporting": {
-    icon: BarChart3, bg: "bg-gray-500/10", color: "text-gray-600", gradient: "#6B7280", hoverBorder: "hover:border-gray-300",
-    tagline: "Dashboards, goals, and insights",
-    preview: [{ label: "Revenue", detail: "This month" }, { label: "Bookings", detail: "Trending up" }],
-  },
+// ── Module display config ──
+
+const MODULE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  "client-database": Users,
+  "leads-pipeline": Inbox,
+  "communication": MessageCircle,
+  "bookings-calendar": Calendar,
+  "quotes-invoicing": Receipt,
+  "products": Package,
+  "marketing": Megaphone,
+  "team": UsersRound,
+  "automations": Zap,
+  "reporting": BarChart3,
+  "documents": FileText,
 };
 
-const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
-  Users, Inbox, Calendar, Receipt, FolderKanban,
-  Megaphone, MessageCircle, Package,
-  Zap, BarChart3, Globe, UsersRound,
+const MODULE_COLORS: Record<string, { bg: string; text: string }> = {
+  "client-database": { bg: "bg-blue-500/10", text: "text-blue-500" },
+  "leads-pipeline": { bg: "bg-indigo-500/10", text: "text-indigo-500" },
+  "communication": { bg: "bg-violet-500/10", text: "text-violet-500" },
+  "bookings-calendar": { bg: "bg-emerald-500/10", text: "text-emerald-600" },
+  "quotes-invoicing": { bg: "bg-amber-500/10", text: "text-amber-600" },
+  "products": { bg: "bg-cyan-500/10", text: "text-cyan-600" },
+  "marketing": { bg: "bg-pink-500/10", text: "text-pink-500" },
+  "team": { bg: "bg-rose-500/10", text: "text-rose-500" },
+  "automations": { bg: "bg-yellow-500/10", text: "text-yellow-600" },
+  "reporting": { bg: "bg-gray-500/10", text: "text-gray-600" },
+  "documents": { bg: "bg-violet-500/10", text: "text-violet-500" },
 };
 
-/** Replace "clients"/"client" with the user's vocab in taglines */
-function vocabTagline(tagline: string, vocab: VocabularyMap): string {
-  return tagline
-    .replace(/\bclients\b/g, vocab.clients.toLowerCase())
-    .replace(/\bclient\b/g, vocab.client.toLowerCase());
-}
+// ── Reason mapping: chip ID → human-readable reason ──
 
-const INDUSTRY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  "beauty-wellness": Scissors, "trades-construction": Wrench, "professional-services": Briefcase,
-  "health-fitness": Dumbbell, "creative-services": PenTool, "hospitality-events": CalendarDays,
-  "education-coaching": GraduationCap,
+const CHIP_REASONS: Record<string, string> = {
+  "op-team": "you have a team",
+  "op-products": "you sell retail products",
+  "inquire-first": "brides and event clients inquire before booking",
+  "contracts": "your clients sign contracts",
+  "newsletters": "you want to send newsletters",
+  "deposits": "you collect deposits",
+  "proposals": "you send branded proposals",
+  "online-payments": "you want online payments",
+  "bridal-wedding": "you do bridal and wedding work",
+  "group-bookings": "you do group bookings",
+  "trials": "you do trials before events",
+  "client-preferences": "you track client preferences",
+  "regular-clients": "you see regular clients",
+  "social-dms": "clients DM you on Instagram or WhatsApp",
+  "online-booking": "you want an online booking page",
+  "long-lead": "clients book 6–12 months in advance",
+  "referrals": "your clients come from referrals",
+  "vendor-referrals": "you get referrals from planners and vendors",
+  "reviews": "you want to collect reviews",
+  "loyalty-program": "you want a loyalty program",
+  "editorial": "you do editorial and photoshoot work",
+  "lessons": "you teach lessons or workshops",
+  "op-mobile": "you travel to clients and venues",
 };
 
-/** Get display info for a module, falling back to MODULE_DISPLAY if available */
-function getDisplayForModule(moduleId: string): { icon: React.ComponentType<{ className?: string }>; bg: string; color: string; gradient: string; hoverBorder: string } {
-  const d = MODULE_DISPLAY[moduleId];
-  if (d) return d;
-  return { icon: Zap, bg: "bg-gray-500/10", color: "text-gray-500", gradient: "#6B7280", hoverBorder: "hover:border-gray-200" };
+// ── Which chips trigger which modules ──
+
+const MODULE_TRIGGER_CHIPS: Record<string, string[]> = {
+  "leads-pipeline": ["inquire-first"],
+  "products": ["op-products"],
+  "documents": ["contracts"],
+  "team": ["op-team"],
+  "marketing": ["newsletters"],
+};
+
+// ── Always-on module reasons ──
+
+const ALWAYS_ON_REASONS: Record<string, string> = {
+  "client-database": "Every business needs to manage their clients",
+  "bookings-calendar": "Your calendar and appointments, always ready",
+  "communication": "One inbox for all your client conversations",
+  "quotes-invoicing": "Invoicing and payments, built in",
+  "automations": "Reminders and follow-ups run automatically",
+  "reporting": "Track how your business is performing",
+};
+
+// ── Feature highlights based on chip selections ──
+
+function getFeatureHighlights(chipSelections: Set<string>): { moduleId: string; feature: string }[] {
+  const highlights: { moduleId: string; feature: string }[] = [];
+
+  if (chipSelections.has("deposits")) {
+    highlights.push({ moduleId: "quotes-invoicing", feature: "Deposit tracking enabled" });
+  }
+  if (chipSelections.has("proposals")) {
+    highlights.push({ moduleId: "quotes-invoicing", feature: "Proposal builder enabled" });
+  }
+  if (chipSelections.has("online-payments")) {
+    highlights.push({ moduleId: "quotes-invoicing", feature: "Online payments ready" });
+  }
+  if (chipSelections.has("online-booking")) {
+    highlights.push({ moduleId: "bookings-calendar", feature: "Public booking page enabled" });
+  }
+  if (chipSelections.has("bridal-wedding")) {
+    highlights.push({ moduleId: "bookings-calendar", feature: "Event workflow configured" });
+  }
+  if (chipSelections.has("group-bookings")) {
+    highlights.push({ moduleId: "bookings-calendar", feature: "Group booking support" });
+  }
+  if (chipSelections.has("trials")) {
+    highlights.push({ moduleId: "bookings-calendar", feature: "Trial-to-event booking flow" });
+  }
+  if (chipSelections.has("client-preferences")) {
+    highlights.push({ moduleId: "client-database", feature: "Custom fields: shade, skin type, allergies" });
+  }
+  if (chipSelections.has("regular-clients")) {
+    highlights.push({ moduleId: "client-database", feature: "Rebooking prompts enabled" });
+  }
+  if (chipSelections.has("social-dms")) {
+    highlights.push({ moduleId: "communication", feature: "Instagram & WhatsApp connected" });
+  }
+  if (chipSelections.has("long-lead")) {
+    highlights.push({ moduleId: "bookings-calendar", feature: "12-month calendar view" });
+  }
+  if (chipSelections.has("bridal-wedding") || chipSelections.has("group-bookings")) {
+    highlights.push({ moduleId: "automations", feature: "Post-event follow-ups enabled" });
+  }
+
+  return highlights;
 }
 
 export function SummaryStep({ workspaceId: _workspaceId }: { workspaceId: string | null }) {
   const {
-    businessContext, prevStep, nextStep, getIndustryConfig, needs,
+    businessContext, prevStep, nextStep, needs,
     setDiscoveryAnswer,
   } = useOnboardingStore();
-  const vocab = useVocabulary();
-  const config = getIndustryConfig();
-  const [launching, setLaunching] = useState(false);
-  const [launchError] = useState("");
-
-  const selectedIndustry = useOnboardingStore((s) => s.selectedIndustry);
-  const selectedPersona = useOnboardingStore((s) => s.selectedPersona);
+  const chipSelections = useOnboardingStore((s) => s.chipSelections);
   const discoveryAnswers = useOnboardingStore((s) => s.discoveryAnswers);
+  const vocab = useVocabulary();
+  const [launching, setLaunching] = useState(false);
 
-  const { enabledModules, disabledModules, enabledAddons, enabledModuleIds } = useMemo(() => {
+  const chipSet = useMemo(() => new Set(chipSelections), [chipSelections]);
+
+  const { enabledModules, enabledModuleIds } = useMemo(() => {
     const enabled = computeEnabledModuleIds(needs, discoveryAnswers);
-    const coreModules = MODULE_REGISTRY.filter((m) => m.kind !== "addon");
-    const addonModules = MODULE_REGISTRY.filter((m) => m.kind === "addon");
+    const allModules = MODULE_REGISTRY.filter(
+      (m) => enabled.has(m.id) && (m.status ?? "production") === "production"
+    );
     return {
-      enabledModules: coreModules.filter((m) => enabled.has(m.id)),
-      disabledModules: coreModules.filter((m) => !enabled.has(m.id)),
-      enabledAddons: addonModules.filter((m) => enabled.has(m.id)),
-      enabledModuleIds: Array.from(enabled),
+      enabledModules: allModules,
+      enabledModuleIds: enabled,
     };
   }, [needs, discoveryAnswers]);
 
-  // Module display names from vocabulary (no schema variants)
-  const moduleLabels = useMemo(() => {
-    const labels: Record<string, { label: string; description: string }> = {};
-    for (const mod of [...enabledModules, ...disabledModules]) {
-      labels[mod.id] = {
-        label: getModuleDisplayName(mod, vocab),
-        description: mod.description,
-      };
-    }
-    return labels;
-  }, [enabledModules, disabledModules, vocab]);
+  const featureHighlights = useMemo(() => getFeatureHighlights(chipSet), [chipSet]);
 
-  const toggleModule = (moduleId: string) => {
-    if (ALWAYS_ON_MODULES.has(moduleId)) return;
-    const isCurrentlyEnabled = enabledModules.some((m) => m.id === moduleId);
-    setDiscoveryAnswer(`module:${moduleId}`, !isCurrentlyEnabled);
+  // Build reason for each module
+  const getModuleReason = (moduleId: string): string => {
+    // Always-on modules
+    if (ALWAYS_ON_MODULES.has(moduleId)) {
+      return ALWAYS_ON_REASONS[moduleId] || "Included in every workspace";
+    }
+
+    // Chip-triggered modules
+    const triggerChips = MODULE_TRIGGER_CHIPS[moduleId];
+    if (triggerChips) {
+      for (const chipId of triggerChips) {
+        if (chipSet.has(chipId) && CHIP_REASONS[chipId]) {
+          return `Because ${CHIP_REASONS[chipId]}`;
+        }
+      }
+    }
+
+    return "Enabled based on your selections";
   };
 
-  const IndustryIcon = config ? INDUSTRY_ICONS[config.id] : null;
+  const getModuleHighlights = (moduleId: string): string[] => {
+    return featureHighlights
+      .filter((h) => h.moduleId === moduleId)
+      .map((h) => h.feature);
+  };
 
   const handleLaunch = () => {
     if (launching) return;
     setLaunching(true);
-    nextStep(); // Advance to signup step — workspace gets created there
+    nextStep();
   };
 
-  const totalModuleCount = enabledModules.length + enabledAddons.length;
+  // Split into always-on and chosen modules
+  const alwaysOnModules = enabledModules.filter((m) => ALWAYS_ON_MODULES.has(m.id));
+  const chosenModules = enabledModules.filter((m) => !ALWAYS_ON_MODULES.has(m.id));
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="px-8 sm:px-12 lg:px-16 xl:px-24 py-10">
+      <div className="max-w-2xl mx-auto px-6 py-12">
         {/* Header */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
-          {config && IndustryIcon && (
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-surface rounded-full mb-5">
-              <IndustryIcon className="w-4 h-4 text-text-secondary" />
-              <span className="text-xs font-semibold text-text-secondary">{config.label}</span>
-            </div>
-          )}
-          <h2 className="text-[32px] font-bold text-foreground tracking-tight mb-3">
-            {businessContext.businessName ? `${businessContext.businessName} is ready` : "Your workspace is ready"}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-10"
+        >
+          <h2 className="text-[28px] font-bold text-foreground tracking-tight mb-2">
+            Here&apos;s what we&apos;ve set up for you
           </h2>
-          <p className="text-[15px] text-text-secondary max-w-lg mx-auto">
-            {totalModuleCount} modules configured for you. Everything is customizable from your dashboard.
+          <p className="text-[15px] text-text-secondary">
+            Based on your answers, {businessContext.businessName || "your workspace"} gets these tools
           </p>
         </motion.div>
 
-        {/* Enabled modules */}
-        <div className="flex flex-wrap justify-center gap-5 mb-10">
-          {enabledModules.map((mod, i) => {
-            const d = MODULE_DISPLAY[mod.id];
-            if (!d) return null;
-            const IconComp = d.icon;
-            const meta = moduleLabels[mod.id];
-            const isAlwaysOn = ALWAYS_ON_MODULES.has(mod.id);
-            return (
-              <motion.div
-                key={mod.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.05 + i * 0.03 }}
-                className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(25%-15px)] relative group"
-              >
-                <div className={`p-5 rounded-2xl bg-card-bg border border-border-light ${d.hoverBorder} hover:shadow-lg transition-all`}>
-                  <div className="flex items-start justify-between mb-3">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${d.bg}`}>
-                      <IconComp className={`w-5 h-5 ${d.color}`} />
-                    </div>
-                    {!isAlwaysOn && (
-                      <button onClick={() => toggleModule(mod.id)} className="text-text-tertiary hover:text-foreground cursor-pointer p-1 -m-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                  <p className="text-[14px] font-semibold text-foreground mb-0.5">{meta?.label || mod.name}</p>
-                  <p className="text-[11px] text-text-tertiary leading-snug">{meta?.description || mod.description}</p>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
-
-        {/* Enabled add-ons */}
-        {enabledAddons.length > 0 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }} className="mb-8">
-            <p className="text-[13px] text-text-tertiary mb-4 text-center">Add-ons enabled based on your selections</p>
-            <div className="flex flex-wrap justify-center gap-4">
-              {enabledAddons.map((mod) => {
-                const d = MODULE_DISPLAY[mod.id];
-                const IconComp = d?.icon || Zap;
-                const bg = d?.bg || "bg-gray-100";
-                const color = d?.color || "text-gray-500";
-                const meta = moduleLabels[mod.id];
-                return (
-                  <div key={mod.id} className="flex items-center gap-3 px-5 py-3.5 rounded-2xl bg-card-bg border border-border-light">
-                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${bg}`}>
-                      <IconComp className={`w-4.5 h-4.5 ${color}`} />
-                    </div>
-                    <div>
-                      <p className="text-[13px] font-semibold text-foreground">{meta?.label || getModuleDisplayName(mod, vocab)}</p>
-                      <p className="text-[11px] text-text-tertiary">{meta?.description || mod.description}</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </motion.div>
-        )}
-
-        {/* Disabled modules */}
-        {disabledModules.length > 0 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="mb-10">
-            <p className="text-[13px] text-text-tertiary mb-4 text-center">
-              Not included yet — click to add, or enable them later from your dashboard
+        {/* Chosen modules — the ones triggered by their answers */}
+        {chosenModules.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="mb-8"
+          >
+            <p className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider mb-3">
+              Configured for you
             </p>
-            <div className="flex flex-wrap justify-center gap-4">
-              {disabledModules.map((mod) => {
-                const d = MODULE_DISPLAY[mod.id];
-                if (!d) return null;
-                const IconComp = d.icon;
-                const meta = moduleLabels[mod.id];
+            <div className="space-y-3">
+              {chosenModules.map((mod, i) => {
+                const Icon = MODULE_ICONS[mod.id] || Zap;
+                const colors = MODULE_COLORS[mod.id] || { bg: "bg-gray-100", text: "text-gray-500" };
+                const reason = getModuleReason(mod.id);
+                const highlights = getModuleHighlights(mod.id);
+
                 return (
-                  <motion.button
+                  <motion.div
                     key={mod.id}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => toggleModule(mod.id)}
-                    className="w-full sm:w-[calc(50%-8px)] lg:w-[calc(25%-12px)] flex items-center gap-3 p-4 rounded-2xl border border-dashed border-border-light bg-card-bg hover:border-foreground/15 hover:shadow-md transition-all cursor-pointer text-left group"
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.15 + i * 0.05 }}
+                    className="flex items-start gap-4 p-4 rounded-2xl bg-card-bg border border-border-light"
                   >
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${d.bg} opacity-40 group-hover:opacity-70 transition-opacity`}>
-                      <IconComp className={`w-5 h-5 ${d.color}`} />
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${colors.bg}`}>
+                      <Icon className={`w-5 h-5 ${colors.text}`} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-semibold text-text-secondary group-hover:text-foreground transition-colors">{meta?.label || getModuleDisplayName(mod, vocab)}</p>
-                      <p className="text-[11px] text-text-tertiary leading-snug">{meta?.description || vocabTagline(d.tagline, vocab)}</p>
+                      <p className="text-[14px] font-semibold text-foreground">
+                        {getModuleDisplayName(mod, vocab)}
+                      </p>
+                      <p className="text-[12px] text-text-tertiary mt-0.5">
+                        {reason}
+                      </p>
+                      {highlights.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {highlights.map((h) => (
+                            <span
+                              key={h}
+                              className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-primary/8 text-primary font-medium"
+                            >
+                              <Check className="w-2.5 h-2.5" /> {h}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    <Plus className="w-4 h-4 text-text-tertiary group-hover:text-foreground transition-colors flex-shrink-0" />
-                  </motion.button>
+                  </motion.div>
                 );
               })}
             </div>
           </motion.div>
         )}
 
-        {/* Add-ons hint */}
-        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }} className="text-center text-[13px] text-text-tertiary mb-8">
-          There are many more add-ons you can enable later from your dashboard — memberships, loyalty programs, intake forms, and more.
+        {/* Always-on modules */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="mb-10"
+        >
+          <p className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider mb-3">
+            Always included
+          </p>
+          <div className="space-y-2">
+            {alwaysOnModules.map((mod, i) => {
+              const Icon = MODULE_ICONS[mod.id] || Zap;
+              const colors = MODULE_COLORS[mod.id] || { bg: "bg-gray-100", text: "text-gray-500" };
+              const reason = getModuleReason(mod.id);
+              const highlights = getModuleHighlights(mod.id);
+
+              return (
+                <motion.div
+                  key={mod.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.3 + i * 0.03 }}
+                  className="flex items-start gap-3 p-3 rounded-xl bg-surface/50"
+                >
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${colors.bg}`}>
+                    <Icon className={`w-4 h-4 ${colors.text}`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-[13px] font-semibold text-foreground">
+                        {getModuleDisplayName(mod, vocab)}
+                      </p>
+                    </div>
+                    <p className="text-[11px] text-text-tertiary">{reason}</p>
+                    {highlights.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mt-1.5">
+                        {highlights.map((h) => (
+                          <span
+                            key={h}
+                            className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-primary/8 text-primary font-medium"
+                          >
+                            <Check className="w-2.5 h-2.5" /> {h}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </motion.div>
+
+        {/* Note */}
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4 }}
+          className="text-center text-[12px] text-text-tertiary mb-8"
+        >
+          You can add more modules, change settings, and customise everything from your dashboard.
         </motion.p>
 
         {/* CTA */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="max-w-md mx-auto text-center">
-          {launchError && (
-            <p className="mb-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] font-medium text-red-600">
-              {launchError}
-            </p>
-          )}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.45 }}
+          className="max-w-md mx-auto text-center"
+        >
           <button
             onClick={handleLaunch}
             disabled={launching}
             className="w-full py-4 bg-foreground text-background rounded-2xl text-[16px] font-semibold cursor-pointer hover:opacity-90 transition-all flex items-center justify-center gap-2.5 shadow-lg disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {launching ? "Saving your setup..." : "Launch my workspace"} <ArrowRight className="w-5 h-5" />
+            {launching ? "Saving your setup..." : "Launch my workspace"}{" "}
+            <ArrowRight className="w-5 h-5" />
           </button>
-          <button onClick={prevStep} className="w-full mt-3 py-3 text-[13px] text-text-tertiary hover:text-foreground transition-colors cursor-pointer">
+          <button
+            onClick={prevStep}
+            className="w-full mt-3 py-3 text-[13px] text-text-tertiary hover:text-foreground transition-colors cursor-pointer"
+          >
             Go back and change answers
           </button>
         </motion.div>
@@ -309,4 +365,3 @@ export function SummaryStep({ workspaceId: _workspaceId }: { workspaceId: string
     </div>
   );
 }
-
