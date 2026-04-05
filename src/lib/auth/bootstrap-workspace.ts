@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase-server";
+import { seedSampleData } from "@/lib/db/sample-data-seed";
 
 interface BootstrapWorkspaceParams {
   authUserId: string;
@@ -88,6 +89,14 @@ export async function bootstrapWorkspaceForUser({
 
     if (settingsError) {
       throw new Error(settingsError.message);
+    }
+
+    // Seed persona-specific sample data so the workspace feels alive
+    try {
+      await seedSampleData(admin, createdWorkspaceId!, persona ?? null);
+    } catch (seedErr) {
+      // Non-fatal — workspace is still usable without sample data
+      console.error("[bootstrap] Sample data seeding failed:", seedErr);
     }
 
     return { success: true, workspaceId: workspace.id };

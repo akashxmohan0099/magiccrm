@@ -7,13 +7,6 @@ import { useOnboardingStore } from "@/store/onboarding";
 import { useAssembledSchemasStore } from "@/store/assembled-schemas";
 import { computeEnabledModuleIds, getModuleById, getModuleDisplayName } from "@/lib/module-registry";
 import { assembleWorkspaceSync } from "@/lib/assembly-pipeline";
-import { generateSampleData } from "@/lib/sample-data-generator";
-import { useClientsStore } from "@/store/clients";
-import { useLeadsStore } from "@/store/leads";
-import { useBookingsStore } from "@/store/bookings";
-import { useInvoicesStore } from "@/store/invoices";
-import { useJobsStore } from "@/store/jobs";
-import { useProductsStore } from "@/store/products";
 import { useVocabulary } from "@/hooks/useVocabulary";
 import {
   Users, Inbox, MessageCircle, Calendar, Receipt, FolderKanban,
@@ -145,41 +138,8 @@ export function BuildingScreen() {
     }
     setAssemblyResult(result.schemas, result.fallbacks, 0);
 
-    let sampleData;
-    try {
-      sampleData = generateSampleData({
-        industryId: selectedIndustry,
-        personaId: selectedPersona,
-        businessName: businessContext.businessName,
-        enabledModuleIds: selectedModules,
-      });
-    } catch (err) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("[BuildingScreen] Sample data generation failed:", err);
-      }
-      sampleData = { clients: [], products: [], leads: [], bookings: [], invoices: [], jobs: [], team: [] };
-    }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const a = (x: unknown) => x as any;
-    // Clear existing data and seed fresh sample data — no duplicates
-    if (sampleData.clients.length > 0) {
-      useClientsStore.setState({ clients: sampleData.clients.map(a) });
-    }
-    if (sampleData.products.length > 0) {
-      useProductsStore.setState({ products: sampleData.products.map(a) });
-    }
-    if (sampleData.leads.length > 0) {
-      useLeadsStore.setState({ leads: sampleData.leads.map(a) });
-    }
-    if (sampleData.bookings.length > 0) {
-      useBookingsStore.setState({ bookings: sampleData.bookings.map(a) });
-    }
-    if (sampleData.invoices.length > 0) {
-      useInvoicesStore.setState({ invoices: sampleData.invoices.map(a) });
-    }
-    if (sampleData.jobs.length > 0) {
-      useJobsStore.setState({ jobs: sampleData.jobs.map(a) });
-    }
+    // Sample data is now seeded server-side during account bootstrap.
+    // No client-side sample data generation needed.
   }, [selectedModules, selectedIndustry, selectedPersona, businessContext.businessName]);
 
   // Generate deterministic particles (seeded from index to avoid impure Math.random during render)

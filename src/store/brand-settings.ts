@@ -66,7 +66,11 @@ export const useBrandSettingsStore = create<BrandSettingsStore>()(
             .select("brand")
             .eq("workspace_id", workspaceId)
             .maybeSingle();
-          if (error) throw error;
+          if (error) {
+            // Row might not exist yet for new workspaces — not a real error
+            if (error.code === "PGRST116" || error.message?.includes("no rows")) return;
+            throw error;
+          }
 
           const brand = data?.brand as
             | { brandColor?: string; tagline?: string; logoBase64?: string; invoiceTemplate?: string }
