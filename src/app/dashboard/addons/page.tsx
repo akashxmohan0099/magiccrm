@@ -134,77 +134,59 @@ export default function ModulesAndAddonsPage() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.03 }}
-              className={`relative rounded-2xl overflow-hidden transition-all duration-200 ${
-                enabled
-                  ? `bg-gradient-to-br ${colors.bg}`
-                  : "bg-card-bg"
-              }`}
-              style={{
-                border: enabled ? `1.5px solid ${colors.accent}25` : "1.5px solid var(--border-light)",
-              }}
+              className="rounded-2xl bg-card-bg border border-border-light hover:border-foreground/10 hover:shadow-md transition-all duration-200"
             >
-              {/* Accent glow for enabled */}
-              {enabled && (
+              <div className="p-5">
+                {/* Icon */}
                 <div
-                  className="absolute -top-8 -right-8 w-24 h-24 rounded-full opacity-15 blur-2xl"
-                  style={{ backgroundColor: colors.accent }}
-                />
-              )}
-
-              <div className="relative p-5">
-                <div className="flex items-start justify-between mb-3">
-                  <div
-                    className="w-11 h-11 rounded-xl flex items-center justify-center"
-                    style={{
-                      backgroundColor: `${colors.accent}${enabled ? "15" : "08"}`,
-                      border: `1px solid ${colors.accent}${enabled ? "20" : "10"}`,
-                    }}
-                  >
-                    <span style={{ color: enabled ? colors.accent : `${colors.accent}80` }}>
-                      <Icon className="w-5 h-5" />
-                    </span>
-                  </div>
-
-                  {/* Status badge */}
-                  {alwaysOn ? (
-                    <span className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">
-                      Always on
-                    </span>
-                  ) : enabled ? (
-                    <span
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium"
-                      style={{ backgroundColor: `${colors.accent}12`, color: colors.accent }}
-                    >
-                      <Check className="w-3 h-3" /> Active
-                    </span>
-                  ) : null}
+                  className="w-11 h-11 rounded-xl flex items-center justify-center mb-4"
+                  style={{ backgroundColor: `${colors.accent}10` }}
+                >
+                  <span style={{ color: colors.accent }}>
+                    <Icon className="w-5 h-5" />
+                  </span>
                 </div>
 
-                <h3 className="text-[15px] font-semibold text-foreground mb-1">
-                  {getModuleDisplayName(mod, vocab)}
-                </h3>
+                {/* Title + badge */}
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="text-[15px] font-semibold text-foreground">
+                    {getModuleDisplayName(mod, vocab)}
+                  </h3>
+                  {alwaysOn && (
+                    <span className="text-[9px] font-semibold text-text-tertiary uppercase tracking-wider bg-surface px-1.5 py-0.5 rounded">
+                      Always on
+                    </span>
+                  )}
+                  {!alwaysOn && enabled && (
+                    <span
+                      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider"
+                      style={{ backgroundColor: `${colors.accent}10`, color: colors.accent }}
+                    >
+                      <Check className="w-2.5 h-2.5" /> Active
+                    </span>
+                  )}
+                </div>
+
                 <p className="text-[12px] text-text-secondary leading-relaxed mb-4">
                   {mod.description}
                 </p>
 
                 {/* Action */}
-                {alwaysOn ? (
-                  <Link href={`/dashboard/${mod.slug}`}>
-                    <Button variant="secondary" size="sm" className="w-full">Open</Button>
-                  </Link>
-                ) : enabled ? (
+                {enabled || alwaysOn ? (
                   <div className="flex gap-2">
                     <Link href={`/dashboard/${mod.slug}`} className="flex-1">
                       <Button variant="secondary" size="sm" className="w-full">Open</Button>
                     </Link>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setDisableTarget({ id: mod.id, name: getModuleDisplayName(mod, vocab), kind: mod.kind === "addon" ? "addon" : "module" })}
-                      className="text-text-tertiary hover:text-red-500"
-                    >
-                      Disable
-                    </Button>
+                    {!alwaysOn && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setDisableTarget({ id: mod.id, name: getModuleDisplayName(mod, vocab), kind: mod.kind === "addon" ? "addon" : "module" })}
+                        className="text-text-tertiary hover:text-red-500"
+                      >
+                        Disable
+                      </Button>
+                    )}
                   </div>
                 ) : (
                   <Button
