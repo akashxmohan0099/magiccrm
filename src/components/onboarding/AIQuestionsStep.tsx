@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, ArrowLeft, Mail, MessageSquare, MessageCircle, Instagram, Facebook, Linkedin } from "lucide-react";
+import { ArrowRight, ArrowLeft, Mail, MessageSquare, MessageCircle, Instagram, Facebook } from "lucide-react";
 import { useOnboardingStore } from "@/store/onboarding";
 import { getLocalFollowUps, type LocalFollowUpQuestion } from "@/lib/local-followup-questions";
 
@@ -14,7 +14,6 @@ const CHANNEL_OPTIONS = [
   { id: "whatsapp", label: "WhatsApp", icon: MessageCircle },
   { id: "instagram-dms", label: "Instagram", icon: Instagram },
   { id: "facebook-messenger", label: "Messenger", icon: Facebook },
-  { id: "linkedin", label: "LinkedIn", icon: Linkedin },
 ];
 
 // ── Slide types ──

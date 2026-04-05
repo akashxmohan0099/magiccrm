@@ -7,34 +7,26 @@ describe("local-followup-questions", () => {
     expect(getLocalFollowUps(["nonexistent-chip"])).toEqual([]);
   });
 
-  it("returns travel-charge question when visit-clients chip is selected", () => {
-    const results = getLocalFollowUps(["visit-clients"]);
+  it("returns travel-fee question when op-mobile chip is selected", () => {
+    const results = getLocalFollowUps(["op-mobile"]);
     expect(results).toHaveLength(1);
-    expect(results[0].id).toBe("travel-charge");
+    expect(results[0].id).toBe("travel-fee");
     expect(results[0].question).toContain("travel");
   });
 
-  it("returns team-services question when op-team chip is selected", () => {
+  it("returns team-roster question when op-team chip is selected", () => {
     const results = getLocalFollowUps(["op-team"]);
     expect(results).toHaveLength(1);
-    expect(results[0].id).toBe("team-services");
+    expect(results[0].id).toBe("team-roster");
   });
 
   it("returns multiple questions when multiple chips are selected", () => {
-    const results = getLocalFollowUps(["visit-clients", "memberships", "op-team"]);
+    const results = getLocalFollowUps(["op-mobile", "deposits", "op-team"]);
     expect(results).toHaveLength(3);
     const ids = results.map((q) => q.id);
-    expect(ids).toContain("travel-charge");
-    expect(ids).toContain("memberships-packs");
-    expect(ids).toContain("team-services");
-  });
-
-  it("travel-charge has a follow-up question", () => {
-    const travel = LOCAL_FOLLOWUP_QUESTIONS.find((q) => q.id === "travel-charge");
-    expect(travel).toBeDefined();
-    expect(travel!.followUp).toBeDefined();
-    expect(travel!.followUp!.condition).toBe("yes");
-    expect(travel!.followUp!.question).toContain("distance");
+    expect(ids).toContain("travel-fee");
+    expect(ids).toContain("deposit-percent");
+    expect(ids).toContain("team-roster");
   });
 
   it("every question has valid enables with featureId and action", () => {

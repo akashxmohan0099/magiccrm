@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useMarketingStore } from "@/store/marketing";
+import { useAuth } from "@/hooks/useAuth";
 import { Campaign, CampaignType, CampaignStatus } from "@/types/models";
 import { SlideOver } from "@/components/ui/SlideOver";
 import { FormField } from "@/components/ui/FormField";
@@ -41,6 +42,7 @@ const emptyForm = {
 
 export function CampaignForm({ open, onClose, campaign }: CampaignFormProps) {
   const { addCampaign, updateCampaign, deleteCampaign } = useMarketingStore();
+  const { workspaceId } = useAuth();
   const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -96,9 +98,9 @@ export function CampaignForm({ open, onClose, campaign }: CampaignFormProps) {
     };
 
     if (campaign) {
-      updateCampaign(campaign.id, data);
+      updateCampaign(campaign.id, data, workspaceId ?? undefined);
     } else {
-      addCampaign(data);
+      addCampaign(data, workspaceId ?? undefined);
     }
 
     onClose();
@@ -201,7 +203,7 @@ export function CampaignForm({ open, onClose, campaign }: CampaignFormProps) {
         onClose={() => setDeleteOpen(false)}
         onConfirm={() => {
           if (campaign) {
-            deleteCampaign(campaign.id);
+            deleteCampaign(campaign.id, workspaceId ?? undefined);
             onClose();
           }
         }}

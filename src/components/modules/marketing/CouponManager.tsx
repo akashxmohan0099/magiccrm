@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Plus, Tag } from "lucide-react";
 import { useMarketingStore } from "@/store/marketing";
+import { useAuth } from "@/hooks/useAuth";
 import { Coupon } from "@/types/models";
 import { DataTable, Column } from "@/components/ui/DataTable";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -31,12 +32,13 @@ const emptyForm = {
 export function CouponManager() {
   const { coupons, addCoupon, updateCoupon, deleteCoupon: _deleteCoupon } =
     useMarketingStore();
+  const { workspaceId } = useAuth();
   const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleToggleActive = (coupon: Coupon) => {
-    updateCoupon(coupon.id, { active: !coupon.active });
+    updateCoupon(coupon.id, { active: !coupon.active }, workspaceId ?? undefined);
   };
 
   const columns: Column<Coupon>[] = [
@@ -110,7 +112,7 @@ export function CouponManager() {
         ? new Date(form.expiresAt).toISOString()
         : undefined,
       active: true,
-    });
+    }, workspaceId ?? undefined);
 
     setForm(emptyForm);
     setFormOpen(false);

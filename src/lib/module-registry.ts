@@ -30,13 +30,13 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
   { id: "products", slug: "products", name: "Products", icon: "Package", description: "Your product and service catalog.", group: "business", status: "production" },
 
   // ── Grow ──
-  { id: "marketing", slug: "marketing", name: "Marketing", icon: "Megaphone", description: "Campaigns, coupons, and referrals.", group: "grow", status: "beta" },
-  { id: "team", slug: "team", name: "Team", icon: "UsersRound", description: "Manage your team, roles, and permissions.", group: "grow", status: "beta" },
+  { id: "marketing", slug: "marketing", name: "Marketing", icon: "Megaphone", description: "Campaigns, coupons, and referrals.", group: "grow", status: "production" },
+  { id: "team", slug: "team", name: "Team", icon: "UsersRound", description: "Manage your team, roles, and permissions.", group: "grow", status: "production" },
   { id: "client-portal", slug: "portal", name: "Client Portal", icon: "Globe", description: "Self-service hub where clients view bookings, invoices, and docs.", group: "grow", status: "beta" },
 
   // ── Insights ──
-  { id: "automations", slug: "automations", name: "Automations", icon: "Zap", description: "Automate repetitive tasks.", group: "system", status: "beta" },
-  { id: "reporting", slug: "reporting", name: "Reporting", icon: "BarChart3", description: "Dashboards and insights.", group: "system", status: "beta" },
+  { id: "automations", slug: "automations", name: "Automations", icon: "Zap", description: "Automate repetitive tasks.", group: "system", status: "production" },
+  { id: "reporting", slug: "reporting", name: "Reporting", icon: "BarChart3", description: "Dashboards and insights.", group: "system", status: "production" },
 
   // ── Add-ons (toggled from /dashboard/addons) ──
   { id: "documents", slug: "documents", name: "Documents", icon: "FileText", description: "Contracts, files, and signatures.", group: "business", kind: "addon", status: "production" },
@@ -107,6 +107,8 @@ export const ALWAYS_ON_MODULES = new Set([
   "bookings-calendar",
   "communication",
   "quotes-invoicing",
+  "automations",
+  "reporting",
 ]);
 
 /** Maps module IDs to their NeedsAssessment trigger keys */

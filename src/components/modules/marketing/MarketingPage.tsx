@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Plus, Mail, Play, Pause, Trash2 } from "lucide-react";
 import { useMarketingStore } from "@/store/marketing";
+import { useAuth } from "@/hooks/useAuth";
 import { Campaign } from "@/types/models";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Tabs } from "@/components/ui/Tabs";
@@ -28,6 +29,7 @@ export function MarketingPage() {
     toggleSequenceStatus,
     deleteSequence,
   } = useMarketingStore();
+  const { workspaceId } = useAuth();
   const [activeTab, setActiveTab] = useState("campaigns");
   const [formOpen, setFormOpen] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | undefined>(
@@ -40,7 +42,7 @@ export function MarketingPage() {
 
   const addSequence = () => {
     if (!seqName.trim()) return;
-    storeAddSequence({ name: seqName.trim(), status: "draft", emailCount: 0, enrolledCount: 0 });
+    storeAddSequence({ name: seqName.trim(), status: "draft", emailCount: 0, enrolledCount: 0 }, workspaceId ?? undefined);
     setSeqName("");
     setSeqFormOpen(false);
   };
@@ -130,7 +132,7 @@ export function MarketingPage() {
                         <StatusBadge status={seq.status} />
                         {seq.status !== "draft" && (
                           <button
-                            onClick={() => toggleSequenceStatus(seq.id)}
+                            onClick={() => toggleSequenceStatus(seq.id, workspaceId ?? undefined)}
                             className="p-1 rounded-lg hover:bg-card-bg text-text-tertiary cursor-pointer"
                             title={seq.status === "active" ? "Pause" : "Resume"}
                           >
@@ -139,7 +141,7 @@ export function MarketingPage() {
                         )}
                         {seq.status === "draft" && (
                           <button
-                            onClick={() => toggleSequenceStatus(seq.id)}
+                            onClick={() => toggleSequenceStatus(seq.id, workspaceId ?? undefined)}
                             className="p-1 rounded-lg hover:bg-card-bg text-text-tertiary cursor-pointer"
                             title="Activate"
                           >
@@ -235,7 +237,7 @@ export function MarketingPage() {
         open={deleteSeqId !== null}
         onClose={() => setDeleteSeqId(null)}
         onConfirm={() => {
-          if (deleteSeqId) deleteSequence(deleteSeqId);
+          if (deleteSeqId) deleteSequence(deleteSeqId, workspaceId ?? undefined);
           setDeleteSeqId(null);
         }}
         title="Delete Sequence"

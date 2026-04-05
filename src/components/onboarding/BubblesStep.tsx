@@ -33,54 +33,53 @@ const SLIDES: Slide[] = [
     chips: [
       { id: "op-solo", label: "I work solo", activates: [], needsKeys: [] },
       { id: "op-team", label: "I have a team or staff", activates: ["team"], needsKeys: [] },
-      { id: "op-fixed", label: "I work from a fixed location", activates: [], needsKeys: [] },
-      { id: "op-mobile", label: "I travel to clients", activates: [], needsKeys: [] },
+      { id: "op-mobile", label: "I\u2019m fully mobile \u2014 I go to clients and venues", activates: [], needsKeys: [] },
+      { id: "op-fixed", label: "I have a physical location", activates: [], needsKeys: [] },
       { id: "op-products", label: "I sell retail products", activates: ["products"], needsKeys: [] },
     ],
   },
   {
-    title: "How do clients reach you?",
+    title: "How do clients find you?",
     subtitle: "Select all that apply",
     chips: [
-      { id: "clients-book", label: "They book appointments or sessions", activates: ["bookings-calendar"], needsKeys: ["acceptBookings"] },
-      { id: "walk-ins", label: "They walk in or call directly", activates: ["bookings-calendar"], needsKeys: ["acceptBookings"] },
-      { id: "online-booking", label: "I want an online booking page", activates: ["bookings-calendar"], needsKeys: ["acceptBookings"] },
-      { id: "inquiries", label: "They request quotes or send project briefs", activates: ["jobs-projects"], needsKeys: ["manageProjects"] },
-      { id: "referrals", label: "Most of my clients come from referrals", activates: ["marketing"], needsKeys: ["runMarketing"] },
+      { id: "social-dms", label: "They DM me on Instagram or WhatsApp", activates: [], needsKeys: [] },
+      { id: "inquire-first", label: "Brides and event clients inquire before booking", activates: ["leads-pipeline"], needsKeys: ["receiveInquiries"] },
+      { id: "referrals", label: "Most of my clients come from referrals", activates: [], needsKeys: [] },
+      { id: "vendor-referrals", label: "I get referrals from planners, photographers, and venues", activates: [], needsKeys: [] },
+      { id: "long-lead", label: "Clients book 6\u201312 months in advance", activates: [], needsKeys: [] },
+      { id: "online-booking", label: "I want an online booking page", activates: [], needsKeys: ["acceptBookings"] },
     ],
   },
   {
-    title: "How do you deliver your work?",
+    title: "What kind of work do you do?",
     subtitle: "Select all that apply",
     chips: [
-      { id: "at-my-place", label: "Clients visit my location", activates: ["bookings-calendar"], needsKeys: ["acceptBookings"] },
-      { id: "visit-clients", label: "I travel to the client", activates: ["bookings-calendar", "jobs-projects", "quotes-invoicing"], needsKeys: ["acceptBookings", "manageProjects"] },
-      { id: "group-classes", label: "I run group classes or workshops", activates: ["bookings-calendar"], needsKeys: ["acceptBookings"] },
-      { id: "projects", label: "I manage multi-step jobs or projects", activates: ["jobs-projects"], needsKeys: ["manageProjects"] },
-      { id: "recurring-clients", label: "I see the same clients regularly", activates: ["bookings-calendar", "automations"], needsKeys: ["acceptBookings"] },
+      { id: "bridal-wedding", label: "I do bridal and wedding makeup", activates: [], needsKeys: [] },
+      { id: "editorial", label: "I do editorial and photoshoot work", activates: [], needsKeys: [] },
+      { id: "lessons", label: "I teach makeup lessons or run workshops", activates: [], needsKeys: [] },
+      { id: "group-bookings", label: "I do group bookings (bridal parties, events)", activates: [], needsKeys: ["acceptBookings"] },
+      { id: "trials", label: "I do trials before the event day", activates: [], needsKeys: ["acceptBookings"] },
+      { id: "client-preferences", label: "I track client preferences (foundation shade, skin type, allergies)", activates: [], needsKeys: [] },
+      { id: "regular-clients", label: "I see the same clients regularly", activates: [], needsKeys: [] },
     ],
   },
   {
-    title: "How do you get paid and grow?",
+    title: "Money & contracts",
     subtitle: "Select all that apply",
     chips: [
-      { id: "hourly-billing", label: "I bill clients by the hour or track time", activates: ["jobs-projects", "quotes-invoicing"], needsKeys: ["manageProjects", "sendInvoices"] },
-      { id: "deposits", label: "I collect deposits before appointments", activates: ["automations"], needsKeys: [] },
-      { id: "memberships", label: "I sell packages, memberships, or subscriptions", activates: ["automations"], needsKeys: [] },
-      { id: "products", label: "I sell products alongside my services", activates: ["products"], needsKeys: [] },
-      { id: "campaigns", label: "I run promotions, campaigns, or offers", activates: ["marketing"], needsKeys: ["runMarketing"] },
-      { id: "referral-program", label: "I want a referral or loyalty program", activates: ["marketing"], needsKeys: ["runMarketing"] },
+      { id: "deposits", label: "I collect deposits to hold dates", activates: [], needsKeys: [] },
+      { id: "contracts", label: "Clients sign contracts before I lock in their date", activates: ["documents"], needsKeys: ["manageDocuments"] },
+      { id: "proposals", label: "I send branded proposals with pricing", activates: [], needsKeys: [] },
+      { id: "online-payments", label: "I want to accept online payments", activates: [], needsKeys: [] },
     ],
   },
   {
-    title: "How do you manage your business?",
+    title: "Growth & engagement",
     subtitle: "Select all that apply",
     chips: [
-      { id: "team", label: "I have staff or contractors", activates: ["team"], needsKeys: [] },
-      { id: "automate", label: "I want to automate reminders and follow-ups", activates: ["automations"], needsKeys: [] },
-      { id: "reports", label: "I want to track revenue and performance", activates: ["reporting"], needsKeys: [] },
-      { id: "contracts", label: "I use contracts or agreements", activates: ["documents"], needsKeys: [] },
-      { id: "client-portal", label: "I want clients to have a self-service portal", activates: ["client-portal"], needsKeys: [] },
+      { id: "newsletters", label: "I want to send newsletters or updates to clients", activates: ["marketing"], needsKeys: ["runMarketing"] },
+      { id: "reviews", label: "I want to collect reviews and testimonials", activates: [], needsKeys: [] },
+      { id: "loyalty-program", label: "I want a referral or loyalty program", activates: [], needsKeys: [] },
     ],
   },
 ];
@@ -100,27 +99,9 @@ interface IndustryChipConfig {
 
 const PERSONA_OVERRIDES: Record<string, IndustryChipConfig> = {
   "makeup-artist": {
-    hide: ["walk-ins", "group-classes", "hourly-billing", "op-fixed", "memberships", "client-portal", "inquiries", "projects"],
-    relabel: {
-      "visit-clients": "I travel to venues and client locations",
-      "deposits": "I collect non-refundable deposits to hold dates",
-      "contracts": "Clients sign contracts before I lock in their date",
-      "recurring-clients": "I have regular clients for lessons or touch-ups",
-      "op-mobile": "I\u2019m fully mobile \u2014 I go to clients and venues",
-      "campaigns": "I promote my work on Instagram and social media",
-    },
-    add: [
-      { slide: 0, chip: { id: "op-home-studio", label: "I have a home studio for trials and lessons", activates: [], needsKeys: [] } },
-      { slide: 1, chip: { id: "mua-inquiries", label: "Brides and event clients inquire before booking", activates: ["leads-pipeline"], needsKeys: ["receiveInquiries"] } },
-      { slide: 1, chip: { id: "wedding-inquiries", label: "I get wedding and bridal party inquiries", activates: ["leads-pipeline"], needsKeys: ["receiveInquiries"] } },
-      { slide: 1, chip: { id: "long-lead", label: "Clients book 6\u201312 months in advance", activates: ["leads-pipeline"], needsKeys: ["receiveInquiries"] } },
-      { slide: 2, chip: { id: "mua-weddings", label: "I manage weddings with trials and day-of", activates: ["leads-pipeline"], needsKeys: ["receiveInquiries"] } },
-      { slide: 2, chip: { id: "bridal-parties", label: "I do bridal parties (3\u20138 people per wedding)", activates: ["bookings-calendar"], needsKeys: ["acceptBookings"] } },
-      { slide: 2, chip: { id: "trials", label: "I do makeup trials before the wedding day", activates: ["bookings-calendar"], needsKeys: ["acceptBookings"] } },
-      { slide: 2, chip: { id: "early-mornings", label: "I start at 5\u20136am on wedding days", activates: [], needsKeys: [] } },
-      { slide: 3, chip: { id: "proposals", label: "I send branded proposals with pricing", activates: ["documents"], needsKeys: [] } },
-      { slide: 3, chip: { id: "vendor-referrals", label: "I get referrals from planners, photographers, and venues", activates: ["marketing"], needsKeys: ["runMarketing"] } },
-    ],
+    hide: [],
+    relabel: {},
+    add: [],
   },
   "barber": {
     hide: ["group-classes", "inquiries", "projects", "hourly-billing", "contracts", "client-portal", "op-mobile"],
@@ -136,11 +117,9 @@ const PERSONA_OVERRIDES: Record<string, IndustryChipConfig> = {
     relabel: {
       "recurring-clients": "Clients come back every 2\u20133 weeks for fills",
       "deposits": "I require deposits to hold appointment slots",
-      "op-mobile": "I offer mobile nail services at client homes",
     },
     add: [
       { slide: 1, chip: { id: "instagram-booking", label: "Most of my bookings come through Instagram", activates: ["marketing"], needsKeys: ["runMarketing"] } },
-      { slide: 0, chip: { id: "home-studio", label: "I work from a home studio", activates: [], needsKeys: [] } },
     ],
   },
   "lash-brow-tech": {
@@ -148,10 +127,8 @@ const PERSONA_OVERRIDES: Record<string, IndustryChipConfig> = {
     relabel: {
       "recurring-clients": "Clients come back every 2\u20133 weeks for fills",
       "deposits": "I require deposits for new clients",
-      "op-mobile": "I offer mobile lash services",
     },
     add: [
-      { slide: 0, chip: { id: "home-studio", label: "I work from a home studio", activates: [], needsKeys: [] } },
       { slide: 0, chip: { id: "patch-tests", label: "New clients need a patch test first", activates: [], needsKeys: [] } },
       { slide: 1, chip: { id: "instagram-booking", label: "Most of my bookings come through Instagram", activates: ["marketing"], needsKeys: ["runMarketing"] } },
       { slide: 2, chip: { id: "aftercare", label: "I send aftercare instructions after appointments", activates: ["automations"], needsKeys: [] } },
@@ -167,7 +144,6 @@ const PERSONA_OVERRIDES: Record<string, IndustryChipConfig> = {
       "recurring-clients": "Clients come back for annual colour refreshes",
     },
     add: [
-      { slide: 0, chip: { id: "home-studio", label: "I work from a home studio", activates: [], needsKeys: [] } },
       { slide: 2, chip: { id: "healing-timeline", label: "Touch-ups require a healing period (4\u20138 weeks)", activates: [], needsKeys: [] } },
       { slide: 2, chip: { id: "aftercare", label: "I send aftercare instructions after procedures", activates: ["automations"], needsKeys: [] } },
     ],
@@ -488,6 +464,49 @@ export function BubblesStep() {
         if (def && !addonsStore.isAddonEnabled(id)) addonsStore.enableAddon(id, def.name);
       }
     });
+
+    // Auto-configure from chip signals
+    if (selected.has("social-dms")) {
+      store.setDiscoveryAnswer("channel:instagram-dms", true);
+      store.setDiscoveryAnswer("channel:whatsapp", true);
+    }
+    if (selected.has("long-lead")) {
+      store.setDiscoveryAnswer("config:calendar-range-12m", true);
+    }
+    if (selected.has("online-booking")) {
+      store.setDiscoveryAnswer("config:public-booking-page", true);
+    }
+    if (selected.has("bridal-wedding")) {
+      store.setDiscoveryAnswer("config:event-workflow", true);
+      store.setDiscoveryAnswer("config:post-event-followup", true);
+    }
+    if (selected.has("group-bookings")) {
+      store.setDiscoveryAnswer("config:per-person-tracking", true);
+    }
+    if (selected.has("trials")) {
+      store.setDiscoveryAnswer("config:trial-booking-flow", true);
+    }
+    if (selected.has("client-preferences")) {
+      store.setDiscoveryAnswer("config:custom-fields-mua", true);
+    }
+    if (selected.has("regular-clients")) {
+      store.setDiscoveryAnswer("config:rebooking-prompts", true);
+    }
+    if (selected.has("deposits")) {
+      store.setDiscoveryAnswer("config:deposit-tracking", true);
+    }
+    if (selected.has("proposals")) {
+      store.setDiscoveryAnswer("config:proposal-builder", true);
+    }
+    if (selected.has("online-payments")) {
+      store.setDiscoveryAnswer("config:stripe-integration", true);
+    }
+    if (selected.has("reviews")) {
+      store.setDiscoveryAnswer("config:review-collection", true);
+    }
+    if (selected.has("loyalty-program")) {
+      store.setDiscoveryAnswer("config:loyalty-module", true);
+    }
 
     nextStep();
   };

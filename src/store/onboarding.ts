@@ -428,7 +428,7 @@ export const useOnboardingStore = create<OnboardingStore>()(
     }),
     {
       name: "magic-crm-onboarding",
-      version: 18,
+      version: 19,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       migrate: (persisted: any, version: number) => {
         if (version < 17) {
@@ -471,6 +471,16 @@ export const useOnboardingStore = create<OnboardingStore>()(
             tuningModuleMeta: {},
             tuningCombinations: [],
             tuningLoaded: false,
+          };
+        }
+        if (version < 19) {
+          return {
+            ...persisted,
+            chipSelections: [],
+            aiCategories: [],
+            aiAnswers: {},
+            deepDiveAnswers: {},
+            featureActivationLog: [],
           };
         }
         return persisted;

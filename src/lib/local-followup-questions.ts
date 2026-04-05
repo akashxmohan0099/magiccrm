@@ -35,39 +35,17 @@ export interface LocalFollowUpQuestion {
 }
 
 export const LOCAL_FOLLOWUP_QUESTIONS: LocalFollowUpQuestion[] = [
-  // ── Travel ──────────────────────────────────────────
   {
-    id: "travel-charge",
-    triggerChipId: "visit-clients",
-    question: "Do you add a travel fee to your pricing?",
+    id: "travel-fee",
+    triggerChipId: "op-mobile",
+    question: "Do you charge a travel fee?",
     moduleId: "quotes-invoicing",
     enables: [
       { featureId: "travel-costs", action: "auto" },
     ],
-    followUp: {
-      condition: "yes",
-      question: "Should we calculate travel cost based on distance?",
-      enables: [
-        { featureId: "travel-costs", action: "auto" },
-      ],
-      metaKey: "travel-costs:distance-mode",
-    },
   },
-
-  // ── Memberships / Session Packs ─────────────────────
   {
-    id: "memberships-packs",
-    triggerChipId: "memberships",
-    question: "Do clients prepay for a set number of sessions?",
-    moduleId: "client-database",
-    enables: [
-      { featureId: "client-credit-balance", action: "auto" },
-    ],
-  },
-
-  // ── Deposits ────────────────────────────────────────
-  {
-    id: "deposits-auto",
+    id: "deposit-percent",
     triggerChipId: "deposits",
     question: "Should deposits be added automatically when clients book?",
     moduleId: "bookings-calendar",
@@ -75,48 +53,31 @@ export const LOCAL_FOLLOWUP_QUESTIONS: LocalFollowUpQuestion[] = [
       { featureId: "booking-deposits", action: "auto" },
     ],
   },
-
-  // ── Team Services ───────────────────────────────────
   {
-    id: "team-services",
-    triggerChipId: "op-team",
-    question: "Do different team members specialise in different services?",
-    moduleId: "team",
+    id: "bridal-vs-everyday",
+    triggerChipId: "bridal-wedding",
+    question: "Do you have separate pricing for bridal vs everyday bookings?",
+    moduleId: "products",
     enables: [
-      { featureId: "availability-per-member", action: "auto" },
+      { featureId: "service-categories", action: "auto" },
     ],
   },
-
-  // ── Aftercare ───────────────────────────────────────
   {
-    id: "aftercare-auto",
-    triggerChipId: "aftercare",
-    question: "Should aftercare instructions be sent automatically after each appointment?",
-    moduleId: "bookings-calendar",
-    enables: [
-      { featureId: "booking-reminders", action: "auto" },
-    ],
-  },
-
-  // ── Bridal parties ──────────────────────────────────
-  {
-    id: "bridal-party-size",
-    triggerChipId: "bridal-parties",
-    question: "Do you need to track each person in the party separately?",
-    moduleId: "bookings-calendar",
-    enables: [
-      { featureId: "group-class-booking", action: "auto" },
-    ],
-  },
-
-  // ── Patch tests ─────────────────────────────────────
-  {
-    id: "patch-test-auto",
-    triggerChipId: "patch-tests",
-    question: "Should we automatically schedule a patch test before a new client's first appointment?",
+    id: "client-questionnaire",
+    triggerChipId: "inquire-first",
+    question: "Do you want clients to fill out a questionnaire before booking?",
     moduleId: "bookings-calendar",
     enables: [
       { featureId: "pre-booking-form", action: "auto" },
+    ],
+  },
+  {
+    id: "team-roster",
+    triggerChipId: "op-team",
+    question: "Would you like to manage team availability and rosters on the platform?",
+    moduleId: "team",
+    enables: [
+      { featureId: "availability-per-member", action: "auto" },
     ],
   },
 ];
