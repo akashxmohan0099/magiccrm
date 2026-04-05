@@ -195,7 +195,7 @@ export default function ModulesAndAddonsPage() {
                 ) : enabled ? (
                   <div className="flex gap-2">
                     <Link href={`/dashboard/${mod.slug}`} className="flex-1">
-                      <Button variant="primary" size="sm" className="w-full">Open</Button>
+                      <Button variant="secondary" size="sm" className="w-full">Open</Button>
                     </Link>
                     <Button
                       variant="ghost"
