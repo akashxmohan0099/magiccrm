@@ -11,7 +11,6 @@ export const makeupArtistBlueprint: WorkspaceBlueprint = {
     workflowPattern: "inquiry-first",
     enabledModules: [
       "bookings-calendar",
-      "products",
     ],
     enabledAddons: [
       "documents",
@@ -49,7 +48,7 @@ export const makeupArtistBlueprint: WorkspaceBlueprint = {
 
   presentation: {
     homePage: "leads",
-    sidebarOrder: ["leads", "bookings", "clients", "invoicing", "products", "documents", "communication"],
+    sidebarOrder: ["leads", "bookings", "clients", "invoicing", "documents", "communication"],
     primaryAction: { label: "New Inquiry", href: "/dashboard/leads", icon: "Plus" },
     dashboardWidgets: [
       { instanceId: "w-setup", manifestId: "setup-checklist", x: 0, y: 0, w: 4, h: 2, config: {} },
@@ -69,28 +68,6 @@ export const makeupArtistBlueprint: WorkspaceBlueprint = {
   },
 
   adjustableBlocks: [
-    {
-      id: "sell-products",
-      question: "Do you sell makeup products or kits?",
-      options: [
-        {
-          value: "yes",
-          label: "Yes, I sell products",
-          description: "Products module enabled with inventory tracking",
-          presentationPatches: [],
-        },
-        {
-          value: "no",
-          label: "No, services only",
-          description: "Products module hidden from sidebar",
-          functionalDelta: { removeModules: ["products"] },
-          presentationPatches: [
-            { op: "reorder-sidebar", itemIds: ["leads", "bookings", "clients", "invoicing", "documents", "communication"] },
-          ],
-        },
-      ],
-      default: "yes",
-    },
     {
       id: "booking-style",
       question: "Do some clients book directly (e.g. makeup lessons)?",

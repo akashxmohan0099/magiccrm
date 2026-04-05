@@ -35,7 +35,6 @@ const SLIDES: Slide[] = [
       { id: "op-team", label: "I have a team or staff", activates: ["team"], needsKeys: [] },
       { id: "op-mobile", label: "I\u2019m fully mobile \u2014 I go to clients and venues", activates: [], needsKeys: [] },
       { id: "op-fixed", label: "I have a physical location", activates: [], needsKeys: [] },
-      { id: "op-products", label: "I sell retail products", activates: ["products"], needsKeys: [] },
     ],
   },
   {
@@ -405,10 +404,6 @@ export function BubblesStep() {
       store.setOperatingModel({ workLocation: "mobile" });
     } else if (selected.has("op-fixed")) {
       store.setOperatingModel({ workLocation: "fixed" });
-    }
-
-    if (selected.has("op-products")) {
-      store.setOperatingModel({ sellProducts: true });
     }
 
     // ── Collect activated modules and needs from selected chips ──

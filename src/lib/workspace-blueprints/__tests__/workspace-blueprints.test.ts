@@ -305,7 +305,7 @@ describe("Validator — validateResolvedWorkspace", () => {
 });
 
 describe("Validator — validatePatch", () => {
-  const functional = makeFunctional({ enabledModules: ["bookings-calendar", "products"] });
+  const functional = makeFunctional({ enabledModules: ["bookings-calendar", "marketing"] });
 
   it("set-homepage: valid enabled module returns null", () => {
     const error = validatePatch({ op: "set-homepage", pageId: "bookings" }, functional);
@@ -320,7 +320,7 @@ describe("Validator — validatePatch", () => {
 
   it("reorder-sidebar: valid slugs returns null", () => {
     const error = validatePatch(
-      { op: "reorder-sidebar", itemIds: ["bookings", "clients", "products"] },
+      { op: "reorder-sidebar", itemIds: ["bookings", "clients", "marketing"] },
       functional,
     );
     expect(error).toBeNull();
@@ -528,15 +528,14 @@ describe("Resolver — applyPatches", () => {
 
 describe("Resolver — safeBuildDraft", () => {
   it("applies adjustable block selections from adjustments", () => {
-    // nail-tech: sell-products=no removes products module
-    const draft = safeBuildDraft(nailTechBlueprint, { "sell-products": "no" });
-    expect(draft.functional.enabledModules).not.toContain("products");
+    // nail-tech: accept-inquiries=inquire-first changes workflow pattern
+    const draft = safeBuildDraft(nailTechBlueprint, { "accept-inquiries": "inquire-first" });
+    expect(draft.functional.workflowPattern).toBe("inquiry-first");
   });
 
   it("uses block defaults for missing selections", () => {
-    // nail-tech defaults: sell-products=yes, accept-inquiries=direct
+    // nail-tech defaults: accept-inquiries=direct
     const draft = safeBuildDraft(nailTechBlueprint, {});
-    expect(draft.functional.enabledModules).toContain("products");
     expect(draft.functional.workflowPattern).toBe("booking-first");
   });
 
@@ -548,9 +547,9 @@ describe("Resolver — safeBuildDraft", () => {
   });
 
   it("applies presentation patches from adjustable block selection", () => {
-    // hair-salon: sell-products=no removes products from sidebar
-    const draft = safeBuildDraft(hairSalonBlueprint, { "sell-products": "no" });
-    expect(draft.presentation.sidebarOrder).not.toContain("products");
+    // hair-salon: accept-inquiries=inquire-first changes homepage and sidebar
+    const draft = safeBuildDraft(hairSalonBlueprint, { "accept-inquiries": "inquire-first" });
+    expect(draft.presentation.homePage).toBe("leads");
   });
 
   it("applies addModules from functionalDelta", () => {
@@ -659,13 +658,13 @@ describe("Resolver — safeApplyValidatedPatches", () => {
 
   it("NEVER modifies functional config (critical invariant)", () => {
     const draft = {
-      functional: makeFunctional({ enabledModules: ["bookings-calendar", "products"] }),
+      functional: makeFunctional({ enabledModules: ["bookings-calendar", "marketing"] }),
       presentation: makePresentation(),
     };
     const functionalBefore = structuredClone(draft.functional);
     const patches: PresentationPatch[] = [
-      { op: "set-homepage", pageId: "products" },
-      { op: "reorder-sidebar", itemIds: ["products", "bookings", "clients"] },
+      { op: "set-homepage", pageId: "marketing" },
+      { op: "reorder-sidebar", itemIds: ["marketing", "bookings", "clients"] },
     ];
     const result = safeApplyValidatedPatches(draft, patches);
     expect(result.functional).toEqual(functionalBefore);

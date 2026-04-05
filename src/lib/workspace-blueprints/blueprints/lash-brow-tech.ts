@@ -11,7 +11,6 @@ export const lashBrowTechBlueprint: WorkspaceBlueprint = {
     workflowPattern: "booking-first",
     enabledModules: [
       "bookings-calendar",
-      "products",
     ],
     enabledAddons: [],
     moduleBehaviors: [
@@ -35,7 +34,7 @@ export const lashBrowTechBlueprint: WorkspaceBlueprint = {
 
   presentation: {
     homePage: "bookings",
-    sidebarOrder: ["bookings", "clients", "invoicing", "products", "leads", "communication"],
+    sidebarOrder: ["bookings", "clients", "invoicing", "leads", "communication"],
     primaryAction: { label: "Book Appointment", href: "/dashboard/bookings", icon: "Calendar" },
     dashboardWidgets: [
       { instanceId: "w-setup", manifestId: "setup-checklist", x: 0, y: 0, w: 4, h: 2, config: {} },
@@ -55,28 +54,6 @@ export const lashBrowTechBlueprint: WorkspaceBlueprint = {
   },
 
   adjustableBlocks: [
-    {
-      id: "sell-products",
-      question: "Do you sell lash or brow products?",
-      options: [
-        {
-          value: "yes",
-          label: "Yes, I sell products",
-          description: "Products module enabled with inventory tracking",
-          presentationPatches: [],
-        },
-        {
-          value: "no",
-          label: "No, services only",
-          description: "Products module hidden from sidebar",
-          functionalDelta: { removeModules: ["products"] },
-          presentationPatches: [
-            { op: "reorder-sidebar", itemIds: ["bookings", "clients", "invoicing", "leads", "communication"] },
-          ],
-        },
-      ],
-      default: "yes",
-    },
     {
       id: "accept-inquiries",
       question: "Do clients inquire before booking, or book directly?",

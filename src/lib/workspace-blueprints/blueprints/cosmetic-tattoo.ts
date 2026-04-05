@@ -11,7 +11,6 @@ export const cosmeticTattooBlueprint: WorkspaceBlueprint = {
     workflowPattern: "booking-first",
     enabledModules: [
       "bookings-calendar",
-      "products",
     ],
     enabledAddons: [],
     moduleBehaviors: [
@@ -48,7 +47,7 @@ export const cosmeticTattooBlueprint: WorkspaceBlueprint = {
 
   presentation: {
     homePage: "bookings",
-    sidebarOrder: ["bookings", "clients", "invoicing", "products", "leads", "communication"],
+    sidebarOrder: ["bookings", "clients", "invoicing", "leads", "communication"],
     primaryAction: { label: "Book Appointment", href: "/dashboard/bookings", icon: "Calendar" },
     dashboardWidgets: [
       { instanceId: "w-setup", manifestId: "setup-checklist", x: 0, y: 0, w: 4, h: 2, config: {} },
@@ -68,28 +67,6 @@ export const cosmeticTattooBlueprint: WorkspaceBlueprint = {
   },
 
   adjustableBlocks: [
-    {
-      id: "sell-products",
-      question: "Do you sell aftercare products or pigments?",
-      options: [
-        {
-          value: "yes",
-          label: "Yes, I sell products",
-          description: "Products module enabled for aftercare and supply tracking",
-          presentationPatches: [],
-        },
-        {
-          value: "no",
-          label: "No, procedures only",
-          description: "Products module hidden from sidebar",
-          functionalDelta: { removeModules: ["products"] },
-          presentationPatches: [
-            { op: "reorder-sidebar", itemIds: ["bookings", "clients", "invoicing", "leads", "communication"] },
-          ],
-        },
-      ],
-      default: "no",
-    },
     {
       id: "accept-inquiries",
       question: "Do clients inquire before booking, or book directly?",

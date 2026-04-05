@@ -97,7 +97,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
 
     const enabledIds = selectedIndustry
       ? Array.from(computeEnabledModuleIds(needs, discoveryAnswers))
-      : ["client-database", "bookings-calendar", "communication", "quotes-invoicing", "leads-pipeline", "jobs-projects", "products", "team"];
+      : ["client-database", "bookings-calendar", "communication", "quotes-invoicing", "leads-pipeline", "jobs-projects", "team"];
 
     const sample = generateSampleData({
       industryId: selectedIndustry || "generic",

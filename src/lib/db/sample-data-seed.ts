@@ -42,23 +42,7 @@ async function seedMakeupArtistData(
   admin: SupabaseClient,
   workspaceId: string,
 ): Promise<void> {
-  // ── 1. Products/Services ──
-  const { data: products } = await admin
-    .from("products")
-    .insert([
-      { workspace_id: workspaceId, name: "Bridal Package", description: "Trial + wedding day makeup, airbrush, lashes, touch-up kit", price: 650, category: "Bridal", in_stock: true },
-      { workspace_id: workspaceId, name: "Event Makeup", description: "Full glam for events, parties, and galas", price: 180, category: "Event", in_stock: true },
-      { workspace_id: workspaceId, name: "Makeup Lesson", description: "1-on-1 lesson with personalised routine", price: 120, category: "Lessons", in_stock: true },
-      { workspace_id: workspaceId, name: "Editorial Makeup", description: "Creative looks for photoshoots and campaigns", price: 250, category: "Editorial", in_stock: true },
-    ])
-    .select("id, name");
-
-  const productMap: Record<string, string> = {};
-  for (const p of products ?? []) {
-    productMap[p.name] = p.id;
-  }
-
-  // ── 2. Clients (interconnected — some converted from leads) ──
+  // ── 1. Clients (interconnected — some converted from leads) ──
   const { data: clients, error: clientsError } = await admin
     .from("clients")
     .insert([

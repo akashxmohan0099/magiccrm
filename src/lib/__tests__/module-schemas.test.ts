@@ -5,7 +5,13 @@ import { getAllSchemas, getAllSchemaIds, getAllVariants } from "@/lib/module-sch
 import { validateModuleSchema } from "@/lib/schema-validator";
 import type { ActionDefinition, FieldDefinition } from "@/types/module-schema";
 
-const knownModuleIds = new Set(MODULE_REGISTRY.map((module) => module.id));
+// Include both active registry IDs and schema IDs (some modules like "products" are
+// deactivated from the platform but their schemas still exist for future re-addition,
+// and other schemas may reference them).
+const knownModuleIds = new Set([
+  ...MODULE_REGISTRY.map((module) => module.id),
+  ...getAllSchemaIds(),
+]);
 
 function collectRelationTargets(fields: FieldDefinition[]): string[] {
   const targets: string[] = [];

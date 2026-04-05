@@ -28,7 +28,6 @@ const MODULE_ICONS: Record<string, string> = {
   "communication": "MessageCircle",
   "client-database": "Users",
   "team": "UsersRound",
-  "products": "Package",
   "marketing": "Megaphone",
   "client-portal": "Globe",
 };

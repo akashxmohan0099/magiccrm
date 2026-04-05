@@ -53,28 +53,6 @@ export const barberBlueprint: WorkspaceBlueprint = {
 
   adjustableBlocks: [
     {
-      id: "sell-products",
-      question: "Do you sell grooming products?",
-      options: [
-        {
-          value: "yes",
-          label: "Yes, I sell products",
-          description: "Products module enabled with inventory tracking",
-          functionalDelta: { addModules: ["products"] },
-          presentationPatches: [
-            { op: "reorder-sidebar", itemIds: ["bookings", "clients", "invoicing", "products", "leads", "communication"] },
-          ],
-        },
-        {
-          value: "no",
-          label: "No, services only",
-          description: "Simple setup without products",
-          presentationPatches: [],
-        },
-      ],
-      default: "no",
-    },
-    {
       id: "accept-inquiries",
       question: "Do clients inquire before booking, or book directly?",
       options: [

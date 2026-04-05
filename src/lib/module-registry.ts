@@ -27,7 +27,6 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
   // Question-gated modules:
   { id: "bookings-calendar", slug: "bookings", name: "Scheduling", icon: "Calendar", description: "Bookings, appointments, and calendar.", group: "business", status: "production" },
   { id: "jobs-projects", slug: "jobs", name: "Projects", icon: "FolderKanban", description: "Track work from start to finish.", vocabKey: "jobs", group: "business", status: "beta" },
-  { id: "products", slug: "products", name: "Products", icon: "Package", description: "Your product and service catalog.", group: "business", status: "production" },
 
   // ── Grow ──
   { id: "marketing", slug: "marketing", name: "Marketing", icon: "Megaphone", description: "Campaigns, coupons, and referrals.", group: "grow", status: "production" },

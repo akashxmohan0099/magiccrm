@@ -11,7 +11,6 @@ export const beautySalonBlueprint: WorkspaceBlueprint = {
     workflowPattern: "booking-first",
     enabledModules: [
       "bookings-calendar",
-      "products",
     ],
     enabledAddons: [],
     moduleBehaviors: [
@@ -35,7 +34,7 @@ export const beautySalonBlueprint: WorkspaceBlueprint = {
 
   presentation: {
     homePage: "bookings",
-    sidebarOrder: ["bookings", "clients", "invoicing", "products", "team", "leads", "communication"],
+    sidebarOrder: ["bookings", "clients", "invoicing", "team", "leads", "communication"],
     primaryAction: { label: "Book Appointment", href: "/dashboard/bookings", icon: "Calendar" },
     dashboardWidgets: [
       { instanceId: "w-setup", manifestId: "setup-checklist", x: 0, y: 0, w: 4, h: 2, config: {} },
@@ -72,29 +71,7 @@ export const beautySalonBlueprint: WorkspaceBlueprint = {
           description: "Team module hidden, simplified scheduling",
           functionalDelta: { removeModules: ["team"] },
           presentationPatches: [
-            { op: "reorder-sidebar", itemIds: ["bookings", "clients", "invoicing", "products", "leads", "communication"] },
-          ],
-        },
-      ],
-      default: "yes",
-    },
-    {
-      id: "sell-products",
-      question: "Do you sell retail beauty products?",
-      options: [
-        {
-          value: "yes",
-          label: "Yes, we sell products",
-          description: "Products module enabled for retail tracking",
-          presentationPatches: [],
-        },
-        {
-          value: "no",
-          label: "No, services only",
-          description: "Products module hidden from sidebar",
-          functionalDelta: { removeModules: ["products"] },
-          presentationPatches: [
-            { op: "reorder-sidebar", itemIds: ["bookings", "clients", "invoicing", "team", "leads", "communication"] },
+            { op: "reorder-sidebar", itemIds: ["bookings", "clients", "invoicing", "leads", "communication"] },
           ],
         },
       ],
@@ -117,7 +94,7 @@ export const beautySalonBlueprint: WorkspaceBlueprint = {
           functionalDelta: { workflowPattern: "inquiry-first" },
           presentationPatches: [
             { op: "set-homepage", pageId: "leads" },
-            { op: "reorder-sidebar", itemIds: ["leads", "bookings", "clients", "invoicing", "products", "team", "communication"] },
+            { op: "reorder-sidebar", itemIds: ["leads", "bookings", "clients", "invoicing", "team", "communication"] },
             { op: "replace-dashboard-widgets", widgets: [
               { instanceId: "w-setup", manifestId: "setup-checklist", x: 0, y: 0, w: 4, h: 2, config: {} },
               { instanceId: "w-inquiries", manifestId: "open-inquiries", x: 0, y: 2, w: 2, h: 2, config: {} },

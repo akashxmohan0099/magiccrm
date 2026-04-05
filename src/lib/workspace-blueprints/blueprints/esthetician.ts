@@ -11,7 +11,6 @@ export const estheticianBlueprint: WorkspaceBlueprint = {
     workflowPattern: "booking-first",
     enabledModules: [
       "bookings-calendar",
-      "products",
     ],
     enabledAddons: [],
     moduleBehaviors: [
@@ -42,7 +41,7 @@ export const estheticianBlueprint: WorkspaceBlueprint = {
 
   presentation: {
     homePage: "bookings",
-    sidebarOrder: ["bookings", "clients", "invoicing", "products", "leads", "communication"],
+    sidebarOrder: ["bookings", "clients", "invoicing", "leads", "communication"],
     primaryAction: { label: "Book Treatment", href: "/dashboard/bookings", icon: "Calendar" },
     dashboardWidgets: [
       { instanceId: "w-setup", manifestId: "setup-checklist", x: 0, y: 0, w: 4, h: 2, config: {} },
@@ -62,28 +61,6 @@ export const estheticianBlueprint: WorkspaceBlueprint = {
   },
 
   adjustableBlocks: [
-    {
-      id: "sell-products",
-      question: "Do you sell skincare products to clients?",
-      options: [
-        {
-          value: "yes",
-          label: "Yes, I sell skincare",
-          description: "Products module enabled for retail skincare tracking",
-          presentationPatches: [],
-        },
-        {
-          value: "no",
-          label: "No, treatments only",
-          description: "Products module hidden from sidebar",
-          functionalDelta: { removeModules: ["products"] },
-          presentationPatches: [
-            { op: "reorder-sidebar", itemIds: ["bookings", "clients", "invoicing", "leads", "communication"] },
-          ],
-        },
-      ],
-      default: "yes",
-    },
     {
       id: "accept-inquiries",
       question: "Do clients inquire before booking, or book directly?",

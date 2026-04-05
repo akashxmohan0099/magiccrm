@@ -20,7 +20,6 @@ const MODULE_COMPONENTS: Record<string, React.ComponentType> = {
   "documents": dynamic(() => import("@/components/modules/documents/DocumentsPage").then(m => ({ default: m.DocumentsPage }))),
   "automations": dynamic(() => import("@/components/modules/automations/AutomationsPage").then(m => ({ default: m.AutomationsPage }))),
   "reporting": dynamic(() => import("@/components/modules/reporting/ReportingPage").then(m => ({ default: m.ReportingPage }))),
-  "products": dynamic(() => import("@/components/modules/products/ProductsPage").then(m => ({ default: m.ProductsPage }))),
   "team": dynamic(() => import("@/components/modules/team/TeamPage").then(m => ({ default: m.TeamPage }))),
   "soap-notes": dynamic(() => import("@/components/modules/soap-notes/SOAPNotesPage").then(m => ({ default: m.SOAPNotesPage }))),
   "intake-forms": dynamic(() => import("@/components/modules/intake-forms/IntakeFormsPage").then(m => ({ default: m.IntakeFormsPage }))),

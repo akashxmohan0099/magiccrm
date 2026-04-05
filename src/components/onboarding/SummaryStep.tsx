@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Users, Inbox, Calendar, Receipt,
-  Megaphone, MessageCircle, Package,
+  Megaphone, MessageCircle,
   Zap, BarChart3, ArrowRight, UsersRound,
   FileText, Check,
 } from "lucide-react";
@@ -25,7 +25,6 @@ const MODULE_ICONS: Record<string, React.ComponentType<{ className?: string }>> 
   "communication": MessageCircle,
   "bookings-calendar": Calendar,
   "quotes-invoicing": Receipt,
-  "products": Package,
   "marketing": Megaphone,
   "team": UsersRound,
   "automations": Zap,
@@ -39,7 +38,6 @@ const MODULE_COLORS: Record<string, { bg: string; text: string; accent: string; 
   "communication": { bg: "bg-violet-500/10", text: "text-violet-500", accent: "#8B5CF6", gradient: "from-violet-50 to-violet-100/50" },
   "bookings-calendar": { bg: "bg-emerald-500/10", text: "text-emerald-600", accent: "#10B981", gradient: "from-emerald-50 to-emerald-100/50" },
   "quotes-invoicing": { bg: "bg-amber-500/10", text: "text-amber-600", accent: "#F59E0B", gradient: "from-amber-50 to-amber-100/50" },
-  "products": { bg: "bg-cyan-500/10", text: "text-cyan-600", accent: "#06B6D4", gradient: "from-cyan-50 to-cyan-100/50" },
   "marketing": { bg: "bg-pink-500/10", text: "text-pink-500", accent: "#EC4899", gradient: "from-pink-50 to-pink-100/50" },
   "team": { bg: "bg-rose-500/10", text: "text-rose-500", accent: "#F43F5E", gradient: "from-rose-50 to-rose-100/50" },
   "automations": { bg: "bg-yellow-500/10", text: "text-yellow-600", accent: "#EAB308", gradient: "from-yellow-50 to-yellow-100/50" },
@@ -51,7 +49,6 @@ const MODULE_COLORS: Record<string, { bg: string; text: string; accent: string; 
 
 const CHIP_REASONS: Record<string, string> = {
   "op-team": "you have a team",
-  "op-products": "you sell retail products",
   "inquire-first": "brides and event clients inquire before booking",
   "contracts": "your clients sign contracts",
   "newsletters": "you want to send newsletters",
@@ -75,7 +72,6 @@ const CHIP_REASONS: Record<string, string> = {
 
 const MODULE_TRIGGER_CHIPS: Record<string, string[]> = {
   "leads-pipeline": ["inquire-first"],
-  "products": ["op-products"],
   "team": ["op-team"],
   "marketing": ["newsletters"],
 };
