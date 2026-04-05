@@ -250,7 +250,11 @@ function DashboardShell({ children }: { children: ReactNode }) {
     { label: "", items: moduleItems },
     // Add-ons (only if user has enabled any)
     ...(addonItems.length > 0 ? [{ label: "Add-ons", items: addonItems }] : []),
-    { label: "", items: [{ href: "/dashboard/settings", label: "Settings", icon: Settings }], isBottom: true },
+    { label: "", items: [
+      { href: "/dashboard/addons", label: "Add-ons", icon: Puzzle },
+      { href: "/dashboard/builder", label: "Build Your Own", icon: Wand2 },
+      { href: "/dashboard/settings", label: "Settings", icon: Settings },
+    ], isBottom: true },
   ];
 
   return (
