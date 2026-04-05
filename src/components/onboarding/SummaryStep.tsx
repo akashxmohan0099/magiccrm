@@ -76,7 +76,6 @@ const CHIP_REASONS: Record<string, string> = {
 const MODULE_TRIGGER_CHIPS: Record<string, string[]> = {
   "leads-pipeline": ["inquire-first"],
   "products": ["op-products"],
-  "documents": ["contracts"],
   "team": ["op-team"],
   "marketing": ["newsletters"],
 };
@@ -117,6 +116,9 @@ function getFeatureHighlights(chipSelections: Set<string>): { moduleId: string; 
   }
   if (chipSelections.has("trials")) {
     highlights.push({ moduleId: "bookings-calendar", feature: "Trial-to-event booking flow" });
+  }
+  if (chipSelections.has("contracts")) {
+    highlights.push({ moduleId: "bookings-calendar", feature: "Contract signing on booking" });
   }
   if (chipSelections.has("client-preferences")) {
     highlights.push({ moduleId: "client-database", feature: "Custom fields: shade, skin type, allergies" });

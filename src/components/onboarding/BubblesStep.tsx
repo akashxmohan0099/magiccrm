@@ -65,7 +65,7 @@ const SLIDES: Slide[] = [
     subtitle: "Select all that apply",
     chips: [
       { id: "deposits", label: "I collect deposits to hold dates", activates: [], needsKeys: [] },
-      { id: "contracts", label: "Clients sign contracts before I lock in their date", activates: ["documents"], needsKeys: ["manageDocuments"] },
+      { id: "contracts", label: "Clients sign contracts before I lock in their date", activates: [], needsKeys: [] },
       { id: "proposals", label: "I send branded proposals with pricing", activates: [], needsKeys: [] },
       { id: "online-payments", label: "I want to accept online payments", activates: [], needsKeys: [] },
       { id: "newsletters", label: "I want to send newsletters or updates to clients", activates: ["marketing"], needsKeys: ["runMarketing"] },
@@ -482,6 +482,9 @@ export function BubblesStep() {
     }
     if (selected.has("online-payments")) {
       store.setDiscoveryAnswer("config:stripe-integration", true);
+    }
+    if (selected.has("contracts")) {
+      store.setDiscoveryAnswer("config:booking-contracts", true);
     }
 
     // Auto-default for MUA persona: custom fields always enabled
