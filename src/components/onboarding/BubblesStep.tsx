@@ -42,7 +42,6 @@ const SLIDES: Slide[] = [
     title: "How do clients find you?",
     subtitle: "Select all that apply",
     chips: [
-      { id: "social-dms", label: "They DM me on Instagram or WhatsApp", activates: [], needsKeys: [] },
       { id: "inquire-first", label: "Brides and event clients inquire before booking", activates: ["leads-pipeline"], needsKeys: ["receiveInquiries"] },
       { id: "referrals", label: "Most of my clients come from referrals", activates: [], needsKeys: [] },
       { id: "vendor-referrals", label: "I get referrals from planners, photographers, and venues", activates: [], needsKeys: [] },
@@ -55,31 +54,21 @@ const SLIDES: Slide[] = [
     subtitle: "Select all that apply",
     chips: [
       { id: "bridal-wedding", label: "I do bridal and wedding makeup", activates: [], needsKeys: [] },
-      { id: "editorial", label: "I do editorial and photoshoot work", activates: [], needsKeys: [] },
-      { id: "lessons", label: "I teach makeup lessons or run workshops", activates: [], needsKeys: [] },
       { id: "group-bookings", label: "I do group bookings (bridal parties, events)", activates: [], needsKeys: ["acceptBookings"] },
       { id: "trials", label: "I do trials before the event day", activates: [], needsKeys: ["acceptBookings"] },
-      { id: "client-preferences", label: "I track client preferences (foundation shade, skin type, allergies)", activates: [], needsKeys: [] },
+      { id: "lessons", label: "I teach makeup lessons or run workshops", activates: [], needsKeys: [] },
       { id: "regular-clients", label: "I see the same clients regularly", activates: [], needsKeys: [] },
     ],
   },
   {
-    title: "Money & contracts",
+    title: "Money & growth",
     subtitle: "Select all that apply",
     chips: [
       { id: "deposits", label: "I collect deposits to hold dates", activates: [], needsKeys: [] },
       { id: "contracts", label: "Clients sign contracts before I lock in their date", activates: ["documents"], needsKeys: ["manageDocuments"] },
       { id: "proposals", label: "I send branded proposals with pricing", activates: [], needsKeys: [] },
       { id: "online-payments", label: "I want to accept online payments", activates: [], needsKeys: [] },
-    ],
-  },
-  {
-    title: "Growth & engagement",
-    subtitle: "Select all that apply",
-    chips: [
       { id: "newsletters", label: "I want to send newsletters or updates to clients", activates: ["marketing"], needsKeys: ["runMarketing"] },
-      { id: "reviews", label: "I want to collect reviews and testimonials", activates: [], needsKeys: [] },
-      { id: "loyalty-program", label: "I want a referral or loyalty program", activates: [], needsKeys: [] },
     ],
   },
 ];
@@ -466,10 +455,6 @@ export function BubblesStep() {
     });
 
     // Auto-configure from chip signals
-    if (selected.has("social-dms")) {
-      store.setDiscoveryAnswer("channel:instagram-dms", true);
-      store.setDiscoveryAnswer("channel:whatsapp", true);
-    }
     if (selected.has("long-lead")) {
       store.setDiscoveryAnswer("config:calendar-range-12m", true);
     }
@@ -486,9 +471,6 @@ export function BubblesStep() {
     if (selected.has("trials")) {
       store.setDiscoveryAnswer("config:trial-booking-flow", true);
     }
-    if (selected.has("client-preferences")) {
-      store.setDiscoveryAnswer("config:custom-fields-mua", true);
-    }
     if (selected.has("regular-clients")) {
       store.setDiscoveryAnswer("config:rebooking-prompts", true);
     }
@@ -501,11 +483,10 @@ export function BubblesStep() {
     if (selected.has("online-payments")) {
       store.setDiscoveryAnswer("config:stripe-integration", true);
     }
-    if (selected.has("reviews")) {
-      store.setDiscoveryAnswer("config:review-collection", true);
-    }
-    if (selected.has("loyalty-program")) {
-      store.setDiscoveryAnswer("config:loyalty-module", true);
+
+    // Auto-default for MUA persona: custom fields always enabled
+    if (selectedPersona === "makeup-artist") {
+      store.setDiscoveryAnswer("config:custom-fields-mua", true);
     }
 
     nextStep();
