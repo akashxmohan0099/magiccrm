@@ -136,38 +136,41 @@ export function IndustryStep() {
               </p>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {categories.map((cat, i) => {
                 const IconComp = CATEGORY_ICONS[cat.icon] || Sparkles;
                 const colors = CATEGORY_COLORS[cat.id] || { accent: "#6B7280", bg: "#6B728015" };
                 return (
                   <motion.button
                     key={cat.id}
-                    initial={{ opacity: 0, y: 10 }}
+                    initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.04 }}
-                    whileHover={{ y: -3, boxShadow: `0 8px 25px -5px ${colors.accent}20` }}
-                    whileTap={{ scale: 0.97 }}
+                    whileHover={{ y: -4, scale: 1.02 }}
+                    whileTap={{ scale: 0.96 }}
                     onClick={() => handleCategorySelect(cat.id)}
-                    className="relative text-center px-4 py-7 rounded-2xl transition-all duration-200 cursor-pointer bg-card-bg border border-border-light overflow-hidden group"
-                    style={{ borderColor: undefined }}
+                    className="relative text-center px-4 py-8 rounded-2xl transition-all duration-200 cursor-pointer overflow-hidden group"
+                    style={{
+                      background: `linear-gradient(145deg, ${colors.accent}06 0%, ${colors.accent}12 100%)`,
+                      border: `1.5px solid ${colors.accent}20`,
+                    }}
                   >
                     <div
                       className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                      style={{ background: `linear-gradient(135deg, ${colors.accent}08 0%, ${colors.accent}15 100%)` }}
+                      style={{ background: `linear-gradient(145deg, ${colors.accent}10 0%, ${colors.accent}22 100%)` }}
                     />
                     <div
-                      className="absolute top-0 left-0 right-0 h-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-t-2xl"
+                      className="absolute bottom-0 left-0 right-0 h-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                       style={{ backgroundColor: colors.accent }}
                     />
                     <div className="relative">
                       <div
-                        className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
-                        style={{ backgroundColor: colors.bg }}
+                        className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm"
+                        style={{ backgroundColor: colors.bg, border: `1px solid ${colors.accent}15` }}
                       >
-                        <IconComp className="w-5.5 h-5.5" style={{ color: colors.accent }} />
+                        <IconComp className="w-6 h-6" style={{ color: colors.accent }} />
                       </div>
-                      <p className="font-semibold text-[14px] text-foreground">{cat.label}</p>
+                      <p className="font-semibold text-[15px] text-foreground">{cat.label}</p>
                     </div>
                   </motion.button>
                 );
