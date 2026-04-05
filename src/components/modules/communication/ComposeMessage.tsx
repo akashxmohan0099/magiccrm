@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Send, MessageSquarePlus, Code } from "lucide-react";
 import { useCommunicationStore } from "@/store/communication";
+import { useAuth } from "@/hooks/useAuth";
 import { FeatureSection } from "@/components/modules/FeatureSection";
 
 interface ComposeMessageProps {
@@ -11,6 +12,7 @@ interface ComposeMessageProps {
 
 export function ComposeMessage({ conversationId }: ComposeMessageProps) {
   const { addMessage } = useCommunicationStore();
+  const { workspaceId } = useAuth();
   const [content, setContent] = useState("");
   const [showCanned, setShowCanned] = useState(false);
   const [scheduledAt, setScheduledAt] = useState("");
@@ -29,7 +31,7 @@ export function ComposeMessage({ conversationId }: ComposeMessageProps) {
     const trimmed = content.trim();
     if (!trimmed) return;
 
-    addMessage(conversationId, trimmed, "user");
+    addMessage(conversationId, trimmed, "user", workspaceId ?? undefined);
     setContent("");
     setScheduledAt("");
   };

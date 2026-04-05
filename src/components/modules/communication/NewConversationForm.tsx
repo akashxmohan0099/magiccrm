@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { useCommunicationStore } from "@/store/communication";
 import { useClientsStore } from "@/store/clients";
+import { useAuth } from "@/hooks/useAuth";
 import { Channel, Conversation } from "@/types/models";
 import { SlideOver } from "@/components/ui/SlideOver";
 import { FormField } from "@/components/ui/FormField";
@@ -18,6 +19,7 @@ interface NewConversationFormProps {
 export function NewConversationForm({ open, onClose, onCreated }: NewConversationFormProps) {
   const { addConversation, connectedChannels, channelConfigs } = useCommunicationStore();
   const { clients } = useClientsStore();
+  const { workspaceId } = useAuth();
   const [form, setForm] = useState({ clientId: "", channel: "email" as Channel, subject: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -71,7 +73,7 @@ export function NewConversationForm({ open, onClose, onCreated }: NewConversatio
       clientName: client.name,
       channel: selectedChannel,
       subject: form.subject.trim() || undefined,
-    });
+    }, workspaceId ?? undefined);
 
     setForm({
       clientId: "",

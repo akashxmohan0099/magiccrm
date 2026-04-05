@@ -11,6 +11,7 @@ import {
   Link,
 } from "lucide-react";
 import { useDocumentsStore } from "@/store/documents";
+import { useAuth } from "@/hooks/useAuth";
 import { SlideOver } from "@/components/ui/SlideOver";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Button } from "@/components/ui/Button";
@@ -31,6 +32,7 @@ function formatSize(bytes: number): string {
 
 export function DocumentPreview({ open, onClose, documentId }: DocumentPreviewProps) {
   const { documents, deleteDocument } = useDocumentsStore();
+  const { workspaceId } = useAuth();
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
@@ -47,7 +49,7 @@ export function DocumentPreview({ open, onClose, documentId }: DocumentPreviewPr
   }
 
   const handleDelete = () => {
-    deleteDocument(document.id);
+    deleteDocument(document.id, workspaceId ?? undefined);
     onClose();
   };
 

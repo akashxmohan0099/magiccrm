@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { getModuleBySlug } from "@/lib/module-registry";
 import { useModuleEnabled } from "@/hooks/useFeature";
 import { PageTransition } from "@/components/ui/PageTransition";
+import { Sparkles } from "lucide-react";
 
 const MODULE_COMPONENTS: Record<string, React.ComponentType> = {
   "client-database": dynamic(() => import("@/components/modules/clients/ClientsPage").then(m => ({ default: m.ClientsPage }))),
@@ -45,6 +46,20 @@ export default function ModulePage({ params }: { params: Promise<{ moduleSlug: s
 
   if (!mod) notFound();
   if (!isModuleEnabled) notFound();
+
+  if (mod.status === "beta") {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] px-6 text-center">
+        <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-5">
+          <Sparkles className="w-7 h-7 text-primary" />
+        </div>
+        <h2 className="text-[22px] font-bold text-foreground mb-2">Coming Soon</h2>
+        <p className="text-sm text-text-secondary max-w-sm leading-relaxed">
+          {mod.name} is currently in development and will be available in an upcoming release.
+        </p>
+      </div>
+    );
+  }
 
   const Component = MODULE_COMPONENTS[mod.id];
   if (!Component) notFound();

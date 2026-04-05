@@ -22,6 +22,7 @@ import { SatisfactionPrompt } from "./SatisfactionPrompt";
 import { StarRating } from "@/components/ui/StarRating";
 import { TeamMemberPicker } from "@/components/ui/TeamMemberPicker";
 import { useModuleEnabled } from "@/hooks/useFeature";
+import { useAuth } from "@/hooks/useAuth";
 import { CustomFieldsSection } from "@/components/modules/shared/CustomFieldsSection";
 
 interface BookingFormProps {
@@ -67,6 +68,7 @@ const emptyForm = {
 export function BookingForm({ open, onClose, booking, defaultDate, prefill }: BookingFormProps) {
   const { addBooking, updateBooking, deleteBooking, hasConflict, cancellationPolicy } = useBookingsStore();
   const { clients } = useClientsStore();
+  const { workspaceId } = useAuth();
   const vocab = useVocabulary();
   const config = useIndustryConfig();
   const teamEnabled = useModuleEnabled("team");
@@ -185,7 +187,7 @@ export function BookingForm({ open, onClose, booking, defaultDate, prefill }: Bo
         tags: [],
         notes: "",
         status: "active",
-      });
+      }, workspaceId ?? undefined);
       resolvedClientId = newClient.id;
     }
 
@@ -246,9 +248,9 @@ export function BookingForm({ open, onClose, booking, defaultDate, prefill }: Bo
     }
 
     if (booking) {
-      updateBooking(booking.id, data as Partial<Booking>);
+      updateBooking(booking.id, data as Partial<Booking>, workspaceId ?? undefined);
     } else {
-      addBooking(data as unknown as Omit<Booking, "id" | "createdAt" | "updatedAt">);
+      addBooking(data as unknown as Omit<Booking, "id" | "createdAt" | "updatedAt">, workspaceId ?? undefined);
     }
 
     onClose();
@@ -257,7 +259,7 @@ export function BookingForm({ open, onClose, booking, defaultDate, prefill }: Bo
 
   const handleDelete = () => {
     if (booking) {
-      deleteBooking(booking.id);
+      deleteBooking(booking.id, workspaceId ?? undefined);
       onClose();
     }
   };

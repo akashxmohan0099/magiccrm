@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { useProductsStore } from "@/store/products";
+import { useAuth } from "@/hooks/useAuth";
 import { Product } from "@/types/models";
 import { Button } from "@/components/ui/Button";
 import { FormField } from "@/components/ui/FormField";
@@ -17,6 +18,7 @@ interface ProductFormProps {
 
 export function ProductForm({ open, onClose, product }: ProductFormProps) {
   const { addProduct, updateProduct, deleteProduct } = useProductsStore();
+  const { workspaceId } = useAuth();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -91,9 +93,9 @@ export function ProductForm({ open, onClose, product }: ProductFormProps) {
       ...(Object.keys(customData).length > 0 ? { customData } : {}),
     };
     if (product) {
-      updateProduct(product.id, data);
+      updateProduct(product.id, data, workspaceId ?? undefined);
     } else {
-      addProduct(data);
+      addProduct(data, workspaceId ?? undefined);
     }
     onClose();
     setSaving(false);
@@ -101,7 +103,7 @@ export function ProductForm({ open, onClose, product }: ProductFormProps) {
 
   const handleDelete = () => {
     if (product) {
-      deleteProduct(product.id);
+      deleteProduct(product.id, workspaceId ?? undefined);
       onClose();
     }
   };

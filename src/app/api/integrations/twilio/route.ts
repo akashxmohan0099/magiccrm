@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendSMS, sendBookingReminder, sendPaymentReminder } from "@/lib/integrations/twilio";
-import { requireAuth } from "@/lib/api-auth";
+import { requireWorkspaceAccess } from "@/lib/api-auth";
 
 /**
  * Twilio API routes.
@@ -8,10 +8,14 @@ import { requireAuth } from "@/lib/api-auth";
  */
 export async function POST(req: NextRequest) {
   try {
-    const { user: _user, error: authError } = await requireAuth();
-    if (authError) return authError;
+    const { action, workspaceId, ...params } = await req.json();
 
-    const { action, ...params } = await req.json();
+    if (!workspaceId) {
+      return NextResponse.json({ error: "Missing workspaceId" }, { status: 400 });
+    }
+
+    const { error: authError } = await requireWorkspaceAccess(workspaceId, "staff");
+    if (authError) return authError;
 
     switch (action) {
       case "send": {

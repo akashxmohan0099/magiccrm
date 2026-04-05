@@ -24,6 +24,7 @@ import { TextArea } from "@/components/ui/TextArea";
 import { ViewToggle } from "@/components/ui/ViewToggle";
 import { useTeamStore } from "@/store/team";
 import { useModuleEnabled } from "@/hooks/useFeature";
+import { useAuth } from "@/hooks/useAuth";
 
 type ViewMode = "list" | "calendar";
 
@@ -31,6 +32,7 @@ export function BookingsPage() {
   const { bookings, deleteBooking: _deleteBooking, cancellationPolicy, setCancellationPolicy } = useBookingsStore();
   const { clients } = useClientsStore();
   const { members } = useTeamStore();
+  const { workspaceId } = useAuth();
   const teamEnabled = useModuleEnabled("team");
   const vocab = useVocabulary();
   const ms = useModuleSchema("bookings-calendar");
@@ -234,7 +236,7 @@ export function BookingsPage() {
               <p className="text-[11px] text-text-tertiary mb-2">Set your cancellation policy text. Clients will be asked to consent when booking.</p>
               <TextArea
                 value={cancellationPolicy}
-                onChange={(e) => setCancellationPolicy(e.target.value)}
+                onChange={(e) => setCancellationPolicy(e.target.value, workspaceId ?? undefined)}
                 placeholder="Enter your cancellation policy here, e.g. Cancellations must be made at least 24 hours in advance..."
                 rows={4}
               />

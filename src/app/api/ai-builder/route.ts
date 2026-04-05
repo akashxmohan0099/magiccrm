@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { requireAuth } from "@/lib/api-auth";
+import { requireWorkspaceAccess } from "@/lib/api-auth";
 import { rateLimit } from "@/lib/rate-limit";
 
 const anthropic = new Anthropic({
@@ -15,10 +15,14 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { user: _user, error: authError } = await requireAuth();
-    if (authError) return authError;
+    const { prompt, workspaceId, businessContext, personaProfile } = await req.json();
 
-    const { prompt, businessContext, personaProfile } = await req.json();
+    if (!workspaceId) {
+      return NextResponse.json({ error: "Missing workspaceId" }, { status: 400 });
+    }
+
+    const { error: authError } = await requireWorkspaceAccess(workspaceId, "staff");
+    if (authError) return authError;
 
     if (!prompt) {
       return NextResponse.json(

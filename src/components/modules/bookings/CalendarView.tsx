@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Plus, Coffee, Ban, Clock } from "lucide-reac
 import { Booking, BookingType } from "@/types/models";
 import { useClientsStore } from "@/store/clients";
 import { useBookingsStore } from "@/store/bookings";
+import { useAuth } from "@/hooks/useAuth";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 
 interface CalendarViewProps {
@@ -77,6 +78,7 @@ function getBookingStyle(b: Booking): string {
 export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSelect }: CalendarViewProps) {
   const { clients } = useClientsStore();
   const { addBooking } = useBookingsStore();
+  const { workspaceId } = useAuth();
   const [mode, setMode] = useState<CalendarMode>("today");
   const [currentDate, setCurrentDate] = useState(() => new Date());
 
@@ -195,10 +197,10 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
         status: "confirmed",
         bookingType: type,
         notes: "",
-      });
+      }, workspaceId ?? undefined);
     }
     setShowQuickAdd(false);
-  }, [currentDate, dragDateKey, dragStartMin, dragEndMin, onTimeSelect, onDateSelect, addBooking]);
+  }, [currentDate, dragDateKey, dragStartMin, dragEndMin, onTimeSelect, onDateSelect, addBooking, workspaceId]);
 
   // Booking preview popup
   const [previewBooking, setPreviewBooking] = useState<Booking | null>(null);

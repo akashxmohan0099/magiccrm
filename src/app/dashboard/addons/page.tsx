@@ -4,7 +4,7 @@ import { useState } from "react";
 import {
   Crown, Camera, FileInput, ClipboardList, Gift, UserCheck,
   Store, Globe, Lightbulb, NotebookPen, Check, Plus, AlertTriangle,
-  Ticket, CalendarRange, Building2, ScrollText, ListOrdered,
+  Ticket, CalendarRange, Building2, ScrollText, ListOrdered, Clock,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { getAddonModules } from "@/lib/module-registry";
@@ -149,7 +149,11 @@ export default function AddonsPage() {
                   </div>
                 )}
 
-                {isEnabled ? (
+                {addon.status === "beta" ? (
+                  <div className="flex items-center gap-1.5 text-[12px] text-text-tertiary font-medium">
+                    <Clock className="w-3.5 h-3.5" /> Coming Soon
+                  </div>
+                ) : isEnabled ? (
                   <div className="flex gap-2">
                     <Link href={`/dashboard/${addon.slug}`} className="flex-1">
                       <Button variant="primary" size="sm" className="w-full">Open</Button>

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthUrl, exchangeCode, getTenants, createInvoice, createPayment } from "@/lib/integrations/xero";
-import { requireAuth } from "@/lib/api-auth";
+import { requireWorkspaceAccess } from "@/lib/api-auth";
 
 /**
  * Xero API routes.
@@ -9,11 +9,18 @@ import { requireAuth } from "@/lib/api-auth";
  */
 export async function GET(req: NextRequest) {
   try {
-    const { user: _user, error: authError } = await requireAuth();
-    if (authError) return authError;
-
     const { searchParams } = new URL(req.url);
+    const workspaceId = searchParams.get("workspaceId");
+
+    if (!workspaceId) {
+      return NextResponse.json({ error: "Missing workspaceId" }, { status: 400 });
+    }
+
     const action = searchParams.get("action");
+    const role = action === "auth-url" ? "admin" : "staff";
+
+    const { error: authError } = await requireWorkspaceAccess(workspaceId, role);
+    if (authError) return authError;
 
     switch (action) {
       case "auth-url": {
@@ -37,10 +44,16 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { user: _user, error: authError } = await requireAuth();
-    if (authError) return authError;
+    const { action, workspaceId, ...params } = await req.json();
 
-    const { action, ...params } = await req.json();
+    if (!workspaceId) {
+      return NextResponse.json({ error: "Missing workspaceId" }, { status: 400 });
+    }
+
+    const role = action === "exchange-code" ? "admin" : "staff";
+
+    const { error: authError } = await requireWorkspaceAccess(workspaceId, role);
+    if (authError) return authError;
     const accessToken = req.headers.get("x-xero-token");
 
     switch (action) {

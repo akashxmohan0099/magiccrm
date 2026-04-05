@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { Plus, MessageSquare, Bell, Mail, MessageCircle, Instagram, Phone, Linkedin, ChevronRight, X } from "lucide-react";
 import { useCommunicationStore } from "@/store/communication";
+import { useAuth } from "@/hooks/useAuth";
 import { Channel, ChannelConnectionConfig, ChannelConnectionStatus, Conversation } from "@/types/models";
 import { useFeature } from "@/hooks/useFeature";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -65,6 +66,7 @@ function getChannelStatusMeta(config?: ChannelConnectionConfig) {
 
 export function CommunicationPage() {
   const ms = useModuleSchema("communication");
+  const { workspaceId } = useAuth();
   const conversations = useCommunicationStore((s) => s.conversations);
   const connectedChannelsList = useCommunicationStore((s) => s.connectedChannels);
   const channelConfigs = useCommunicationStore((s) => s.channelConfigs);
@@ -142,7 +144,7 @@ export function CommunicationPage() {
       return;
     }
 
-    saveChannelConfig(id, setupDraft);
+    saveChannelConfig(id, setupDraft, workspaceId ?? undefined);
     setSetupChannelId(null);
     setSetupDraft({ identifier: "", displayName: "", signature: "" });
   };
@@ -363,7 +365,7 @@ export function CommunicationPage() {
                     type="checkbox"
                     checked={automationSettings.afterHoursEnabled}
                     onChange={(event) =>
-                      setAutomationSettings({ afterHoursEnabled: event.target.checked })
+                      setAutomationSettings({ afterHoursEnabled: event.target.checked }, workspaceId ?? undefined)
                     }
                     className="sr-only peer"
                   />
@@ -374,7 +376,7 @@ export function CommunicationPage() {
                 <textarea
                   value={automationSettings.afterHoursMessage}
                   onChange={(event) =>
-                    setAutomationSettings({ afterHoursMessage: event.target.value })
+                    setAutomationSettings({ afterHoursMessage: event.target.value }, workspaceId ?? undefined)
                   }
                   placeholder="Thanks for your message! We're currently closed and will get back to you during business hours."
                   rows={2}
@@ -404,7 +406,7 @@ export function CommunicationPage() {
                     type="checkbox"
                     checked={automationSettings.unreadAlertsEnabled}
                     onChange={(event) =>
-                      setAutomationSettings({ unreadAlertsEnabled: event.target.checked })
+                      setAutomationSettings({ unreadAlertsEnabled: event.target.checked }, workspaceId ?? undefined)
                     }
                     className="sr-only peer"
                   />
@@ -421,7 +423,7 @@ export function CommunicationPage() {
                     onChange={(event) =>
                       setAutomationSettings({
                         unreadAlertThresholdMinutes: Number(event.target.value),
-                      })
+                      }, workspaceId ?? undefined)
                     }
                     className="w-full px-3 py-2 bg-surface border border-border-light rounded-lg text-[13px] text-foreground focus:outline-none"
                   >
@@ -450,7 +452,7 @@ export function CommunicationPage() {
                     type="text"
                     value={automationSettings.bulkAudienceLabel}
                     onChange={(event) =>
-                      setAutomationSettings({ bulkAudienceLabel: event.target.value })
+                      setAutomationSettings({ bulkAudienceLabel: event.target.value }, workspaceId ?? undefined)
                     }
                     placeholder="e.g. VIP clients, overdue invoices"
                     className="w-full px-3 py-2 bg-surface border border-border-light rounded-lg text-[13px] text-foreground placeholder:text-text-tertiary focus:outline-none"
@@ -465,7 +467,7 @@ export function CommunicationPage() {
                     onChange={(event) =>
                       setAutomationSettings({
                         bulkMessageChannel: event.target.value as Channel,
-                      })
+                      }, workspaceId ?? undefined)
                     }
                     className="w-full px-3 py-2 bg-surface border border-border-light rounded-lg text-[13px] text-foreground focus:outline-none"
                   >
@@ -484,7 +486,7 @@ export function CommunicationPage() {
                 <textarea
                   value={automationSettings.bulkMessageTemplate}
                   onChange={(event) =>
-                    setAutomationSettings({ bulkMessageTemplate: event.target.value })
+                    setAutomationSettings({ bulkMessageTemplate: event.target.value }, workspaceId ?? undefined)
                   }
                   rows={3}
                   placeholder="Write the message the backend should send to this audience."
@@ -498,7 +500,7 @@ export function CommunicationPage() {
                   onChange={(event) =>
                     setAutomationSettings({
                       includeUnsubscribeLink: event.target.checked,
-                    })
+                    }, workspaceId ?? undefined)
                   }
                   className="rounded border-border-light"
                 />

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Upload } from "lucide-react";
 import { useDocumentsStore } from "@/store/documents";
 import { useClientsStore } from "@/store/clients";
+import { useAuth } from "@/hooks/useAuth";
 import { SlideOver } from "@/components/ui/SlideOver";
 import { FormField } from "@/components/ui/FormField";
 import { SelectField } from "@/components/ui/SelectField";
@@ -41,6 +42,7 @@ function getInitialState(defaultIsTemplate = false) {
 export function UploadForm({ open, onClose, defaultIsTemplate = false }: UploadFormProps) {
   const { addDocument } = useDocumentsStore();
   const { clients } = useClientsStore();
+  const { workspaceId } = useAuth();
   const [form, setForm] = useState(getInitialState(defaultIsTemplate));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [tags, setTags] = useState("");
@@ -120,7 +122,7 @@ export function UploadForm({ open, onClose, defaultIsTemplate = false }: UploadF
       signatureStatus: "none",
       shared: form.shared,
       clientId: form.clientId || undefined,
-    });
+    }, workspaceId ?? undefined);
     onClose();
   };
 

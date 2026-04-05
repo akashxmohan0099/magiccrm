@@ -37,6 +37,7 @@ import { useClassTimetableStore } from "@/store/class-timetable";
 import { useVendorManagementStore } from "@/store/vendor-management";
 import { useStorefrontStore } from "@/store/storefront";
 import { useClientPortalStore } from "@/store/client-portal";
+import { useBrandSettingsStore } from "@/store/brand-settings";
 
 /**
  * Loads workspace data from Supabase once auth is ready.
@@ -104,6 +105,7 @@ export function useSupabaseSync({
       ["vendor-management", () => useVendorManagementStore.getState().loadFromSupabase(workspaceId)],
       ["storefront", () => useStorefrontStore.getState().loadFromSupabase(workspaceId)],
       ["client-portal", () => useClientPortalStore.getState().loadFromSupabase(workspaceId)],
+      ["brand-settings", () => useBrandSettingsStore.getState().loadFromSupabase(workspaceId)],
     ] as const;
 
     const sync = async () => {

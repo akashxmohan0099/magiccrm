@@ -46,20 +46,24 @@ export function useModuleEnabled(moduleId: string): boolean {
   }, [moduleId, needs, discoveryAnswers, enabledAddons]);
 }
 
-/** Returns only core modules that are enabled via onboarding */
+/** Returns only core modules that are enabled via onboarding and marked production */
 export function useEnabledModules(): ModuleDefinition[] {
   const needs = useOnboardingStore((s) => s.needs);
   const discoveryAnswers = useOnboardingStore((s) => s.discoveryAnswers);
   return useMemo(() => {
     const enabled = computeEnabledModuleIds(needs, discoveryAnswers);
-    return MODULE_REGISTRY.filter((mod) => mod.kind !== "addon" && enabled.has(mod.id));
+    return MODULE_REGISTRY.filter(
+      (mod) => mod.kind !== "addon" && enabled.has(mod.id) && (mod.status ?? "production") === "production"
+    );
   }, [needs, discoveryAnswers]);
 }
 
-/** Returns add-on modules that the user has enabled */
+/** Returns add-on modules that the user has enabled and are marked production */
 export function useEnabledAddons(): ModuleDefinition[] {
   const enabledAddons = useAddonsStore((s) => s.enabledAddons);
   return useMemo(() => {
-    return MODULE_REGISTRY.filter((mod) => mod.kind === "addon" && enabledAddons.includes(mod.id));
+    return MODULE_REGISTRY.filter(
+      (mod) => mod.kind === "addon" && enabledAddons.includes(mod.id) && (mod.status ?? "production") === "production"
+    );
   }, [enabledAddons]);
 }
