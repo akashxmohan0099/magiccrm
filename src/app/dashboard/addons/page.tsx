@@ -134,59 +134,58 @@ export default function ModulesAndAddonsPage() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.03 }}
-              className="rounded-2xl bg-card-bg border border-border-light hover:border-foreground/10 hover:shadow-md transition-all duration-200"
+              className="relative rounded-2xl overflow-hidden hover:shadow-md transition-all duration-200"
+              style={{
+                background: (enabled || alwaysOn)
+                  ? `linear-gradient(145deg, ${colors.accent}06 0%, ${colors.accent}12 100%)`
+                  : undefined,
+                border: (enabled || alwaysOn)
+                  ? `1.5px solid ${colors.accent}20`
+                  : "1.5px solid var(--border-light)",
+              }}
             >
               <div className="p-5">
                 {/* Icon */}
                 <div
                   className="w-11 h-11 rounded-xl flex items-center justify-center mb-4"
-                  style={{ backgroundColor: `${colors.accent}10` }}
+                  style={{ backgroundColor: `${colors.accent}12` }}
                 >
                   <span style={{ color: colors.accent }}>
                     <Icon className="w-5 h-5" />
                   </span>
                 </div>
 
-                {/* Title + badge */}
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className="text-[15px] font-semibold text-foreground">
-                    {getModuleDisplayName(mod, vocab)}
-                  </h3>
-                  {alwaysOn && (
-                    <span className="text-[9px] font-semibold text-text-tertiary uppercase tracking-wider bg-surface px-1.5 py-0.5 rounded">
-                      Always on
-                    </span>
-                  )}
-                  {!alwaysOn && enabled && (
-                    <span
-                      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider"
-                      style={{ backgroundColor: `${colors.accent}10`, color: colors.accent }}
-                    >
-                      <Check className="w-2.5 h-2.5" /> Active
-                    </span>
-                  )}
-                </div>
+                {/* Title */}
+                <h3 className="text-[15px] font-semibold text-foreground mb-1">
+                  {getModuleDisplayName(mod, vocab)}
+                </h3>
 
                 <p className="text-[12px] text-text-secondary leading-relaxed mb-4">
                   {mod.description}
                 </p>
 
                 {/* Action */}
-                {enabled || alwaysOn ? (
+                {alwaysOn ? (
+                  <div
+                    className="w-full py-2 rounded-xl text-[12px] font-semibold text-center"
+                    style={{ backgroundColor: `${colors.accent}10`, color: colors.accent }}
+                  >
+                    Included in your plan
+                  </div>
+                ) : enabled ? (
                   <div className="flex gap-2">
-                    <Link href={`/dashboard/${mod.slug}`} className="flex-1">
-                      <Button variant="secondary" size="sm" className="w-full">Open</Button>
-                    </Link>
-                    {!alwaysOn && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setDisableTarget({ id: mod.id, name: getModuleDisplayName(mod, vocab), kind: mod.kind === "addon" ? "addon" : "module" })}
-                        className="text-text-tertiary hover:text-red-500"
-                      >
-                        Disable
-                      </Button>
-                    )}
+                    <div
+                      className="flex-1 py-2 rounded-xl text-[12px] font-semibold text-center flex items-center justify-center gap-1.5"
+                      style={{ backgroundColor: `${colors.accent}10`, color: colors.accent }}
+                    >
+                      <Check className="w-3.5 h-3.5" /> Added
+                    </div>
+                    <button
+                      onClick={() => setDisableTarget({ id: mod.id, name: getModuleDisplayName(mod, vocab), kind: mod.kind === "addon" ? "addon" : "module" })}
+                      className="px-3 py-2 rounded-xl text-[12px] text-text-tertiary hover:text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
+                    >
+                      Remove
+                    </button>
                   </div>
                 ) : (
                   <Button
