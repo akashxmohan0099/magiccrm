@@ -16,6 +16,7 @@ import { FeatureSection } from "@/components/modules/FeatureSection";
 import { CustomFieldsSection } from "@/components/modules/shared/CustomFieldsSection";
 import { TeamMemberPicker } from "@/components/ui/TeamMemberPicker";
 import { useModuleEnabled } from "@/hooks/useFeature";
+import { useAuth } from "@/hooks/useAuth";
 
 interface JobFormProps {
   open: boolean;
@@ -27,6 +28,7 @@ interface JobFormProps {
 export function JobForm({ open, onClose, job, prefill }: JobFormProps) {
   const { addJob, updateJob } = useJobsStore();
   const { clients } = useClientsStore();
+  const { workspaceId } = useAuth();
   const vocab = useVocabulary();
   const config = useIndustryConfig();
   const teamEnabled = useModuleEnabled("team");
@@ -106,9 +108,9 @@ export function JobForm({ open, onClose, job, prefill }: JobFormProps) {
     } as any;
 
     if (job) {
-      updateJob(job.id, data);
+      updateJob(job.id, data, workspaceId ?? undefined);
     } else {
-      addJob(data);
+      addJob(data, workspaceId ?? undefined);
     }
 
     onClose();

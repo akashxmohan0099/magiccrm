@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { X } from "lucide-react";
 import { useLoyaltyStore } from "@/store/loyalty";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/Button";
 
 interface ReferralCodeFormProps { open: boolean; onClose: () => void; }
 
 export function ReferralCodeForm({ open, onClose }: ReferralCodeFormProps) {
   const { addReferralCode, referralBonus } = useLoyaltyStore();
+  const { workspaceId } = useAuth();
   const [clientName, setClientName] = useState("");
   const [code, setCode] = useState("");
 
@@ -17,7 +19,7 @@ export function ReferralCodeForm({ open, onClose }: ReferralCodeFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!clientName.trim() || !code.trim()) return;
-    addReferralCode({ clientId: "", clientName: clientName.trim(), code: code.trim().toUpperCase(), rewardPoints: referralBonus });
+    addReferralCode({ clientId: "", clientName: clientName.trim(), code: code.trim().toUpperCase(), rewardPoints: referralBonus }, workspaceId ?? undefined);
     setClientName(""); setCode("");
     onClose();
   };

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAutomationsStore } from "@/store/automations";
 import { AutomationRule, AutomationTrigger, AutomationAction } from "@/types/models";
+import { useAuth } from "@/hooks/useAuth";
 import { SlideOver } from "@/components/ui/SlideOver";
 import { FormField } from "@/components/ui/FormField";
 import { SelectField } from "@/components/ui/SelectField";
@@ -45,6 +46,7 @@ function getInitialState(rule?: AutomationRule) {
 
 export function AutomationForm({ open, onClose, rule }: AutomationFormProps) {
   const { addRule, updateRule } = useAutomationsStore();
+  const { workspaceId } = useAuth();
   const [form, setForm] = useState(getInitialState(rule));
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -86,9 +88,9 @@ export function AutomationForm({ open, onClose, rule }: AutomationFormProps) {
     };
 
     if (rule) {
-      updateRule(rule.id, data);
+      updateRule(rule.id, data, workspaceId ?? undefined);
     } else {
-      addRule(data);
+      addRule(data, workspaceId ?? undefined);
     }
     onClose();
   };

@@ -3,6 +3,7 @@
 import { useRef, useMemo } from "react";
 import { Upload, Trash2, FileIcon, Paperclip } from "lucide-react";
 import { useJobsStore } from "@/store/jobs";
+import { useAuth } from "@/hooks/useAuth";
 
 interface FileAttachmentsProps {
   jobId: string;
@@ -16,6 +17,7 @@ function formatFileSize(bytes: number): string {
 
 export function FileAttachments({ jobId }: FileAttachmentsProps) {
   const { jobs, addFile, deleteFile } = useJobsStore();
+  const { workspaceId } = useAuth();
   const inputRef = useRef<HTMLInputElement>(null);
 
   const job = useMemo(() => jobs.find((j) => j.id === jobId), [jobs, jobId]);
@@ -33,7 +35,7 @@ export function FileAttachments({ jobId }: FileAttachmentsProps) {
           size: file.size,
           type: file.type,
           dataUrl: reader.result as string,
-        });
+        }, workspaceId ?? undefined);
       };
       reader.readAsDataURL(file);
     });
@@ -82,7 +84,7 @@ export function FileAttachments({ jobId }: FileAttachmentsProps) {
                 </p>
               </div>
               <button
-                onClick={() => deleteFile(jobId, file.id)}
+                onClick={() => deleteFile(jobId, file.id, workspaceId ?? undefined)}
                 className="opacity-0 group-hover:opacity-100 p-1 text-text-secondary hover:text-red-500 cursor-pointer transition-opacity"
               >
                 <Trash2 className="w-3.5 h-3.5" />

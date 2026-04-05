@@ -4,6 +4,7 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import { useMembershipsStore } from "@/store/memberships";
 import { MembershipInterval } from "@/types/models";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/Button";
 import { FormField } from "@/components/ui/FormField";
 
@@ -11,6 +12,7 @@ interface MembershipPlanFormProps { open: boolean; onClose: () => void; }
 
 export function MembershipPlanForm({ open, onClose }: MembershipPlanFormProps) {
   const { addPlan } = useMembershipsStore();
+  const { workspaceId } = useAuth();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [name, setName] = useState("");
@@ -40,7 +42,7 @@ export function MembershipPlanForm({ open, onClose }: MembershipPlanFormProps) {
       name: name.trim(), description: description.trim(), price: parseFloat(price) || 0,
       interval, sessionsIncluded: unlimited ? undefined : parseInt(sessions) || undefined,
       unlimitedSessions: unlimited, active: true,
-    });
+    }, workspaceId ?? undefined);
     setName(""); setDescription(""); setPrice(""); setSessions(""); setUnlimited(false);
     onClose();
     setSaving(false);

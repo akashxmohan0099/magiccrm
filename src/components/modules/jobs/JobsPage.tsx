@@ -20,6 +20,7 @@ import { KanbanBoard, KanbanColumn } from "@/components/ui/KanbanBoard";
 import { ViewToggle } from "@/components/ui/ViewToggle";
 import { useTeamStore } from "@/store/team";
 import { useModuleEnabled } from "@/hooks/useFeature";
+import { useAuth } from "@/hooks/useAuth";
 import { JobForm } from "./JobForm";
 import { JobDetail } from "./JobDetail";
 import { StageSettingsCard } from "@/components/modules/shared/StageSettingsCard";
@@ -29,6 +30,7 @@ type ViewMode = "list" | "board";
 export function JobsPage() {
   const { jobs, moveJob } = useJobsStore();
   const { clients } = useClientsStore();
+  const { workspaceId } = useAuth();
   const { members } = useTeamStore();
   const teamEnabled = useModuleEnabled("team");
   const vocab = useVocabulary();
@@ -250,7 +252,7 @@ export function JobsPage() {
         <KanbanBoard
           columns={kanbanColumns}
           keyExtractor={(j) => j.id}
-          onMove={(itemId, toCol) => moveJob(itemId, toCol as string)}
+          onMove={(itemId, toCol) => moveJob(itemId, toCol as string, workspaceId ?? undefined)}
           renderCard={(job) => (
             <div
               onClick={() => setDetailJobId(job.id)}

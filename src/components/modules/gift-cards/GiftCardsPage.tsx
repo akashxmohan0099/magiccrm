@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Plus, CreditCard } from "lucide-react";
 import { useGiftCardStore } from "@/store/gift-cards";
 import { GiftCard } from "@/types/models";
+import { useAuth } from "@/hooks/useAuth";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { DataTable, Column } from "@/components/ui/DataTable";
@@ -20,6 +21,7 @@ const STATUS_BADGE: Record<GiftCard["status"], string> = {
 
 export function GiftCardsPage() {
   const { giftCards, addGiftCard, updateGiftCard, redeemGiftCard, deleteGiftCard } = useGiftCardStore();
+  const { workspaceId } = useAuth();
   const [formOpen, setFormOpen] = useState(false);
   const [detailCard, setDetailCard] = useState<GiftCard | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -83,7 +85,7 @@ export function GiftCardsPage() {
       recipientEmail: recipientEmail.trim() || undefined,
       purchasedBy: purchasedBy.trim() || undefined,
       expiresAt: expiresAt || undefined,
-    });
+    }, workspaceId ?? undefined);
     resetForm();
     setFormOpen(false);
   };
@@ -95,7 +97,7 @@ export function GiftCardsPage() {
       recipientEmail: editRecipientEmail.trim() || undefined,
       purchasedBy: editPurchasedBy.trim() || undefined,
       expiresAt: editExpiresAt || undefined,
-    });
+    }, workspaceId ?? undefined);
     // Refresh the detail card from store
     const updated = useGiftCardStore.getState().giftCards.find((c) => c.id === detailCard.id);
     if (updated) setDetailCard(updated);
@@ -106,7 +108,7 @@ export function GiftCardsPage() {
     if (!detailCard) return;
     const val = parseFloat(redeemAmount);
     if (!val || val <= 0 || val > detailCard.balance) return;
-    redeemGiftCard(detailCard.id, val);
+    redeemGiftCard(detailCard.id, val, workspaceId ?? undefined);
     const updated = useGiftCardStore.getState().giftCards.find((c) => c.id === detailCard.id);
     if (updated) setDetailCard(updated);
     setRedeemAmount("");
@@ -114,7 +116,7 @@ export function GiftCardsPage() {
 
   const handleDelete = () => {
     if (!detailCard) return;
-    deleteGiftCard(detailCard.id);
+    deleteGiftCard(detailCard.id, workspaceId ?? undefined);
     setDetailOpen(false);
     setDetailCard(null);
   };

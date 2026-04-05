@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSupportStore } from "@/store/support";
 import { SupportTicket, TicketPriority, TicketStatus } from "@/types/models";
+import { useAuth } from "@/hooks/useAuth";
 import { SlideOver } from "@/components/ui/SlideOver";
 import { FormField } from "@/components/ui/FormField";
 import { SelectField } from "@/components/ui/SelectField";
@@ -32,6 +33,7 @@ const STATUS_OPTIONS: { value: TicketStatus; label: string }[] = [
 
 export function TicketForm({ open, onClose, ticket }: TicketFormProps) {
   const { addTicket, updateTicket } = useSupportStore();
+  const { workspaceId } = useAuth();
 
   const [subject, setSubject] = useState("");
   const [clientName, setClientName] = useState("");
@@ -83,9 +85,9 @@ export function TicketForm({ open, onClose, ticket }: TicketFormProps) {
     } as any;
 
     if (ticket) {
-      updateTicket(ticket.id, data);
+      updateTicket(ticket.id, data, workspaceId ?? undefined);
     } else {
-      addTicket(data);
+      addTicket(data, workspaceId ?? undefined);
     }
 
     onClose();

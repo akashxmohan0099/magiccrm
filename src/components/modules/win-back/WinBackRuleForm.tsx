@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { X } from "lucide-react";
 import { useWinBackStore } from "@/store/win-back";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/Button";
 import { FormField } from "@/components/ui/FormField";
 import { FeatureSection } from "@/components/modules/FeatureSection";
@@ -11,6 +12,7 @@ interface WinBackRuleFormProps { open: boolean; onClose: () => void; }
 
 export function WinBackRuleForm({ open, onClose }: WinBackRuleFormProps) {
   const { addRule } = useWinBackStore();
+  const { workspaceId } = useAuth();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [name, setName] = useState("");
@@ -34,7 +36,7 @@ export function WinBackRuleForm({ open, onClose }: WinBackRuleFormProps) {
     setErrors({});
     setSaving(true);
 
-    addRule({ name: name.trim(), inactiveDays: parseInt(days) || 60, channel, messageTemplate: template, enabled: true });
+    addRule({ name: name.trim(), inactiveDays: parseInt(days) || 60, channel, messageTemplate: template, enabled: true }, workspaceId ?? undefined);
     setName(""); setDays("60"); setTemplate("");
     onClose();
     setSaving(false);

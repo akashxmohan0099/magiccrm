@@ -5,6 +5,7 @@ import { Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAutomationsStore } from "@/store/automations";
 import { AutomationRule } from "@/types/models";
+import { useAuth } from "@/hooks/useAuth";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 interface AutomationListProps {
@@ -34,6 +35,7 @@ const ACTION_LABELS: Record<string, string> = {
 
 export function AutomationList({ rules, onEdit }: AutomationListProps) {
   const { toggleRule, deleteRule } = useAutomationsStore();
+  const { workspaceId } = useAuth();
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   return (
@@ -64,7 +66,7 @@ export function AutomationList({ rules, onEdit }: AutomationListProps) {
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                toggleRule(rule.id);
+                toggleRule(rule.id, workspaceId ?? undefined);
               }}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${
                 rule.enabled ? "bg-brand" : "bg-border-light"
@@ -96,7 +98,7 @@ export function AutomationList({ rules, onEdit }: AutomationListProps) {
         open={deleteTarget !== null}
         onClose={() => setDeleteTarget(null)}
         onConfirm={() => {
-          if (deleteTarget) deleteRule(deleteTarget);
+          if (deleteTarget) deleteRule(deleteTarget, workspaceId ?? undefined);
           setDeleteTarget(null);
         }}
         title="Delete Automation"

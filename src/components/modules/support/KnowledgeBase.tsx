@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import { Plus, FileText, Pencil, Trash2 } from "lucide-react";
 import { useSupportStore } from "@/store/support";
 import { KnowledgeBaseArticle } from "@/types/models";
+import { useAuth } from "@/hooks/useAuth";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { Button } from "@/components/ui/Button";
@@ -23,6 +24,7 @@ const CATEGORY_OPTIONS = [
 
 export function KnowledgeBase() {
   const { articles, addArticle, updateArticle, deleteArticle } = useSupportStore();
+  const { workspaceId } = useAuth();
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
   const [editArticle, setEditArticle] = useState<KnowledgeBaseArticle | undefined>();
@@ -84,9 +86,9 @@ export function KnowledgeBase() {
     };
 
     if (editArticle) {
-      updateArticle(editArticle.id, data);
+      updateArticle(editArticle.id, data, workspaceId ?? undefined);
     } else {
-      addArticle(data);
+      addArticle(data, workspaceId ?? undefined);
     }
 
     setFormOpen(false);
@@ -100,7 +102,7 @@ export function KnowledgeBase() {
 
   const handleDelete = () => {
     if (confirmDeleteId) {
-      deleteArticle(confirmDeleteId);
+      deleteArticle(confirmDeleteId, workspaceId ?? undefined);
       setConfirmDeleteId(null);
     }
   };

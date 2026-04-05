@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Plus, Store, Star } from "lucide-react";
 import { useVendorManagementStore } from "@/store/vendor-management";
+import { useAuth } from "@/hooks/useAuth";
 import { Vendor } from "@/types/models";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -44,6 +45,7 @@ function RatingStars({ rating }: { rating?: number }) {
 
 export function VendorManagementPage() {
   const { vendors, addVendor, updateVendor, deleteVendor } = useVendorManagementStore();
+  const { workspaceId } = useAuth();
   const [formOpen, setFormOpen] = useState(false);
   const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
@@ -99,9 +101,9 @@ export function VendorManagementPage() {
     };
 
     if (editingVendor) {
-      updateVendor(editingVendor.id, data);
+      updateVendor(editingVendor.id, data, workspaceId ?? undefined);
     } else {
-      addVendor(data);
+      addVendor(data, workspaceId ?? undefined);
     }
 
     resetForm();
@@ -325,7 +327,7 @@ export function VendorManagementPage() {
         onClose={() => setConfirmDeleteOpen(false)}
         onConfirm={() => {
           if (editingVendor) {
-            deleteVendor(editingVendor.id);
+            deleteVendor(editingVendor.id, workspaceId ?? undefined);
             resetForm();
             setFormOpen(false);
           }

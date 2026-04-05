@@ -5,6 +5,7 @@ import { Pencil, Trash2, CalendarDays, User, Receipt } from "lucide-react";
 import { useJobsStore } from "@/store/jobs";
 import { useClientsStore } from "@/store/clients";
 import { Job, LineItem } from "@/types/models";
+import { useAuth } from "@/hooks/useAuth";
 import { generateId } from "@/lib/id";
 import { InvoiceForm } from "@/components/modules/invoicing/InvoiceForm";
 import { useVocabulary } from "@/hooks/useVocabulary";
@@ -30,6 +31,7 @@ type Tab = "tasks" | "time" | "files";
 export function JobDetail({ open, onClose, jobId, onEdit }: JobDetailProps) {
   const { jobs, deleteJob } = useJobsStore();
   const { clients } = useClientsStore();
+  const { workspaceId } = useAuth();
   const vocab = useVocabulary();
   const config = useIndustryConfig();
   const [activeTab, setActiveTab] = useState<Tab>("tasks");
@@ -78,7 +80,7 @@ export function JobDetail({ open, onClose, jobId, onEdit }: JobDetailProps) {
   };
 
   const handleDelete = () => {
-    deleteJob(job.id);
+    deleteJob(job.id, workspaceId ?? undefined);
     setConfirmDelete(false);
     onClose();
   };

@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase";
 import { useAddonsStore } from "@/store/addons";
 
-const DEV_EMAIL = "dev-test@magic-crm.test";
-const DEV_PASSWORD = "DevTest2026!";
+const DEV_EMAIL = "demo@demo.com";
+const DEV_PASSWORD = "12345678";
 
 /**
  * /dev — One-click dashboard access for development.

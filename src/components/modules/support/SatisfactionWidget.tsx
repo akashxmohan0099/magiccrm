@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { Star } from "lucide-react";
 import { useSupportStore } from "@/store/support";
+import { useAuth } from "@/hooks/useAuth";
 
 interface SatisfactionWidgetProps {
   ticketId: string;
@@ -10,6 +11,7 @@ interface SatisfactionWidgetProps {
 
 export function SatisfactionWidget({ ticketId }: SatisfactionWidgetProps) {
   const { tickets, updateTicket } = useSupportStore();
+  const { workspaceId } = useAuth();
   const [hovered, setHovered] = useState<number | null>(null);
 
   const ticket = useMemo(
@@ -23,7 +25,7 @@ export function SatisfactionWidget({ ticketId }: SatisfactionWidgetProps) {
   const displayRating = hovered ?? currentRating;
 
   const handleRate = (rating: number) => {
-    updateTicket(ticketId, { satisfaction: rating });
+    updateTicket(ticketId, { satisfaction: rating }, workspaceId ?? undefined);
   };
 
   return (

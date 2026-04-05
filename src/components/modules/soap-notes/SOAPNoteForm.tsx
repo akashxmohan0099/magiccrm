@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { X } from "lucide-react";
 import { useSOAPNotesStore } from "@/store/soap-notes";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/Button";
 import { FormField } from "@/components/ui/FormField";
 import { FeatureSection } from "@/components/modules/FeatureSection";
@@ -11,6 +12,7 @@ interface SOAPNoteFormProps { open: boolean; onClose: () => void; }
 
 export function SOAPNoteForm({ open, onClose }: SOAPNoteFormProps) {
   const { addNote } = useSOAPNotesStore();
+  const { workspaceId } = useAuth();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [clientName, setClientName] = useState("");
@@ -59,7 +61,7 @@ export function SOAPNoteForm({ open, onClose }: SOAPNoteFormProps) {
     setErrors({});
     setSaving(true);
 
-    addNote({ clientId: "", clientName: clientName.trim(), date, subjective, objective, assessment, plan, practitioner: practitioner.trim() || undefined });
+    addNote({ clientId: "", clientName: clientName.trim(), date, subjective, objective, assessment, plan, practitioner: practitioner.trim() || undefined }, workspaceId ?? undefined);
     setClientName(""); setSubjective(""); setObjective(""); setAssessment(""); setPlan(""); setPractitioner("");
     onClose();
     setSaving(false);

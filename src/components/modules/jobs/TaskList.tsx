@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { Plus, X, CheckSquare, Square } from "lucide-react";
 import { useJobsStore } from "@/store/jobs";
+import { useAuth } from "@/hooks/useAuth";
 import { FeatureSection } from "@/components/modules/FeatureSection";
 
 interface TaskListProps {
@@ -11,6 +12,7 @@ interface TaskListProps {
 
 export function TaskList({ jobId }: TaskListProps) {
   const { jobs, addTask, updateTask, toggleTask, deleteTask } = useJobsStore();
+  const { workspaceId } = useAuth();
   const [newTask, setNewTask] = useState("");
 
   const job = useMemo(() => jobs.find((j) => j.id === jobId), [jobs, jobId]);
@@ -22,7 +24,7 @@ export function TaskList({ jobId }: TaskListProps) {
   const handleAdd = () => {
     const title = newTask.trim();
     if (!title) return;
-    addTask(jobId, title);
+    addTask(jobId, title, workspaceId ?? undefined);
     setNewTask("");
   };
 
@@ -61,7 +63,7 @@ export function TaskList({ jobId }: TaskListProps) {
             className="flex items-center gap-2 group py-1.5 px-2 rounded-lg hover:bg-surface transition-colors"
           >
             <button
-              onClick={() => toggleTask(jobId, task.id)}
+              onClick={() => toggleTask(jobId, task.id, workspaceId ?? undefined)}
               className="flex-shrink-0 text-text-secondary hover:text-foreground cursor-pointer"
             >
               {task.completed ? (
@@ -83,13 +85,13 @@ export function TaskList({ jobId }: TaskListProps) {
               <input
                 type="text"
                 value={task.assignee || ""}
-                onChange={(e) => updateTask(jobId, task.id, { assignee: e.target.value })}
+                onChange={(e) => updateTask(jobId, task.id, { assignee: e.target.value }, workspaceId ?? undefined)}
                 placeholder="Assign to..."
                 className="text-[11px] px-2 py-0.5 bg-surface border border-border-light rounded text-text-secondary w-24"
               />
             </FeatureSection>
             <button
-              onClick={() => deleteTask(jobId, task.id)}
+              onClick={() => deleteTask(jobId, task.id, workspaceId ?? undefined)}
               className="opacity-0 group-hover:opacity-100 p-0.5 text-text-secondary hover:text-red-500 cursor-pointer transition-opacity"
             >
               <X className="w-3.5 h-3.5" />

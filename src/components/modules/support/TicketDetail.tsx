@@ -4,6 +4,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import Link from "next/link";
 import { Pencil, X, Send, User, CalendarDays, FolderKanban, Clock, Star } from "lucide-react";
 import { useSupportStore } from "@/store/support";
+import { useAuth } from "@/hooks/useAuth";
 import { SlideOver } from "@/components/ui/SlideOver";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Button } from "@/components/ui/Button";
@@ -30,6 +31,7 @@ function formatTimestamp(timestamp: string): string {
 
 export function TicketDetail({ open, onClose, ticketId }: TicketDetailProps) {
   const { tickets, updateTicket, deleteTicket: _deleteTicket, addTicketMessage } = useSupportStore();
+  const { workspaceId } = useAuth();
   const [replyText, setReplyText] = useState("");
   const [editOpen, setEditOpen] = useState(false);
   const [confirmClose, setConfirmClose] = useState(false);
@@ -49,7 +51,7 @@ export function TicketDetail({ open, onClose, ticketId }: TicketDetailProps) {
 
   const handleSendReply = () => {
     if (!replyText.trim()) return;
-    addTicketMessage(ticket.id, replyText.trim(), "user");
+    addTicketMessage(ticket.id, replyText.trim(), "user", workspaceId ?? undefined);
     setReplyText("");
   };
 
@@ -61,7 +63,7 @@ export function TicketDetail({ open, onClose, ticketId }: TicketDetailProps) {
   };
 
   const handleCloseTicket = () => {
-    updateTicket(ticket.id, { status: "closed" });
+    updateTicket(ticket.id, { status: "closed" }, workspaceId ?? undefined);
     setConfirmClose(false);
   };
 

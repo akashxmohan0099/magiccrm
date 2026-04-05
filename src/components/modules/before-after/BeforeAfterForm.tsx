@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { X } from "lucide-react";
 import { useBeforeAfterStore } from "@/store/before-after";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/Button";
 import { FormField } from "@/components/ui/FormField";
 
@@ -10,6 +11,7 @@ interface BeforeAfterFormProps { open: boolean; onClose: () => void; }
 
 export function BeforeAfterForm({ open, onClose }: BeforeAfterFormProps) {
   const { addRecord } = useBeforeAfterStore();
+  const { workspaceId } = useAuth();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [clientName, setClientName] = useState("");
@@ -32,7 +34,7 @@ export function BeforeAfterForm({ open, onClose }: BeforeAfterFormProps) {
     setErrors({});
     setSaving(true);
 
-    addRecord({ clientName: clientName.trim(), title: title.trim(), notes, beforePhotos: [], afterPhotos: [], checklist: [] });
+    addRecord({ clientName: clientName.trim(), title: title.trim(), notes, beforePhotos: [], afterPhotos: [], checklist: [] }, workspaceId ?? undefined);
     setClientName(""); setTitle(""); setNotes("");
     onClose();
     setSaving(false);

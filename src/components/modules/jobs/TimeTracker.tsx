@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { Plus, Trash2, Clock, DollarSign } from "lucide-react";
 import { useJobsStore } from "@/store/jobs";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/Button";
 
 interface TimeTrackerProps {
@@ -11,6 +12,7 @@ interface TimeTrackerProps {
 
 export function TimeTracker({ jobId }: TimeTrackerProps) {
   const { jobs, addTimeEntry, deleteTimeEntry } = useJobsStore();
+  const { workspaceId } = useAuth();
   const [description, setDescription] = useState("");
   const [minutes, setMinutes] = useState("");
   const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
@@ -40,7 +42,7 @@ export function TimeTracker({ jobId }: TimeTrackerProps) {
       date,
       billable,
       ...((!isNaN(rate) && rate > 0) ? { billableRate: rate } : {}),
-    });
+    }, workspaceId ?? undefined);
     setDescription("");
     setMinutes("");
     setDate(new Date().toISOString().split("T")[0]);
@@ -187,7 +189,7 @@ export function TimeTracker({ jobId }: TimeTrackerProps) {
                   )}
                 </div>
                 <button
-                  onClick={() => deleteTimeEntry(jobId, entry.id)}
+                  onClick={() => deleteTimeEntry(jobId, entry.id, workspaceId ?? undefined)}
                   className="opacity-0 group-hover:opacity-100 p-1 text-text-secondary hover:text-red-500 cursor-pointer transition-opacity"
                 >
                   <Trash2 className="w-3.5 h-3.5" />

@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { X } from "lucide-react";
 import { useClientPortalStore } from "@/store/client-portal";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/Button";
 
 interface PortalAccessFormProps { open: boolean; onClose: () => void; }
 
 export function PortalAccessForm({ open, onClose }: PortalAccessFormProps) {
   const { grantAccess } = useClientPortalStore();
+  const { workspaceId } = useAuth();
   const [clientName, setClientName] = useState("");
   const [email, setEmail] = useState("");
 
@@ -17,7 +19,7 @@ export function PortalAccessForm({ open, onClose }: PortalAccessFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!clientName.trim() || !email.trim()) return;
-    grantAccess({ clientId: "", clientName: clientName.trim(), email: email.trim() });
+    grantAccess({ clientId: "", clientName: clientName.trim(), email: email.trim() }, workspaceId ?? undefined);
     setClientName(""); setEmail("");
     onClose();
   };

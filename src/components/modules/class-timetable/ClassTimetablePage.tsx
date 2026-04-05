@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Plus, CalendarDays, Trash2 } from "lucide-react";
 import { useClassTimetableStore } from "@/store/class-timetable";
+import { useAuth } from "@/hooks/useAuth";
 import { ClassDefinition } from "@/types/models";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -39,6 +40,7 @@ function parseMinutes(timeStr: string): number {
 
 export function ClassTimetablePage() {
   const { classes, addClass, updateClass, deleteClass } = useClassTimetableStore();
+  const { workspaceId } = useAuth();
   const [formOpen, setFormOpen] = useState(false);
   const [editingClass, setEditingClass] = useState<ClassDefinition | null>(null);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
@@ -109,9 +111,9 @@ export function ClassTimetablePage() {
     };
 
     if (editingClass) {
-      updateClass(editingClass.id, data);
+      updateClass(editingClass.id, data, workspaceId ?? undefined);
     } else {
-      addClass(data);
+      addClass(data, workspaceId ?? undefined);
     }
     resetForm();
     setFormOpen(false);
@@ -127,7 +129,7 @@ export function ClassTimetablePage() {
 
   const confirmDelete = () => {
     if (pendingDeleteId) {
-      deleteClass(pendingDeleteId);
+      deleteClass(pendingDeleteId, workspaceId ?? undefined);
       setPendingDeleteId(null);
       // If we were editing this class, close the form
       if (editingClass?.id === pendingDeleteId) {

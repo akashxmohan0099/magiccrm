@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Plus, Trash2, Play, Clock, CalendarDays, CalendarRange, Calendar, CalendarCheck } from "lucide-react";
 import { useAutomationsStore } from "@/store/automations";
 import { RecurringTaskTemplate } from "@/types/models";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/Button";
 
 const FREQUENCY_CONFIG: Record<RecurringTaskTemplate["frequency"], { label: string; icon: React.ReactNode; color: string }> = {
@@ -16,6 +17,7 @@ const FREQUENCY_CONFIG: Record<RecurringTaskTemplate["frequency"], { label: stri
 
 export function RecurringTemplateLibrary() {
   const { recurringTemplates, addRecurringTemplate, deleteRecurringTemplate, createTaskFromTemplate } = useAutomationsStore();
+  const { workspaceId } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -35,7 +37,7 @@ export function RecurringTemplateLibrary() {
       description: formData.description.trim(),
       category: formData.category.trim() || "general",
       isBuiltIn: false,
-    });
+    }, workspaceId ?? undefined);
     setFormData({ name: "", taskTitle: "", description: "", frequency: "weekly", category: "" });
     setShowForm(false);
   };
@@ -74,7 +76,7 @@ export function RecurringTemplateLibrary() {
                 </button>
                 {!template.isBuiltIn && (
                   <button
-                    onClick={() => deleteRecurringTemplate(template.id)}
+                    onClick={() => deleteRecurringTemplate(template.id, workspaceId ?? undefined)}
                     className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium text-red-600 bg-red-50 hover:bg-red-100"
                   >
                     <Trash2 className="w-3 h-3" />

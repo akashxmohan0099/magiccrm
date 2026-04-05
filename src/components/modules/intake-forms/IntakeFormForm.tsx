@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { X } from "lucide-react";
 import { useIntakeFormsStore } from "@/store/intake-forms";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/Button";
 
 interface IntakeFormFormProps { open: boolean; onClose: () => void; }
 
 export function IntakeFormForm({ open, onClose }: IntakeFormFormProps) {
   const { addForm } = useIntakeFormsStore();
+  const { workspaceId } = useAuth();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
 
@@ -17,7 +19,7 @@ export function IntakeFormForm({ open, onClose }: IntakeFormFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    addForm({ name: name.trim(), description: description.trim(), fields: [], active: true, linkedTo: undefined });
+    addForm({ name: name.trim(), description: description.trim(), fields: [], active: true, linkedTo: undefined }, workspaceId ?? undefined);
     setName(""); setDescription("");
     onClose();
   };
