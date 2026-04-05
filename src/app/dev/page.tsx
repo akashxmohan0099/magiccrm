@@ -2,91 +2,74 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase";
+import { useAddonsStore } from "@/store/addons";
 
-const TEST_EMAIL = "dev-test@magic-crm.test";
-const TEST_PASSWORD = "DevTest2026!";
+const DEV_EMAIL = "dev-test@magic-crm.test";
+const DEV_PASSWORD = "DevTest2026!";
 
+/**
+ * /dev — One-click dashboard access for development.
+ *
+ * First visit: silently creates account + sample data, signs in, redirects.
+ * Return visits: instant sign-in + redirect (< 1 second).
+ *
+ * All modules enabled. All sample data loaded.
+ */
 export default function DevPage() {
-  const [status, setStatus] = useState("Checking...");
-  const [workspaceId, setWorkspaceId] = useState<string | null>(null);
+  const [status, setStatus] = useState("Loading...");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
 
-    async function setup() {
-      // Try to sign in first
-      setStatus("Signing in...");
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: TEST_EMAIL,
-        password: TEST_PASSWORD,
+    async function go() {
+      // 1. Try to sign in (return visit = instant)
+      const { error: signInErr } = await supabase.auth.signInWithPassword({
+        email: DEV_EMAIL,
+        password: DEV_PASSWORD,
       });
 
-      if (!signInError) {
-        // Already exists — get workspace
-        setStatus("Signed in. Loading workspace...");
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          // Set onboarding as complete
-          setOnboardingComplete();
-          setStatus("Ready! Redirecting to dashboard...");
-          setTimeout(() => { window.location.href = "/dashboard"; }, 500);
-        }
-        return;
-      }
-
-      // Account doesn't exist — create it
-      setStatus("Creating test account + sample data...");
-      try {
+      if (signInErr) {
+        // 2. First visit — create account silently
+        setStatus("Setting up dev workspace...");
         const res = await fetch("/api/auth/signup", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            email: TEST_EMAIL,
-            password: TEST_PASSWORD,
-            workspaceName: "Glow Studio (Dev)",
+            email: DEV_EMAIL,
+            password: DEV_PASSWORD,
+            workspaceName: "Dev Studio",
             industry: "beauty-wellness",
             persona: "makeup-artist",
           }),
         });
 
-        const data = await res.json();
         if (!res.ok) {
-          setError(data.error || "Signup failed");
+          const data = await res.json().catch(() => ({}));
+          setError(data.error || "Failed to create dev account");
           return;
         }
 
-        setWorkspaceId(data.workspaceId);
-        setStatus("Account created. Signing in...");
-
-        // Sign in
-        const { error: loginError } = await supabase.auth.signInWithPassword({
-          email: TEST_EMAIL,
-          password: TEST_PASSWORD,
+        // Sign in after creation
+        const { error: loginErr } = await supabase.auth.signInWithPassword({
+          email: DEV_EMAIL,
+          password: DEV_PASSWORD,
         });
-
-        if (loginError) {
-          setError(loginError.message);
+        if (loginErr) {
+          setError(loginErr.message);
           return;
         }
-
-        setOnboardingComplete();
-        setStatus("Ready! Redirecting to dashboard...");
-        setTimeout(() => { window.location.href = "/dashboard"; }, 500);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Unknown error");
       }
-    }
 
-    function setOnboardingComplete() {
+      // 3. Set onboarding complete with ALL modules enabled
       const storeData = {
         state: {
           step: 5,
           selectedIndustry: "beauty-wellness",
           selectedPersona: "makeup-artist",
           businessContext: {
-            businessName: "Glow Studio (Dev)",
-            businessDescription: "Dev test MUA workspace",
+            businessName: "Dev Studio",
+            businessDescription: "Development workspace with all modules",
             industry: "Beauty & Wellness",
             industryOther: "",
             location: "",
@@ -97,29 +80,37 @@ export default function DevPage() {
             communicateClients: true,
             sendInvoices: true,
             acceptBookings: true,
-            manageProjects: false,
+            manageProjects: true,
             runMarketing: true,
-            handleSupport: false,
-            manageDocuments: false,
+            handleSupport: true,
+            manageDocuments: true,
           },
-          teamSize: "Just me",
-          operatingModel: { workLocation: "mobile", clientele: "", sellProducts: false },
+          teamSize: "2-5",
+          operatingModel: { workLocation: "both", clientele: "", sellProducts: false },
           featureSelections: {},
           discoveryAnswers: {
             "module:leads-pipeline": true,
+            "module:jobs-projects": true,
             "module:marketing": true,
+            "module:team": true,
+            "module:client-portal": true,
+            "module:documents": true,
+            "module:support": true,
             "config:event-workflow": true,
             "config:deposit-tracking": true,
             "config:booking-contracts": true,
             "config:proposal-builder": true,
             "config:custom-fields-mua": true,
+            "config:stripe-integration": true,
+            "config:rebooking-prompts": true,
+            "config:public-booking-page": true,
           },
           isBuilding: false,
           buildComplete: true,
           chipSelections: [
-            "op-solo", "op-mobile", "inquire-first", "referrals",
-            "vendor-referrals", "long-lead", "online-booking",
-            "bridal-wedding", "group-bookings", "trials", "regular-clients",
+            "op-team", "op-mobile", "op-fixed",
+            "inquire-first", "referrals", "vendor-referrals", "long-lead", "online-booking",
+            "bridal-wedding", "group-bookings", "trials", "lessons", "regular-clients",
             "deposits", "contracts", "proposals", "online-payments", "newsletters",
           ],
           aiCategories: [],
@@ -134,34 +125,44 @@ export default function DevPage() {
         version: 19,
       };
       localStorage.setItem("magic-crm-onboarding", JSON.stringify(storeData));
+
+      // 4. Enable ALL add-on modules
+      const allAddons = [
+        "documents", "support", "memberships", "before-after", "intake-forms",
+        "soap-notes", "loyalty", "win-back", "storefront", "ai-insights",
+        "notes-docs", "gift-cards", "class-timetable", "vendor-management",
+        "proposals", "waitlist-manager",
+      ];
+      const addonsStore = useAddonsStore.getState();
+      for (const id of allAddons) {
+        if (!addonsStore.enabledAddons.includes(id)) {
+          addonsStore.enableAddon(id, id);
+        }
+      }
+
+      // 5. Go
+      window.location.href = "/dashboard";
     }
 
-    setup();
+    go();
   }, []);
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
-      <div className="max-w-sm text-center space-y-4 px-6">
-        <h1 className="text-[22px] font-bold text-foreground">Dev Mode</h1>
+      <div className="text-center space-y-3">
+        <div className="w-8 h-8 border-2 border-foreground/20 border-t-foreground rounded-full animate-spin mx-auto" />
         <p className="text-sm text-text-secondary">{status}</p>
         {error && (
-          <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-[13px] text-red-600">
+          <div className="max-w-sm mx-auto p-3 rounded-xl bg-red-50 border border-red-200 text-[13px] text-red-600">
             {error}
+            <button
+              onClick={() => { setError(null); window.location.reload(); }}
+              className="block w-full mt-2 text-red-700 font-medium cursor-pointer"
+            >
+              Retry
+            </button>
           </div>
         )}
-        {workspaceId && (
-          <p className="text-[11px] text-text-tertiary font-mono">
-            Workspace: {workspaceId}
-          </p>
-        )}
-        <div className="pt-4 space-y-2">
-          <a href="/dashboard" className="block w-full py-3 bg-foreground text-background rounded-xl text-sm font-medium text-center">
-            Go to Dashboard
-          </a>
-          <a href="/onboarding" className="block w-full py-3 text-sm text-text-tertiary text-center">
-            Go to Onboarding
-          </a>
-        </div>
       </div>
     </div>
   );
