@@ -137,10 +137,10 @@ export default function ModulesAndAddonsPage() {
               className="relative rounded-2xl overflow-hidden hover:shadow-md transition-all duration-200"
               style={{
                 background: (enabled || alwaysOn)
-                  ? `linear-gradient(145deg, ${colors.accent}06 0%, ${colors.accent}12 100%)`
+                  ? "linear-gradient(145deg, #F0FDF406 0%, #F0FDF412 100%)"
                   : undefined,
                 border: (enabled || alwaysOn)
-                  ? `1.5px solid ${colors.accent}20`
+                  ? "1.5px solid #34D39930"
                   : "1.5px solid var(--border-light)",
               }}
             >
@@ -166,18 +166,12 @@ export default function ModulesAndAddonsPage() {
 
                 {/* Action */}
                 {alwaysOn ? (
-                  <div
-                    className="w-full py-2 rounded-xl text-[12px] font-semibold text-center"
-                    style={{ backgroundColor: `${colors.accent}10`, color: colors.accent }}
-                  >
+                  <div className="w-full py-2 rounded-xl text-[12px] font-semibold text-center bg-primary/10 text-primary">
                     Included in your plan
                   </div>
                 ) : enabled ? (
                   <div className="flex gap-2">
-                    <div
-                      className="flex-1 py-2 rounded-xl text-[12px] font-semibold text-center flex items-center justify-center gap-1.5"
-                      style={{ backgroundColor: `${colors.accent}10`, color: colors.accent }}
-                    >
+                    <div className="flex-1 py-2 rounded-xl text-[12px] font-semibold text-center flex items-center justify-center gap-1.5 bg-primary/10 text-primary">
                       <Check className="w-3.5 h-3.5" /> Added
                     </div>
                     <button
