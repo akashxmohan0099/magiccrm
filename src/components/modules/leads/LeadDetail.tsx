@@ -6,6 +6,7 @@ import {
   Phone,
   Building2,
   Calendar,
+  CalendarPlus,
   DollarSign,
   Trash2,
   UserCheck,
@@ -19,6 +20,7 @@ import { SlideOver } from "@/components/ui/SlideOver";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { BookingForm } from "@/components/modules/bookings/BookingForm";
 
 interface LeadDetailProps {
   open: boolean;
@@ -36,6 +38,7 @@ export function LeadDetail({ open, onClose, leadId }: LeadDetailProps) {
   const [stageDropdownOpen, setStageDropdownOpen] = useState(false);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
+  const [bookingFormOpen, setBookingFormOpen] = useState(false);
 
   const lead = leadId ? leads.find((l) => l.id === leadId) : undefined;
 
@@ -297,6 +300,15 @@ export function LeadDetail({ open, onClose, leadId }: LeadDetailProps) {
                   Convert to Client
                 </Button>
               )}
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setBookingFormOpen(true)}
+                className="w-full"
+              >
+                <CalendarPlus className="w-4 h-4 mr-1.5" />
+                Book Trial
+              </Button>
             </div>
           </div>
         </div>
@@ -308,6 +320,16 @@ export function LeadDetail({ open, onClose, leadId }: LeadDetailProps) {
         onConfirm={handleDelete}
         title="Delete Lead"
         message={`Are you sure you want to delete "${lead.name}"? This action cannot be undone.`}
+      />
+
+      <BookingForm
+        open={bookingFormOpen}
+        onClose={() => setBookingFormOpen(false)}
+        prefill={{
+          title: `Trial — ${lead.name}`,
+          clientId: lead.clientId ?? undefined,
+          serviceName: lead.name,
+        }}
       />
     </>
   );

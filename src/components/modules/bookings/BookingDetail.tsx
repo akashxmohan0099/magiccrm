@@ -13,12 +13,15 @@ import {
   XCircle,
   Bell,
   Pencil,
+  Receipt,
 } from "lucide-react";
 import { useBookingsStore } from "@/store/bookings";
 import { useClientsStore } from "@/store/clients";
+import { useInvoicesStore } from "@/store/invoices";
 import { useAuth } from "@/hooks/useAuth";
 import { useVocabulary } from "@/hooks/useVocabulary";
 import { Booking } from "@/types/models";
+import { generateId } from "@/lib/id";
 import { SlideOver } from "@/components/ui/SlideOver";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Button } from "@/components/ui/Button";
@@ -34,6 +37,7 @@ interface BookingDetailProps {
 export function BookingDetail({ open, onClose, bookingId, onEdit }: BookingDetailProps) {
   const { bookings, updateBooking, deleteBooking } = useBookingsStore();
   const { clients } = useClientsStore();
+  const { invoices, addInvoice } = useInvoicesStore();
   const { workspaceId } = useAuth();
   const vocab = useVocabulary();
 
@@ -95,6 +99,36 @@ export function BookingDetail({ open, onClose, bookingId, onEdit }: BookingDetai
     deleteBooking(booking.id, workspaceId ?? undefined);
     setDeleteOpen(false);
     onClose();
+  };
+
+  // Check if an invoice already exists for this booking's client + service
+  const invoiceExists = useMemo(() => {
+    if (!booking?.clientId || !booking?.serviceName) return false;
+    return invoices.some(
+      (inv) =>
+        inv.clientId === booking.clientId &&
+        inv.lineItems?.some((li) => li.description === booking.serviceName)
+    );
+  }, [invoices, booking?.clientId, booking?.serviceName]);
+
+  const handleCreateInvoice = () => {
+    if (!booking?.clientId) return;
+    addInvoice(
+      {
+        clientId: booking.clientId,
+        lineItems: [
+          {
+            id: generateId(),
+            description: booking.serviceName || booking.title,
+            quantity: 1,
+            unitPrice: booking.price ?? 0,
+          },
+        ],
+        status: "draft",
+        notes: "",
+      },
+      workspaceId ?? undefined
+    );
   };
 
   // Header display: "Service — Client" or just title
@@ -348,6 +382,22 @@ export function BookingDetail({ open, onClose, bookingId, onEdit }: BookingDetai
                   <Bell className="w-4 h-4 text-text-secondary group-hover:text-primary transition-colors" />
                   <span>Send Reminder</span>
                 </button>
+              )}
+              {(booking.status === "completed" || booking.status === "confirmed") && (
+                invoiceExists ? (
+                  <div className="flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-[13px] text-text-tertiary w-full text-left">
+                    <Receipt className="w-4 h-4" />
+                    <span>Invoice exists</span>
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleCreateInvoice}
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-[13px] text-foreground hover:bg-card-bg border border-transparent hover:border-border-light transition-all group w-full text-left cursor-pointer"
+                  >
+                    <Receipt className="w-4 h-4 text-text-secondary group-hover:text-primary transition-colors" />
+                    <span>Create Invoice</span>
+                  </button>
+                )
               )}
             </div>
           </div>

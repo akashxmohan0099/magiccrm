@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
-import { Pencil, Trash2, CheckCircle, Send, FileDown, Eye, Copy } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import { Pencil, Trash2, CheckCircle, Send, FileDown, Eye, Copy, Calendar } from "lucide-react";
 import { useInvoicesStore, calculateInvoiceTotal } from "@/store/invoices";
 import { useClientsStore } from "@/store/clients";
+import { useBookingsStore } from "@/store/bookings";
 import { useBrandSettingsStore } from "@/store/brand-settings";
 import { useOnboardingStore } from "@/store/onboarding";
 import { useAuth } from "@/hooks/useAuth";
@@ -38,6 +39,8 @@ export function InvoiceDetail({ open, onClose, invoiceId, onEdit }: InvoiceDetai
   const invoiceTemplate = useBrandSettingsStore((s) => s.invoiceTemplate);
   const businessName = useOnboardingStore((s) => s.businessContext.businessName) || "My Business";
 
+  const { bookings } = useBookingsStore();
+
   const invoice = invoices.find((inv) => inv.id === invoiceId);
   const client = invoice ? clients.find((c) => c.id === invoice.clientId) : undefined;
   const {
@@ -45,6 +48,15 @@ export function InvoiceDetail({ open, onClose, invoiceId, onEdit }: InvoiceDetai
     taxAmount,
     total,
   } = invoice ? calculateInvoiceTotal(invoice) : { subtotal: 0, taxAmount: 0, total: 0 };
+
+  // Recent bookings for this invoice's client
+  const relatedBookings = useMemo(() => {
+    if (!invoice?.clientId) return [];
+    return bookings
+      .filter((b) => b.clientId === invoice.clientId)
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 5);
+  }, [bookings, invoice?.clientId]);
 
   if (!invoice) {
     return (
@@ -308,6 +320,36 @@ export function InvoiceDetail({ open, onClose, invoiceId, onEdit }: InvoiceDetai
             <div>
               <p className="text-sm font-medium text-foreground mb-1">Notes</p>
               <p className="text-sm text-text-secondary whitespace-pre-wrap">{invoice.notes}</p>
+            </div>
+          )}
+
+          {/* Related Bookings */}
+          {relatedBookings.length > 0 && (
+            <div>
+              <p className="text-sm font-medium text-foreground mb-2">Related Bookings</p>
+              <div className="bg-surface rounded-lg border border-border-light divide-y divide-border-light">
+                {relatedBookings.map((b) => (
+                  <div key={b.id} className="flex items-center gap-3 px-4 py-2.5">
+                    <Calendar className="w-4 h-4 text-text-secondary flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-foreground truncate">{b.serviceName || b.title}</p>
+                      <p className="text-[11px] text-text-tertiary">
+                        {new Date(b.date + "T00:00:00").toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}
+                        {" "}· {b.startTime} – {b.endTime}
+                        {b.price != null && ` · $${b.price}`}
+                      </p>
+                    </div>
+                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+                      b.status === "completed" ? "bg-emerald-100 text-emerald-700" :
+                      b.status === "confirmed" ? "bg-blue-100 text-blue-700" :
+                      b.status === "cancelled" ? "bg-red-100 text-red-700" :
+                      "bg-amber-100 text-amber-700"
+                    }`}>
+                      {b.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 

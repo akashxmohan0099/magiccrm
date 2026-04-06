@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
 import { useBookingsStore } from "@/store/bookings";
 import { useClientsStore } from "@/store/clients";
+import { useServicesStore } from "@/store/services";
 import { Booking, BookingStatus } from "@/types/models";
 import { useVocabulary } from "@/hooks/useVocabulary";
 import { useIndustryConfig } from "@/hooks/useIndustryConfig";
@@ -68,6 +69,7 @@ const emptyForm = {
 export function BookingForm({ open, onClose, booking, defaultDate, prefill }: BookingFormProps) {
   const { addBooking, updateBooking, deleteBooking, hasConflict, cancellationPolicy } = useBookingsStore();
   const { clients } = useClientsStore();
+  const { services: storeServices } = useServicesStore();
   const { workspaceId } = useAuth();
   const vocab = useVocabulary();
   const config = useIndustryConfig();
@@ -138,7 +140,18 @@ export function BookingForm({ open, onClose, booking, defaultDate, prefill }: Bo
         setShowAdvanced(false);
       }
       setErrors({});
-      setSelectedService(null);
+      // Pre-select service from store if editing a booking or prefill has serviceId
+      const preSelectId = booking?.serviceId ?? prefill?.serviceId;
+      if (preSelectId) {
+        const svc = storeServices.find((s) => s.id === preSelectId);
+        if (svc) {
+          setSelectedService({ id: svc.id, name: booking?.serviceName ?? svc.name, duration: svc.duration, price: booking?.price ?? svc.price });
+        } else {
+          setSelectedService(booking ? { id: preSelectId, name: booking.serviceName ?? "", duration: booking.duration ?? 0, price: booking.price ?? 0 } : null);
+        }
+      } else {
+        setSelectedService(null);
+      }
       setPolicyConsent(!!booking?.cancellationPolicyConsent?.accepted);
       setNewClientName("");
       setNewClientEmail("");
@@ -295,6 +308,40 @@ export function BookingForm({ open, onClose, booking, defaultDate, prefill }: Bo
               setSelectedService({ id: service.id, name: label, duration, price });
             }}
           />
+        )}
+
+        {/* Service dropdown from services store */}
+        {storeServices.length > 0 && (
+          <FormField label="Service">
+            <select
+              value={selectedService?.id ?? ""}
+              onChange={(e) => {
+                const svc = storeServices.find((s) => s.id === e.target.value);
+                if (svc) {
+                  setSelectedService({ id: svc.id, name: svc.name, duration: svc.duration, price: svc.price });
+                  const startMinutes = parseInt(form.startTime.split(":")[0]) * 60 + parseInt(form.startTime.split(":")[1]);
+                  const endMinutes = startMinutes + svc.duration;
+                  const endHours = String(Math.floor(endMinutes / 60)).padStart(2, "0");
+                  const endMins = String(endMinutes % 60).padStart(2, "0");
+                  setForm((f) => ({
+                    ...f,
+                    title: f.title || svc.name,
+                    endTime: `${endHours}:${endMins}`,
+                  }));
+                } else {
+                  setSelectedService(null);
+                }
+              }}
+              className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
+            >
+              <option value="">Select a service (optional)</option>
+              {storeServices.map((svc) => (
+                <option key={svc.id} value={svc.id}>
+                  {svc.name} — ${svc.price} ({svc.duration}min)
+                </option>
+              ))}
+            </select>
+          </FormField>
         )}
 
         <FormField label="Title" required error={errors.title}>
