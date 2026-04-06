@@ -69,6 +69,7 @@ export default function ModulesAndAddonsPage() {
   const discoveryAnswers = useOnboardingStore((s) => s.discoveryAnswers);
   const { workspaceId } = useAuth();
   const vocab = useVocabulary();
+  const setDiscoveryAnswer = useOnboardingStore((s) => s.setDiscoveryAnswer);
   const [disableTarget, setDisableTarget] = useState<{ id: string; name: string; kind: "module" | "addon" } | null>(null);
   const [deleteInput, setDeleteInput] = useState("");
 
@@ -175,7 +176,13 @@ export default function ModulesAndAddonsPage() {
                       <Check className="w-3.5 h-3.5" /> Added
                     </div>
                     <button
-                      onClick={() => setDisableTarget({ id: mod.id, name: getModuleDisplayName(mod, vocab), kind: mod.kind === "addon" ? "addon" : "module" })}
+                      onClick={() => {
+                        if (mod.kind === "addon") {
+                          disableAddon(mod.id, mod.name, workspaceId);
+                        } else {
+                          setDiscoveryAnswer(`module:${mod.id}`, false);
+                        }
+                      }}
                       className="px-3 py-2 rounded-xl text-[12px] text-text-tertiary hover:text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
                     >
                       Remove
@@ -189,6 +196,8 @@ export default function ModulesAndAddonsPage() {
                     onClick={() => {
                       if (mod.kind === "addon") {
                         enableAddon(mod.id, mod.name, workspaceId);
+                      } else {
+                        setDiscoveryAnswer(`module:${mod.id}`, true);
                       }
                     }}
                   >
