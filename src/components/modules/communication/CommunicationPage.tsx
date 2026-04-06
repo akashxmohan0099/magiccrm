@@ -198,20 +198,51 @@ export function CommunicationPage() {
         </>
       )}
 
-      {/* First-time: focused email setup card */}
-      {!hasConversationChannels && !emailConfigured && hasEmailChannel && (
-        <div className="max-w-md mx-auto mt-12 text-center">
-          <div className="w-12 h-12 mx-auto mb-4 bg-surface rounded-2xl flex items-center justify-center">
-            <Mail className="w-6 h-6 text-text-tertiary" />
+      {/* Connect channels prompt */}
+      {!hasConversationChannels && (
+        <div className="max-w-lg mx-auto mt-8">
+          <div className="text-center mb-6">
+            <div className="w-14 h-14 mx-auto mb-4 bg-primary/10 rounded-2xl flex items-center justify-center">
+              <Bell className="w-7 h-7 text-primary" />
+            </div>
+            <h3 className="text-[18px] font-bold text-foreground mb-1">Connect your channels</h3>
+            <p className="text-[13px] text-text-secondary max-w-sm mx-auto">
+              Link your accounts to manage all client conversations from one inbox.
+            </p>
           </div>
-          <h3 className="text-[16px] font-semibold text-foreground mb-1">Connect your email to get started</h3>
-          <p className="text-[13px] text-text-tertiary mb-6 max-w-xs mx-auto">Start messaging clients by connecting your email inbox first.</p>
-          <button
-            onClick={() => openSetup("email")}
-            className="px-6 py-3 bg-foreground text-background rounded-xl text-sm font-semibold cursor-pointer hover:opacity-90 transition-opacity"
-          >
-            Connect Email
-          </button>
+          <div className="space-y-2">
+            {channelSetupList.map((ch) => {
+              const channelConfig = channelConfigs[ch.id];
+              const isConnected = connectedChannels.has(ch.id) || configuredChannels.has(ch.id);
+              return (
+                <button
+                  key={ch.id}
+                  onClick={() => openSetup(ch.id)}
+                  className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-left transition-all cursor-pointer ${
+                    isConnected
+                      ? "bg-primary/5 border border-primary/20"
+                      : "bg-card-bg border border-border-light hover:border-foreground/15"
+                  }`}
+                >
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                    isConnected ? "bg-primary/10" : "bg-surface"
+                  }`}>
+                    <ch.icon className={`w-5 h-5 ${isConnected ? "text-primary" : "text-text-secondary"}`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground">{ch.label}</p>
+                    <p className="text-xs text-text-tertiary">{ch.description}</p>
+                  </div>
+                  {isConnected ? (
+                    <span className="text-xs font-semibold text-primary">Connected</span>
+                  ) : (
+                    <span className="text-xs font-semibold text-text-tertiary">Connect</span>
+                  )}
+                  <ChevronRight className="w-4 h-4 text-text-tertiary" />
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
 
