@@ -5,7 +5,7 @@ import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-  const { allowed } = rateLimit(`signup:${ip}`, 5, 300_000);
+  const { allowed } = await rateLimit(`signup:${ip}`, 5, 300_000);
   if (!allowed) {
     return NextResponse.json({ error: "Too many signup attempts. Please try again in a few minutes." }, { status: 429 });
   }
@@ -31,8 +31,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
     }
 
-    if (password.length < 6) {
-      return NextResponse.json({ error: "Password must be at least 6 characters" }, { status: 400 });
+    if (password.length < 8) {
+      return NextResponse.json({ error: "Password must be at least 8 characters" }, { status: 400 });
+    }
+
+    if (!/[A-Z]/.test(password)) {
+      return NextResponse.json({ error: "Password must contain at least one uppercase letter" }, { status: 400 });
+    }
+
+    if (!/[0-9]/.test(password)) {
+      return NextResponse.json({ error: "Password must contain at least one number" }, { status: 400 });
     }
 
     const admin = await createAdminClient();

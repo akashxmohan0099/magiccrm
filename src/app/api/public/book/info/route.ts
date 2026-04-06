@@ -14,7 +14,7 @@ import { resolveBookingWorkspaceBySlug } from "@/lib/server/public-booking";
  */
 export async function GET(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-  const { allowed } = rateLimit(`book-info:${ip}`, 30, 60_000);
+  const { allowed } = await rateLimit(`book-info:${ip}`, 30, 60_000);
   if (!allowed) {
     return NextResponse.json({ error: "Too many requests." }, { status: 429 });
   }

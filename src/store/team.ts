@@ -4,6 +4,7 @@ import { TeamMember, TeamShift, AvailabilitySlot } from "@/types/models";
 import { generateId } from "@/lib/id";
 import { logActivity } from "@/lib/activity-logger";
 import { toast } from "@/components/ui/Toast";
+import { validateTeamMember, sanitize, sanitizeEmail } from "@/lib/validation";
 import {
   fetchTeamMembers,
   fetchShifts,
@@ -23,7 +24,7 @@ import {
 interface TeamStore {
   members: TeamMember[];
   shifts: TeamShift[];
-  addMember: (data: Omit<TeamMember, "id" | "createdAt" | "updatedAt">, workspaceId?: string) => TeamMember;
+  addMember: (data: Omit<TeamMember, "id" | "createdAt" | "updatedAt">, workspaceId?: string) => TeamMember | undefined;
   updateMember: (id: string, data: Partial<TeamMember>, workspaceId?: string) => void;
   deleteMember: (id: string, workspaceId?: string) => void;
   setMemberAvailability: (memberId: string, availability: AvailabilitySlot[], workspaceId?: string) => void;
@@ -43,14 +44,31 @@ export const useTeamStore = create<TeamStore>()(
       shifts: [],
 
       addMember: (data, workspaceId?) => {
+        // Validate input
+        const validation = validateTeamMember(data);
+        if (!validation.valid) {
+          toast(validation.errors[0], "error");
+          return;
+        }
+
         const now = new Date().toISOString();
-        const member: TeamMember = { ...data, id: generateId(), createdAt: now, updatedAt: now };
+        const member: TeamMember = {
+          ...data,
+          id: generateId(),
+          name: sanitize(data.name),
+          email: sanitizeEmail(data.email),
+          createdAt: now,
+          updatedAt: now,
+        };
+
+        const previousMembers = get().members;
         set((s) => ({ members: [...s.members, member] }));
-        logActivity("create", "team", `Added team member "${data.name}"`);
-        toast(`${data.name} added to team`);
+        logActivity("create", "team", `Added team member "${member.name}"`);
+        toast(`${member.name} added to team`);
 
         if (workspaceId) {
           dbCreateMember(workspaceId, member).catch((err) => {
+            set({ members: previousMembers });
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving team member" }));
           });
         }
@@ -59,17 +77,29 @@ export const useTeamStore = create<TeamStore>()(
       },
 
       updateMember: (id, data, workspaceId?) => {
-        const updatedData = { ...data, updatedAt: new Date().toISOString() };
+        const previousMembers = get().members;
+        const sanitizedData: Partial<TeamMember> = {
+          ...data,
+          updatedAt: new Date().toISOString(),
+        };
+        if (data.name) {
+          sanitizedData.name = sanitize(data.name);
+        }
+        if (data.email) {
+          sanitizedData.email = sanitizeEmail(data.email);
+        }
+
         set((s) => ({
           members: s.members.map((m) =>
-            m.id === id ? { ...m, ...updatedData } : m
+            m.id === id ? { ...m, ...sanitizedData } : m
           ),
         }));
         logActivity("update", "team", "Updated team member");
         toast("Team member updated");
 
         if (workspaceId) {
-          dbUpdateMember(workspaceId, id, updatedData).catch((err) => {
+          dbUpdateMember(workspaceId, id, sanitizedData).catch((err) => {
+            set({ members: previousMembers });
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating team member" }));
           });
         }
@@ -78,16 +108,21 @@ export const useTeamStore = create<TeamStore>()(
       deleteMember: (id, workspaceId?) => {
         const member = get().members.find((m) => m.id === id);
         const removedShifts = get().shifts.filter((sh) => sh.memberId === id);
+        const previousMembers = get().members;
+        const previousShifts = get().shifts;
+
         set((s) => ({
           members: s.members.filter((m) => m.id !== id),
           shifts: s.shifts.filter((sh) => sh.memberId !== id),
         }));
+
         if (member) {
           logActivity("delete", "team", `Removed "${member.name}" from team`);
           toast(`"${member.name}" removed from team`, "info");
 
           if (workspaceId) {
             dbDeleteMember(workspaceId, id).catch((err) => {
+              set({ members: previousMembers, shifts: previousShifts });
               import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting team member" }));
             });
             // Cascade-delete associated shifts from DB
@@ -101,6 +136,7 @@ export const useTeamStore = create<TeamStore>()(
       },
 
       setMemberAvailability: (memberId, availability, workspaceId?) => {
+        const previousMembers = get().members;
         set((s) => ({
           members: s.members.map((m) =>
             m.id === memberId ? { ...m, availability, updatedAt: new Date().toISOString() } : m
@@ -110,6 +146,7 @@ export const useTeamStore = create<TeamStore>()(
 
         if (workspaceId) {
           dbSetMemberAvailability(workspaceId, memberId, availability).catch((err) => {
+            set({ members: previousMembers });
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating team member availability" }));
           });
         }
@@ -117,18 +154,21 @@ export const useTeamStore = create<TeamStore>()(
 
       addShift: (data, workspaceId?) => {
         const shift: TeamShift = { ...data, id: generateId() };
+        const previousShifts = get().shifts;
         set((s) => ({ shifts: [...s.shifts, shift] }));
         logActivity("create", "team", `Added shift for ${data.memberName}`);
         toast("Shift added");
 
         if (workspaceId) {
           dbCreateShift(workspaceId, shift).catch((err) => {
+            set({ shifts: previousShifts });
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving shift" }));
           });
         }
       },
 
       updateShift: (id, data, workspaceId?) => {
+        const previousShifts = get().shifts;
         set((s) => ({
           shifts: s.shifts.map((sh) => (sh.id === id ? { ...sh, ...data } : sh)),
         }));
@@ -136,17 +176,20 @@ export const useTeamStore = create<TeamStore>()(
 
         if (workspaceId) {
           dbUpdateShiftRow(workspaceId, id, data).catch((err) => {
+            set({ shifts: previousShifts });
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating shift" }));
           });
         }
       },
 
       deleteShift: (id, workspaceId?) => {
+        const previousShifts = get().shifts;
         set((s) => ({ shifts: s.shifts.filter((sh) => sh.id !== id) }));
         toast("Shift removed", "info");
 
         if (workspaceId) {
           dbDeleteShiftRow(workspaceId, id).catch((err) => {
+            set({ shifts: previousShifts });
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting shift" }));
           });
         }

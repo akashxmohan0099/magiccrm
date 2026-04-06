@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Globe, UserCheck } from "lucide-react";
+import { Plus, Globe, UserCheck, Link2, Check } from "lucide-react";
 import { useClientPortalStore } from "@/store/client-portal";
 import { useAuth } from "@/hooks/useAuth";
 import { PortalAccess } from "@/types/models";
@@ -15,6 +15,20 @@ export function ClientPortalPage() {
   const { config, updateConfig, accessList, revokeAccess: _revokeAccess, toggleAccess } = useClientPortalStore();
   const { workspaceId } = useAuth();
   const [formOpen, setFormOpen] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  async function copyPortalLink(accessId: string) {
+    try {
+      const res = await fetch(`/api/portal/link?accessId=${accessId}`);
+      if (!res.ok) return;
+      const { url } = await res.json();
+      await navigator.clipboard.writeText(url);
+      setCopiedId(accessId);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch {
+      // silently fail
+    }
+  }
 
   const accessColumns: Column<PortalAccess>[] = [
     { key: "clientName", label: "Client", sortable: true },
@@ -23,6 +37,16 @@ export function ClientPortalPage() {
     { key: "enabled", label: "Status", render: (a) => (
       <button onClick={() => toggleAccess(a.id, workspaceId ?? undefined)} className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer ${a.enabled ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-600"}`}>
         {a.enabled ? "Active" : "Disabled"}
+      </button>
+    )},
+    { key: "id", label: "", render: (a) => (
+      <button
+        onClick={() => copyPortalLink(a.id)}
+        className="inline-flex items-center gap-1 px-2 py-1 text-xs text-text-secondary hover:text-foreground rounded-md hover:bg-surface transition-colors"
+        title="Copy portal link"
+      >
+        {copiedId === a.id ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Link2 className="w-3.5 h-3.5" />}
+        {copiedId === a.id ? "Copied" : "Copy Link"}
       </button>
     )},
   ];

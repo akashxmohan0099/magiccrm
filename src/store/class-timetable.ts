@@ -4,6 +4,7 @@ import { ClassDefinition } from "@/types/models";
 import { generateId } from "@/lib/id";
 import { logActivity } from "@/lib/activity-logger";
 import { toast } from "@/components/ui/Toast";
+import { validateClassDefinition, sanitize } from "@/lib/validation";
 import {
   fetchClasses, dbCreateClass, dbUpdateClass, dbDeleteClass,
   dbUpsertClasses, mapClassFromDB,
@@ -25,11 +26,20 @@ export const useClassTimetableStore = create<ClassTimetableStore>()(
     (set, get) => ({
       classes: [],
       addClass: (data, workspaceId?) => {
+        // Validate input
+        const validation = validateClassDefinition(data);
+        if (!validation.valid) {
+          toast(validation.errors[0], "error");
+          throw new Error(validation.errors[0]);
+        }
+
         const cls: ClassDefinition = {
           ...data,
           id: generateId(),
           enrolled: 0,
           createdAt: new Date().toISOString(),
+          name: sanitize(data.name),
+          instructor: sanitize(data.instructor),
         };
         set((s) => ({ classes: [...s.classes, cls] }));
         logActivity("create", "class-timetable", `Class "${cls.name}" added`);
@@ -37,29 +47,47 @@ export const useClassTimetableStore = create<ClassTimetableStore>()(
 
         if (workspaceId) {
           dbCreateClass(workspaceId, cls).catch((err) =>
-            console.error("[class-timetable] dbCreateClass failed:", err)
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "dbCreateClass" }))
           );
         }
         return cls;
       },
       updateClass: (id, data, workspaceId?) => {
         const cls = get().classes.find((c) => c.id === id);
-        set((s) => ({
-          classes: s.classes.map((c) => (c.id === id ? { ...c, ...data } : c)),
-        }));
-        if (cls) {
-          logActivity("update", "class-timetable", `Class "${cls.name}" updated`);
-          toast(`Class "${cls.name}" updated`);
+        if (!cls) return;
+
+        // Validate changed fields
+        const validation = validateClassDefinition({ ...cls, ...data });
+        if (!validation.valid) {
+          toast(validation.errors[0], "error");
+          return;
         }
 
+        // Sanitize string fields
+        const sanitizedData = { ...data };
+        if (data.name) sanitizedData.name = sanitize(data.name);
+        if (data.instructor) sanitizedData.instructor = sanitize(data.instructor);
+
+        // Capture previous state for rollback
+        const previousClasses = get().classes;
+
+        set((s) => ({
+          classes: s.classes.map((c) => (c.id === id ? { ...c, ...sanitizedData } : c)),
+        }));
+        logActivity("update", "class-timetable", `Class "${cls.name}" updated`);
+        toast(`Class "${cls.name}" updated`);
+
         if (workspaceId) {
-          dbUpdateClass(workspaceId, id, data).catch((err) =>
-            console.error("[class-timetable] dbUpdateClass failed:", err)
-          );
+          dbUpdateClass(workspaceId, id, sanitizedData).catch((err) => {
+            set({ classes: previousClasses });
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "dbUpdateClass" }));
+          });
         }
       },
       deleteClass: (id, workspaceId?) => {
         const cls = get().classes.find((c) => c.id === id);
+        const previousClasses = get().classes;
+
         set((s) => ({ classes: s.classes.filter((c) => c.id !== id) }));
         if (cls) {
           logActivity("delete", "class-timetable", `Class "${cls.name}" deleted`);
@@ -67,9 +95,10 @@ export const useClassTimetableStore = create<ClassTimetableStore>()(
         }
 
         if (workspaceId) {
-          dbDeleteClass(workspaceId, id).catch((err) =>
-            console.error("[class-timetable] dbDeleteClass failed:", err)
-          );
+          dbDeleteClass(workspaceId, id).catch((err) => {
+            set({ classes: previousClasses });
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "dbDeleteClass" }));
+          });
         }
       },
 
@@ -82,7 +111,7 @@ export const useClassTimetableStore = create<ClassTimetableStore>()(
           const { classes } = get();
           await dbUpsertClasses(workspaceId, classes);
         } catch (err) {
-          console.error("[class-timetable] syncToSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncToSupabase" }));
         }
       },
 
@@ -96,7 +125,7 @@ export const useClassTimetableStore = create<ClassTimetableStore>()(
           );
           set({ classes: mapped });
         } catch (err) {
-          console.error("[class-timetable] loadFromSupabase failed:", err);
+          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "loadFromSupabase" }));
         }
       },
     }),

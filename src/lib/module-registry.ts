@@ -27,12 +27,12 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
   // Question-gated modules:
   { id: "bookings-calendar", slug: "bookings", name: "Scheduling", icon: "Calendar", description: "Bookings, appointments, and calendar.", group: "business", status: "production" },
   { id: "services", slug: "services", name: "Services", icon: "Sparkles", description: "Your service menu — pricing, categories, and duration.", group: "business", status: "production" },
-  { id: "jobs-projects", slug: "jobs", name: "Projects", icon: "FolderKanban", description: "Track work from start to finish.", vocabKey: "jobs", group: "business", status: "beta" },
+  { id: "jobs-projects", slug: "jobs", name: "Projects", icon: "FolderKanban", description: "Track work from start to finish.", vocabKey: "jobs", group: "business", status: "production" },
 
   // ── Grow ──
   { id: "marketing", slug: "marketing", name: "Marketing", icon: "Megaphone", description: "Campaigns, coupons, and referrals.", group: "grow", status: "production" },
   { id: "team", slug: "team", name: "Team", icon: "UsersRound", description: "Manage your team, roles, and permissions.", group: "grow", status: "production" },
-  { id: "client-portal", slug: "portal", name: "Client Portal", icon: "Globe", description: "Self-service hub where clients view bookings, invoices, and docs.", group: "grow", status: "beta" },
+  { id: "client-portal", slug: "portal", name: "Client Portal", icon: "Globe", description: "Self-service hub where clients view bookings, invoices, and docs.", group: "grow", status: "production" },
 
   // ── Insights ──
   { id: "automations", slug: "automations", name: "Automations", icon: "Zap", description: "Automate repetitive tasks.", group: "system", status: "production" },
@@ -40,21 +40,21 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
 
   // ── Add-ons (toggled from /dashboard/addons) ──
   { id: "documents", slug: "documents", name: "Documents", icon: "FileText", description: "Contracts, files, and signatures.", group: "business", kind: "addon", status: "production" },
-  { id: "support", slug: "support", name: "Support", icon: "Headphones", description: "Track client requests and follow-ups.", group: "grow", kind: "addon", status: "beta" },
-  { id: "memberships", slug: "memberships", name: "Memberships", icon: "Crown", description: "Session packs, recurring plans, and member tracking.", group: "business", kind: "addon", status: "beta" },
-  { id: "before-after", slug: "before-after", name: "Before & After", icon: "Camera", description: "Capture proof of work with photos and checklists.", group: "business", kind: "addon", status: "beta" },
-  { id: "intake-forms", slug: "forms", name: "Forms", icon: "FileInput", description: "Inquiry forms, booking requests, intake questionnaires, and contact forms.", group: "business", kind: "addon", status: "beta" },
-  { id: "soap-notes", slug: "soap-notes", name: "Treatment Notes", icon: "ClipboardList", description: "Structured SOAP notes for clinical treatment records.", group: "business", kind: "addon", status: "beta" },
-  { id: "loyalty", slug: "loyalty", name: "Loyalty & Referrals", icon: "Gift", description: "Points per visit, referral codes, and reward tracking.", group: "grow", kind: "addon", status: "beta" },
-  { id: "win-back", slug: "win-back", name: "Win-Back", icon: "UserCheck", description: "Detect lapsed clients and auto-send re-engagement messages.", group: "grow", kind: "addon", status: "beta" },
-  { id: "storefront", slug: "storefront", name: "Storefront", icon: "Store", description: "A public page showcasing your services and booking links.", group: "grow", kind: "addon", status: "beta" },
-  { id: "ai-insights", slug: "insights", name: "AI Insights", icon: "Lightbulb", description: "Smart suggestions like overdue rebookings and revenue trends.", group: "system", kind: "addon", status: "beta" },
-  { id: "notes-docs", slug: "notes", name: "Notes & Docs", icon: "NotebookPen", description: "Write notes, create docs, and share with your team. Simple formatting, no bloat.", group: "business", kind: "addon", status: "beta" },
-  { id: "gift-cards", slug: "gift-cards", name: "Gift Cards", icon: "Ticket", description: "Create, sell, and track digital gift vouchers.", group: "grow", kind: "addon", status: "beta" },
-  { id: "class-timetable", slug: "timetable", name: "Class Timetable", icon: "CalendarRange", description: "Visual weekly class schedule with capacity and check-in.", group: "business", kind: "addon", status: "beta" },
-  { id: "vendor-management", slug: "vendors", name: "Vendors", icon: "Building2", description: "Track suppliers, vendor availability, contracts, and payments.", group: "business", kind: "addon", status: "beta" },
-  { id: "proposals", slug: "proposals", name: "Proposals", icon: "ScrollText", description: "Branded proposal pages with design templates, interactive pricing, and e-signature.", group: "business", kind: "addon", status: "beta" },
-  { id: "waitlist-manager", slug: "waitlist", name: "Waitlist", icon: "ListOrdered", description: "Manage walk-in queues and auto-notify clients when spots open up.", group: "business", kind: "addon", status: "beta" },
+  { id: "support", slug: "support", name: "Support", icon: "Headphones", description: "Track client requests and follow-ups.", group: "grow", kind: "addon", status: "production" },
+  { id: "memberships", slug: "memberships", name: "Memberships", icon: "Crown", description: "Session packs, recurring plans, and member tracking.", group: "business", kind: "addon", status: "production" },
+  { id: "before-after", slug: "before-after", name: "Before & After", icon: "Camera", description: "Capture proof of work with photos and checklists.", group: "business", kind: "addon", status: "production" },
+  { id: "intake-forms", slug: "forms", name: "Forms", icon: "FileInput", description: "Inquiry forms, booking requests, intake questionnaires, and contact forms.", group: "business", kind: "addon", status: "production" },
+  { id: "soap-notes", slug: "soap-notes", name: "Treatment Notes", icon: "ClipboardList", description: "Structured SOAP notes for clinical treatment records.", group: "business", kind: "addon", status: "production" },
+  { id: "loyalty", slug: "loyalty", name: "Loyalty & Referrals", icon: "Gift", description: "Points per visit, referral codes, and reward tracking.", group: "grow", kind: "addon", status: "production" },
+  { id: "win-back", slug: "win-back", name: "Win-Back", icon: "UserCheck", description: "Detect lapsed clients and auto-send re-engagement messages.", group: "grow", kind: "addon", status: "production" },
+  { id: "storefront", slug: "storefront", name: "Storefront", icon: "Store", description: "A public page showcasing your services and booking links.", group: "grow", kind: "addon", status: "production" },
+  { id: "ai-insights", slug: "insights", name: "AI Insights", icon: "Lightbulb", description: "Smart suggestions like overdue rebookings and revenue trends.", group: "system", kind: "addon", status: "production" },
+  { id: "notes-docs", slug: "notes", name: "Notes & Docs", icon: "NotebookPen", description: "Write notes, create docs, and share with your team. Simple formatting, no bloat.", group: "business", kind: "addon", status: "production" },
+  { id: "gift-cards", slug: "gift-cards", name: "Gift Cards", icon: "Ticket", description: "Create, sell, and track digital gift vouchers.", group: "grow", kind: "addon", status: "production" },
+  { id: "class-timetable", slug: "timetable", name: "Class Timetable", icon: "CalendarRange", description: "Visual weekly class schedule with capacity and check-in.", group: "business", kind: "addon", status: "production" },
+  { id: "vendor-management", slug: "vendors", name: "Vendors", icon: "Building2", description: "Track suppliers, vendor availability, contracts, and payments.", group: "business", kind: "addon", status: "production" },
+  { id: "proposals", slug: "proposals", name: "Proposals", icon: "ScrollText", description: "Branded proposal pages with design templates, interactive pricing, and e-signature.", group: "business", kind: "addon", status: "production" },
+  { id: "waitlist-manager", slug: "waitlist", name: "Waitlist", icon: "ListOrdered", description: "Manage walk-in queues and auto-notify clients when spots open up.", group: "business", kind: "addon", status: "production" },
 ];
 
 export const GROUP_LABELS: Record<string, string> = {

@@ -4,6 +4,7 @@ import { BeforeAfterRecord } from "@/types/models";
 import { generateId } from "@/lib/id";
 import { logActivity } from "@/lib/activity-logger";
 import { toast } from "@/components/ui/Toast";
+import { validateBeforeAfter, sanitize } from "@/lib/validation";
 import {
   fetchBeforeAfterRecords, dbCreateBeforeAfter, dbUpdateBeforeAfter,
   dbDeleteBeforeAfter, dbUpsertBeforeAfterRecords, mapBeforeAfterFromDB,
@@ -26,31 +27,70 @@ export const useBeforeAfterStore = create<BeforeAfterStore>()(
     (set, get) => ({
       records: [],
       addRecord: (data, workspaceId?) => {
-        const record: BeforeAfterRecord = { ...data, id: generateId(), createdAt: new Date().toISOString() };
+        // Validate input
+        const validation = validateBeforeAfter(data);
+        if (!validation.valid) {
+          toast(validation.errors[0], "error");
+          return null as unknown as BeforeAfterRecord;
+        }
+
+        // Sanitize string fields
+        const sanitized = {
+          ...data,
+          clientName: sanitize(data.clientName),
+          title: sanitize(data.title),
+          notes: sanitize(data.notes),
+        };
+
+        const record: BeforeAfterRecord = { ...sanitized, id: generateId(), createdAt: new Date().toISOString() };
         set((s) => ({ records: [...s.records, record] }));
         logActivity("create", "before-after", `Added record for ${data.clientName}`);
         toast("Before/after record added");
 
         if (workspaceId) {
           dbCreateBeforeAfter(workspaceId, record).catch((err) => {
+            set((s) => ({ records: s.records.filter((r) => r.id !== record.id) }));
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving before/after record" }));
           });
         }
         return record;
       },
       updateRecord: (id, data, workspaceId?) => {
-        set((s) => ({ records: s.records.map((r) => r.id === id ? { ...r, ...data } : r) }));
+        // Validate changed fields if clientName or title changed
+        if (data.clientName || data.title) {
+          const targetRecord = get().records.find((r) => r.id === id);
+          if (targetRecord) {
+            const validation = validateBeforeAfter({ ...targetRecord, ...data });
+            if (!validation.valid) {
+              toast(validation.errors[0], "error");
+              return;
+            }
+          }
+        }
+
+        // Sanitize text fields
+        const sanitized: Partial<BeforeAfterRecord> = { ...data };
+        if (data.clientName) sanitized.clientName = sanitize(data.clientName);
+        if (data.title) sanitized.title = sanitize(data.title);
+        if (data.notes) sanitized.notes = sanitize(data.notes);
+
+        // Capture previous state
+        const previousRecords = get().records;
+        set((s) => ({ records: s.records.map((r) => r.id === id ? { ...r, ...sanitized } : r) }));
         logActivity("update", "before-after", "Updated before/after record");
         toast("Before/after record updated");
 
         if (workspaceId) {
-          dbUpdateBeforeAfter(workspaceId, id, data).catch((err) => {
+          dbUpdateBeforeAfter(workspaceId, id, sanitized).catch((err) => {
+            set({ records: previousRecords });
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating before/after record" }));
           });
         }
       },
       deleteRecord: (id, workspaceId?) => {
-        const record = get().records.find((r) => r.id === id);
+        // Capture previous state for rollback
+        const previousRecords = get().records;
+        const record = previousRecords.find((r) => r.id === id);
         set((s) => ({ records: s.records.filter((r) => r.id !== id) }));
         if (record) {
           logActivity("delete", "before-after", `Removed record for ${record.clientName}`);
@@ -59,6 +99,7 @@ export const useBeforeAfterStore = create<BeforeAfterStore>()(
 
         if (workspaceId) {
           dbDeleteBeforeAfter(workspaceId, id).catch((err) => {
+            set({ records: previousRecords });
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting before/after record" }));
           });
         }

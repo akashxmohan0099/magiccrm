@@ -5,6 +5,7 @@ import { generateId } from "@/lib/id";
 import { logActivity } from "@/lib/activity-logger";
 import { toast } from "@/components/ui/Toast";
 import { validateClientRef } from "@/lib/validate-refs";
+import { validateBooking, sanitize } from "@/lib/validation";
 import { useWaitlistStore } from "@/store/waitlist";
 import {
   fetchBookings,
@@ -58,15 +59,33 @@ export const useBookingsStore = create<BookingsStore>()(
       cancelNotice: 0,
 
       addBooking: (data, workspaceId?) => {
+        // Validate client reference
         if (!validateClientRef(data.clientId)) {
           toast("Cannot create booking: client not found", "error");
           return null;
         }
+
+        // Validate booking data
+        const validation = validateBooking(data);
+        if (!validation.valid) {
+          toast(validation.errors[0], "error");
+          return null;
+        }
+
+        // Check for time conflicts before creating
+        if (get().hasConflict(data.date, data.startTime, data.endTime)) {
+          toast("Cannot create booking: time conflict with existing booking", "error");
+          return null;
+        }
+
+        const now = new Date().toISOString();
         const booking: Booking = {
           ...data,
+          title: sanitize(data.title, 200),
+          notes: sanitize(data.notes, 5000),
           id: generateId(),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          createdAt: now,
+          updatedAt: now,
         };
         set((s) => ({ bookings: [...s.bookings, booking] }));
         logActivity("create", "bookings", `Booked "${booking.title}" on ${booking.date}`);
@@ -74,7 +93,9 @@ export const useBookingsStore = create<BookingsStore>()(
 
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
+          const snapshot = get().bookings;
           dbCreateBooking(workspaceId, booking).catch((err) => {
+            set({ bookings: snapshot.filter((b) => b.id !== booking.id) });
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving booking" }));
           });
         }

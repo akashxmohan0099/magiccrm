@@ -18,7 +18,7 @@ function buildReturnUrl(
 
 export async function GET(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-  const { allowed } = rateLimit(`public-pay:${ip}`, 20, 60_000);
+  const { allowed } = await rateLimit(`public-pay:${ip}`, 20, 60_000);
   if (!allowed) {
     return NextResponse.json({ error: "Too many requests." }, { status: 429 });
   }

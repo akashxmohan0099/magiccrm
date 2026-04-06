@@ -10,6 +10,7 @@ import {
 import { generateId } from "@/lib/id";
 import { logActivity } from "@/lib/activity-logger";
 import { toast } from "@/components/ui/Toast";
+import { validateConversation, sanitize } from "@/lib/validation";
 import {
   fetchConversations,
   dbCreateConversation,
@@ -48,7 +49,7 @@ interface CommunicationStore {
   connectedChannels: Channel[];
   channelConfigs: Partial<Record<Channel, ChannelConnectionConfig>>;
   automationSettings: CommunicationAutomationSettings;
-  addConversation: (data: Omit<Conversation, "id" | "messages" | "lastMessageAt" | "createdAt">, workspaceId?: string) => Conversation;
+  addConversation: (data: Omit<Conversation, "id" | "messages" | "lastMessageAt" | "createdAt">, workspaceId?: string) => Conversation | undefined;
   addMessage: (conversationId: string, content: string, sender: "user" | "client", workspaceId?: string) => void;
   updateConversation: (id: string, data: Partial<Conversation>, workspaceId?: string) => void;
   deleteConversation: (id: string, workspaceId?: string) => void;
@@ -219,21 +220,32 @@ export const useCommunicationStore = create<CommunicationStore>()(
       },
 
       addConversation: (data, workspaceId?) => {
+        // Validate input
+        const validation = validateConversation(data);
+        if (!validation.valid) {
+          toast(validation.errors[0], "error");
+          return;
+        }
+
         const conversation: Conversation = {
           ...data,
           id: generateId(),
+          clientName: sanitize(data.clientName),
           messages: [],
           lastMessageAt: new Date().toISOString(),
           createdAt: new Date().toISOString(),
         };
+        
+        const previousConversations = get().conversations;
         set((s) => ({ conversations: [...s.conversations, conversation] }));
-        logActivity("create", "communication", `New conversation with ${data.clientName}`);
-        toast(`Created conversation with ${data.clientName}`);
+        logActivity("create", "communication", `New conversation with ${conversation.clientName}`);
+        toast(`Created conversation with ${conversation.clientName}`);
 
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
           dbCreateConversation(workspaceId, conversation).catch((err) => {
-            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving message" }));
+            set({ conversations: previousConversations });
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving conversation" }));
           });
         }
 
@@ -241,12 +253,20 @@ export const useCommunicationStore = create<CommunicationStore>()(
       },
 
       addMessage: (conversationId, content, sender, workspaceId?) => {
+        // Validate content
+        if (!content || !content.trim()) {
+          toast("Message content cannot be empty", "error");
+          return;
+        }
+
         const message: Message = {
           id: generateId(),
-          content,
+          content: sanitize(content),
           sender,
           timestamp: new Date().toISOString(),
         };
+        
+        const previousConversations = get().conversations;
         set((s) => ({
           conversations: s.conversations.map((c) =>
             c.id === conversationId
@@ -266,33 +286,44 @@ export const useCommunicationStore = create<CommunicationStore>()(
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
           dbCreateMessage(conversationId, message).catch((err) => {
+            set({ conversations: previousConversations });
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving message" }));
           });
           // Also update last_message_at on the conversation
           dbUpdateConversation(workspaceId, conversationId, {
             lastMessageAt: message.timestamp,
           }).catch((err) => {
-            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving message" }));
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating message timestamp" }));
           });
         }
       },
 
       updateConversation: (id, data, workspaceId?) => {
+        const previousConversations = get().conversations;
+        const sanitizedData: Partial<Conversation> = {
+          ...data,
+        };
+        if (data.clientName) {
+          sanitizedData.clientName = sanitize(data.clientName);
+        }
+
         set((s) => ({
-          conversations: s.conversations.map((c) => (c.id === id ? { ...c, ...data } : c)),
+          conversations: s.conversations.map((c) => (c.id === id ? { ...c, ...sanitizedData } : c)),
         }));
         logActivity("update", "communication", "Updated conversation");
         toast("Conversation updated");
 
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
-          dbUpdateConversation(workspaceId, id, data).catch((err) => {
-            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving message" }));
+          dbUpdateConversation(workspaceId, id, sanitizedData).catch((err) => {
+            set({ conversations: previousConversations });
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating conversation" }));
           });
         }
       },
 
       deleteConversation: (id, workspaceId?) => {
+        const previousConversations = get().conversations;
         set((s) => ({ conversations: s.conversations.filter((c) => c.id !== id) }));
         logActivity("delete", "communication", "Deleted conversation");
         toast("Conversation deleted", "info");
@@ -300,7 +331,8 @@ export const useCommunicationStore = create<CommunicationStore>()(
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
           dbDeleteConversation(workspaceId, id).catch((err) => {
-            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving message" }));
+            set({ conversations: previousConversations });
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting conversation" }));
           });
         }
       },

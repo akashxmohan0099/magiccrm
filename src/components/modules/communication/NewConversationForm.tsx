@@ -75,6 +75,8 @@ export function NewConversationForm({ open, onClose, onCreated }: NewConversatio
       subject: form.subject.trim() || undefined,
     }, workspaceId ?? undefined);
 
+    if (!convo) return;
+
     setForm({
       clientId: "",
       channel: channelOptions[0]?.value ?? "email",

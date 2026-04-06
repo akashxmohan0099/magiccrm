@@ -5,6 +5,7 @@ import { generateId } from "@/lib/id";
 import { logActivity } from "@/lib/activity-logger";
 import { toast } from "@/components/ui/Toast";
 import { validateClientRef } from "@/lib/validate-refs";
+import { validateInvoice } from "@/lib/validation";
 import {
   fetchInvoices,
   fetchQuotes,
@@ -118,18 +119,28 @@ export const useInvoicesStore = create<InvoicesStore>()(
           toast("Cannot create invoice: client not found", "error");
           return null;
         }
+
+        // Validate invoice data
+        const validation = validateInvoice(data);
+        if (!validation.valid) {
+          toast(validation.errors[0], "error");
+          return null;
+        }
+
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const customNumber = (data as any).customNumber as string | undefined;
         const num = get().nextInvoiceNum;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { customNumber: __removed, ...cleanData } = data as any;
+        const now = new Date().toISOString();
         const invoice: Invoice = {
           ...cleanData,
           id: generateId(),
           number: customNumber || `INV-${num}`,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          createdAt: now,
+          updatedAt: now,
         };
+        const prevState = { invoices: get().invoices, nextInvoiceNum: get().nextInvoiceNum };
         set((s) => ({
           invoices: [...s.invoices, invoice],
           // Only advance counter if we used the auto-generated number
@@ -141,6 +152,8 @@ export const useInvoicesStore = create<InvoicesStore>()(
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
           dbCreateInvoice(workspaceId, invoice).catch((err) => {
+            // Rollback: restore previous invoices and counter
+            set({ invoices: prevState.invoices, nextInvoiceNum: prevState.nextInvoiceNum });
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving invoice" }));
           });
         }
@@ -150,6 +163,7 @@ export const useInvoicesStore = create<InvoicesStore>()(
 
       updateInvoice: (id, data, workspaceId?) => {
         const updatedData = { ...data, updatedAt: new Date().toISOString() };
+        const previousInvoices = get().invoices;
         set((s) => ({
           invoices: s.invoices.map((inv) =>
             inv.id === id ? { ...inv, ...updatedData } : inv
@@ -160,6 +174,7 @@ export const useInvoicesStore = create<InvoicesStore>()(
 
         if (workspaceId) {
           dbUpdateInvoice(workspaceId, id, updatedData).catch((err) => {
+            set({ invoices: previousInvoices }); // rollback
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving invoice" }));
           });
         }
@@ -167,6 +182,7 @@ export const useInvoicesStore = create<InvoicesStore>()(
 
       deleteInvoice: (id, workspaceId?) => {
         const inv = get().invoices.find((i) => i.id === id);
+        const previousInvoices = get().invoices;
         set((s) => ({ invoices: s.invoices.filter((i) => i.id !== id) }));
         if (inv) {
           logActivity("delete", "invoicing", `Deleted invoice ${inv.number}`);
@@ -174,6 +190,7 @@ export const useInvoicesStore = create<InvoicesStore>()(
 
           if (workspaceId) {
             dbDeleteInvoice(workspaceId, id).catch((err) => {
+              set({ invoices: previousInvoices }); // rollback
               import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting invoice" }));
             });
           }
@@ -189,6 +206,7 @@ export const useInvoicesStore = create<InvoicesStore>()(
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
+        const prevState = { quotes: get().quotes, nextQuoteNum: get().nextQuoteNum };
         set((s) => ({
           quotes: [...s.quotes, quote],
           nextQuoteNum: s.nextQuoteNum + 1,
@@ -198,6 +216,7 @@ export const useInvoicesStore = create<InvoicesStore>()(
 
         if (workspaceId) {
           dbCreateQuote(workspaceId, quote).catch((err) => {
+            set({ quotes: prevState.quotes, nextQuoteNum: prevState.nextQuoteNum }); // rollback
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving invoice" }));
           });
         }
@@ -207,6 +226,7 @@ export const useInvoicesStore = create<InvoicesStore>()(
 
       updateQuote: (id, data, workspaceId?) => {
         const updatedData = { ...data, updatedAt: new Date().toISOString() };
+        const previousQuotes = get().quotes;
         set((s) => ({
           quotes: s.quotes.map((q) =>
             q.id === id ? { ...q, ...updatedData } : q
@@ -217,6 +237,7 @@ export const useInvoicesStore = create<InvoicesStore>()(
 
         if (workspaceId) {
           dbUpdateQuote(workspaceId, id, updatedData).catch((err) => {
+            set({ quotes: previousQuotes }); // rollback
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving invoice" }));
           });
         }
@@ -224,6 +245,7 @@ export const useInvoicesStore = create<InvoicesStore>()(
 
       deleteQuote: (id, workspaceId?) => {
         const quote = get().quotes.find((q) => q.id === id);
+        const previousQuotes = get().quotes;
         set((s) => ({ quotes: s.quotes.filter((q) => q.id !== id) }));
         if (quote) {
           logActivity("delete", "invoicing", `Deleted quote ${quote.number}`);
@@ -231,6 +253,7 @@ export const useInvoicesStore = create<InvoicesStore>()(
 
           if (workspaceId) {
             dbDeleteQuote(workspaceId, id).catch((err) => {
+              set({ quotes: previousQuotes }); // rollback
               import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting invoice" }));
             });
           }
@@ -252,6 +275,7 @@ export const useInvoicesStore = create<InvoicesStore>()(
         );
 
         const updatedData = { status: "accepted" as const, updatedAt: new Date().toISOString() };
+        const previousQuotes = get().quotes;
         set((s) => ({
           quotes: s.quotes.map((q) =>
             q.id === quoteId ? { ...q, ...updatedData } : q
@@ -260,6 +284,7 @@ export const useInvoicesStore = create<InvoicesStore>()(
 
         if (workspaceId) {
           dbUpdateQuote(workspaceId, quoteId, updatedData).catch((err) => {
+            set({ quotes: previousQuotes }); // rollback
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving invoice" }));
           });
         }

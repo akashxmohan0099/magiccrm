@@ -58,6 +58,7 @@ export const useJobsStore = create<JobsStore>()(
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
+        const previousJobs = get().jobs;
         set((s) => ({ jobs: [...s.jobs, job] }));
         logActivity("create", "jobs", `Created job "${job.title}"`);
         toast(`Created job "${job.title}"`);
@@ -65,6 +66,7 @@ export const useJobsStore = create<JobsStore>()(
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
           dbCreateJob(workspaceId, job).catch((err) => {
+            set({ jobs: previousJobs }); // rollback
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving job" }));
           });
         }
@@ -74,6 +76,7 @@ export const useJobsStore = create<JobsStore>()(
 
       updateJob: (id, data, workspaceId?) => {
         const updatedData = { ...data, updatedAt: new Date().toISOString() };
+        const previousJobs = get().jobs;
         set((s) => ({
           jobs: s.jobs.map((j) =>
             j.id === id ? { ...j, ...updatedData } : j
@@ -85,6 +88,7 @@ export const useJobsStore = create<JobsStore>()(
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
           dbUpdateJob(workspaceId, id, updatedData).catch((err) => {
+            set({ jobs: previousJobs }); // rollback
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving job" }));
           });
         }
@@ -92,6 +96,7 @@ export const useJobsStore = create<JobsStore>()(
 
       deleteJob: (id, workspaceId?) => {
         const job = get().jobs.find((j) => j.id === id);
+        const previousJobs = get().jobs;
         set((s) => ({ jobs: s.jobs.filter((j) => j.id !== id) }));
         if (job) {
           logActivity("delete", "jobs", `Deleted job "${job.title}"`);
@@ -100,6 +105,7 @@ export const useJobsStore = create<JobsStore>()(
           // Sync to Supabase if workspaceId available
           if (workspaceId) {
             dbDeleteJob(workspaceId, id).catch((err) => {
+              set({ jobs: previousJobs }); // rollback
               import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting job" }));
             });
           }
@@ -108,6 +114,7 @@ export const useJobsStore = create<JobsStore>()(
 
       moveJob: (id, stage, workspaceId?) => {
         const updatedAt = new Date().toISOString();
+        const previousJobs = get().jobs;
         set((s) => ({
           jobs: s.jobs.map((j) =>
             j.id === id ? { ...j, stage, updatedAt } : j
@@ -117,6 +124,7 @@ export const useJobsStore = create<JobsStore>()(
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
           dbUpdateJob(workspaceId, id, { stage, updatedAt } as Partial<Job>).catch((err) => {
+            set({ jobs: previousJobs }); // rollback
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving job" }));
           });
         }
@@ -124,6 +132,7 @@ export const useJobsStore = create<JobsStore>()(
 
       addTask: (jobId, title, workspaceId?) => {
         const task: Task = { id: generateId(), title, completed: false };
+        const previousJobs = get().jobs;
         set((s) => ({
           jobs: s.jobs.map((j) =>
             j.id === jobId ? { ...j, tasks: [...j.tasks, task], updatedAt: new Date().toISOString() } : j
@@ -133,12 +142,14 @@ export const useJobsStore = create<JobsStore>()(
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
           dbCreateTask(jobId, task).catch((err) => {
+            set({ jobs: previousJobs }); // rollback
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving job" }));
           });
         }
       },
 
       updateTask: (jobId, taskId, data, workspaceId?) => {
+        const previousJobs = get().jobs;
         set((s) => ({
           jobs: s.jobs.map((j) =>
             j.id === jobId
@@ -156,6 +167,7 @@ export const useJobsStore = create<JobsStore>()(
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
           dbUpdateTask(taskId, data).catch((err) => {
+            set({ jobs: previousJobs }); // rollback
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving job" }));
           });
         }
@@ -166,6 +178,7 @@ export const useJobsStore = create<JobsStore>()(
         const task = job?.tasks.find((t) => t.id === taskId);
         const newCompleted = task ? !task.completed : false;
 
+        const previousJobs = get().jobs;
         set((s) => ({
           jobs: s.jobs.map((j) =>
             j.id === jobId
@@ -183,12 +196,14 @@ export const useJobsStore = create<JobsStore>()(
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
           dbUpdateTask(taskId, { completed: newCompleted }).catch((err) => {
+            set({ jobs: previousJobs }); // rollback
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving job" }));
           });
         }
       },
 
       deleteTask: (jobId, taskId, workspaceId?) => {
+        const previousJobs = get().jobs;
         set((s) => ({
           jobs: s.jobs.map((j) =>
             j.id === jobId
@@ -200,6 +215,7 @@ export const useJobsStore = create<JobsStore>()(
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
           dbDeleteTask(taskId).catch((err) => {
+            set({ jobs: previousJobs }); // rollback
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting job" }));
           });
         }
@@ -207,6 +223,7 @@ export const useJobsStore = create<JobsStore>()(
 
       addTimeEntry: (jobId, entry, workspaceId?) => {
         const timeEntry: TimeEntry = { ...entry, id: generateId() };
+        const previousJobs = get().jobs;
         set((s) => ({
           jobs: s.jobs.map((j) =>
             j.id === jobId
@@ -218,12 +235,14 @@ export const useJobsStore = create<JobsStore>()(
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
           dbCreateTimeEntry(jobId, timeEntry).catch((err) => {
+            set({ jobs: previousJobs }); // rollback
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving job" }));
           });
         }
       },
 
       deleteTimeEntry: (jobId, entryId, workspaceId?) => {
+        const previousJobs = get().jobs;
         set((s) => ({
           jobs: s.jobs.map((j) =>
             j.id === jobId
@@ -235,6 +254,7 @@ export const useJobsStore = create<JobsStore>()(
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
           dbDeleteTimeEntry(entryId).catch((err) => {
+            set({ jobs: previousJobs }); // rollback
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting job" }));
           });
         }
@@ -243,6 +263,7 @@ export const useJobsStore = create<JobsStore>()(
       addFile: (jobId, file, workspaceId?) => {
         const attachment: FileAttachment = { ...file, id: generateId(), uploadedAt: new Date().toISOString() };
         const now = new Date().toISOString();
+        const previousJobs = get().jobs;
         set((s) => ({
           jobs: s.jobs.map((j) =>
             j.id === jobId
@@ -254,6 +275,7 @@ export const useJobsStore = create<JobsStore>()(
           const job = get().jobs.find((j) => j.id === jobId);
           if (job) {
             dbUpdateJob(workspaceId, jobId, { files: job.files, updatedAt: now } as Partial<Job>).catch((err) => {
+              set({ jobs: previousJobs }); // rollback
               import("@/lib/sync-error-handler").then((m) =>
                 m.handleSyncError(err, { context: "saving file attachment" })
               );
@@ -264,6 +286,7 @@ export const useJobsStore = create<JobsStore>()(
 
       deleteFile: (jobId, fileId, workspaceId?) => {
         const now = new Date().toISOString();
+        const previousJobs = get().jobs;
         set((s) => ({
           jobs: s.jobs.map((j) =>
             j.id === jobId
@@ -275,6 +298,7 @@ export const useJobsStore = create<JobsStore>()(
           const job = get().jobs.find((j) => j.id === jobId);
           if (job) {
             dbUpdateJob(workspaceId, jobId, { files: job.files, updatedAt: now } as Partial<Job>).catch((err) => {
+              set({ jobs: previousJobs }); // rollback
               import("@/lib/sync-error-handler").then((m) =>
                 m.handleSyncError(err, { context: "removing file attachment" })
               );
@@ -290,6 +314,7 @@ export const useJobsStore = create<JobsStore>()(
           ratedAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
+        const previousJobs = get().jobs;
         set((s) => ({
           jobs: s.jobs.map((j) =>
             j.id === id
@@ -308,6 +333,7 @@ export const useJobsStore = create<JobsStore>()(
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
           dbUpdateJob(workspaceId, id, ratingData as Partial<Job>).catch((err) => {
+            set({ jobs: previousJobs }); // rollback
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving job" }));
           });
         }

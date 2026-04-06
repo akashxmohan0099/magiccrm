@@ -4,6 +4,7 @@ import { IntakeForm, IntakeSubmission } from "@/types/models";
 import { generateId } from "@/lib/id";
 import { logActivity } from "@/lib/activity-logger";
 import { toast } from "@/components/ui/Toast";
+import { validateIntakeForm, sanitize } from "@/lib/validation";
 import {
   fetchIntakeForms, dbCreateIntakeForm, dbUpdateIntakeForm, dbDeleteIntakeForm, dbUpsertIntakeForms, mapIntakeFormFromDB,
   fetchIntakeSubmissions, dbCreateIntakeSubmission, dbDeleteIntakeSubmission, dbUpsertIntakeSubmissions, mapIntakeSubmissionFromDB,
@@ -30,32 +31,70 @@ export const useIntakeFormsStore = create<IntakeFormsStore>()(
       forms: [],
       submissions: [],
       addForm: (data, workspaceId?) => {
+        // Validate input
+        const validation = validateIntakeForm(data);
+        if (!validation.valid) {
+          toast(validation.errors[0], "error");
+          return null as unknown as IntakeForm;
+        }
+
+        // Sanitize string fields
+        const sanitized = {
+          ...data,
+          name: sanitize(data.name),
+          description: sanitize(data.description),
+        };
+
         const now = new Date().toISOString();
-        const form: IntakeForm = { ...data, id: generateId(), submissionCount: 0, createdAt: now, updatedAt: now };
+        const form: IntakeForm = { ...sanitized, id: generateId(), submissionCount: 0, createdAt: now, updatedAt: now };
         set((s) => ({ forms: [...s.forms, form] }));
         logActivity("create", "intake-forms", `Created form "${data.name}"`);
         toast(`Form "${data.name}" created`);
 
         if (workspaceId) {
           dbCreateIntakeForm(workspaceId, form).catch((err) => {
+            set((s) => ({ forms: s.forms.filter((f) => f.id !== form.id) }));
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving intake form" }));
           });
         }
         return form;
       },
       updateForm: (id, data, workspaceId?) => {
-        set((s) => ({ forms: s.forms.map((f) => f.id === id ? { ...f, ...data, updatedAt: new Date().toISOString() } : f) }));
+        // Validate changed fields if name changed
+        if (data.name) {
+          const targetForm = get().forms.find((f) => f.id === id);
+          if (targetForm) {
+            const validation = validateIntakeForm({ ...targetForm, ...data });
+            if (!validation.valid) {
+              toast(validation.errors[0], "error");
+              return;
+            }
+          }
+        }
+
+        // Sanitize text fields
+        const sanitized: Partial<IntakeForm> = { ...data };
+        if (data.name) sanitized.name = sanitize(data.name);
+        if (data.description) sanitized.description = sanitize(data.description);
+
+        // Capture previous state
+        const previousForms = get().forms;
+        const updatedAt = new Date().toISOString();
+        set((s) => ({ forms: s.forms.map((f) => f.id === id ? { ...f, ...sanitized, updatedAt } : f) }));
         logActivity("update", "intake-forms", "Updated form");
         toast("Form updated");
 
         if (workspaceId) {
-          dbUpdateIntakeForm(workspaceId, id, data).catch((err) => {
+          dbUpdateIntakeForm(workspaceId, id, { ...sanitized, updatedAt }).catch((err) => {
+            set({ forms: previousForms });
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating intake form" }));
           });
         }
       },
       deleteForm: (id, workspaceId?) => {
-        const form = get().forms.find((f) => f.id === id);
+        // Capture previous state for rollback
+        const previousForms = get().forms;
+        const form = previousForms.find((f) => f.id === id);
         set((s) => ({ forms: s.forms.filter((f) => f.id !== id) }));
         if (form) {
           logActivity("delete", "intake-forms", `Removed form "${form.name}"`);
@@ -64,6 +103,7 @@ export const useIntakeFormsStore = create<IntakeFormsStore>()(
 
         if (workspaceId) {
           dbDeleteIntakeForm(workspaceId, id).catch((err) => {
+            set({ forms: previousForms });
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting intake form" }));
           });
         }

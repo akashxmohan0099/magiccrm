@@ -19,6 +19,8 @@ import { TravelCalculator } from "@/components/ui/TravelCalculator";
 import { MilestoneEditor } from "./MilestoneEditor";
 import { FeatureSection } from "@/components/modules/FeatureSection";
 import { CustomFieldsSection } from "@/components/modules/shared/CustomFieldsSection";
+import { useLoyaltyStore } from "@/store/loyalty";
+import { useAuth } from "@/hooks/useAuth";
 
 interface InvoiceFormProps {
   open: boolean;
@@ -57,6 +59,9 @@ export function InvoiceForm({ open, onClose, invoice, prefill }: InvoiceFormProp
   const [taxRate, setTaxRate] = useState("10");
   const [customData, setCustomData] = useState<Record<string, unknown>>({});
   const [jobId, setJobId] = useState<string | undefined>(undefined);
+  const [loyaltyPointsToRedeem, setLoyaltyPointsToRedeem] = useState(0);
+  const { getClientPoints, addTransaction: addLoyaltyTransaction, redeemThreshold, redeemValue } = useLoyaltyStore();
+  const { workspaceId } = useAuth();
 
   useEffect(() => {
     if (open) {
@@ -164,6 +169,19 @@ export function InvoiceForm({ open, onClose, invoice, prefill }: InvoiceFormProp
         ...extraFields,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
+    }
+
+    // Deduct loyalty points if redeemed
+    if (loyaltyPointsToRedeem > 0 && clientId) {
+      const client = clients.find((c) => c.id === clientId);
+      addLoyaltyTransaction({
+        clientId,
+        clientName: client?.name || "Client",
+        type: "redeemed",
+        points: loyaltyPointsToRedeem,
+        description: `Redeemed on invoice`,
+      }, workspaceId ?? undefined);
+      setLoyaltyPointsToRedeem(0);
     }
 
     onClose();
@@ -311,6 +329,44 @@ export function InvoiceForm({ open, onClose, invoice, prefill }: InvoiceFormProp
           </div>
         </FeatureSection>
 
+        {/* Loyalty Points Redemption */}
+        {clientId && (() => {
+          const clientPoints = getClientPoints(clientId);
+          const canRedeem = clientPoints >= redeemThreshold;
+          const maxRedeemable = Math.floor(clientPoints / redeemThreshold) * redeemThreshold;
+          const maxDiscount = (maxRedeemable / redeemThreshold) * redeemValue;
+          const loyaltyDiscount = (loyaltyPointsToRedeem / redeemThreshold) * redeemValue;
+          return clientPoints > 0 ? (
+            <FeatureSection moduleId="loyalty" featureId="custom-reward-catalog">
+              <div className="flex items-center justify-between px-4 py-3 bg-surface/50 rounded-xl border border-border-light">
+                <div>
+                  <p className="text-[13px] font-medium text-foreground">Loyalty Points</p>
+                  <p className="text-[11px] text-text-tertiary">
+                    {clientPoints} pts available{canRedeem ? ` (max -$${maxDiscount.toFixed(2)})` : ` (need ${redeemThreshold} to redeem)`}
+                  </p>
+                </div>
+                {canRedeem && (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={0}
+                      max={maxRedeemable}
+                      step={redeemThreshold}
+                      value={loyaltyPointsToRedeem}
+                      onChange={(e) => setLoyaltyPointsToRedeem(Math.min(Number(e.target.value) || 0, maxRedeemable))}
+                      className="w-20 px-2 py-1 bg-surface border border-border-light rounded-xl text-[13px] text-foreground text-center focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                    <span className="text-xs text-text-tertiary">pts</span>
+                    {loyaltyDiscount > 0 && (
+                      <span className="text-sm font-semibold text-emerald-600">-${loyaltyDiscount.toFixed(2)}</span>
+                    )}
+                  </div>
+                )}
+              </div>
+            </FeatureSection>
+          ) : null;
+        })()}
+
         <FormField label="Notes">
           <TextArea
             value={notes}
@@ -334,19 +390,25 @@ export function InvoiceForm({ open, onClose, invoice, prefill }: InvoiceFormProp
 
         <div className="flex items-center justify-between pt-4 border-t border-border-light">
           <div>
-            {applyTax && parseFloat(taxRate) > 0 ? (
-              <div className="space-y-0.5">
-                <div className="text-sm text-text-secondary">Subtotal: ${total.toFixed(2)}</div>
-                <div className="text-sm text-text-secondary">Tax ({taxRate}%): ${(total * (parseFloat(taxRate) || 0) / 100).toFixed(2)}</div>
-                <div className="text-lg font-semibold text-foreground">
-                  Total: ${(total + total * (parseFloat(taxRate) || 0) / 100).toFixed(2)}
+            {(() => {
+              const taxAmount = applyTax ? total * (parseFloat(taxRate) || 0) / 100 : 0;
+              const loyaltyDisc = loyaltyPointsToRedeem > 0 ? (loyaltyPointsToRedeem / redeemThreshold) * redeemValue : 0;
+              const grandTotal = Math.max(0, total + taxAmount - loyaltyDisc);
+              return (
+                <div className="space-y-0.5">
+                  <div className="text-sm text-text-secondary">Subtotal: ${total.toFixed(2)}</div>
+                  {applyTax && parseFloat(taxRate) > 0 && (
+                    <div className="text-sm text-text-secondary">Tax ({taxRate}%): ${taxAmount.toFixed(2)}</div>
+                  )}
+                  {loyaltyDisc > 0 && (
+                    <div className="text-sm text-emerald-600">Loyalty: -${loyaltyDisc.toFixed(2)}</div>
+                  )}
+                  <div className="text-lg font-semibold text-foreground">
+                    Total: ${grandTotal.toFixed(2)}
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div className="text-lg font-semibold text-foreground">
-                Total: ${total.toFixed(2)}
-              </div>
-            )}
+              );
+            })()}
           </div>
           <div className="flex gap-2">
             <Button variant="ghost" onClick={onClose}>Cancel</Button>

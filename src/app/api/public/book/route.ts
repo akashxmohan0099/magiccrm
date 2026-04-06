@@ -17,7 +17,7 @@ import { runAutomationRules } from "@/lib/server/automation-runner";
  */
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-  const { allowed } = rateLimit(`public-book:${ip}`, 10, 60_000);
+  const { allowed } = await rateLimit(`public-book:${ip}`, 10, 60_000);
   if (!allowed) {
     return NextResponse.json({ error: "Too many requests." }, { status: 429 });
   }

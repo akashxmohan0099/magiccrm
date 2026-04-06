@@ -189,6 +189,43 @@ export async function POST(req: NextRequest) {
         break;
       }
 
+      // ── SaaS platform subscription events ──────────────────────
+      case "customer.subscription.created": {
+        const subscription = event.data.object as unknown as Record<string, unknown>;
+        const metadata = subscription.metadata as Record<string, string> | undefined;
+        const workspaceId = metadata?.workspaceId;
+        const status = subscription.status as string;
+
+        if (workspaceId) {
+          const trialEnd = subscription.trial_end as number | null;
+          const currentPeriodEnd = subscription.current_period_end as number;
+
+          // Read-modify-write for JSONB settings
+          const { data: existing } = await supabase
+            .from("workspace_settings")
+            .select("settings")
+            .eq("workspace_id", workspaceId)
+            .maybeSingle();
+
+          const currentSettings = (existing?.settings as Record<string, unknown>) ?? {};
+          await supabase
+            .from("workspace_settings")
+            .update({
+              settings: {
+                ...currentSettings,
+                stripeSubscriptionId: subscription.id,
+                billingStatus: status === "trialing" ? "trial" : status,
+                trialEndsAt: trialEnd ? new Date(trialEnd * 1000).toISOString() : null,
+                currentPeriodEnd: new Date(currentPeriodEnd * 1000).toISOString(),
+              },
+            })
+            .eq("workspace_id", workspaceId);
+
+          console.log(`[Stripe] SaaS subscription created for workspace ${workspaceId}: ${status}`);
+        }
+        break;
+      }
+
       default:
         console.log(`[Stripe] Unhandled event: ${event.type}`);
     }

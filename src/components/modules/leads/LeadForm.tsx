@@ -35,14 +35,11 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
     stage: defaultStage,
     value: "",
     notes: "",
-    lostReason: "",
   };
 
   const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
-  const [leadScore, setLeadScore] = useState("");
-  const [assignedTo, setAssignedTo] = useState("");
   const [customData, setCustomData] = useState<Record<string, unknown>>({});
 
   useEffect(() => {
@@ -58,13 +55,10 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
           stage: lead.stage,
           value: lead.value != null ? String(lead.value) : "",
           notes: lead.notes,
-          lostReason: (lead as unknown as Record<string, string>).lostReason ?? "",
         });
-        setLeadScore((lead as unknown as Record<string, string>).score ?? "");
         setCustomData((lead as unknown as Record<string, unknown>)?.customData as Record<string, unknown> ?? {});
       } else {
         setForm(emptyForm);
-        setLeadScore("");
         setCustomData({});
       }
       setErrors({});
@@ -97,8 +91,6 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
       stage: form.stage,
       value: form.value ? Number(form.value) : undefined,
       notes: form.notes.trim(),
-      lostReason: form.stage === "lost" ? form.lostReason.trim() : undefined,
-      assignedTo: assignedTo || undefined,
       ...(Object.keys(customData).length > 0 ? { customData } : {}),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any;
@@ -175,15 +167,6 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
           </FormField>
         </FeatureSection>
 
-        <FeatureSection moduleId="leads-pipeline" featureId="auto-assign-leads" featureLabel="Auto-Assign">
-          <FormField label="Assign to">
-            <SelectField value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)} options={[
-              { value: "", label: "Unassigned" },
-              { value: "me", label: "Me" },
-            ]} />
-          </FormField>
-        </FeatureSection>
-
         <FormField label="Stage">
           <SelectField
             options={stageOptions}
@@ -191,21 +174,6 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
             onChange={(e) => set("stage", e.target.value)}
           />
         </FormField>
-
-        {form.stage === "lost" && (
-          <FeatureSection moduleId="leads-pipeline" featureId="lead-lost-reason">
-            <div>
-              <label className="block text-[13px] font-medium text-foreground mb-1.5">Lost Reason</label>
-              <textarea
-                value={form.lostReason}
-                onChange={(e) => set("lostReason", e.target.value)}
-                placeholder="Why was this lead lost?"
-                rows={2}
-                className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 resize-none"
-              />
-            </div>
-          </FeatureSection>
-        )}
 
         <FormField label="Value">
           <input
@@ -218,21 +186,6 @@ export function LeadForm({ open, onClose, lead }: LeadFormProps) {
             step="0.01"
           />
         </FormField>
-
-        <FeatureSection moduleId="leads-pipeline" featureId="lead-scoring" featureLabel="Lead Scoring">
-          <FormField label="Lead Score">
-            <div className="flex gap-2">
-              {["cold", "warm", "hot"].map((score) => (
-                <button key={score} type="button" onClick={() => setLeadScore(score)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer capitalize ${
-                    leadScore === score
-                      ? score === "hot" ? "bg-red-100 text-red-700" : score === "warm" ? "bg-yellow-100 text-yellow-700" : "bg-blue-100 text-blue-700"
-                      : "bg-surface text-text-secondary hover:bg-surface/80"
-                  }`}>{score}</button>
-              ))}
-            </div>
-          </FormField>
-        </FeatureSection>
 
         <FeatureSection moduleId="leads-pipeline" featureId="lead-notes-log" featureLabel="Notes & Activity Log">
           <FormField label="Notes">

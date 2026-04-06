@@ -20,7 +20,11 @@ export function SignupStep() {
   const [error, setError] = useState("");
 
   const passwordsMatch = password === confirmPassword;
-  const isValid = email.trim() && password.length >= 6 && passwordsMatch && agreedToTerms;
+  const hasMinLength = password.length >= 8;
+  const hasUppercase = /[A-Z]/.test(password);
+  const hasNumber = /\d/.test(password);
+  const passwordStrong = hasMinLength && hasUppercase && hasNumber;
+  const isValid = email.trim() && passwordStrong && passwordsMatch && agreedToTerms;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -132,7 +136,7 @@ export function SignupStep() {
               type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => { setPassword(e.target.value); setError(""); }}
-              placeholder="At least 6 characters"
+              placeholder="8+ chars, uppercase, number"
               className={`${inputClass} pr-10`}
             />
             <button
@@ -144,6 +148,13 @@ export function SignupStep() {
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
+          {password && (
+            <div className="flex gap-3 mt-2">
+              <span className={`text-[11px] ${hasMinLength ? "text-emerald-600" : "text-text-tertiary"}`}>8+ chars</span>
+              <span className={`text-[11px] ${hasUppercase ? "text-emerald-600" : "text-text-tertiary"}`}>Uppercase</span>
+              <span className={`text-[11px] ${hasNumber ? "text-emerald-600" : "text-text-tertiary"}`}>Number</span>
+            </div>
+          )}
         </div>
 
         <div>

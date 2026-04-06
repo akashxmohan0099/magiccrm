@@ -4,6 +4,7 @@ import { PortalConfig, PortalAccess } from "@/types/models";
 import { generateId } from "@/lib/id";
 import { logActivity } from "@/lib/activity-logger";
 import { toast } from "@/components/ui/Toast";
+import { validatePortalAccess, sanitize, sanitizeEmail } from "@/lib/validation";
 import {
   fetchPortalConfig, savePortalConfig,
   fetchPortalAccess, dbCreatePortalAccess, dbUpdatePortalAccess,
@@ -42,24 +43,43 @@ export const useClientPortalStore = create<ClientPortalStore>()(
       config: defaultConfig,
       accessList: [],
       updateConfig: (data, workspaceId?) => {
-        const updated = { ...get().config, ...data, updatedAt: new Date().toISOString() };
+        const previousConfig = get().config;
+        const sanitizedData = {
+          ...data,
+          welcomeMessage: data.welcomeMessage ? sanitize(data.welcomeMessage) : previousConfig.welcomeMessage,
+        };
+        const updated = { ...previousConfig, ...sanitizedData, updatedAt: new Date().toISOString() };
         set({ config: updated });
         toast("Portal settings updated");
 
         if (workspaceId) {
           savePortalConfig(workspaceId, updated).catch((err) => {
+            set({ config: previousConfig });
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving portal config" }));
           });
         }
       },
       grantAccess: (data, workspaceId?) => {
-        const access: PortalAccess = { ...data, id: generateId(), enabled: true, createdAt: new Date().toISOString() };
+        const validation = validatePortalAccess(data);
+        if (validation.errors.length > 0) {
+          toast(validation.errors[0], "error");
+          return null as any;
+        }
+
+        const sanitizedData = {
+          ...data,
+          clientName: sanitize(data.clientName),
+          email: sanitizeEmail(data.email),
+        };
+        const access: PortalAccess = { ...sanitizedData, id: generateId(), enabled: true, createdAt: new Date().toISOString() };
+        const previousAccessList = get().accessList;
         set((s) => ({ accessList: [...s.accessList, access] }));
-        logActivity("create", "client-portal", `Granted portal access to ${data.clientName}`);
-        toast(`Portal access granted to ${data.clientName}`);
+        logActivity("create", "client-portal", `Granted portal access to ${sanitizedData.clientName}`);
+        toast(`Portal access granted to ${sanitizedData.clientName}`);
 
         if (workspaceId) {
           dbCreatePortalAccess(workspaceId, access).catch((err) => {
+            set({ accessList: previousAccessList });
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "granting portal access" }));
           });
         }
@@ -67,6 +87,7 @@ export const useClientPortalStore = create<ClientPortalStore>()(
       },
       revokeAccess: (id, workspaceId?) => {
         const access = get().accessList.find((a) => a.id === id);
+        const previousAccessList = get().accessList;
         set((s) => ({ accessList: s.accessList.filter((a) => a.id !== id) }));
         if (access) {
           logActivity("delete", "client-portal", `Revoked portal access for ${access.clientName}`);
@@ -75,17 +96,20 @@ export const useClientPortalStore = create<ClientPortalStore>()(
 
         if (workspaceId) {
           dbDeletePortalAccess(workspaceId, id).catch((err) => {
+            set({ accessList: previousAccessList });
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "revoking portal access" }));
           });
         }
       },
       toggleAccess: (id, workspaceId?) => {
+        const previousAccessList = get().accessList;
         set((s) => ({ accessList: s.accessList.map((a) => a.id === id ? { ...a, enabled: !a.enabled } : a) }));
         const access = get().accessList.find((a) => a.id === id);
         if (access) toast(`Portal access ${access.enabled ? "enabled" : "disabled"} for ${access.clientName}`);
 
         if (workspaceId && access) {
           dbUpdatePortalAccess(workspaceId, id, { enabled: access.enabled }).catch((err) => {
+            set({ accessList: previousAccessList });
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "toggling portal access" }));
           });
         }

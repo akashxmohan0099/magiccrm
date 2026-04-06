@@ -4,7 +4,7 @@ import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-  const { allowed } = rateLimit(`ai-questions:${ip}`, 10, 60_000);
+  const { allowed } = await rateLimit(`ai-questions:${ip}`, 10, 60_000);
   if (!allowed) {
     return NextResponse.json({ error: "Too many requests. Please try again shortly." }, { status: 429 });
   }

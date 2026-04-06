@@ -573,3 +573,8 @@ CREATE INDEX idx_proposals_token ON proposals(share_token) WHERE share_token IS 
 
 -- v2: Add reminder_sent_at to bookings for automated email reminders
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS reminder_sent_at TIMESTAMPTZ;
+
+-- v3: Add missing invoice columns for tax, recurring schedule support
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS tax_rate NUMERIC(5,2);
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS recurring_schedule TEXT CHECK (recurring_schedule IN ('weekly', 'fortnightly', 'monthly', 'quarterly'));
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS last_recurring_date TIMESTAMPTZ;

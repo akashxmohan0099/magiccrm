@@ -5,6 +5,7 @@ type LeadStage = string;
 import { generateId } from "@/lib/id";
 import { logActivity } from "@/lib/activity-logger";
 import { toast } from "@/components/ui/Toast";
+import { validateLead, sanitize, sanitizeEmail } from "@/lib/validation";
 import { useClientsStore } from "./clients";
 import {
   fetchLeads,
@@ -38,19 +39,33 @@ export const useLeadsStore = create<LeadsStore>()(
       leads: [],
 
       addLead: (data, workspaceId?) => {
+        // Validate
+        const validation = validateLead({ name: data.name, email: data.email, source: data.source });
+        if (!validation.valid) {
+          toast(validation.errors[0], "error");
+          return { id: "", name: data.name || "", createdAt: "", updatedAt: "" } as Lead;
+        }
+
         const lead: Lead = {
           ...data,
           id: generateId(),
+          name: sanitize(data.name, 200),
+          email: sanitizeEmail(data.email),
+          phone: sanitize(data.phone, 30),
+          company: sanitize(data.company, 200),
+          notes: sanitize(data.notes, 5000),
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
+
+        const prevLeads = get().leads;
         set((s) => ({ leads: [...s.leads, lead] }));
         logActivity("create", "leads", `New lead "${lead.name}"`);
         toast(`Created lead "${lead.name}"`);
 
-        // Sync to Supabase if workspaceId available
         if (workspaceId) {
           dbCreateLead(workspaceId, lead).catch((err) => {
+            set({ leads: prevLeads }); // rollback
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving lead" }));
           });
         }
@@ -59,18 +74,37 @@ export const useLeadsStore = create<LeadsStore>()(
       },
 
       updateLead: (id, data, workspaceId?) => {
-        const updatedData = { ...data, updatedAt: new Date().toISOString() };
+        // Validate name/email if being updated
+        if (data.name !== undefined || data.email !== undefined) {
+          const existing = get().leads.find((l) => l.id === id);
+          const validation = validateLead({
+            name: data.name ?? existing?.name,
+            email: data.email ?? existing?.email,
+          });
+          if (!validation.valid) {
+            toast(validation.errors[0], "error");
+            return;
+          }
+        }
+
+        const sanitized: Partial<Lead> = { ...data, updatedAt: new Date().toISOString() };
+        if (data.name !== undefined) sanitized.name = sanitize(data.name, 200);
+        if (data.email !== undefined) sanitized.email = sanitizeEmail(data.email);
+        if (data.phone !== undefined) sanitized.phone = sanitize(data.phone, 30);
+        if (data.notes !== undefined) sanitized.notes = sanitize(data.notes, 5000);
+
+        const prevLeads = get().leads;
         set((s) => ({
           leads: s.leads.map((l) =>
-            l.id === id ? { ...l, ...updatedData } : l
+            l.id === id ? { ...l, ...sanitized } : l
           ),
         }));
         logActivity("update", "leads", "Updated lead");
         toast("Lead updated");
 
-        // Sync to Supabase if workspaceId available
         if (workspaceId) {
-          dbUpdateLead(workspaceId, id, updatedData).catch((err) => {
+          dbUpdateLead(workspaceId, id, sanitized).catch((err) => {
+            set({ leads: prevLeads }); // rollback
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving lead" }));
           });
         }
@@ -78,14 +112,15 @@ export const useLeadsStore = create<LeadsStore>()(
 
       deleteLead: (id, workspaceId?) => {
         const lead = get().leads.find((l) => l.id === id);
+        const prevLeads = get().leads;
         set((s) => ({ leads: s.leads.filter((l) => l.id !== id) }));
         if (lead) {
           logActivity("delete", "leads", `Deleted lead "${lead.name}"`);
           toast(`Lead "${lead.name}" deleted`, "info");
 
-          // Sync to Supabase if workspaceId available
           if (workspaceId) {
             dbDeleteLead(workspaceId, id).catch((err) => {
+              set({ leads: prevLeads }); // rollback
               import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting lead" }));
             });
           }
@@ -94,6 +129,7 @@ export const useLeadsStore = create<LeadsStore>()(
 
       moveLead: (id, stage, workspaceId?) => {
         const updatedData = { stage, updatedAt: new Date().toISOString() };
+        const previousLeads = get().leads;
         set((s) => ({
           leads: s.leads.map((l) =>
             l.id === id ? { ...l, ...updatedData } : l
@@ -108,6 +144,7 @@ export const useLeadsStore = create<LeadsStore>()(
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
           dbUpdateLead(workspaceId, id, updatedData).catch((err) => {
+            set({ leads: previousLeads }); // rollback
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving lead" }));
           });
         }
@@ -138,6 +175,7 @@ export const useLeadsStore = create<LeadsStore>()(
           clientId: client.id,
           updatedAt: new Date().toISOString(),
         };
+        const previousLeads = get().leads;
         set((s) => ({
           leads: s.leads.map((l) =>
             l.id === id ? { ...l, ...updatedData } : l
@@ -149,6 +187,7 @@ export const useLeadsStore = create<LeadsStore>()(
         // Sync the lead update to Supabase
         if (workspaceId) {
           dbUpdateLead(workspaceId, id, updatedData).catch((err) => {
+            set({ leads: previousLeads }); // rollback
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving lead" }));
           });
         }

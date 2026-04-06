@@ -4,6 +4,7 @@ import { SupportTicket, KnowledgeBaseArticle, TicketMessage } from "@/types/mode
 import { generateId } from "@/lib/id";
 import { logActivity } from "@/lib/activity-logger";
 import { toast } from "@/components/ui/Toast";
+import { validateSupportTicket, sanitize } from "@/lib/validation";
 import {
   fetchTickets,
   fetchArticles,
@@ -44,8 +45,21 @@ export const useSupportStore = create<SupportStore>()(
       articles: [],
 
       addTicket: (data, workspaceId?) => {
-        const ticket: SupportTicket = {
+        // Validate
+        const validation = validateSupportTicket({ subject: data.subject, clientName: data.clientName });
+        if (!validation.valid) {
+          validation.errors.forEach(error => toast(error, "error"));
+          return {} as SupportTicket;
+        }
+
+        const sanitizedData = {
           ...data,
+          subject: sanitize(data.subject, 500),
+          clientName: sanitize(data.clientName, 200),
+        };
+
+        const ticket: SupportTicket = {
+          ...sanitizedData,
           id: generateId(),
           messages: [],
           createdAt: new Date().toISOString(),
@@ -65,36 +79,60 @@ export const useSupportStore = create<SupportStore>()(
       },
 
       updateTicket: (id, data, workspaceId?) => {
-        const updatedData = { ...data, updatedAt: new Date().toISOString() };
+        // Validate if subject or clientName changed
+        if (data.subject !== undefined || data.clientName !== undefined) {
+          const validation = validateSupportTicket({
+            subject: data.subject,
+            clientName: data.clientName,
+          });
+          if (!validation.valid) {
+            validation.errors.forEach(error => toast(error, "error"));
+            return;
+          }
+        }
+
+        const previousTickets = get().tickets;
+        const sanitizedData = {
+          ...data,
+          ...(data.subject !== undefined && { subject: sanitize(data.subject, 500) }),
+          ...(data.clientName !== undefined && { clientName: sanitize(data.clientName, 200) }),
+          updatedAt: new Date().toISOString(),
+        };
+
         set((s) => ({
           tickets: s.tickets.map((t) =>
-            t.id === id ? { ...t, ...updatedData } : t
+            t.id === id ? { ...t, ...sanitizedData } : t
           ),
         }));
         logActivity("update", "support", "Updated ticket");
         toast("Ticket updated");
 
         if (workspaceId) {
-          dbUpdateTicket(workspaceId, id, updatedData).catch((err) => {
+          dbUpdateTicket(workspaceId, id, sanitizedData).catch((err) => {
+            set({ tickets: previousTickets });
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating support ticket" }));
           });
         }
       },
 
       deleteTicket: (id, workspaceId?) => {
+        const previousTickets = get().tickets;
         set((s) => ({ tickets: s.tickets.filter((t) => t.id !== id) }));
         toast("Ticket deleted", "info");
 
         if (workspaceId) {
           dbDeleteTicket(workspaceId, id).catch((err) => {
+            set({ tickets: previousTickets });
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting support ticket" }));
           });
         }
       },
 
       addTicketMessage: (ticketId, content, sender, workspaceId?) => {
-        const message: TicketMessage = { id: generateId(), content, sender, timestamp: new Date().toISOString() };
+        const sanitizedContent = sanitize(content);
+        const message: TicketMessage = { id: generateId(), content: sanitizedContent, sender, timestamp: new Date().toISOString() };
         let updatedTicket: SupportTicket | undefined;
+        const previousTickets = get().tickets;
 
         set((s) => {
           const tickets = s.tickets.map((t) => {
@@ -113,6 +151,7 @@ export const useSupportStore = create<SupportStore>()(
             messages: updatedTicket.messages,
             updatedAt: updatedTicket.updatedAt,
           }).catch((err) => {
+            set({ tickets: previousTickets });
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "adding ticket message" }));
           });
         }

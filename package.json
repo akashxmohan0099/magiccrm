@@ -14,8 +14,11 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.79.0",
+    "@rolldown/binding-linux-arm64-gnu": "^1.0.0-rc.13",
     "@supabase/ssr": "^0.9.0",
     "@supabase/supabase-js": "^2.99.2",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.37.0",
     "framer-motion": "^12.38.0",
     "lucide-react": "^0.577.0",
     "next": "16.1.7",

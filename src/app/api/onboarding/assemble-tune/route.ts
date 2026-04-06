@@ -14,7 +14,7 @@ import type { SchemaTuningResult } from "@/types/module-schema";
  */
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-  const { allowed } = rateLimit(`assemble-tune:${ip}`, 3, 120_000);
+  const { allowed } = await rateLimit(`assemble-tune:${ip}`, 3, 120_000);
   if (!allowed) {
     return NextResponse.json({ error: "Too many requests." }, { status: 429 });
   }

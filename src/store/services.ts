@@ -4,6 +4,7 @@ import type { ServiceDefinition, ServiceVariant } from "@/types/industry-config"
 import { generateId } from "@/lib/id";
 import { logActivity } from "@/lib/activity-logger";
 import { toast } from "@/components/ui/Toast";
+import { validateService, sanitize } from "@/lib/validation";
 import {
   fetchServices,
   dbCreateService,
@@ -61,14 +62,26 @@ export const useServicesStore = create<ServicesStore>()(
       },
 
       addService: (data, workspaceId?) => {
-        const service: ServiceDefinition = { ...data, id: generateId() };
+        const validation = validateService({ name: data.name, price: data.price, duration: data.duration });
+        if (!validation.valid) {
+          toast(validation.errors[0], "error");
+          return { id: "", name: data.name || "" } as ServiceDefinition;
+        }
+
+        const service: ServiceDefinition = {
+          ...data,
+          id: generateId(),
+          name: sanitize(data.name, 200),
+        };
+
+        const prevServices = get().services;
         set((s) => ({ services: [...s.services, service] }));
         logActivity("create", "services", `Added service "${service.name}"`);
         toast(`Service "${service.name}" added`);
 
-        // Sync to Supabase if workspaceId available
         if (workspaceId) {
           dbCreateService(workspaceId, service).catch((err) => {
+            set({ services: prevServices }); // rollback
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving service" }));
           });
         }
@@ -77,17 +90,32 @@ export const useServicesStore = create<ServicesStore>()(
       },
 
       updateService: (id, data, workspaceId?) => {
+        if (data.name !== undefined) {
+          const validation = validateService({
+            name: data.name,
+            price: data.price ?? get().services.find((s) => s.id === id)?.price,
+          });
+          if (!validation.valid) {
+            toast(validation.errors[0], "error");
+            return;
+          }
+        }
+
+        const sanitized = { ...data };
+        if (data.name !== undefined) sanitized.name = sanitize(data.name, 200);
+
+        const prevServices = get().services;
         set((s) => ({
           services: s.services.map((svc) =>
-            svc.id === id ? { ...svc, ...data } : svc
+            svc.id === id ? { ...svc, ...sanitized } : svc
           ),
         }));
         logActivity("update", "services", "Updated service");
         toast("Service updated");
 
-        // Sync to Supabase if workspaceId available
         if (workspaceId) {
-          dbUpdateService(workspaceId, id, data).catch((err) => {
+          dbUpdateService(workspaceId, id, sanitized).catch((err) => {
+            set({ services: prevServices }); // rollback
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating service" }));
           });
         }
@@ -95,14 +123,15 @@ export const useServicesStore = create<ServicesStore>()(
 
       deleteService: (id, workspaceId?) => {
         const service = get().services.find((svc) => svc.id === id);
+        const prevServices = get().services;
         set((s) => ({ services: s.services.filter((svc) => svc.id !== id) }));
         if (service) {
           logActivity("delete", "services", `Deleted service "${service.name}"`);
           toast(`Service "${service.name}" deleted`, "info");
 
-          // Sync to Supabase if workspaceId available
           if (workspaceId) {
             dbDeleteService(workspaceId, id).catch((err) => {
+              set({ services: prevServices }); // rollback
               import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting service" }));
             });
           }
@@ -111,6 +140,7 @@ export const useServicesStore = create<ServicesStore>()(
 
       addVariant: (serviceId, variant, workspaceId?) => {
         const newVariant: ServiceVariant = { ...variant, id: generateId() };
+        const previousServices = get().services;
         set((s) => ({
           services: s.services.map((svc) =>
             svc.id === serviceId
@@ -128,6 +158,7 @@ export const useServicesStore = create<ServicesStore>()(
             dbUpdateService(workspaceId, serviceId, {
               variants: updatedService.variants,
             }).catch((err) => {
+              set({ services: previousServices }); // rollback
               import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving service variant" }));
             });
           }
@@ -135,6 +166,7 @@ export const useServicesStore = create<ServicesStore>()(
       },
 
       updateVariant: (serviceId, variantId, data, workspaceId?) => {
+        const previousServices = get().services;
         set((s) => ({
           services: s.services.map((svc) =>
             svc.id === serviceId
@@ -157,6 +189,7 @@ export const useServicesStore = create<ServicesStore>()(
             dbUpdateService(workspaceId, serviceId, {
               variants: updatedService.variants,
             }).catch((err) => {
+              set({ services: previousServices }); // rollback
               import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating service variant" }));
             });
           }
@@ -166,6 +199,7 @@ export const useServicesStore = create<ServicesStore>()(
       deleteVariant: (serviceId, variantId, workspaceId?) => {
         const service = get().services.find((svc) => svc.id === serviceId);
         const variant = service?.variants?.find((v) => v.id === variantId);
+        const previousServices = get().services;
         set((s) => ({
           services: s.services.map((svc) =>
             svc.id === serviceId
@@ -185,6 +219,7 @@ export const useServicesStore = create<ServicesStore>()(
             dbUpdateService(workspaceId, serviceId, {
               variants: updatedService.variants,
             }).catch((err) => {
+              set({ services: previousServices }); // rollback
               import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting service variant" }));
             });
           }

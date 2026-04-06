@@ -15,6 +15,7 @@ import {
 import { useLeadsStore } from "@/store/leads";
 import { Lead } from "@/types/models";
 import { useIndustryConfig } from "@/hooks/useIndustryConfig";
+import { useAuth } from "@/hooks/useAuth";
 import { KanbanBoard, KanbanColumn } from "@/components/ui/KanbanBoard";
 import { Button } from "@/components/ui/Button";
 import { BookingForm } from "@/components/modules/bookings/BookingForm";
@@ -121,6 +122,7 @@ function TemperatureBadge({ temp }: { temp: "hot" | "warm" | "cold" }) {
 export function PipelineBoard({ leads: externalLeads, onCardClick }: PipelineBoardProps) {
   const store = useLeadsStore();
   const config = useIndustryConfig();
+  const { workspaceId } = useAuth();
   const leads = externalLeads ?? store.leads;
 
   // ── Lead action state ──
@@ -133,14 +135,14 @@ export function PipelineBoard({ leads: externalLeads, onCardClick }: PipelineBoa
   // Convert lead to client first if needed, then open the form
   const handleConvertAndBook = (lead: Lead) => {
     if (!lead.clientId) {
-      store.convertToClient(lead.id);
+      store.convertToClient(lead.id, workspaceId ?? undefined);
     }
     setBookingLeadId(lead.id);
   };
 
   const handleConvertAndInvoice = (lead: Lead) => {
     if (!lead.clientId) {
-      store.convertToClient(lead.id);
+      store.convertToClient(lead.id, workspaceId ?? undefined);
     }
     setInvoiceLeadId(lead.id);
   };
@@ -173,11 +175,11 @@ export function PipelineBoard({ leads: externalLeads, onCardClick }: PipelineBoa
   }, [columns]);
 
   const handleMove = (leadId: string, toStage: string) => {
-    store.moveLead(leadId, toStage);
+    store.moveLead(leadId, toStage, workspaceId ?? undefined);
   };
 
   const handleConvert = (leadId: string) => {
-    store.convertToClient(leadId);
+    store.convertToClient(leadId, workspaceId ?? undefined);
   };
 
   const stagesMeta = config.leadStages.map((s) => ({

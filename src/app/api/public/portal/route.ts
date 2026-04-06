@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase-server";
 import { rateLimit } from "@/lib/rate-limit";
 import { buildPublicInvoicePaymentUrl } from "@/lib/public-invoice-payments";
+import { verifyPortalToken, createPortalToken } from "@/lib/portal-tokens";
 
 /**
  * Public portal API — serves client-facing portal data.
@@ -11,7 +12,7 @@ import { buildPublicInvoicePaymentUrl } from "@/lib/public-invoice-payments";
  */
 export async function GET(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-  const { allowed } = rateLimit(`portal:${ip}`, 20, 60_000);
+  const { allowed } = await rateLimit(`portal:${ip}`, 20, 60_000);
   if (!allowed) {
     return NextResponse.json({ error: "Too many requests." }, { status: 429 });
   }
@@ -22,13 +23,19 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Missing token" }, { status: 400 });
     }
 
+    // Verify HMAC-signed token to extract portal_access ID
+    const accessId = verifyPortalToken(token);
+    if (!accessId) {
+      return NextResponse.json({ error: "Invalid portal token" }, { status: 403 });
+    }
+
     const supabase = await createAdminClient();
 
-    // Look up portal access by token (the access ID serves as token)
+    // Look up portal access by verified ID
     const { data: access, error: accessErr } = await supabase
       .from("portal_access")
       .select("*, workspace_id, client_id, client_name, enabled")
-      .eq("id", token)
+      .eq("id", accessId)
       .single();
 
     if (accessErr || !access || !access.enabled) {
@@ -142,7 +149,7 @@ export async function GET(req: NextRequest) {
                 invoiceId: invoice.id,
                 workspaceId,
                 clientId,
-                returnTo: `/portal/${access.id}`,
+                returnTo: `/portal/${createPortalToken(access.id)}`,
               })
             : undefined,
       }));

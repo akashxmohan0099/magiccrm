@@ -38,6 +38,8 @@ import { useVendorManagementStore } from "@/store/vendor-management";
 import { useStorefrontStore } from "@/store/storefront";
 import { useClientPortalStore } from "@/store/client-portal";
 import { useBrandSettingsStore } from "@/store/brand-settings";
+import { useNotesDocsStore } from "@/store/notes-docs";
+import { useAIInsightsStore } from "@/store/ai-insights";
 
 /**
  * Loads workspace data from Supabase once auth is ready.
@@ -106,6 +108,8 @@ export function useSupabaseSync({
       ["storefront", () => useStorefrontStore.getState().loadFromSupabase(workspaceId)],
       ["client-portal", () => useClientPortalStore.getState().loadFromSupabase(workspaceId)],
       ["brand-settings", () => useBrandSettingsStore.getState().loadFromSupabase(workspaceId)],
+      ["notes-docs", () => useNotesDocsStore.getState().loadFromSupabase(workspaceId)],
+      ["ai-insights", () => useAIInsightsStore.getState().loadFromSupabase(workspaceId)],
     ] as const;
 
     const sync = async () => {

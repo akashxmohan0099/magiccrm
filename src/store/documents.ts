@@ -4,6 +4,7 @@ import { Document } from "@/types/models";
 import { generateId } from "@/lib/id";
 import { logActivity } from "@/lib/activity-logger";
 import { toast } from "@/components/ui/Toast";
+import { validateDocument, sanitize } from "@/lib/validation";
 import {
   fetchDocuments,
   dbCreateDocument,
@@ -32,8 +33,20 @@ export const useDocumentsStore = create<DocumentsStore>()(
       documents: [],
 
       addDocument: (data, workspaceId?) => {
+        // Validate
+        const validation = validateDocument({ name: data.name });
+        if (!validation.valid) {
+          validation.errors.forEach(error => toast(error, "error"));
+          return;
+        }
+
         const now = new Date().toISOString();
-        const doc: Document = { ...data, id: generateId(), createdAt: now, updatedAt: now };
+        const sanitizedData = {
+          ...data,
+          name: sanitize(data.name, 500),
+          category: sanitize(data.category, 200),
+        };
+        const doc: Document = { ...sanitizedData, id: generateId(), createdAt: now, updatedAt: now };
         set((s) => ({ documents: [...s.documents, doc] }));
         logActivity("create", "documents", `Uploaded "${doc.name}"`);
         toast(`Created document "${doc.name}"`);
@@ -47,10 +60,26 @@ export const useDocumentsStore = create<DocumentsStore>()(
       },
 
       updateDocument: (id, data, workspaceId?) => {
-        const updatedData = { ...data, updatedAt: new Date().toISOString() };
+        // Validate if name changed
+        if (data.name !== undefined) {
+          const validation = validateDocument({ name: data.name });
+          if (!validation.valid) {
+            validation.errors.forEach(error => toast(error, "error"));
+            return;
+          }
+        }
+
+        const previousDocuments = get().documents;
+        const sanitizedData = {
+          ...data,
+          ...(data.name !== undefined && { name: sanitize(data.name, 500) }),
+          ...(data.category !== undefined && { category: sanitize(data.category, 200) }),
+          updatedAt: new Date().toISOString(),
+        };
+
         set((s) => ({
           documents: s.documents.map((d) =>
-            d.id === id ? { ...d, ...updatedData } : d
+            d.id === id ? { ...d, ...sanitizedData } : d
           ),
         }));
         logActivity("update", "documents", "Updated document");
@@ -58,14 +87,16 @@ export const useDocumentsStore = create<DocumentsStore>()(
 
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
-          dbUpdateDocument(workspaceId, id, updatedData).catch((err) => {
+          dbUpdateDocument(workspaceId, id, sanitizedData).catch((err) => {
+            set({ documents: previousDocuments });
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating document" }));
           });
         }
       },
 
       deleteDocument: (id, workspaceId?) => {
-        const doc = get().documents.find((d) => d.id === id);
+        const previousDocuments = get().documents;
+        const doc = previousDocuments.find((d) => d.id === id);
         set((s) => ({ documents: s.documents.filter((d) => d.id !== id) }));
         if (doc) {
           logActivity("delete", "documents", `Deleted "${doc.name}"`);
@@ -74,6 +105,7 @@ export const useDocumentsStore = create<DocumentsStore>()(
           // Sync to Supabase if workspaceId available
           if (workspaceId) {
             dbDeleteDocument(workspaceId, id).catch((err) => {
+              set({ documents: previousDocuments });
               import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting document" }));
             });
           }

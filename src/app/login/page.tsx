@@ -6,7 +6,6 @@ import Link from "next/link";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { safeRedirect } from "@/lib/safe-redirect";
-import { toast, ToastContainer } from "@/components/ui/Toast";
 
 export default function LoginPage() {
   return (
@@ -90,7 +89,7 @@ function LoginContent() {
   };
 
   const handleForgotPassword = () => {
-    toast("Password reset is coming soon. Contact support for help.", "info");
+    router.push("/forgot-password");
   };
 
   const clearError = (...fields: string[]) => {
@@ -219,8 +218,6 @@ function LoginContent() {
         </p>
       </div>
 
-      {/* Toast container for forgot-password toast */}
-      <ToastContainer />
     </div>
   );
 }

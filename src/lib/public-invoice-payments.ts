@@ -12,14 +12,11 @@ interface PublicInvoicePaymentToken extends PublicInvoicePaymentPayload {
 }
 
 function getPublicInvoicePaymentSecret() {
-  const secret =
-    process.env.PUBLIC_INVOICE_PAYMENT_SECRET ||
-    process.env.STRIPE_SECRET_KEY ||
-    process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const secret = process.env.PUBLIC_INVOICE_PAYMENT_SECRET;
 
   if (!secret) {
     throw new Error(
-      "PUBLIC_INVOICE_PAYMENT_SECRET, STRIPE_SECRET_KEY, or SUPABASE_SERVICE_ROLE_KEY must be configured",
+      "PUBLIC_INVOICE_PAYMENT_SECRET must be configured. Generate one with: openssl rand -base64 32",
     );
   }
 

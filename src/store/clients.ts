@@ -5,6 +5,7 @@ import { generateId } from "@/lib/id";
 import { logActivity } from "@/lib/activity-logger";
 import { toast } from "@/components/ui/Toast";
 import { cleanupClientRecords } from "@/lib/cascade-delete";
+import { validateClient, sanitize, sanitizeEmail } from "@/lib/validation";
 import {
   fetchClients,
   fetchClientsPage,
@@ -202,11 +203,24 @@ export const useClientsStore = create<ClientsStore>()(
       },
 
       addClient: (data, workspaceId?) => {
+        // Validate input
+        const validation = validateClient(data);
+        if (!validation.valid) {
+          toast(validation.errors[0], "error");
+          return null as unknown as Client;
+        }
+
+        const now = new Date().toISOString();
         const client: Client = {
           ...data,
+          name: sanitize(data.name, 200),
+          email: sanitizeEmail(data.email),
+          phone: sanitize(data.phone, 30),
+          company: sanitize(data.company, 200),
+          notes: sanitize(data.notes, 5000),
           id: generateId(),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          createdAt: now,
+          updatedAt: now,
         };
         set((s) => ({ clients: [...s.clients, client] }));
         logActivity("create", "clients", `Added client "${client.name}"`);
@@ -214,7 +228,10 @@ export const useClientsStore = create<ClientsStore>()(
 
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
+          const snapshot = get().clients;
           dbCreateClient(workspaceId, client).catch((err) => {
+            // Rollback: remove the client we just added
+            set({ clients: snapshot.filter((c) => c.id !== client.id) });
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving client" }));
           });
         }
@@ -223,7 +240,24 @@ export const useClientsStore = create<ClientsStore>()(
       },
 
       updateClient: (id, data, workspaceId?) => {
-        const updatedData = { ...data, updatedAt: new Date().toISOString() };
+        // Validate if name or email is being updated
+        if (data.name !== undefined || data.email !== undefined) {
+          const existing = get().clients.find((c) => c.id === id);
+          const merged = { name: data.name ?? existing?.name, email: data.email ?? existing?.email };
+          const validation = validateClient(merged);
+          if (!validation.valid) {
+            toast(validation.errors[0], "error");
+            return;
+          }
+        }
+
+        const sanitizedData = { ...data };
+        if (sanitizedData.name !== undefined) sanitizedData.name = sanitize(sanitizedData.name, 200);
+        if (sanitizedData.email !== undefined) sanitizedData.email = sanitizeEmail(sanitizedData.email);
+        if (sanitizedData.phone !== undefined) sanitizedData.phone = sanitize(sanitizedData.phone, 30);
+
+        const updatedData = { ...sanitizedData, updatedAt: new Date().toISOString() };
+        const previousClients = get().clients;
         set((s) => ({
           clients: s.clients.map((c) =>
             c.id === id ? { ...c, ...updatedData } : c
@@ -235,6 +269,7 @@ export const useClientsStore = create<ClientsStore>()(
         // Sync to Supabase if workspaceId available
         if (workspaceId) {
           dbUpdateClient(workspaceId, id, updatedData).catch((err) => {
+            set({ clients: previousClients });
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving client" }));
           });
         }
@@ -242,19 +277,23 @@ export const useClientsStore = create<ClientsStore>()(
 
       deleteClient: (id, workspaceId?) => {
         const client = get().clients.find((c) => c.id === id);
-        set((s) => ({ clients: s.clients.filter((c) => c.id !== id) }));
-        if (client) {
-          // Clean up all related records across stores
-          cleanupClientRecords(id);
-          logActivity("delete", "clients", `Deleted client "${client.name}"`);
-          toast(`Client "${client.name}" deleted`, "info");
+        if (!client) return;
 
-          // Sync to Supabase if workspaceId available
-          if (workspaceId) {
-            dbDeleteClient(workspaceId, id).catch((err) => {
-              import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting client" }));
-            });
-          }
+        const previousClients = get().clients;
+        set((s) => ({ clients: s.clients.filter((c) => c.id !== id) }));
+
+        // Clean up all related records across stores
+        cleanupClientRecords(id);
+        logActivity("delete", "clients", `Deleted client "${client.name}"`);
+        toast(`Client "${client.name}" deleted`, "info");
+
+        // Sync to Supabase if workspaceId available
+        if (workspaceId) {
+          dbDeleteClient(workspaceId, id).catch((err) => {
+            // Rollback delete -- restore client to list
+            set({ clients: previousClients });
+            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting client" }));
+          });
         }
       },
 

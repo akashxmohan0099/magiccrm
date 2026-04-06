@@ -7,7 +7,7 @@ export async function GET(
   { params }: { params: Promise<{ token: string }> }
 ) {
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-  const { allowed } = rateLimit(`proposal-view:${ip}`, 30, 60_000);
+  const { allowed } = await rateLimit(`proposal-view:${ip}`, 30, 60_000);
   if (!allowed) {
     return NextResponse.json({ error: "Too many requests." }, { status: 429 });
   }

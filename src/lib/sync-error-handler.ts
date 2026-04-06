@@ -73,3 +73,47 @@ export async function syncOperation(
     return false;
   }
 }
+
+/**
+ * Perform an optimistic update with automatic rollback on DB sync failure.
+ *
+ * 1. Captures current store state via `getSnapshot()`
+ * 2. Applies optimistic update via `applyOptimistic()`
+ * 3. Runs DB sync via `syncFn()`
+ * 4. On failure: rolls back via `rollback(snapshot)` and shows error toast
+ *
+ * @example
+ * await optimisticSync({
+ *   getSnapshot: () => get().clients,
+ *   applyOptimistic: () => set((s) => ({ clients: [...s.clients, newClient] })),
+ *   syncFn: () => dbCreateClient(workspaceId, newClient),
+ *   rollback: (prev) => set({ clients: prev }),
+ *   context: "creating client",
+ * });
+ */
+export async function optimisticSync<TSnapshot>({
+  getSnapshot,
+  applyOptimistic,
+  syncFn,
+  rollback,
+  context,
+}: {
+  getSnapshot: () => TSnapshot;
+  applyOptimistic: () => void;
+  syncFn: () => Promise<void>;
+  rollback: (snapshot: TSnapshot) => void;
+  context: string;
+}): Promise<boolean> {
+  const snapshot = getSnapshot();
+  applyOptimistic();
+
+  try {
+    await syncFn();
+    return true;
+  } catch (err) {
+    rollback(snapshot);
+    handleSyncError(err, { context });
+    toast("Your change was reverted because it couldn't be saved to the server.", "error");
+    return false;
+  }
+}

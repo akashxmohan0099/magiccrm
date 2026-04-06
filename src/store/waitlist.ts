@@ -4,6 +4,7 @@ import { WaitlistEntry } from "@/types/models";
 import { generateId } from "@/lib/id";
 import { logActivity } from "@/lib/activity-logger";
 import { toast } from "@/components/ui/Toast";
+import { validateWaitlistEntry, sanitize } from "@/lib/validation";
 import {
   fetchWaitlistEntries, dbCreateWaitlistEntry, dbUpdateWaitlistEntry,
   dbDeleteWaitlistEntry, dbUpsertWaitlistEntries, mapWaitlistEntryFromDB,
@@ -36,8 +37,21 @@ export const useWaitlistStore = create<WaitlistStore>()(
       entries: [],
 
       addEntry: (data, workspaceId?) => {
-        const entry: WaitlistEntry = {
+        // Validate input
+        const validation = validateWaitlistEntry(data);
+        if (!validation.valid) {
+          toast(validation.errors[0], "error");
+          return {} as WaitlistEntry;
+        }
+
+        // Sanitize clientName
+        const sanitizedData = {
           ...data,
+          clientName: sanitize(data.clientName),
+        };
+
+        const entry: WaitlistEntry = {
+          ...sanitizedData,
           id: generateId(),
           status: "waiting",
           createdAt: new Date().toISOString(),
@@ -47,6 +61,7 @@ export const useWaitlistStore = create<WaitlistStore>()(
 
         if (workspaceId) {
           dbCreateWaitlistEntry(workspaceId, entry).catch((err) => {
+            set((s) => ({ entries: s.entries.filter((e) => e.id !== entry.id) }));
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving waitlist entry" }));
           });
         }
@@ -54,25 +69,38 @@ export const useWaitlistStore = create<WaitlistStore>()(
       },
 
       removeEntry: (id, workspaceId?) => {
+        // Capture previous state for rollback
+        const previousEntries = get().entries;
         set((s) => ({ entries: s.entries.filter((e) => e.id !== id) }));
         toast("Removed from waitlist", "info");
 
         if (workspaceId) {
           dbDeleteWaitlistEntry(workspaceId, id).catch((err) => {
+            set({ entries: previousEntries });
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "removing waitlist entry" }));
           });
         }
       },
 
       updateEntry: (id, data, workspaceId?) => {
+        // Capture previous state for rollback
+        const previousEntries = get().entries;
+
+        // Sanitize clientName if it's being updated
+        const sanitizedData: Partial<WaitlistEntry> = { ...data };
+        if (data.clientName) {
+          sanitizedData.clientName = sanitize(data.clientName);
+        }
+
         set((s) => ({
           entries: s.entries.map((e) =>
-            e.id === id ? { ...e, ...data } : e
+            e.id === id ? { ...e, ...sanitizedData } : e
           ),
         }));
 
         if (workspaceId) {
-          dbUpdateWaitlistEntry(workspaceId, id, data).catch((err) => {
+          dbUpdateWaitlistEntry(workspaceId, id, sanitizedData).catch((err) => {
+            set({ entries: previousEntries });
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating waitlist entry" }));
           });
         }
@@ -123,13 +151,20 @@ export const useWaitlistStore = create<WaitlistStore>()(
 
       addWalkIn: (data, workspaceId?) => {
         const today = new Date().toISOString().split("T")[0];
+
+        // Sanitize clientName
+        const sanitizedData = {
+          ...data,
+          clientName: sanitize(data.clientName),
+        };
+
         const entry: WaitlistEntry = {
           id: generateId(),
-          clientName: data.clientName,
-          clientPhone: data.clientPhone,
-          clientId: data.clientId,
-          serviceName: data.serviceName,
-          serviceId: data.serviceId,
+          clientName: sanitizedData.clientName,
+          clientPhone: sanitizedData.clientPhone,
+          clientId: sanitizedData.clientId,
+          serviceName: sanitizedData.serviceName,
+          serviceId: sanitizedData.serviceId,
           date: today,
           status: "waiting",
           entryType: "walkin",
@@ -141,6 +176,7 @@ export const useWaitlistStore = create<WaitlistStore>()(
 
         if (workspaceId) {
           dbCreateWaitlistEntry(workspaceId, entry).catch((err) => {
+            set((s) => ({ entries: s.entries.filter((e) => e.id !== entry.id) }));
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving walk-in entry" }));
           });
         }
@@ -148,7 +184,9 @@ export const useWaitlistStore = create<WaitlistStore>()(
       },
 
       startService: (id, workspaceId?) => {
-        const entry = get().entries.find((e) => e.id === id);
+        // Capture previous state for rollback
+        const previousEntries = get().entries;
+        const entry = previousEntries.find((e) => e.id === id);
         const now = new Date().toISOString();
         set((s) => ({
           entries: s.entries.map((e) =>
@@ -161,13 +199,16 @@ export const useWaitlistStore = create<WaitlistStore>()(
         }
         if (workspaceId) {
           dbUpdateWaitlistEntry(workspaceId, id, { status: "in-service", startedServiceAt: now }).catch((err) => {
+            set({ entries: previousEntries });
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "starting walk-in service" }));
           });
         }
       },
 
       completeService: (id, workspaceId?) => {
-        const entry = get().entries.find((e) => e.id === id);
+        // Capture previous state for rollback
+        const previousEntries = get().entries;
+        const entry = previousEntries.find((e) => e.id === id);
         set((s) => ({
           entries: s.entries.map((e) =>
             e.id === id ? { ...e, status: "completed" as const } : e
@@ -179,13 +220,16 @@ export const useWaitlistStore = create<WaitlistStore>()(
         }
         if (workspaceId) {
           dbUpdateWaitlistEntry(workspaceId, id, { status: "completed" }).catch((err) => {
+            set({ entries: previousEntries });
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "completing walk-in service" }));
           });
         }
       },
 
       markNoShow: (id, workspaceId?) => {
-        const entry = get().entries.find((e) => e.id === id);
+        // Capture previous state for rollback
+        const previousEntries = get().entries;
+        const entry = previousEntries.find((e) => e.id === id);
         set((s) => ({
           entries: s.entries.map((e) =>
             e.id === id ? { ...e, status: "no-show" as const } : e
@@ -197,6 +241,7 @@ export const useWaitlistStore = create<WaitlistStore>()(
         }
         if (workspaceId) {
           dbUpdateWaitlistEntry(workspaceId, id, { status: "no-show" }).catch((err) => {
+            set({ entries: previousEntries });
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "marking walk-in no-show" }));
           });
         }

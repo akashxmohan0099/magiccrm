@@ -4,6 +4,7 @@ import { SOAPNote } from "@/types/models";
 import { generateId } from "@/lib/id";
 import { logActivity } from "@/lib/activity-logger";
 import { toast } from "@/components/ui/Toast";
+import { validateSOAPNote, sanitize } from "@/lib/validation";
 import {
   fetchSOAPNotes, dbCreateSOAPNote, dbUpdateSOAPNote, dbDeleteSOAPNote,
   dbUpsertSOAPNotes, mapSOAPNoteFromDB,
@@ -26,32 +27,76 @@ export const useSOAPNotesStore = create<SOAPNotesStore>()(
     (set, get) => ({
       notes: [],
       addNote: (data, workspaceId?) => {
+        // Validate input
+        const validation = validateSOAPNote(data);
+        if (!validation.valid) {
+          toast(validation.errors[0], "error");
+          return null as unknown as SOAPNote;
+        }
+
+        // Sanitize string fields
+        const sanitized = {
+          ...data,
+          clientName: sanitize(data.clientName),
+          subjective: sanitize(data.subjective),
+          objective: sanitize(data.objective),
+          assessment: sanitize(data.assessment),
+          plan: sanitize(data.plan),
+        };
+
         const now = new Date().toISOString();
-        const note: SOAPNote = { ...data, id: generateId(), createdAt: now, updatedAt: now };
+        const note: SOAPNote = { ...sanitized, id: generateId(), createdAt: now, updatedAt: now };
         set((s) => ({ notes: [...s.notes, note] }));
         logActivity("create", "soap-notes", `Added treatment note for ${data.clientName}`);
         toast("Treatment note added");
 
         if (workspaceId) {
           dbCreateSOAPNote(workspaceId, note).catch((err) => {
+            set((s) => ({ notes: s.notes.filter((n) => n.id !== note.id) }));
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving SOAP note" }));
           });
         }
         return note;
       },
       updateNote: (id, data, workspaceId?) => {
-        set((s) => ({ notes: s.notes.map((n) => n.id === id ? { ...n, ...data, updatedAt: new Date().toISOString() } : n) }));
+        // Validate changed fields if clientName or date changed
+        if (data.clientName || data.date) {
+          const targetNote = get().notes.find((n) => n.id === id);
+          if (targetNote) {
+            const validation = validateSOAPNote({ ...targetNote, ...data });
+            if (!validation.valid) {
+              toast(validation.errors[0], "error");
+              return;
+            }
+          }
+        }
+
+        // Sanitize text fields
+        const sanitized: Partial<SOAPNote> = { ...data };
+        if (data.clientName) sanitized.clientName = sanitize(data.clientName);
+        if (data.subjective) sanitized.subjective = sanitize(data.subjective);
+        if (data.objective) sanitized.objective = sanitize(data.objective);
+        if (data.assessment) sanitized.assessment = sanitize(data.assessment);
+        if (data.plan) sanitized.plan = sanitize(data.plan);
+
+        // Capture previous state
+        const previousNotes = get().notes;
+        const updatedAt = new Date().toISOString();
+        set((s) => ({ notes: s.notes.map((n) => n.id === id ? { ...n, ...sanitized, updatedAt } : n) }));
         logActivity("update", "soap-notes", "Updated treatment note");
         toast("Treatment note updated");
 
         if (workspaceId) {
-          dbUpdateSOAPNote(workspaceId, id, data).catch((err) => {
+          dbUpdateSOAPNote(workspaceId, id, { ...sanitized, updatedAt }).catch((err) => {
+            set({ notes: previousNotes });
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating SOAP note" }));
           });
         }
       },
       deleteNote: (id, workspaceId?) => {
-        const note = get().notes.find((n) => n.id === id);
+        // Capture previous state for rollback
+        const previousNotes = get().notes;
+        const note = previousNotes.find((n) => n.id === id);
         set((s) => ({ notes: s.notes.filter((n) => n.id !== id) }));
         if (note) {
           logActivity("delete", "soap-notes", `Removed treatment note for ${note.clientName}`);
@@ -60,6 +105,7 @@ export const useSOAPNotesStore = create<SOAPNotesStore>()(
 
         if (workspaceId) {
           dbDeleteSOAPNote(workspaceId, id).catch((err) => {
+            set({ notes: previousNotes });
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting SOAP note" }));
           });
         }

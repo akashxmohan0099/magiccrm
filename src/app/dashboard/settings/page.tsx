@@ -7,9 +7,11 @@ import { GeneralSettings } from "@/components/modules/settings/GeneralSettings";
 import { ModuleSettings } from "@/components/modules/settings/ModuleSettings";
 import { DataManagement } from "@/components/modules/settings/DataManagement";
 import { IntegrationSettings } from "@/components/modules/settings/IntegrationSettings";
+import { BillingSettings } from "@/components/modules/settings/BillingSettings";
 
 const TABS = [
   { id: "general", label: "General" },
+  { id: "billing", label: "Billing" },
   { id: "modules", label: "Modules" },
   { id: "data", label: "Data" },
   { id: "integrations", label: "Integrations" },
@@ -24,6 +26,7 @@ export default function SettingsPage() {
       <Tabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} />
 
       {activeTab === "general" && <GeneralSettings />}
+      {activeTab === "billing" && <BillingSettings />}
       {activeTab === "modules" && <ModuleSettings />}
       {activeTab === "data" && <DataManagement />}
       {activeTab === "integrations" && <IntegrationSettings />}

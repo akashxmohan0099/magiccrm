@@ -13,6 +13,7 @@ interface StorefrontStore {
 
   // Supabase sync
   loadFromSupabase: (workspaceId: string) => Promise<void>;
+  syncToSupabase: (workspaceId: string) => Promise<void>;
 }
 
 const defaultConfig: StorefrontConfig = {
@@ -33,14 +34,18 @@ export const useStorefrontStore = create<StorefrontStore>()(
     (set, get) => ({
       config: defaultConfig,
       updateConfig: (data, workspaceId?) => {
-        const updated = { ...get().config, ...data, updatedAt: new Date().toISOString() };
+        const previousConfig = get().config;
+        const updated = { ...previousConfig, ...data, updatedAt: new Date().toISOString() };
         set({ config: updated });
         toast("Storefront updated");
 
         if (workspaceId) {
-          saveStorefrontConfig(workspaceId, updated).catch((err) =>
-            console.error("[storefront] saveStorefrontConfig failed:", err)
-          );
+          saveStorefrontConfig(workspaceId, updated).catch((err) => {
+            set({ config: previousConfig });
+            import("@/lib/sync-error-handler").then((m) =>
+              m.handleSyncError(err, { context: "saving storefront config" })
+            );
+          });
         }
       },
 
@@ -55,7 +60,19 @@ export const useStorefrontStore = create<StorefrontStore>()(
             set({ config });
           }
         } catch (err) {
-          console.error("[storefront] loadFromSupabase failed:", err);
+          import("@/lib/sync-error-handler").then((m) =>
+            m.handleSyncError(err, { context: "loading storefront config" })
+          );
+        }
+      },
+
+      syncToSupabase: async (workspaceId: string) => {
+        try {
+          await saveStorefrontConfig(workspaceId, get().config);
+        } catch (err) {
+          import("@/lib/sync-error-handler").then((m) =>
+            m.handleSyncError(err, { context: "syncing storefront config" })
+          );
         }
       },
     }),

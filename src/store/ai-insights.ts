@@ -13,6 +13,8 @@ interface AIInsightsStore {
   clearAll: () => void;
   getActiveInsights: () => ClientInsight[];
   fetchInsights: (workspaceId: string, selectedPersona?: string) => Promise<void>;
+  syncToSupabase: (workspaceId: string) => Promise<void>;
+  loadFromSupabase: (workspaceId: string) => Promise<void>;
 }
 
 export const useAIInsightsStore = create<AIInsightsStore>()(
@@ -87,6 +89,16 @@ export const useAIInsightsStore = create<AIInsightsStore>()(
         } finally {
           set({ loading: false });
         }
+      },
+
+      syncToSupabase: async (_workspaceId: string) => {
+        // AI insights are generated on-demand and persisted in localStorage.
+        // No server-side sync needed -- they're regenerated per session.
+      },
+
+      loadFromSupabase: async (_workspaceId: string) => {
+        // AI insights are generated on-demand via the fetchInsights method.
+        // localStorage persistence is sufficient.
       },
     }),
     { name: "magic-crm-ai-insights" }

@@ -10,37 +10,9 @@ import {
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { toast } from "@/components/ui/Toast";
-import { generateId } from "@/lib/id";
 import { sanitizeHtml } from "@/lib/sanitize-html";
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
-
-interface Note {
-  id: string;
-  title: string;
-  content: string; // HTML content
-  pinned: boolean;
-  linkedClient: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface NotesStore {
-  notes: Note[];
-  setNotes: (notes: Note[]) => void;
-  updateNotes: (fn: (prev: Note[]) => Note[]) => void;
-}
-
-const useNotesStore = create<NotesStore>()(
-  persist(
-    (set) => ({
-      notes: [],
-      setNotes: (notes) => set({ notes }),
-      updateNotes: (fn) => set((s) => ({ notes: fn(s.notes) })),
-    }),
-    { name: "magic-crm-notes-docs" }
-  )
-);
+import { useNotesDocsStore, Note } from "@/store/notes-docs";
+import { useAuth } from "@/hooks/useAuth";
 
 // ── Toolbar button ──
 function ToolBtn({
@@ -87,8 +59,8 @@ const TEXT_COLORS = [
 const FONT_SIZES = ["12px", "14px", "16px", "18px", "20px", "24px"];
 
 export function NotesDocsPage() {
-  const { notes, updateNotes } = useNotesStore();
-  const setNotes = updateNotes;
+  const { notes, addNote, updateNote: storeUpdateNote, deleteNote: storeDeleteNote, togglePin: storeTogglePin } = useNotesDocsStore();
+  const { workspaceId } = useAuth();
   const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showColorPicker, setShowColorPicker] = useState(false);
@@ -99,40 +71,24 @@ export function NotesDocsPage() {
 
   // ── CRUD ──
   const createNote = () => {
-    const note: Note = {
-      id: generateId(),
-      title: "Untitled",
-      content: "",
-      pinned: false,
-      linkedClient: null,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    setNotes((prev) => [note, ...prev]);
+    const note = addNote(workspaceId ?? undefined);
     setActiveNoteId(note.id);
   };
 
   const updateNote = useCallback(
     (id: string, patch: Partial<Note>) => {
-      setNotes((prev) =>
-        prev.map((n) =>
-          n.id === id ? { ...n, ...patch, updatedAt: new Date().toISOString() } : n
-        )
-      );
+      storeUpdateNote(id, patch, workspaceId ?? undefined);
     },
-    [setNotes]
+    [storeUpdateNote, workspaceId]
   );
 
   const deleteNote = (id: string) => {
-    setNotes((prev) => prev.filter((n) => n.id !== id));
+    storeDeleteNote(id, workspaceId ?? undefined);
     if (activeNoteId === id) setActiveNoteId(null);
-    toast("Note deleted");
   };
 
   const togglePin = (id: string) => {
-    setNotes((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, pinned: !n.pinned } : n))
-    );
+    storeTogglePin(id, workspaceId ?? undefined);
   };
 
   // ── Formatting commands ──

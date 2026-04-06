@@ -30,6 +30,7 @@ import { useHydration } from "@/hooks/useHydration";
 import { useAuth } from "@/hooks/useAuth";
 import { createClient } from "@/lib/supabase";
 import { useSupabaseSync } from "@/hooks/useSupabaseSync";
+import { useRealtimeSync } from "@/hooks/useRealtimeSync";
 import { useVocabulary } from "@/hooks/useVocabulary";
 import { ALWAYS_ON_MODULES, getModuleDisplayName, getModuleBySlug } from "@/lib/module-registry";
 import { ModuleConfigurator } from "@/components/ui/ModuleConfigurator";
@@ -76,6 +77,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
   const vocab = useVocabulary();
   const { user, workspaceId, loading: authLoading, signOut, refreshMember } = useAuth();
   const { syncing } = useSupabaseSync({ workspaceId, authLoading });
+  useRealtimeSync({ workspaceId, enabled: !syncing && !authLoading });
   const [searchFocused, setSearchFocused] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);

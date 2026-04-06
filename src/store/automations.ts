@@ -4,6 +4,7 @@ import { AutomationRule, RecurringTaskTemplate } from "@/types/models";
 import { generateId } from "@/lib/id";
 import { logActivity } from "@/lib/activity-logger";
 import { toast } from "@/components/ui/Toast";
+import { validateAutomationRule, sanitize } from "@/lib/validation";
 import { useRemindersStore } from "@/store/reminders";
 import {
   fetchAutomationRules,
@@ -57,7 +58,23 @@ export const useAutomationsStore = create<AutomationsStore>()(
       recurringTemplates: initBuiltInTemplates(),
 
       addRule: (data, workspaceId?) => {
-        const rule: AutomationRule = { ...data, id: generateId(), createdAt: new Date().toISOString() };
+        // Validate
+        const validation = validateAutomationRule({
+          name: data.name,
+          trigger: data.trigger,
+          action: data.action,
+        });
+        if (!validation.valid) {
+          validation.errors.forEach(error => toast(error, "error"));
+          return;
+        }
+
+        const sanitizedData = {
+          ...data,
+          name: sanitize(data.name, 200),
+        };
+
+        const rule: AutomationRule = { ...sanitizedData, id: generateId(), createdAt: new Date().toISOString() };
         set((s) => ({ rules: [...s.rules, rule] }));
         logActivity("create", "automations", `Created automation "${rule.name}"`);
         toast(`Created automation "${rule.name}"`);
@@ -70,25 +87,47 @@ export const useAutomationsStore = create<AutomationsStore>()(
       },
 
       updateRule: (id, data, workspaceId?) => {
+        // Validate if name changed
+        if (data.name !== undefined) {
+          const validation = validateAutomationRule({
+            name: data.name,
+            trigger: data.trigger,
+            action: data.action,
+          });
+          if (!validation.valid) {
+            validation.errors.forEach(error => toast(error, "error"));
+            return;
+          }
+        }
+
+        const previousRules = get().rules;
+        const sanitizedData = {
+          ...data,
+          ...(data.name !== undefined && { name: sanitize(data.name, 200) }),
+        };
+
         set((s) => ({
-          rules: s.rules.map((r) => (r.id === id ? { ...r, ...data } : r)),
+          rules: s.rules.map((r) => (r.id === id ? { ...r, ...sanitizedData } : r)),
         }));
         logActivity("update", "automations", "Updated automation");
         toast("Automation updated");
 
         if (workspaceId) {
-          dbUpdateRule(workspaceId, id, data).catch((err) => {
+          dbUpdateRule(workspaceId, id, sanitizedData).catch((err) => {
+            set({ rules: previousRules });
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating automation rule" }));
           });
         }
       },
 
       deleteRule: (id, workspaceId?) => {
+        const previousRules = get().rules;
         set((s) => ({ rules: s.rules.filter((r) => r.id !== id) }));
         toast("Automation deleted", "info");
 
         if (workspaceId) {
           dbDeleteRule(workspaceId, id).catch((err) => {
+            set({ rules: previousRules });
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting automation rule" }));
           });
         }
@@ -133,12 +172,14 @@ export const useAutomationsStore = create<AutomationsStore>()(
           toast("Built-in templates cannot be deleted", "error");
           return;
         }
+        const previousRecurringTemplates = get().recurringTemplates;
         set((s) => ({ recurringTemplates: s.recurringTemplates.filter((t) => t.id !== id) }));
         logActivity("delete", "automations", "Deleted recurring template");
         toast("Template deleted", "info");
 
         if (workspaceId) {
           dbDeleteTemplate(workspaceId, id).catch((err) => {
+            set({ recurringTemplates: previousRecurringTemplates });
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting recurring template" }));
           });
         }

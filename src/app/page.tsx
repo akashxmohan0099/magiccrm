@@ -1648,6 +1648,7 @@ export default function LandingPage() {
               </Link>
             </motion.div>
             <p className="text-[11px] text-text-tertiary mt-3 text-center">
+              14-day free trial. No credit card required to start.<br />
               Extra integrations from $10/mo. AI credits from $5 per 10.
             </p>
           </motion.div>

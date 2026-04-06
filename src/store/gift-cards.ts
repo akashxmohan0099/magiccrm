@@ -4,6 +4,7 @@ import { GiftCard } from "@/types/models";
 import { generateId } from "@/lib/id";
 import { logActivity } from "@/lib/activity-logger";
 import { toast } from "@/components/ui/Toast";
+import { validateGiftCard, sanitize, sanitizeEmail } from "@/lib/validation";
 import {
   fetchGiftCards, dbCreateGiftCard, dbUpdateGiftCard, dbDeleteGiftCard,
   dbUpsertGiftCards, mapGiftCardFromDB,
@@ -32,20 +33,34 @@ export const useGiftCardStore = create<GiftCardStore>()(
     (set, get) => ({
       giftCards: [],
       addGiftCard: (data, workspaceId?) => {
-        const card: GiftCard = {
+        const validation = validateGiftCard(data);
+        if (validation.errors.length > 0) {
+          toast(validation.errors[0], "error");
+          return null as any;
+        }
+
+        const sanitizedData = {
           ...data,
+          recipientName: sanitize(data.recipientName),
+          recipientEmail: sanitizeEmail(data.recipientEmail),
+          purchasedBy: data.purchasedBy ? sanitize(data.purchasedBy) : data.purchasedBy,
+        };
+        const card: GiftCard = {
+          ...sanitizedData,
           id: generateId(),
           code: generateCode(),
-          balance: data.amount,
+          balance: sanitizedData.amount,
           status: "active",
           createdAt: new Date().toISOString(),
         };
+        const previousGiftCards = get().giftCards;
         set((s) => ({ giftCards: [...s.giftCards, card] }));
         logActivity("create", "gift-cards", `Gift card ${card.code} created for $${card.amount}`);
         toast(`Gift card ${card.code} created`);
 
         if (workspaceId) {
           dbCreateGiftCard(workspaceId, card).catch((err) => {
+            set({ giftCards: previousGiftCards });
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving gift card" }));
           });
         }
@@ -53,9 +68,24 @@ export const useGiftCardStore = create<GiftCardStore>()(
       },
       updateGiftCard: (id, data, workspaceId?) => {
         const card = get().giftCards.find((c) => c.id === id);
+        if (card && (data.recipientName || data.recipientEmail)) {
+          const validation = validateGiftCard({ ...card, amount: card.balance, ...data } as any);
+          if (validation.errors.length > 0) {
+            toast(validation.errors[0], "error");
+            return;
+          }
+        }
+
+        const sanitizedData = {
+          ...data,
+          recipientName: data.recipientName ? sanitize(data.recipientName) : data.recipientName,
+          recipientEmail: data.recipientEmail ? sanitizeEmail(data.recipientEmail) : data.recipientEmail,
+          purchasedBy: data.purchasedBy ? sanitize(data.purchasedBy) : data.purchasedBy,
+        };
+        const previousGiftCards = get().giftCards;
         set((s) => ({
           giftCards: s.giftCards.map((c) =>
-            c.id === id ? { ...c, ...data } : c
+            c.id === id ? { ...c, ...sanitizedData } : c
           ),
         }));
         if (card) {
@@ -64,7 +94,8 @@ export const useGiftCardStore = create<GiftCardStore>()(
         }
 
         if (workspaceId) {
-          dbUpdateGiftCard(workspaceId, id, data).catch((err) => {
+          dbUpdateGiftCard(workspaceId, id, sanitizedData).catch((err) => {
+            set({ giftCards: previousGiftCards });
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating gift card" }));
           });
         }
@@ -74,6 +105,7 @@ export const useGiftCardStore = create<GiftCardStore>()(
         if (!card || card.status !== "active") return;
         const newBalance = Math.max(0, card.balance - amount);
         const newStatus = newBalance === 0 ? "redeemed" as const : "active" as const;
+        const previousGiftCards = get().giftCards;
         set((s) => ({
           giftCards: s.giftCards.map((c) =>
             c.id === id ? { ...c, balance: newBalance, status: newStatus } : c
@@ -84,12 +116,14 @@ export const useGiftCardStore = create<GiftCardStore>()(
 
         if (workspaceId) {
           dbUpdateGiftCard(workspaceId, id, { balance: newBalance, status: newStatus }).catch((err) => {
+            set({ giftCards: previousGiftCards });
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "redeeming gift card" }));
           });
         }
       },
       deleteGiftCard: (id, workspaceId?) => {
         const card = get().giftCards.find((c) => c.id === id);
+        const previousGiftCards = get().giftCards;
         set((s) => ({ giftCards: s.giftCards.filter((c) => c.id !== id) }));
         if (card) {
           logActivity("delete", "gift-cards", `Gift card ${card.code} deleted`);
@@ -98,6 +132,7 @@ export const useGiftCardStore = create<GiftCardStore>()(
 
         if (workspaceId) {
           dbDeleteGiftCard(workspaceId, id).catch((err) => {
+            set({ giftCards: previousGiftCards });
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting gift card" }));
           });
         }

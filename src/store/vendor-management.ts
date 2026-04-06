@@ -4,6 +4,7 @@ import { Vendor } from "@/types/models";
 import { generateId } from "@/lib/id";
 import { logActivity } from "@/lib/activity-logger";
 import { toast } from "@/components/ui/Toast";
+import { validateVendor, sanitize, sanitizeEmail } from "@/lib/validation";
 import {
   fetchVendors, dbCreateVendor, dbUpdateVendor, dbDeleteVendor,
   dbUpsertVendors, mapVendorFromDB,
@@ -26,11 +27,24 @@ export const useVendorManagementStore = create<VendorManagementStore>()(
     (set, get) => ({
       vendors: [],
       addVendor: (data, workspaceId?) => {
+        // Validate input
+        const validation = validateVendor(data);
+        if (!validation.valid) {
+          toast(validation.errors[0], "error");
+          throw new Error(validation.errors[0]);
+        }
+
         const vendor: Vendor = {
           ...data,
           id: generateId(),
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
+          name: sanitize(data.name),
+          contactName: sanitize(data.contactName),
+          email: sanitizeEmail(data.email),
+          phone: sanitize(data.phone),
+          website: sanitize(data.website),
+          notes: sanitize(data.notes),
         };
         set((s) => ({ vendors: [...s.vendors, vendor] }));
         logActivity("create", "vendor-management", `Vendor "${vendor.name}" added`);
@@ -45,24 +59,48 @@ export const useVendorManagementStore = create<VendorManagementStore>()(
       },
       updateVendor: (id, data, workspaceId?) => {
         const vendor = get().vendors.find((v) => v.id === id);
-        set((s) => ({
-          vendors: s.vendors.map((v) =>
-            v.id === id ? { ...v, ...data, updatedAt: new Date().toISOString() } : v
-          ),
-        }));
-        if (vendor) {
-          logActivity("update", "vendor-management", `Vendor "${vendor.name}" updated`);
-          toast(`Vendor "${vendor.name}" updated`);
+        if (!vendor) return;
+
+        // Validate if name or email changed
+        if (data.name || data.email) {
+          const validation = validateVendor({ ...vendor, ...data });
+          if (!validation.valid) {
+            toast(validation.errors[0], "error");
+            return;
+          }
         }
 
+        // Sanitize string fields
+        const sanitizedData = { ...data };
+        if (data.name) sanitizedData.name = sanitize(data.name);
+        if (data.contactName) sanitizedData.contactName = sanitize(data.contactName);
+        if (data.email) sanitizedData.email = sanitizeEmail(data.email);
+        if (data.phone) sanitizedData.phone = sanitize(data.phone);
+        if (data.website) sanitizedData.website = sanitize(data.website);
+        if (data.notes) sanitizedData.notes = sanitize(data.notes);
+
+        // Capture previous state for rollback
+        const previousVendors = get().vendors;
+
+        set((s) => ({
+          vendors: s.vendors.map((v) =>
+            v.id === id ? { ...v, ...sanitizedData, updatedAt: new Date().toISOString() } : v
+          ),
+        }));
+        logActivity("update", "vendor-management", `Vendor "${vendor.name}" updated`);
+        toast(`Vendor "${vendor.name}" updated`);
+
         if (workspaceId) {
-          dbUpdateVendor(workspaceId, id, data).catch((err) => {
+          dbUpdateVendor(workspaceId, id, sanitizedData).catch((err) => {
+            set({ vendors: previousVendors });
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating vendor" }));
           });
         }
       },
       deleteVendor: (id, workspaceId?) => {
         const vendor = get().vendors.find((v) => v.id === id);
+        const previousVendors = get().vendors;
+
         set((s) => ({ vendors: s.vendors.filter((v) => v.id !== id) }));
         if (vendor) {
           logActivity("delete", "vendor-management", `Vendor "${vendor.name}" deleted`);
@@ -71,6 +109,7 @@ export const useVendorManagementStore = create<VendorManagementStore>()(
 
         if (workspaceId) {
           dbDeleteVendor(workspaceId, id).catch((err) => {
+            set({ vendors: previousVendors });
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting vendor" }));
           });
         }

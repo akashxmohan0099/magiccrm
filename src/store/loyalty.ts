@@ -4,6 +4,7 @@ import { LoyaltyTransaction, ReferralCode } from "@/types/models";
 import { generateId } from "@/lib/id";
 import { logActivity } from "@/lib/activity-logger";
 import { toast } from "@/components/ui/Toast";
+import { validateLoyaltyTransaction, sanitize } from "@/lib/validation";
 import {
   fetchLoyaltyTransactions, dbCreateTransaction, dbUpsertTransactions, mapTransactionFromDB,
   fetchReferralCodes, dbCreateReferralCode, dbUpdateReferralCode, dbUpsertReferralCodes, mapReferralFromDB,
@@ -38,17 +39,32 @@ export const useLoyaltyStore = create<LoyaltyStore>()(
       referralBonus: 50,
       setConfig: (config) => set(config),
       addTransaction: (data, workspaceId?) => {
-        const tx: LoyaltyTransaction = { ...data, id: generateId(), createdAt: new Date().toISOString() };
+        // Validate input
+        const validation = validateLoyaltyTransaction(data);
+        if (!validation.valid) {
+          toast(validation.errors[0], "error");
+          return;
+        }
+
+        // Sanitize string fields
+        const sanitizedData = {
+          ...data,
+          clientName: sanitize(data.clientName),
+          description: data.description ? sanitize(data.description) : "",
+        };
+
+        const tx: LoyaltyTransaction = { ...sanitizedData, id: generateId(), createdAt: new Date().toISOString() };
         set((s) => ({ transactions: [...s.transactions, tx] }));
-        if (data.type === "earned") {
-          logActivity("create", "loyalty", `${data.clientName} earned ${data.points} points`);
-          toast(`${data.clientName} earned ${data.points} points`);
-        } else if (data.type === "redeemed") {
-          toast(`${data.clientName} redeemed ${data.points} points`);
+        if (sanitizedData.type === "earned") {
+          logActivity("create", "loyalty", `${sanitizedData.clientName} earned ${sanitizedData.points} points`);
+          toast(`${sanitizedData.clientName} earned ${sanitizedData.points} points`);
+        } else if (sanitizedData.type === "redeemed") {
+          toast(`${sanitizedData.clientName} redeemed ${sanitizedData.points} points`);
         }
 
         if (workspaceId) {
           dbCreateTransaction(workspaceId, tx).catch((err) => {
+            set((s) => ({ transactions: s.transactions.filter((t) => t.id !== tx.id) }));
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving loyalty transaction" }));
           });
         }
@@ -58,18 +74,27 @@ export const useLoyaltyStore = create<LoyaltyStore>()(
         return txs.reduce((sum, t) => sum + (t.type === "redeemed" ? -t.points : t.points), 0);
       },
       addReferralCode: (data, workspaceId?) => {
-        const code: ReferralCode = { ...data, id: generateId(), timesUsed: 0, createdAt: new Date().toISOString() };
+        // Sanitize code field
+        const sanitizedData = {
+          ...data,
+          code: sanitize(data.code),
+        };
+
+        const code: ReferralCode = { ...sanitizedData, id: generateId(), timesUsed: 0, createdAt: new Date().toISOString() };
         set((s) => ({ referralCodes: [...s.referralCodes, code] }));
-        toast(`Referral code ${data.code} created`);
+        toast(`Referral code ${sanitizedData.code} created`);
 
         if (workspaceId) {
           dbCreateReferralCode(workspaceId, code).catch((err) => {
+            set((s) => ({ referralCodes: s.referralCodes.filter((c) => c.id !== code.id) }));
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving referral code" }));
           });
         }
         return code;
       },
       useReferralCode: (code, workspaceId?) => {
+        // Capture previous state for rollback
+        const previousCodes = get().referralCodes;
         let newTimesUsed = 0;
         set((s) => ({
           referralCodes: s.referralCodes.map((r) => {
@@ -83,6 +108,7 @@ export const useLoyaltyStore = create<LoyaltyStore>()(
 
         if (workspaceId) {
           dbUpdateReferralCode(workspaceId, code, newTimesUsed).catch((err) => {
+            set({ referralCodes: previousCodes });
             import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating referral code usage" }));
           });
         }
