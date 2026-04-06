@@ -17,6 +17,7 @@ import { DataTable, Column } from "@/components/ui/DataTable";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Button } from "@/components/ui/Button";
 import { LeadForm } from "./LeadForm";
+import { LeadDetail } from "./LeadDetail";
 import { PipelineBoard } from "./PipelineBoard";
 import { WebFormPreview } from "./WebFormPreview";
 import { CSVImportWizard } from "@/components/modules/shared/CSVImportWizard";
@@ -38,6 +39,7 @@ export function LeadsPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | undefined>(undefined);
+  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const leadStageKey = useMemo(
     () => leadStages.map((stage) => `${stage.id}:${stage.label}:${stage.color}:${stage.isClosed ? 1 : 0}`).join("|"),
     [leadStages]
@@ -96,8 +98,7 @@ export function LeadsPage() {
   ];
 
   const handleRowClick = (lead: Lead) => {
-    setEditingLead(lead);
-    setFormOpen(true);
+    setSelectedLeadId(lead.id);
   };
 
   const handleAdd = () => {
@@ -203,7 +204,7 @@ export function LeadsPage() {
           />
         </div>
       ) : (
-        <PipelineBoard leads={filtered} />
+        <PipelineBoard leads={filtered} onCardClick={(lead) => setSelectedLeadId(lead.id)} />
       )}
 
       <CSVImportWizard
@@ -219,6 +220,12 @@ export function LeadsPage() {
           setEditingLead(undefined);
         }}
         lead={editingLead}
+      />
+
+      <LeadDetail
+        open={!!selectedLeadId}
+        onClose={() => setSelectedLeadId(null)}
+        leadId={selectedLeadId}
       />
     </div>
   );

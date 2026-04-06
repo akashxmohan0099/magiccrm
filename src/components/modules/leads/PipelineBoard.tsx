@@ -22,6 +22,7 @@ import { InvoiceForm } from "@/components/modules/invoicing/InvoiceForm";
 
 interface PipelineBoardProps {
   leads?: Lead[];
+  onCardClick?: (lead: Lead) => void;
 }
 
 /* ---------- helpers ---------- */
@@ -117,7 +118,7 @@ function TemperatureBadge({ temp }: { temp: "hot" | "warm" | "cold" }) {
 
 /* ---------- main component ---------- */
 
-export function PipelineBoard({ leads: externalLeads }: PipelineBoardProps) {
+export function PipelineBoard({ leads: externalLeads, onCardClick }: PipelineBoardProps) {
   const store = useLeadsStore();
   const config = useIndustryConfig();
   const leads = externalLeads ?? store.leads;
@@ -195,7 +196,10 @@ export function PipelineBoard({ leads: externalLeads }: PipelineBoardProps) {
         const temp = temperature(lead);
 
         return (
-          <div className="bg-card-bg rounded-lg border border-border-light p-3 shadow-sm hover:shadow-md transition-shadow space-y-2">
+          <div
+            className="bg-card-bg rounded-lg border border-border-light p-3 shadow-sm hover:shadow-md transition-shadow space-y-2"
+            onClick={() => onCardClick?.(lead)}
+          >
             {/* Header row: name + temperature */}
             <div className="flex items-start justify-between gap-2">
               <p className="text-sm font-medium text-foreground truncate flex-1">

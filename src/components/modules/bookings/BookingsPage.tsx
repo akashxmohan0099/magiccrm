@@ -15,6 +15,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Button } from "@/components/ui/Button";
 import { FeatureSection } from "@/components/modules/FeatureSection";
 import { BookingForm } from "./BookingForm";
+import { BookingDetail } from "./BookingDetail";
 import { CalendarView } from "./CalendarView";
 import { AvailabilitySettings } from "./AvailabilitySettings";
 import { BookingPagePreview } from "./BookingPagePreview";
@@ -42,6 +43,7 @@ export function BookingsPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingBooking, setEditingBooking] = useState<Booking | undefined>(undefined);
   const [defaultDate, setDefaultDate] = useState<string | undefined>(undefined);
+  const [detailBookingId, setDetailBookingId] = useState<string | null>(null);
   const [_defaultStartTime, setDefaultStartTime] = useState<string | undefined>(undefined);
   const [_defaultEndTime, setDefaultEndTime] = useState<string | undefined>(undefined);
   const [waitlistDate, setWaitlistDate] = useState(() => new Date().toISOString().split("T")[0]);
@@ -116,9 +118,7 @@ export function BookingsPage() {
   ];
 
   const handleRowClick = (booking: Booking) => {
-    setEditingBooking(booking);
-    setDefaultDate(undefined);
-    setFormOpen(true);
+    setDetailBookingId(booking.id);
   };
 
   const handleAdd = () => {
@@ -257,6 +257,18 @@ export function BookingsPage() {
           <RebookingPrompts />
         </>
       )}
+
+      <BookingDetail
+        open={detailBookingId !== null}
+        onClose={() => setDetailBookingId(null)}
+        bookingId={detailBookingId}
+        onEdit={(booking) => {
+          setDetailBookingId(null);
+          setEditingBooking(booking);
+          setDefaultDate(undefined);
+          setFormOpen(true);
+        }}
+      />
 
       <BookingForm
         open={formOpen}
