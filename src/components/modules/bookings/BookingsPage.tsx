@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus, List, CalendarDays, Calendar, Sparkles } from "lucide-react";
+import { Plus, List, CalendarDays, Calendar } from "lucide-react";
 import { useBookingsStore } from "@/store/bookings";
 import { useClientsStore } from "@/store/clients";
 import { Booking } from "@/types/models";
@@ -20,14 +20,13 @@ import { AvailabilitySettings } from "./AvailabilitySettings";
 import { BookingPagePreview } from "./BookingPagePreview";
 import { RebookingPrompts } from "./RebookingPrompts";
 import { WaitlistPanel } from "./WaitlistPanel";
-import { ServiceManager } from "./ServiceManager";
 import { TextArea } from "@/components/ui/TextArea";
 import { ViewToggle } from "@/components/ui/ViewToggle";
 import { useTeamStore } from "@/store/team";
 import { useModuleEnabled } from "@/hooks/useFeature";
 import { useAuth } from "@/hooks/useAuth";
 
-type ViewMode = "list" | "calendar" | "services";
+type ViewMode = "list" | "calendar";
 
 export function BookingsPage() {
   const { bookings, deleteBooking: _deleteBooking, cancellationPolicy, setCancellationPolicy } = useBookingsStore();
@@ -192,25 +191,12 @@ export function BookingsPage() {
           >
             <CalendarDays className="w-4 h-4" />
           </button>
-          <button
-            onClick={() => setView("services")}
-            className={`p-1.5 rounded-md transition-colors cursor-pointer ${
-              view === "services"
-                ? "bg-card-bg text-foreground shadow-sm"
-                : "text-text-secondary hover:text-foreground"
-            }`}
-            title="Services"
-          >
-            <Sparkles className="w-4 h-4" />
-          </button>
         </div>
       </div>
 
       {/* Contextual setup — removed, uses EmptyState setupSteps pattern below */}
 
-      {view === "services" ? (
-        <ServiceManager />
-      ) : bookings.length === 0 ? (
+      {bookings.length === 0 ? (
         <EmptyState
           icon={<Calendar className="w-10 h-10" />}
           title={`No ${vocab.bookings.toLowerCase()} yet`}

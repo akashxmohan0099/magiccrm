@@ -48,7 +48,7 @@ export const makeupArtistBlueprint: WorkspaceBlueprint = {
 
   presentation: {
     homePage: "leads",
-    sidebarOrder: ["leads", "bookings", "clients", "invoicing", "documents", "communication"],
+    sidebarOrder: ["leads", "bookings", "clients", "invoicing", "services", "documents", "communication"],
     primaryAction: { label: "New Inquiry", href: "/dashboard/leads", icon: "Plus" },
     dashboardWidgets: [
       { instanceId: "w-setup", manifestId: "setup-checklist", x: 0, y: 0, w: 4, h: 2, config: {} },
@@ -83,7 +83,7 @@ export const makeupArtistBlueprint: WorkspaceBlueprint = {
           label: "Yes, some book directly",
           description: "Calendar gets equal weight alongside inquiries",
           presentationPatches: [
-            { op: "reorder-sidebar", itemIds: ["leads", "bookings", "clients", "invoicing", "documents", "communication"] },
+            { op: "reorder-sidebar", itemIds: ["leads", "bookings", "clients", "invoicing", "services", "documents", "communication"] },
             { op: "replace-dashboard-widgets", widgets: [
               { instanceId: "w-setup", manifestId: "setup-checklist", x: 0, y: 0, w: 4, h: 2, config: {} },
               { instanceId: "w-inquiries", manifestId: "open-inquiries", x: 0, y: 2, w: 2, h: 2, config: {} },

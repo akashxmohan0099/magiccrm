@@ -26,6 +26,7 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
 
   // Question-gated modules:
   { id: "bookings-calendar", slug: "bookings", name: "Scheduling", icon: "Calendar", description: "Bookings, appointments, and calendar.", group: "business", status: "production" },
+  { id: "services", slug: "services", name: "Services", icon: "Sparkles", description: "Your service menu — pricing, categories, and duration.", group: "business", status: "production" },
   { id: "jobs-projects", slug: "jobs", name: "Projects", icon: "FolderKanban", description: "Track work from start to finish.", vocabKey: "jobs", group: "business", status: "beta" },
 
   // ── Grow ──
@@ -108,6 +109,7 @@ export const ALWAYS_ON_MODULES = new Set([
   "quotes-invoicing",
   "automations",
   "reporting",
+  "services",
 ]);
 
 /** Maps module IDs to their NeedsAssessment trigger keys */

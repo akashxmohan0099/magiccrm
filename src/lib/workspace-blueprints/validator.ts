@@ -14,6 +14,7 @@ const ALWAYS_ON_MODULES = new Set([
   "bookings-calendar",
   "communication",
   "quotes-invoicing",
+  "services",
 ]);
 
 /** All known module IDs (always-on + optional) */
@@ -57,6 +58,7 @@ const SLUG_TO_MODULE: Record<string, string> = {
   "gift-cards": "gift-cards",
   "vendor-management": "vendor-management",
   "before-after": "before-after",
+  services: "services",
   "win-back": "win-back",
   "client-portal": "client-portal",
   automations: "automations",

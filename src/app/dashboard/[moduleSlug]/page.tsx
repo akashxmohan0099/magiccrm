@@ -13,6 +13,7 @@ const MODULE_COMPONENTS: Record<string, React.ComponentType> = {
   "leads-pipeline": dynamic(() => import("@/components/modules/leads/LeadsPage").then(m => ({ default: m.LeadsPage }))),
   "communication": dynamic(() => import("@/components/modules/communication/CommunicationPage").then(m => ({ default: m.CommunicationPage }))),
   "bookings-calendar": dynamic(() => import("@/components/modules/bookings/BookingsPage").then(m => ({ default: m.BookingsPage }))),
+  "services": dynamic(() => import("@/components/modules/services/ServicesPage").then(m => ({ default: m.ServicesPage }))),
   "quotes-invoicing": dynamic(() => import("@/components/modules/invoicing/InvoicingPage").then(m => ({ default: m.InvoicingPage }))),
   "jobs-projects": dynamic(() => import("@/components/modules/jobs/JobsPage").then(m => ({ default: m.JobsPage }))),
   "marketing": dynamic(() => import("@/components/modules/marketing/MarketingPage").then(m => ({ default: m.MarketingPage }))),
