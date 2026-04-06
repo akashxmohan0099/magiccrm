@@ -127,7 +127,7 @@ function SetupChecklist() {
       animate={{ opacity: 1, y: 0 }}
       className="mb-6"
     >
-      <div className="bg-card-bg rounded-xl border border-border-light p-5">
+      <div className="bg-gradient-to-br from-primary/5 to-transparent rounded-2xl border border-border-light p-6 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-[15px] font-semibold text-foreground">Getting started</h3>
@@ -197,14 +197,14 @@ function WidgetCard({ widget, onRemove, isEditing }: { widget: DashboardWidget; 
   const today = new Date().toISOString().split("T")[0];
   const todaysBookings = bookings.filter((b) => b.date === today && b.status !== "cancelled");
   const outstandingInvoices = invoices.filter((i) => i.status === "sent" || i.status === "overdue");
-  const outstandingTotal = outstandingInvoices.reduce((sum, inv) => sum + inv.lineItems.reduce((s, li) => s + li.quantity * li.unitPrice, 0), 0);
+  const outstandingTotal = outstandingInvoices.reduce((sum, inv) => sum + (inv.lineItems ?? []).reduce((s, li) => s + li.quantity * li.unitPrice, 0), 0);
   const overdueInvoices = invoices.filter((i) => i.status === "overdue");
   const thisMonthRevenue = useMemo(() => {
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
     return invoices
       .filter((i) => i.status === "paid" && i.createdAt >= monthStart)
-      .reduce((sum, inv) => sum + inv.lineItems.reduce((s, li) => s + li.quantity * li.unitPrice, 0), 0);
+      .reduce((sum, inv) => sum + (inv.lineItems ?? []).reduce((s, li) => s + li.quantity * li.unitPrice, 0), 0);
   }, [invoices]);
   const activeLeads = leads.filter((l) => !["won", "lost"].includes(l.stage));
   const activeJobs = jobs.filter((j) => !["completed", "cancelled"].includes(j.stage));
@@ -227,40 +227,46 @@ function WidgetCard({ widget, onRemove, isEditing }: { widget: DashboardWidget; 
   switch (widget.type) {
     case "stats-clients":
       content = (
-        <Link href="/dashboard/clients" className="block h-full">
-          <div className="flex items-center gap-2 mb-2">
-            <User className="w-4 h-4 text-text-tertiary" />
-            <span className="text-[11px] text-text-tertiary font-medium">{vocab.clients}</span>
+        <Link href="/dashboard/clients" className="block h-full bg-gradient-to-br from-blue-50/50 to-blue-100/30 rounded-xl -m-6 p-6">
+          <div className="flex items-center gap-2.5 mb-3">
+            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+              <User className="w-4 h-4 text-blue-600" />
+            </div>
+            <span className="text-[12px] text-blue-600/80 font-semibold uppercase tracking-wider">{vocab.clients}</span>
           </div>
-          <p className="text-[28px] font-bold text-foreground leading-none">{clients.length}</p>
+          <p className="text-[32px] font-bold text-foreground leading-none">{clients.length}</p>
         </Link>
       );
       break;
 
     case "stats-bookings-today":
       content = (
-        <Link href="/dashboard/bookings" className="block h-full">
-          <div className="flex items-center gap-2 mb-2">
-            <Calendar className="w-4 h-4 text-text-tertiary" />
-            <span className="text-[11px] text-text-tertiary font-medium">Today</span>
+        <Link href="/dashboard/bookings" className="block h-full bg-gradient-to-br from-emerald-50/50 to-emerald-100/30 rounded-xl -m-6 p-6">
+          <div className="flex items-center gap-2.5 mb-3">
+            <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
+              <Calendar className="w-4 h-4 text-emerald-600" />
+            </div>
+            <span className="text-[12px] text-emerald-600/80 font-semibold uppercase tracking-wider">Today</span>
           </div>
-          <p className="text-[28px] font-bold text-foreground leading-none">{todaysBookings.length}</p>
-          <p className="text-[11px] text-text-tertiary mt-1">{todaysBookings.length === 1 ? vocab.booking.toLowerCase() : vocab.bookings.toLowerCase()}</p>
+          <p className="text-[32px] font-bold text-foreground leading-none">{todaysBookings.length}</p>
+          <p className="text-[12px] text-emerald-600/70 font-medium mt-1">{todaysBookings.length === 1 ? vocab.booking.toLowerCase() : vocab.bookings.toLowerCase()}</p>
         </Link>
       );
       break;
 
     case "stats-outstanding":
       content = (
-        <Link href="/dashboard/invoicing" className="block h-full">
-          <div className="flex items-center gap-2 mb-2">
-            <DollarSign className="w-4 h-4 text-text-tertiary" />
-            <span className="text-[11px] text-text-tertiary font-medium">Outstanding</span>
+        <Link href="/dashboard/invoicing" className="block h-full bg-gradient-to-br from-amber-50/50 to-amber-100/30 rounded-xl -m-6 p-6">
+          <div className="flex items-center gap-2.5 mb-3">
+            <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
+              <DollarSign className="w-4 h-4 text-amber-600" />
+            </div>
+            <span className="text-[12px] text-amber-600/80 font-semibold uppercase tracking-wider">Outstanding</span>
           </div>
-          <p className="text-[28px] font-bold text-foreground leading-none">${outstandingTotal.toLocaleString()}</p>
+          <p className="text-[32px] font-bold text-foreground leading-none">${outstandingTotal.toLocaleString()}</p>
           {overdueInvoices.length > 0 && (
-            <p className="text-[11px] text-red-500 font-medium mt-1 flex items-center gap-1">
-              <AlertCircle className="w-3 h-3" /> {overdueInvoices.length} overdue
+            <p className="text-[12px] text-red-500 font-semibold mt-1.5 flex items-center gap-1">
+              <AlertCircle className="w-3.5 h-3.5" /> {overdueInvoices.length} overdue
             </p>
           )}
         </Link>
@@ -269,27 +275,29 @@ function WidgetCard({ widget, onRemove, isEditing }: { widget: DashboardWidget; 
 
     case "stats-revenue":
       content = (
-        <>
-          <div className="flex items-center gap-2 mb-2">
-            <TrendingUp className="w-4 h-4 text-text-tertiary" />
-            <span className="text-[11px] text-text-tertiary font-medium">This Month</span>
+        <div className="bg-gradient-to-br from-violet-50/50 to-violet-100/30 rounded-xl -m-6 p-6">
+          <div className="flex items-center gap-2.5 mb-3">
+            <div className="w-8 h-8 bg-violet-100 rounded-lg flex items-center justify-center">
+              <TrendingUp className="w-4 h-4 text-violet-600" />
+            </div>
+            <span className="text-[12px] text-violet-600/80 font-semibold uppercase tracking-wider">This Month</span>
           </div>
-          <p className="text-[28px] font-bold text-foreground leading-none">${thisMonthRevenue.toLocaleString()}</p>
-          <p className="text-[11px] text-text-tertiary mt-1">revenue</p>
-        </>
+          <p className="text-[32px] font-bold text-foreground leading-none">${thisMonthRevenue.toLocaleString()}</p>
+          <p className="text-[12px] text-violet-600/70 font-medium mt-1">revenue</p>
+        </div>
       );
       break;
 
     case "quick-actions":
       content = (
         <>
-          <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-3">Quick Actions</h3>
-          <div className="space-y-1">
-            {hasClients && <Link href="/dashboard/clients" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface transition-colors"><div className="w-7 h-7 bg-surface rounded-lg flex items-center justify-center"><Plus className="w-3.5 h-3.5 text-text-secondary" /></div><span className="text-[13px] font-medium text-foreground">{vocab.addClient}</span></Link>}
-            {hasBookings && <Link href="/dashboard/bookings" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface transition-colors"><div className="w-7 h-7 bg-surface rounded-lg flex items-center justify-center"><Calendar className="w-3.5 h-3.5 text-text-secondary" /></div><span className="text-[13px] font-medium text-foreground">{vocab.addBooking}</span></Link>}
-            {hasInvoicing && <Link href="/dashboard/invoicing" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface transition-colors"><div className="w-7 h-7 bg-surface rounded-lg flex items-center justify-center"><Receipt className="w-3.5 h-3.5 text-text-secondary" /></div><span className="text-[13px] font-medium text-foreground">{vocab.addInvoice}</span></Link>}
-            {hasLeads && <Link href="/dashboard/leads" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface transition-colors"><div className="w-7 h-7 bg-surface rounded-lg flex items-center justify-center"><Users className="w-3.5 h-3.5 text-text-secondary" /></div><span className="text-[13px] font-medium text-foreground">{vocab.addLead}</span></Link>}
-            {hasJobs && <Link href="/dashboard/jobs" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface transition-colors"><div className="w-7 h-7 bg-surface rounded-lg flex items-center justify-center"><FolderKanban className="w-3.5 h-3.5 text-text-secondary" /></div><span className="text-[13px] font-medium text-foreground">{vocab.addJob}</span></Link>}
+          <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-4">Quick Actions</h3>
+          <div className="space-y-1.5">
+            {hasClients && <Link href="/dashboard/clients" className="flex items-center gap-3.5 px-3 py-2.5 rounded-xl hover:bg-blue-50/50 transition-colors"><div className="w-9 h-9 bg-blue-100 rounded-xl flex items-center justify-center"><Plus className="w-4 h-4 text-blue-600" /></div><span className="text-[13px] font-medium text-foreground">{vocab.addClient}</span></Link>}
+            {hasBookings && <Link href="/dashboard/bookings" className="flex items-center gap-3.5 px-3 py-2.5 rounded-xl hover:bg-emerald-50/50 transition-colors"><div className="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center"><Calendar className="w-4 h-4 text-emerald-600" /></div><span className="text-[13px] font-medium text-foreground">{vocab.addBooking}</span></Link>}
+            {hasInvoicing && <Link href="/dashboard/invoicing" className="flex items-center gap-3.5 px-3 py-2.5 rounded-xl hover:bg-amber-50/50 transition-colors"><div className="w-9 h-9 bg-amber-100 rounded-xl flex items-center justify-center"><Receipt className="w-4 h-4 text-amber-600" /></div><span className="text-[13px] font-medium text-foreground">{vocab.addInvoice}</span></Link>}
+            {hasLeads && <Link href="/dashboard/leads" className="flex items-center gap-3.5 px-3 py-2.5 rounded-xl hover:bg-violet-50/50 transition-colors"><div className="w-9 h-9 bg-violet-100 rounded-xl flex items-center justify-center"><Users className="w-4 h-4 text-violet-600" /></div><span className="text-[13px] font-medium text-foreground">{vocab.addLead}</span></Link>}
+            {hasJobs && <Link href="/dashboard/jobs" className="flex items-center gap-3.5 px-3 py-2.5 rounded-xl hover:bg-orange-50/50 transition-colors"><div className="w-9 h-9 bg-orange-100 rounded-xl flex items-center justify-center"><FolderKanban className="w-4 h-4 text-orange-600" /></div><span className="text-[13px] font-medium text-foreground">{vocab.addJob}</span></Link>}
           </div>
         </>
       );
@@ -299,57 +307,96 @@ function WidgetCard({ widget, onRemove, isEditing }: { widget: DashboardWidget; 
       content = <NudgeWidget />;
       break;
 
-    case "recent-activity":
+    case "recent-activity": {
+      const getActivityStyle = (desc: string): { dot: string; bg: string } => {
+        const lower = desc.toLowerCase();
+        if (lower.includes("paid") || lower.includes("payment")) return { dot: "bg-emerald-500", bg: "bg-emerald-100" };
+        if (lower.includes("book") || lower.includes("appointment")) return { dot: "bg-blue-500", bg: "bg-blue-100" };
+        if (lower.includes("invoice") || lower.includes("sent")) return { dot: "bg-amber-500", bg: "bg-amber-100" };
+        if (lower.includes("client") || lower.includes("added")) return { dot: "bg-violet-500", bg: "bg-violet-100" };
+        if (lower.includes("cancel") || lower.includes("overdue")) return { dot: "bg-red-500", bg: "bg-red-100" };
+        return { dot: "bg-primary", bg: "bg-primary/10" };
+      };
       content = (
         <>
-          <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-3">Recent Activity</h3>
+          <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-4">Recent Activity</h3>
           {recentActivity.length === 0 ? (
             <p className="text-[13px] text-text-tertiary py-4 text-center">No activity yet.</p>
           ) : (
-            <div className="space-y-2">
-              {recentActivity.map((entry) => (
-                <div key={entry.id} className="flex items-start gap-3 py-1">
-                  <div className="w-1.5 h-1.5 bg-primary rounded-full mt-2 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[13px] text-foreground leading-snug">{entry.description}</p>
-                    <p className="text-[11px] text-text-tertiary mt-0.5">{new Date(entry.timestamp).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</p>
+            <div className="space-y-1">
+              {recentActivity.map((entry) => {
+                const style = getActivityStyle(entry.description);
+                return (
+                  <div key={entry.id} className="flex items-start gap-3 py-2 px-2 rounded-lg hover:bg-surface/50 transition-colors">
+                    <div className={`w-6 h-6 ${style.bg} rounded-full mt-0.5 flex-shrink-0 flex items-center justify-center`}>
+                      <div className={`w-2 h-2 ${style.dot} rounded-full`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] text-foreground leading-snug">{entry.description}</p>
+                      <p className="text-[11px] text-text-tertiary mt-0.5">{new Date(entry.timestamp).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </>
       );
       break;
+    }
 
-    case "todays-schedule":
+    case "todays-schedule": {
+      const getBookingStatusColor = (status: string) => {
+        switch (status) {
+          case "confirmed": return "bg-emerald-500";
+          case "completed": return "bg-blue-500";
+          case "no-show": return "bg-red-500";
+          default: return "bg-primary";
+        }
+      };
       content = todaysBookings.length > 0 ? (
         <>
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-4">
             <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">Today&apos;s Schedule</h3>
-            <Link href="/dashboard/bookings" className="text-xs text-primary font-medium hover:underline">View all</Link>
+            <Link href="/dashboard/bookings" className="text-xs text-primary font-semibold hover:underline">View all</Link>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             {todaysBookings.map((booking) => (
-              <div key={booking.id} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-surface/50">
-                <div className="w-1.5 h-8 bg-primary rounded-full flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-medium text-foreground">{booking.title}</p>
-                  <p className="text-[11px] text-text-tertiary">{booking.startTime} — {booking.endTime}{booking.serviceName ? ` · ${booking.serviceName}` : ""}</p>
+              <div key={booking.id} className="flex items-center gap-4 px-4 py-3 rounded-xl bg-surface/50 hover:bg-surface transition-colors">
+                <div className={`w-1 h-10 ${getBookingStatusColor(booking.status)} rounded-full flex-shrink-0`} />
+                <div className="flex-shrink-0 text-center min-w-[56px]">
+                  <p className="text-[15px] font-bold text-foreground leading-tight">{booking.startTime}</p>
+                  <p className="text-[10px] text-text-tertiary font-medium">{booking.endTime}</p>
                 </div>
+                <div className="flex-1 min-w-0 border-l border-border-light pl-4">
+                  <p className="text-[13px] font-semibold text-foreground truncate">{booking.title}</p>
+                  {booking.serviceName && <p className="text-[11px] text-text-secondary mt-0.5">{booking.serviceName}</p>}
+                </div>
+                <span className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                  booking.status === "confirmed" ? "bg-emerald-100 text-emerald-700" :
+                  booking.status === "completed" ? "bg-blue-100 text-blue-700" :
+                  booking.status === "no-show" ? "bg-red-100 text-red-700" :
+                  "bg-surface text-text-secondary"
+                }`}>{booking.status}</span>
               </div>
             ))}
           </div>
         </>
       ) : (
         <>
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-4">
             <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">Today&apos;s Schedule</h3>
           </div>
-          <p className="text-[13px] text-text-tertiary py-6 text-center">No appointments today.</p>
+          <div className="flex flex-col items-center py-8">
+            <div className="w-10 h-10 bg-surface rounded-xl flex items-center justify-center mb-2">
+              <Calendar className="w-5 h-5 text-text-tertiary" />
+            </div>
+            <p className="text-[13px] text-text-tertiary">No appointments today.</p>
+          </div>
         </>
       );
       break;
+    }
 
     case "active-leads":
       content = (
@@ -409,7 +456,7 @@ function WidgetCard({ widget, onRemove, isEditing }: { widget: DashboardWidget; 
           {overdueInvoices.length > 0 ? (
             <div className="space-y-1.5 mt-3">
               {overdueInvoices.slice(0, 4).map((inv) => {
-                const total = inv.lineItems.reduce((s, li) => s + li.quantity * li.unitPrice, 0);
+                const total = (inv.lineItems ?? []).reduce((s, li) => s + li.quantity * li.unitPrice, 0);
                 return (
                   <div key={inv.id} className="flex items-center justify-between">
                     <span className="text-xs text-foreground">{inv.number}</span>
@@ -438,7 +485,7 @@ function WidgetCard({ widget, onRemove, isEditing }: { widget: DashboardWidget; 
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      className={`${cardClass} bg-card-bg rounded-xl border border-border-light p-4 relative group hover:border-foreground/10 transition-all ${isEditing ? "ring-2 ring-primary/20 ring-offset-2" : ""}`}
+      className={`${cardClass} bg-card-bg rounded-2xl border border-border-light p-6 relative group hover:border-foreground/10 hover:shadow-md transition-all ${isEditing ? "ring-2 ring-primary/20 ring-offset-2" : ""}`}
     >
       {isEditing && (
         <button
@@ -684,7 +731,7 @@ function WidgetPreview({ type }: { type: string }) {
         </div>
       );
     case "stats-outstanding": {
-      const total = invoices.filter((i) => i.status === "sent" || i.status === "overdue").reduce((sum, inv) => sum + inv.lineItems.reduce((s, li) => s + li.quantity * li.unitPrice, 0), 0);
+      const total = invoices.filter((i) => i.status === "sent" || i.status === "overdue").reduce((sum, inv) => sum + (inv.lineItems ?? []).reduce((s, li) => s + li.quantity * li.unitPrice, 0), 0);
       return (
         <div className="flex items-center gap-3">
           <DollarSign className="w-4 h-4 text-text-tertiary" />
@@ -698,7 +745,7 @@ function WidgetPreview({ type }: { type: string }) {
     case "stats-revenue": {
       const now = new Date();
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-      const rev = invoices.filter((i) => i.status === "paid" && i.createdAt >= monthStart).reduce((sum, inv) => sum + inv.lineItems.reduce((s, li) => s + li.quantity * li.unitPrice, 0), 0);
+      const rev = invoices.filter((i) => i.status === "paid" && i.createdAt >= monthStart).reduce((sum, inv) => sum + (inv.lineItems ?? []).reduce((s, li) => s + li.quantity * li.unitPrice, 0), 0);
       return (
         <div className="flex items-center gap-3">
           <TrendingUp className="w-4 h-4 text-text-tertiary" />
