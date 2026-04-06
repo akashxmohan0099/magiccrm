@@ -6,6 +6,7 @@ import { useMarketingStore } from "@/store/marketing";
 import { useAuth } from "@/hooks/useAuth";
 import { Campaign } from "@/types/models";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { useModuleSchema } from "@/hooks/useModuleSchema";
 import { Tabs } from "@/components/ui/Tabs";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
@@ -30,6 +31,7 @@ export function MarketingPage() {
     deleteSequence,
   } = useMarketingStore();
   const { workspaceId } = useAuth();
+  const ms = useModuleSchema("marketing");
   const [activeTab, setActiveTab] = useState("campaigns");
   const [formOpen, setFormOpen] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | undefined>(
@@ -63,8 +65,8 @@ export function MarketingPage() {
   return (
     <div>
       <PageHeader
-        title="Marketing"
-        description="Manage campaigns and create coupon codes."
+        title={ms.label || "Marketing"}
+        description="Email campaigns, newsletters, and promotions."
         actions={
           activeTab === "campaigns" ? (
             <Button variant="primary" size="sm" onClick={handleAdd}>

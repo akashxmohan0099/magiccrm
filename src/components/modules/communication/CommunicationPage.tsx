@@ -173,8 +173,8 @@ export function CommunicationPage() {
   return (
     <div>
       <PageHeader
-        title={ms.label || "Communication"}
-        description={"Manage all conversations with your clients in one place."}
+        title={ms.label || "Messages"}
+        description="All your client conversations in one place."
         actions={
           hasConversationChannels ? (
             <Button variant="primary" size="sm" onClick={() => setNewConvoOpen(true)}>

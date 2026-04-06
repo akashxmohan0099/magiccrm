@@ -147,8 +147,8 @@ export function BookingsPage() {
   return (
     <div>
       <PageHeader
-        title={ms.label || "Scheduling"}
-        description={`Schedule ${vocab.bookings.toLowerCase()} and manage your calendar.`}
+        title={ms.label || "Appointments"}
+        description="Schedule appointments and manage your calendar."
         actions={
           <Button variant="primary" size="sm" onClick={handleAdd}>
             <Plus className="w-4 h-4 mr-1.5" />

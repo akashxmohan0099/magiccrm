@@ -31,7 +31,7 @@ export function AutomationsPage() {
     <div>
       <PageHeader
         title="Automations"
-        description="Let your workspace handle the repetitive work"
+        description="Reminders, follow-ups, and workflows that run automatically."
         actions={
           <Button onClick={() => setFormOpen(true)}>New Automation</Button>
         }
