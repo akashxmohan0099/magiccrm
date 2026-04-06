@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase";
 import { useAddonsStore } from "@/store/addons";
 
 const DEV_EMAIL = "demo@demo.com";
-const DEV_PASSWORD = "Demo1234!";
+const DEV_PASSWORD = "12345678";
 
 /**
  * /dev — One-click dashboard access for development.
