@@ -80,7 +80,7 @@ export default function DevPage() {
             communicateClients: true,
             sendInvoices: true,
             acceptBookings: true,
-            manageProjects: true,
+            manageProjects: false,
             runMarketing: true,
             handleSupport: true,
             manageDocuments: true,
@@ -90,7 +90,6 @@ export default function DevPage() {
           featureSelections: {},
           discoveryAnswers: {
             "module:leads-pipeline": true,
-            "module:jobs-projects": true,
             "module:marketing": true,
             "module:team": true,
             "module:client-portal": true,
