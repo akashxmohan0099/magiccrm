@@ -57,7 +57,7 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
   const { entries: activityEntries } = useActivityStore();
   const vocab = useVocabulary();
   const config = useIndustryConfig();
-  const customFieldDefs = config.customFields.clients ?? [];
+  const customFieldDefs = config.customFields?.clients ?? [];
   const selectedPersona = useOnboardingStore((s) => s.selectedPersona);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
