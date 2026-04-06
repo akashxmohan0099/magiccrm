@@ -70,7 +70,7 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
     if (!clientId) return undefined;
     return bookings
       .filter((b) => b.clientId === clientId && b.status !== "cancelled")
-      .sort((a, b) => b.date.localeCompare(a.date) || b.startTime.localeCompare(a.startTime))[0];
+      .sort((a, b) => (b.date ?? "").localeCompare(a.date ?? "") || (b.startTime ?? "").localeCompare(a.startTime ?? ""))[0];
   }, [bookings, clientId]);
 
   const client = clientId ? getClient(clientId) : undefined;
@@ -80,7 +80,7 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
     return activityEntries.filter(
       (entry) =>
         entry.entityId === client.id ||
-        entry.description.toLowerCase().includes(client.name.toLowerCase())
+        (entry.description ?? "").toLowerCase().includes(client.name.toLowerCase())
     );
   }, [activityEntries, client]);
 
@@ -190,7 +190,7 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
           {(() => {
             const clientBookingsList = bookings.filter((b) => b.clientId === client.id);
             const completedCount = clientBookingsList.filter((b) => b.status === "completed").length;
-            const lastBooking2 = clientBookingsList.filter((b) => b.status === "completed").sort((a, b) => b.date.localeCompare(a.date))[0];
+            const lastBooking2 = clientBookingsList.filter((b) => b.status === "completed").sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""))[0];
             const nextBooking = clientBookingsList.filter((b) => (b.status === "confirmed" || b.status === "pending") && b.date >= new Date().toISOString().split("T")[0]).sort((a, b) => a.date.localeCompare(b.date))[0];
             const clientInvoicesList = invoices.filter((i) => i.clientId === client.id && i.status === "paid");
             const totalSpent = clientInvoicesList.reduce((sum, inv) => sum + (inv.lineItems ?? []).reduce((s, li) => s + li.quantity * li.unitPrice, 0), 0);
@@ -333,7 +333,7 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
           {/* Custom fields already shown above in Beauty Profile section */}
 
           {/* Relationships */}
-          {config.relationships.length > 0 && (
+          {(config.relationships?.length ?? 0) > 0 && (
             <RelationshipsSection
               clientId={client.id}
               relationships={client.relationships ?? []}
