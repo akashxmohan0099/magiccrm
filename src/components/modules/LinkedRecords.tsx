@@ -165,7 +165,7 @@ export function LinkedRecords({ clientId, onNavigate }: LinkedRecordsProps) {
           href="/dashboard/invoicing"
           onNavigate={onNavigate}
           renderItem={(item) => {
-            const total = item.lineItems.reduce(
+            const total = (item.lineItems ?? []).reduce(
               (sum, li) => sum + li.quantity * li.unitPrice,
               0
             );

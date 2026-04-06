@@ -60,7 +60,7 @@ export function ExportReports() {
   const exportInvoicesCSV = () => {
     const headers = ["Number", "Client ID", "Status", "Total", "Due Date", "Created"];
     const rows = invoices.map((inv) => {
-      const total = inv.lineItems.reduce(
+      const total = (inv.lineItems ?? []).reduce(
         (sum, li) => sum + li.quantity * li.unitPrice,
         0
       );

@@ -69,7 +69,7 @@ export function InvoiceDetail({ open, onClose, invoiceId, onEdit }: InvoiceDetai
     if (!invoice) return;
     addInvoice({
       clientId: invoice.clientId,
-      lineItems: invoice.lineItems.map((li) => ({ ...li, id: generateId() })),
+      lineItems: (invoice.lineItems ?? []).map((li) => ({ ...li, id: generateId() })),
       status: "draft",
       notes: invoice.notes,
       taxRate: invoice.taxRate,
@@ -104,7 +104,7 @@ export function InvoiceDetail({ open, onClose, invoiceId, onEdit }: InvoiceDetai
         ? new Date(invoice.dueDate).toLocaleDateString("en-AU", { year: "numeric", month: "long", day: "numeric" })
         : "On receipt",
       status: invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1),
-      items: invoice.lineItems.map((li) => ({
+      items: (invoice.lineItems ?? []).map((li) => ({
         description: li.description || "",
         quantity: li.quantity,
         unitPrice: li.unitPrice,
@@ -218,7 +218,7 @@ export function InvoiceDetail({ open, onClose, invoiceId, onEdit }: InvoiceDetai
                   </tr>
                 </thead>
                 <tbody>
-                  {invoice.lineItems.map((li) => (
+                  {(invoice.lineItems ?? []).map((li) => (
                     <tr key={li.id} className="border-b border-border-light last:border-b-0">
                       <td className="px-4 py-2 text-sm text-foreground">{li.description || "\u2014"}</td>
                       <td className="px-4 py-2 text-sm text-foreground text-center">{li.quantity}</td>

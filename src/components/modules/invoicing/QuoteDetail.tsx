@@ -47,7 +47,7 @@ export function QuoteDetail({ open, onClose, quoteId, onEdit }: QuoteDetailProps
   }
 
   const client = clients.find((c) => c.id === quote.clientId);
-  const total = quote.lineItems.reduce((sum, li) => sum + li.quantity * li.unitPrice, 0);
+  const total = (quote.lineItems ?? []).reduce((sum, li) => sum + li.quantity * li.unitPrice, 0);
 
   const buildPdfPayload = () => ({
     workspaceId,
@@ -66,7 +66,7 @@ export function QuoteDetail({ open, onClose, quoteId, onEdit }: QuoteDetailProps
       ? new Date(quote.validUntil).toLocaleDateString("en-AU", { year: "numeric", month: "long", day: "numeric" })
       : "N/A",
     status: quote.status.charAt(0).toUpperCase() + quote.status.slice(1),
-    items: quote.lineItems.map((li) => ({
+    items: (quote.lineItems ?? []).map((li) => ({
       description: li.description || "",
       quantity: li.quantity,
       unitPrice: li.unitPrice,
@@ -110,7 +110,7 @@ export function QuoteDetail({ open, onClose, quoteId, onEdit }: QuoteDetailProps
     if (!quote) return;
     addQuote({
       clientId: quote.clientId,
-      lineItems: quote.lineItems.map((li) => ({ ...li, id: generateId() })),
+      lineItems: (quote.lineItems ?? []).map((li) => ({ ...li, id: generateId() })),
       status: "draft",
       notes: quote.notes,
     });
@@ -170,7 +170,7 @@ export function QuoteDetail({ open, onClose, quoteId, onEdit }: QuoteDetailProps
                   </tr>
                 </thead>
                 <tbody>
-                  {quote.lineItems.map((li) => (
+                  {(quote.lineItems ?? []).map((li) => (
                     <tr key={li.id} className="border-b border-border-light last:border-b-0">
                       <td className="px-4 py-2 text-sm text-foreground">{li.description || "\u2014"}</td>
                       <td className="px-4 py-2 text-sm text-foreground text-center">{li.quantity}</td>

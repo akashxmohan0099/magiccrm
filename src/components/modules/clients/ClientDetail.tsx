@@ -131,7 +131,7 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
       <span className="text-text-secondary mt-0.5">{icon}</span>
       <div className="flex-1 min-w-0">
         <p className="text-xs text-text-secondary">{label}</p>
-        {editingField === field ? (
+        {field && editingField === field ? (
           <input
             autoFocus
             value={editValue}
@@ -193,7 +193,7 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
             const lastBooking2 = clientBookingsList.filter((b) => b.status === "completed").sort((a, b) => b.date.localeCompare(a.date))[0];
             const nextBooking = clientBookingsList.filter((b) => (b.status === "confirmed" || b.status === "pending") && b.date >= new Date().toISOString().split("T")[0]).sort((a, b) => a.date.localeCompare(b.date))[0];
             const clientInvoicesList = invoices.filter((i) => i.clientId === client.id && i.status === "paid");
-            const totalSpent = clientInvoicesList.reduce((sum, inv) => sum + inv.lineItems.reduce((s, li) => s + li.quantity * li.unitPrice, 0), 0);
+            const totalSpent = clientInvoicesList.reduce((sum, inv) => sum + (inv.lineItems ?? []).reduce((s, li) => s + li.quantity * li.unitPrice, 0), 0);
 
             return (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
