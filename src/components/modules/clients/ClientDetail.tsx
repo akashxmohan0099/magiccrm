@@ -103,20 +103,49 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
     onClose();
   };
 
+  const [editingField, setEditingField] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
+
+  const startEdit = (field: string, currentValue: string) => {
+    setEditingField(field);
+    setEditValue(currentValue);
+  };
+
+  const saveEdit = (field: string) => {
+    if (client) {
+      updateClient(client.id, { [field]: editValue }, workspaceId ?? undefined);
+    }
+    setEditingField(null);
+  };
+
   const infoRow = (
     icon: React.ReactNode,
     label: string,
-    value?: string
-  ) =>
-    value ? (
-      <div className="flex items-start gap-3 py-2">
-        <span className="text-text-secondary mt-0.5">{icon}</span>
-        <div>
-          <p className="text-xs text-text-secondary">{label}</p>
-          <p className="text-sm text-foreground">{value}</p>
-        </div>
+    value: string | undefined,
+    field?: string
+  ) => (
+    <div
+      className={`flex items-start gap-3 py-2 ${field ? "cursor-pointer hover:bg-surface/80 -mx-2 px-2 rounded-lg transition-colors" : ""}`}
+      onClick={() => field && value !== undefined && startEdit(field, value || "")}
+    >
+      <span className="text-text-secondary mt-0.5">{icon}</span>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs text-text-secondary">{label}</p>
+        {editingField === field ? (
+          <input
+            autoFocus
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onBlur={() => saveEdit(field!)}
+            onKeyDown={(e) => { if (e.key === "Enter") saveEdit(field!); if (e.key === "Escape") setEditingField(null); }}
+            className="text-sm text-foreground bg-transparent border-b border-primary/40 outline-none w-full py-0.5"
+          />
+        ) : (
+          <p className="text-sm text-foreground">{value || <span className="text-text-tertiary italic">Add {label.toLowerCase()}</span>}</p>
+        )}
       </div>
-    ) : null;
+    </div>
+  );
 
   return (
     <>
@@ -147,15 +176,7 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
             </div>
             <div className="flex gap-2">
               <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setEditOpen(true)}
-              >
-                <Pencil className="w-3.5 h-3.5" />
-                Edit
-              </Button>
-              <Button
-                variant="danger"
+                variant="ghost"
                 size="sm"
                 onClick={() => setDeleteOpen(true)}
               >
@@ -201,44 +222,11 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
             <h4 className="text-sm font-medium text-foreground mb-2">
               Contact Information
             </h4>
-            {infoRow(
-              <Mail className="w-4 h-4" />,
-              "Email",
-              client.email
-            )}
-            {infoRow(
-              <Phone className="w-4 h-4" />,
-              "Phone",
-              client.phone || undefined
-            )}
-            {infoRow(
-              <Building2 className="w-4 h-4" />,
-              "Company",
-              client.company
-            )}
-            {infoRow(
-              <MapPin className="w-4 h-4" />,
-              "Address",
-              client.address
-            )}
-            {infoRow(
-              <Calendar className="w-4 h-4" />,
-              "Client Since",
-              new Date(client.createdAt).toLocaleDateString()
-            )}
-            {client.source && (
-              <div className="flex items-start gap-3 py-2">
-                <span className="text-text-secondary mt-0.5">
-                  <Building2 className="w-4 h-4" />
-                </span>
-                <div>
-                  <p className="text-xs text-text-secondary">Source</p>
-                  <p className="text-sm text-foreground capitalize">
-                    {client.source}
-                  </p>
-                </div>
-              </div>
-            )}
+            {infoRow(<Mail className="w-4 h-4" />, "Email", client.email, "email")}
+            {infoRow(<Phone className="w-4 h-4" />, "Phone", client.phone || "", "phone")}
+            {infoRow(<Building2 className="w-4 h-4" />, "Company", client.company || "", "company")}
+            {infoRow(<MapPin className="w-4 h-4" />, "Address", client.address || "", "address")}
+            {infoRow(<Calendar className="w-4 h-4" />, "Client Since", new Date(client.createdAt).toLocaleDateString())}
           </div>
 
           {/* Beauty Profile — Custom Fields (elevated for beauty pros) */}
