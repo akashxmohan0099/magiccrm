@@ -25,6 +25,7 @@ import { useTeamStore } from "@/store/team";
 import { computeEnabledModuleIds } from "@/lib/module-registry";
 import { generateSampleData } from "@/lib/sample-data-generator";
 import { useEnabledModules, useEnabledAddons } from "@/hooks/useFeature";
+import { useEffectivePresentation } from "@/hooks/useResolvedWorkspace";
 import { useHydration } from "@/hooks/useHydration";
 import { useAuth } from "@/hooks/useAuth";
 import { createClient } from "@/lib/supabase";
@@ -71,6 +72,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
   const selectedPersona = useOnboardingStore((s) => s.selectedPersona);
   const enabledModules = useEnabledModules();
   const enabledAddons = useEnabledAddons();
+  const presentation = useEffectivePresentation();
   const vocab = useVocabulary();
   const { user, workspaceId, loading: authLoading, signOut, refreshMember } = useAuth();
   const { syncing } = useSupabaseSync({ workspaceId, authLoading });
@@ -229,18 +231,44 @@ function DashboardShell({ children }: { children: ReactNode }) {
   }
 
   // ── All enabled modules in one list ──────────────────────
+  const sidebarOrder = presentation?.sidebarOrder;
   const moduleItems = enabledModules.map((mod) => ({
     href: `/dashboard/${mod.slug}`,
     label: getModuleDisplayName(mod, vocab),
     icon: ICON_MAP[mod.icon] || LayoutDashboard,
+    slug: mod.slug,
   }));
+
+  // Sort by blueprint sidebar order when available
+  if (sidebarOrder && sidebarOrder.length > 0) {
+    moduleItems.sort((a, b) => {
+      const ai = sidebarOrder.indexOf(a.slug);
+      const bi = sidebarOrder.indexOf(b.slug);
+      // Items not in sidebarOrder go to the end, preserving their relative order
+      const aIdx = ai === -1 ? sidebarOrder.length : ai;
+      const bIdx = bi === -1 ? sidebarOrder.length : bi;
+      return aIdx - bIdx;
+    });
+  }
 
   // ── Enabled add-ons ──
   const addonItems = enabledAddons.map((mod) => ({
     href: `/dashboard/${mod.slug}`,
     label: getModuleDisplayName(mod, vocab),
     icon: ICON_MAP[mod.icon] || Puzzle,
+    slug: mod.slug,
   }));
+
+  // Sort add-ons by blueprint sidebar order when available
+  if (sidebarOrder && sidebarOrder.length > 0) {
+    addonItems.sort((a, b) => {
+      const ai = sidebarOrder.indexOf(a.slug);
+      const bi = sidebarOrder.indexOf(b.slug);
+      const aIdx = ai === -1 ? sidebarOrder.length : ai;
+      const bIdx = bi === -1 ? sidebarOrder.length : bi;
+      return aIdx - bIdx;
+    });
+  }
 
   const navGroups = [
     { label: "", items: [

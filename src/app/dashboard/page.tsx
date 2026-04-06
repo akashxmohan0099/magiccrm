@@ -7,7 +7,7 @@ import {
   Sparkles, Package, Users, User, DollarSign,
   TrendingUp, AlertCircle, Plus, X, LayoutGrid, Zap, Lightbulb,
   FolderKanban, Inbox,
-  Activity,
+  Activity, CheckCircle2, Circle, ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
 import { useOnboardingStore } from "@/store/onboarding";
@@ -64,6 +64,122 @@ const DEFAULT_WIDGETS: { type: string; size: "sm" | "md" | "lg" }[] = [
   { type: "recent-activity", size: "md" },
   { type: "todays-schedule", size: "lg" },
 ];
+
+// ══════════════════════════════════════════════════════
+// SETUP CHECKLIST
+// ══════════════════════════════════════════════════════
+
+const CHECKLIST_STORAGE_KEY = "magic-crm-setup-checklist-dismissed";
+const CHECKLIST_ITEMS_KEY = "magic-crm-setup-checklist-items";
+
+interface ChecklistItem {
+  id: string;
+  label: string;
+  href: string;
+  done: boolean;
+}
+
+const DEFAULT_CHECKLIST: Omit<ChecklistItem, "done">[] = [
+  { id: "services", label: "Set up your services and pricing", href: "/dashboard/bookings" },
+  { id: "import", label: "Import your existing clients", href: "/dashboard/clients" },
+  { id: "booking-page", label: "Share your booking page", href: "/dashboard/settings" },
+  { id: "invoice", label: "Send your first invoice", href: "/dashboard/invoicing" },
+];
+
+function loadChecklistDismissed(): boolean {
+  if (typeof window === "undefined") return false;
+  try { return localStorage.getItem(CHECKLIST_STORAGE_KEY) === "true"; } catch { return false; }
+}
+
+function loadChecklistItems(): ChecklistItem[] {
+  if (typeof window === "undefined") return DEFAULT_CHECKLIST.map((i) => ({ ...i, done: false }));
+  try {
+    const stored = localStorage.getItem(CHECKLIST_ITEMS_KEY);
+    if (stored) return JSON.parse(stored) as ChecklistItem[];
+  } catch { /* ignore */ }
+  return DEFAULT_CHECKLIST.map((i) => ({ ...i, done: false }));
+}
+
+function SetupChecklist() {
+  const [dismissed, setDismissed] = useState(loadChecklistDismissed);
+  const [items, setItems] = useState<ChecklistItem[]>(loadChecklistItems);
+
+  const toggleItem = (id: string) => {
+    setItems((prev) => {
+      const next = prev.map((i) => (i.id === id ? { ...i, done: !i.done } : i));
+      try { localStorage.setItem(CHECKLIST_ITEMS_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+      return next;
+    });
+  };
+
+  const dismiss = () => {
+    setDismissed(true);
+    try { localStorage.setItem(CHECKLIST_STORAGE_KEY, "true"); } catch { /* ignore */ }
+  };
+
+  if (dismissed) return null;
+
+  const doneCount = items.filter((i) => i.done).length;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="mb-6"
+    >
+      <div className="bg-card-bg rounded-xl border border-border-light p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-[15px] font-semibold text-foreground">Getting started</h3>
+            <p className="text-[13px] text-text-tertiary mt-0.5">{doneCount} of {items.length} complete</p>
+          </div>
+          <button
+            onClick={dismiss}
+            className="text-[12px] text-text-tertiary hover:text-foreground transition-colors cursor-pointer"
+          >
+            Dismiss
+          </button>
+        </div>
+        {/* Progress bar */}
+        <div className="h-1.5 bg-surface rounded-full mb-4 overflow-hidden">
+          <motion.div
+            className="h-full bg-primary rounded-full"
+            initial={false}
+            animate={{ width: `${(doneCount / items.length) * 100}%` }}
+            transition={{ type: "spring", duration: 0.4, bounce: 0 }}
+          />
+        </div>
+        <div className="space-y-1">
+          {items.map((item) => (
+            <div key={item.id} className="flex items-center gap-3 group">
+              <button
+                onClick={() => toggleItem(item.id)}
+                className="flex-shrink-0 cursor-pointer"
+              >
+                {item.done ? (
+                  <CheckCircle2 className="w-[18px] h-[18px] text-primary" />
+                ) : (
+                  <Circle className="w-[18px] h-[18px] text-text-tertiary group-hover:text-text-secondary transition-colors" />
+                )}
+              </button>
+              <Link
+                href={item.href}
+                className={`flex-1 flex items-center justify-between py-2 text-[13px] font-medium transition-colors ${
+                  item.done
+                    ? "text-text-tertiary line-through"
+                    : "text-foreground hover:text-primary"
+                }`}
+              >
+                {item.label}
+                {!item.done && <ChevronRight className="w-3.5 h-3.5 text-text-tertiary opacity-0 group-hover:opacity-100 transition-opacity" />}
+              </Link>
+            </div>
+          ))}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
 
 // ══════════════════════════════════════════════════════
 // WIDGET RENDERER
@@ -797,6 +913,9 @@ export default function DashboardPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ── SETUP CHECKLIST ── */}
+      <SetupChecklist />
 
       {/* ── WIDGET DASHBOARD ── */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>

@@ -59,7 +59,7 @@ export const makeupArtistBlueprint: WorkspaceBlueprint = {
     ],
     modulePresentation: {
       clients: {
-        defaultColumns: ["name", "email", "phone", "status", "tags", "field_foundation-shade", "field_skin-tone", "field_undertone"],
+        defaultColumns: ["name", "email", "phone", "status", "tags"],
       },
       leads: {
         defaultColumns: ["name", "email", "stage", "value", "createdAt"],
