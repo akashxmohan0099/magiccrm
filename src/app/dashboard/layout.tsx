@@ -328,7 +328,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
       </AnimatePresence>
 
       {/* Main */}
-      <main className="flex-1 ml-0 lg:ml-[240px]">
+      <main className="flex-1 ml-0 lg:ml-[240px] min-w-0 overflow-hidden">
         {/* Header */}
         <header className="bg-background/50 backdrop-blur-sm border-b border-border-light px-4 lg:px-8 py-3.5 flex items-center justify-between sticky top-0 z-10">
           <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -433,7 +433,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
         </header>
 
         <ErrorBoundary>
-          <div className="p-4 lg:p-8">{children}</div>
+          <div className="p-4 lg:p-8 min-w-0 overflow-x-hidden">{children}</div>
         </ErrorBoundary>
         {/* Add bottom padding on mobile for bottom nav */}
         <div className="h-16 lg:hidden" />
