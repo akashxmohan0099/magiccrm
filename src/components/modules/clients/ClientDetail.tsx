@@ -263,14 +263,6 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
             );
           })()}
 
-          {/* Client Credit Balance */}
-          <FeatureSection moduleId="client-database" featureId="client-credit-balance" featureLabel="Client Credits">
-            <div className="flex items-center justify-between px-4 py-3 bg-surface/50 rounded-xl mb-3">
-              <span className="text-[13px] text-text-secondary">Credit Balance</span>
-              <span className="text-[15px] font-bold text-foreground">$0.00</span>
-            </div>
-          </FeatureSection>
-
           {/* Notes */}
           {client.notes && (
             <div className="bg-surface rounded-lg p-4 border border-border-light">

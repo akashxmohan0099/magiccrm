@@ -15,7 +15,6 @@ export function mapServiceFromDB(row: Record<string, unknown>): ServiceDefinitio
     category: row.category as string | undefined,
     variants: (row.variants as ServiceDefinition["variants"]) || undefined,
     rebookingIntervalDays: row.rebooking_interval_days as number | undefined,
-    rebookingMessage: row.rebooking_message as string | undefined,
   };
 }
 
@@ -33,7 +32,6 @@ function mapServiceToDB(
   if (service.category !== undefined) row.category = service.category || null;
   if (service.variants !== undefined) row.variants = service.variants || null;
   if (service.rebookingIntervalDays !== undefined) row.rebooking_interval_days = service.rebookingIntervalDays ?? null;
-  if (service.rebookingMessage !== undefined) row.rebooking_message = service.rebookingMessage || null;
 
   return row;
 }
@@ -72,7 +70,6 @@ export async function dbCreateService(
       category: service.category || null,
       variants: service.variants || null,
       rebooking_interval_days: service.rebookingIntervalDays ?? null,
-      rebooking_message: service.rebookingMessage || null,
     })
     .select()
     .single();
@@ -131,7 +128,6 @@ export async function dbUpsertServices(
     category: s.category || null,
     variants: s.variants || null,
     rebooking_interval_days: s.rebookingIntervalDays ?? null,
-    rebooking_message: s.rebookingMessage || null,
   }));
 
   const { error } = await supabase

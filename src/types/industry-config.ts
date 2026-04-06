@@ -83,7 +83,6 @@ export interface ServiceDefinition {
   category?: string;
   variants?: ServiceVariant[];
   rebookingIntervalDays?: number;
-  rebookingMessage?: string;
 }
 
 /** Invoice mode configuration */

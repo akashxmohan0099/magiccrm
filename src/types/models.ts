@@ -12,12 +12,10 @@ export interface Client {
   phone: string;
   company?: string;
   address?: string;
-  instagram?: string;
   birthday?: string;          // MM-DD format for annual reminders
   tags: string[];
   notes: string;
   source?: "referral" | "website" | "social" | "other";
-  referredBy?: string;        // client ID of referrer
   status: "active" | "inactive" | "prospect" | "vip" | "churned";
   customData?: Record<string, unknown>;
   relationships?: ClientRelationship[];

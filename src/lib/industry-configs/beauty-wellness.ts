@@ -7,8 +7,8 @@ export const beautyWellnessConfig: IndustryAdaptiveConfig = {
   vocabulary: {
     client: "Client",
     clients: "Clients",
-    job: "Service",
-    jobs: "Services",
+    job: "Project",
+    jobs: "Projects",
     booking: "Appointment",
     bookings: "Appointments",
     invoice: "Receipt",
