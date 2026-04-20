@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { toast } from "@/components/ui/Toast";
-import { useBrandSettingsStore } from "@/store/brand-settings";
+import { useSettingsStore } from "@/store/settings";
 
 // ============================================================
 // Types
@@ -210,7 +210,7 @@ function IntegrationCard({
 // ============================================================
 
 export function IntegrationSettings() {
-  const { brandColor } = useBrandSettingsStore();
+  const brandColor = useSettingsStore((s) => s.settings?.branding?.primaryColor) || "#34D399";
 
   return (
     <div className="max-w-2xl space-y-5">

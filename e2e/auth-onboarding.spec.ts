@@ -1,92 +1,55 @@
-import { test, expect, type BrowserContext } from "playwright/test";
+import { test, expect } from "playwright/test";
 
-async function stubOnboardingDependencies(context: BrowserContext) {
-  await context.route("**/api/onboarding/ai-questions", async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        categories: [
-          {
-            title: "A few more about your workflow",
-            subtitle: "A couple of quick checks",
-            questions: [
-              { question: "Do clients often rebook with you?", module: "automations" },
-              { question: "Do you track product sales too?", module: "products" },
-            ],
-          },
-          {
-            title: "Things you might find useful",
-            subtitle: "Optional but relevant",
-            questions: [
-              { question: "Do you want revenue reporting?", module: "reporting" },
-              { question: "Do clients need a self-service portal?", module: "client-portal" },
-            ],
-          },
-        ],
-      }),
-    });
-  });
+async function completeOnboardingSignup(
+  page: import("playwright/test").Page,
+  email: string,
+  password: string,
+  businessName: string,
+) {
+  await page.goto("/onboarding");
+  await page.getByRole("button", { name: /get started/i }).click();
 
-  await context.route("**/api/onboarding/configure", async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({ questions: [] }),
-    });
-  });
+  await page.getByPlaceholder("you@example.com").fill(email);
+  await page.getByPlaceholder(/min 8 chars/i).fill(password);
+  await page.getByPlaceholder("e.g. Glow Studio").fill(businessName);
+  await page.getByRole("button", { name: /^Continue$/ }).click();
 
-  await context.route("https://nominatim.openstreetmap.org/**", async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: "[]",
-    });
-  });
+  await page.getByRole("button", { name: /hair stylist/i }).click();
+  await page.getByRole("button", { name: /^Continue$/ }).click();
+
+  await page.getByRole("button", { name: /at my own studio or salon/i }).click();
+  await page.getByRole("button", { name: /^Continue$/ }).click();
+
+  await page.getByRole("button", { name: /it's just me/i }).click();
+  await page.getByRole("button", { name: /^Continue$/ }).click();
+
+  await page.getByRole("button", { name: /^Continue$/ }).click();
+  await page.getByRole("button", { name: /^Continue$/ }).click();
+  await page.getByRole("button", { name: /^Continue$/ }).click();
+
+  await expect(page.getByText("You're all set!")).toBeVisible();
+
+  await page.getByRole("button", { name: /launch dashboard/i }).click();
 }
 
 test("user can complete onboarding signup and sign back in", async ({ browser }) => {
   test.setTimeout(120000);
 
   const email = `codex-onboarding-${Date.now()}@example.com`;
-  const password = "Passw0rd!123";
+  const password = "Passw0rd123";
+  const businessName = "Codex Test Studio";
 
   const signupContext = await browser.newContext();
-  await stubOnboardingDependencies(signupContext);
+  await signupContext.addCookies([
+    {
+      name: "magic-e2e-signup",
+      value: "1",
+      url: "http://localhost:3000",
+    },
+  ]);
   const signupPage = await signupContext.newPage();
 
-  await signupPage.goto("/onboarding");
-  await signupPage.getByRole("button", { name: /Get started/i }).click();
-  await signupPage.getByRole("button", { name: /Beauty & Wellness/i }).click();
-  await signupPage.getByRole("button", { name: /Hair Salon \/ Hairstylist/i }).click();
-  await signupPage.getByRole("button", { name: /^Continue$/ }).click();
-
-  await signupPage.getByPlaceholder("e.g. Glow Studio").fill("Codex Test Studio");
-  await signupPage.getByPlaceholder("e.g. Mobile lash technician in Brisbane").fill("Boutique hair studio in Brisbane");
-  await signupPage.getByPlaceholder("Start typing your address...").fill("Brisbane QLD 4000");
-  await signupPage.getByRole("button", { name: /^Continue$/ }).click();
-
-  await signupPage.getByPlaceholder("you@example.com").fill(email);
-  await signupPage.getByPlaceholder("At least 6 characters").fill(password);
-  await signupPage.getByPlaceholder("Re-enter your password").fill(password);
-  await signupPage.locator("label").filter({ hasText: "I agree to the" }).click();
-  await signupPage.getByRole("button", { name: /^Continue$/ }).click();
-
-  await expect(signupPage.getByText("How do clients reach you?")).toBeVisible({ timeout: 30000 });
-
-  for (let i = 0; i < 3; i += 1) {
-    await signupPage.getByRole("button", { name: /^Next$/ }).click();
-  }
-  await signupPage.getByRole("button", { name: "See my workspace" }).click();
-
-  await expect(signupPage.getByText("A few more about your workflow")).toBeVisible({ timeout: 10000 });
-  await signupPage.getByRole("button", { name: "Skip" }).click();
-
-  await expect(signupPage.getByText("Let's fine-tune your workspace")).toBeVisible({ timeout: 10000 });
-  await signupPage.getByRole("button", { name: "Skip — use defaults" }).click();
-
-  await expect(signupPage.getByText("Codex Test Studio is ready")).toBeVisible({ timeout: 10000 });
-  await signupPage.getByRole("button", { name: "Launch my workspace" }).click();
+  await completeOnboardingSignup(signupPage, email, password, businessName);
 
   await signupPage.waitForURL("**/dashboard", { timeout: 30000 });
   await expect(signupPage.getByText("Workspace not found")).toHaveCount(0);
@@ -94,7 +57,6 @@ test("user can complete onboarding signup and sign back in", async ({ browser })
   await signupContext.close();
 
   const loginContext = await browser.newContext();
-  await stubOnboardingDependencies(loginContext);
   const loginPage = await loginContext.newPage();
 
   await loginPage.goto("/login");

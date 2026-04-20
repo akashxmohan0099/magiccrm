@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase-server";
+import { createAdminClient, createClient } from "@/lib/supabase-server";
 import { bootstrapWorkspaceForUser } from "@/lib/auth/bootstrap-workspace";
 import { rateLimit } from "@/lib/rate-limit";
+import { getPostHogClient } from "@/lib/posthog-server";
+
+function isE2ESignupBypass(req: NextRequest) {
+  return (
+    process.env.NODE_ENV === "development" &&
+    req.cookies.get("magic-e2e-signup")?.value === "1"
+  );
+}
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
@@ -17,8 +25,7 @@ export async function POST(req: NextRequest) {
       email,
       password,
       workspaceName,
-      industry,
-      persona,
+      ownerName,
     } = await req.json();
 
     const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
@@ -26,6 +33,10 @@ export async function POST(req: NextRequest) {
       typeof workspaceName === "string" && workspaceName.trim()
         ? workspaceName.trim()
         : "My Workspace";
+    const normalizedOwnerName =
+      typeof ownerName === "string" && ownerName.trim()
+        ? ownerName.trim()
+        : normalizedWorkspaceName;
 
     if (!normalizedEmail || !password) {
       return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
@@ -43,37 +54,90 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Password must contain at least one number" }, { status: 400 });
     }
 
-    const admin = await createAdminClient();
+    let requiresEmailConfirmation = false;
 
-    // Create user with auto-confirm (admin API bypasses email verification)
-    const { data: userData, error: userError } = await admin.auth.admin.createUser({
-      email: normalizedEmail,
-      password,
-      email_confirm: true,
-    });
+    if (isE2ESignupBypass(req)) {
+      const admin = await createAdminClient();
+      const { data: createdUser, error: createUserError } = await admin.auth.admin.createUser({
+        email: normalizedEmail,
+        password,
+        email_confirm: true,
+        user_metadata: { full_name: normalizedOwnerName },
+      });
 
-    if (userError) {
-      return NextResponse.json({ error: userError.message }, { status: 400 });
+      if (createUserError) {
+        return NextResponse.json({ error: createUserError.message }, { status: 400 });
+      }
+
+      if (!createdUser.user?.id) {
+        return NextResponse.json({ error: "Failed to create account" }, { status: 500 });
+      }
+
+      createdUserId = createdUser.user.id;
+    } else {
+      const supabase = await createClient();
+      const origin = new URL(req.url).origin;
+      const { data: userData, error: userError } = await supabase.auth.signUp({
+        email: normalizedEmail,
+        password,
+        options: {
+          data: { full_name: normalizedOwnerName },
+          emailRedirectTo: `${origin}/auth/callback?next=/dashboard`,
+        },
+      });
+
+      if (userError) {
+        return NextResponse.json({ error: userError.message }, { status: 400 });
+      }
+
+      if (!userData.user?.id) {
+        return NextResponse.json({ error: "Failed to create account" }, { status: 500 });
+      }
+
+      createdUserId = userData.user.id;
+      requiresEmailConfirmation = !userData.session;
     }
 
-    createdUserId = userData.user.id;
+    if (requiresEmailConfirmation) {
+      return NextResponse.json({
+        success: true,
+        requiresEmailConfirmation: true,
+        message: "Check your email to confirm your account, then sign in to finish setup.",
+      });
+    }
 
     const bootstrapResult = await bootstrapWorkspaceForUser({
       authUserId: createdUserId,
       email: normalizedEmail,
       workspaceName: normalizedWorkspaceName,
-      industry,
-      persona,
+      ownerName: normalizedOwnerName,
     });
 
     if (!bootstrapResult.success || !bootstrapResult.workspaceId) {
       throw new Error(bootstrapResult.error || "Failed to create workspace");
     }
 
+    const posthog = getPostHogClient();
+    posthog.identify({
+      distinctId: createdUserId!,
+      properties: { email: normalizedEmail, name: normalizedOwnerName },
+    });
+    posthog.capture({
+      distinctId: createdUserId!,
+      event: "signup_completed",
+      properties: {
+        email: normalizedEmail,
+        workspace_name: normalizedWorkspaceName,
+        owner_name: normalizedOwnerName,
+        workspace_id: bootstrapResult.workspaceId,
+      },
+    });
+
     return NextResponse.json({
       success: true,
       userId: createdUserId,
       workspaceId: bootstrapResult.workspaceId,
+      requiresEmailConfirmation: false,
     });
   } catch (err) {
     console.error("Signup error:", err);

@@ -1,53 +1,25 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { Client } from "@/types/models";
+import type { Client } from "@/types/models";
 import { generateId } from "@/lib/id";
-import { logActivity } from "@/lib/activity-logger";
 import { toast } from "@/components/ui/Toast";
-import { cleanupClientRecords } from "@/lib/cascade-delete";
-import { validateClient, sanitize, sanitizeEmail } from "@/lib/validation";
 import {
   fetchClients,
-  fetchClientsPage,
-  fetchDuplicateClients,
   dbCreateClient,
   dbUpdateClient,
   dbDeleteClient,
-  dbUpsertClients,
-  mapClientFromDB,
 } from "@/lib/db/clients";
-
-export interface DuplicateMatch {
-  client: Client;
-  matchedOn: ("name" | "email" | "phone")[];
-}
 
 interface ClientsStore {
   clients: Client[];
-
-  // Pagination
-  page: number;
-  pageSize: number;
-  totalCount: number;
-  setPage: (n: number) => void;
-  setPageSize: (n: number) => void;
-  loadPage: (workspaceId: string, page?: number, pageSize?: number) => Promise<void>;
-
-  // Duplicate detection
-  checkDuplicates: (
-    name: string,
-    email: string,
-    phone: string,
-    workspaceId?: string
-  ) => Promise<DuplicateMatch[]>;
-
-  // CSV export
-  exportCSV: () => string;
-
   addClient: (
     data: Omit<Client, "id" | "createdAt" | "updatedAt">,
     workspaceId?: string
   ) => Client;
+  bulkImportClients: (
+    items: Omit<Client, "id" | "workspaceId" | "createdAt" | "updatedAt">[],
+    workspaceId: string
+  ) => number;
   updateClient: (
     id: string,
     data: Partial<Client>,
@@ -56,11 +28,6 @@ interface ClientsStore {
   deleteClient: (id: string, workspaceId?: string) => void;
   getClient: (id: string) => Client | undefined;
   searchClients: (query: string) => Client[];
-  getClientsByTag: (tag: string) => Client[];
-  getClientsByStatus: (status: Client["status"]) => Client[];
-
-  // Supabase sync
-  syncToSupabase: (workspaceId: string) => Promise<void>;
   loadFromSupabase: (workspaceId: string) => Promise<void>;
 }
 
@@ -69,231 +36,75 @@ export const useClientsStore = create<ClientsStore>()(
     (set, get) => ({
       clients: [],
 
-      // ---------------------------------------------------------------
-      // Pagination state
-      // ---------------------------------------------------------------
-      page: 1,
-      pageSize: 20,
-      totalCount: 0,
+      bulkImportClients: (items, workspaceId) => {
+        const now = new Date().toISOString();
+        const newClients: Client[] = items.map((item) => ({
+          id: generateId(),
+          workspaceId,
+          ...item,
+          createdAt: now,
+          updatedAt: now,
+        }));
 
-      setPage: (n: number) => set({ page: n }),
-      setPageSize: (n: number) => set({ pageSize: n, page: 1 }),
+        set((s) => ({ clients: [...newClients, ...s.clients] }));
+        toast(`Imported ${newClients.length} clients`);
 
-      loadPage: async (workspaceId: string, page?: number, pageSize?: number) => {
-        const currentPage = page ?? get().page;
-        const currentPageSize = pageSize ?? get().pageSize;
-        try {
-          const { data, totalCount } = await fetchClientsPage(
-            workspaceId,
-            currentPage,
-            currentPageSize
-          );
-          const mappedClients = data.map((row) => mapClientFromDB(row));
-          set({
-            clients: mappedClients,
-            page: currentPage,
-            pageSize: currentPageSize,
-            totalCount,
-          });
-        } catch (err) {
-          import("@/lib/sync-error-handler").then((m) =>
-            m.handleSyncError(err, { context: "loading clients page" })
-          );
-        }
-      },
-
-      // ---------------------------------------------------------------
-      // Duplicate detection
-      // ---------------------------------------------------------------
-      checkDuplicates: async (
-        name: string,
-        email: string,
-        phone: string,
-        workspaceId?: string
-      ): Promise<DuplicateMatch[]> => {
-        // First check in-memory (local store)
-        const localClients = get().clients;
-        const matches: DuplicateMatch[] = [];
-
-        const normName = name.trim().toLowerCase();
-        const normEmail = email.trim().toLowerCase();
-        const normPhone = phone.trim();
-
-        for (const c of localClients) {
-          const matchedOn: ("name" | "email" | "phone")[] = [];
-          if (normEmail && c.email.toLowerCase() === normEmail) matchedOn.push("email");
-          if (normName && c.name.toLowerCase() === normName) matchedOn.push("name");
-          if (normPhone && c.phone && c.phone === normPhone) matchedOn.push("phone");
-          if (matchedOn.length > 0) {
-            matches.push({ client: c, matchedOn });
+        // Async batch sync to Supabase (fire-and-forget, 10 at a time)
+        const batch = async () => {
+          for (let i = 0; i < newClients.length; i += 10) {
+            const chunk = newClients.slice(i, i + 10);
+            await Promise.allSettled(
+              chunk.map((c) =>
+                dbCreateClient(workspaceId, c as unknown as Record<string, unknown>)
+              )
+            );
           }
-        }
-
-        // If we have a workspaceId, also check the DB for matches not yet in local store
-        if (workspaceId) {
-          try {
-            const dbRows = await fetchDuplicateClients(workspaceId, name, email, phone);
-            const localIds = new Set(localClients.map((c) => c.id));
-            for (const row of dbRows) {
-              const client = mapClientFromDB(row);
-              if (localIds.has(client.id)) continue; // already matched locally
-              const matchedOn: ("name" | "email" | "phone")[] = [];
-              if (normEmail && client.email.toLowerCase() === normEmail) matchedOn.push("email");
-              if (normName && client.name.toLowerCase() === normName) matchedOn.push("name");
-              if (normPhone && client.phone && client.phone === normPhone) matchedOn.push("phone");
-              if (matchedOn.length > 0) {
-                matches.push({ client, matchedOn });
-              }
-            }
-          } catch {
-            // Silently fall back to local-only duplicate check
-          }
-        }
-
-        return matches;
-      },
-
-      // ---------------------------------------------------------------
-      // CSV export
-      // ---------------------------------------------------------------
-      exportCSV: (): string => {
-        const clients = get().clients;
-        const headers = [
-          "Name",
-          "Email",
-          "Phone",
-          "Company",
-          "Address",
-          "Status",
-          "Source",
-          "Tags",
-          "Notes",
-          "Created At",
-          "Updated At",
-        ];
-
-        const escapeCSV = (value: string): string => {
-          if (
-            value.includes(",") ||
-            value.includes('"') ||
-            value.includes("\n")
-          ) {
-            return `"${value.replace(/"/g, '""')}"`;
-          }
-          return value;
         };
+        batch().catch(console.error);
 
-        const rows = clients.map((c) =>
-          [
-            escapeCSV(c.name),
-            escapeCSV(c.email),
-            escapeCSV(c.phone || ""),
-            escapeCSV(c.company || ""),
-            escapeCSV(c.address || ""),
-            escapeCSV(c.status),
-            escapeCSV(c.source || ""),
-            escapeCSV(c.tags.join("; ")),
-            escapeCSV(c.notes || ""),
-            escapeCSV(c.createdAt),
-            escapeCSV(c.updatedAt),
-          ].join(",")
-        );
-
-        return [headers.join(","), ...rows].join("\n");
+        return newClients.length;
       },
 
-      addClient: (data, workspaceId?) => {
-        // Validate input
-        const validation = validateClient(data);
-        if (!validation.valid) {
-          toast(validation.errors[0], "error");
-          return null as unknown as Client;
-        }
-
+      addClient: (data, workspaceId) => {
         const now = new Date().toISOString();
         const client: Client = {
-          ...data,
-          name: sanitize(data.name, 200),
-          email: sanitizeEmail(data.email),
-          phone: sanitize(data.phone, 30),
-          company: sanitize(data.company, 200),
-          notes: sanitize(data.notes, 5000),
           id: generateId(),
+          ...data,
           createdAt: now,
           updatedAt: now,
         };
-        set((s) => ({ clients: [...s.clients, client] }));
-        logActivity("create", "clients", `Added client "${client.name}"`);
-        toast(`Client "${client.name}" added`);
-
-        // Sync to Supabase if workspaceId available
+        set((s) => ({ clients: [client, ...s.clients] }));
+        toast("Client created");
         if (workspaceId) {
-          const snapshot = get().clients;
-          dbCreateClient(workspaceId, client).catch((err) => {
-            // Rollback: remove the client we just added
-            set({ clients: snapshot.filter((c) => c.id !== client.id) });
-            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving client" }));
-          });
+          dbCreateClient(
+            workspaceId,
+            client as unknown as Record<string, unknown>
+          ).catch(console.error);
         }
-
         return client;
       },
 
-      updateClient: (id, data, workspaceId?) => {
-        // Validate if name or email is being updated
-        if (data.name !== undefined || data.email !== undefined) {
-          const existing = get().clients.find((c) => c.id === id);
-          const merged = { name: data.name ?? existing?.name, email: data.email ?? existing?.email };
-          const validation = validateClient(merged);
-          if (!validation.valid) {
-            toast(validation.errors[0], "error");
-            return;
-          }
-        }
-
-        const sanitizedData = { ...data };
-        if (sanitizedData.name !== undefined) sanitizedData.name = sanitize(sanitizedData.name, 200);
-        if (sanitizedData.email !== undefined) sanitizedData.email = sanitizeEmail(sanitizedData.email);
-        if (sanitizedData.phone !== undefined) sanitizedData.phone = sanitize(sanitizedData.phone, 30);
-
-        const updatedData = { ...sanitizedData, updatedAt: new Date().toISOString() };
-        const previousClients = get().clients;
+      updateClient: (id, data, workspaceId) => {
+        const now = new Date().toISOString();
         set((s) => ({
           clients: s.clients.map((c) =>
-            c.id === id ? { ...c, ...updatedData } : c
+            c.id === id ? { ...c, ...data, updatedAt: now } : c
           ),
         }));
-        logActivity("update", "clients", `Updated client`);
-        toast("Client updated");
-
-        // Sync to Supabase if workspaceId available
         if (workspaceId) {
-          dbUpdateClient(workspaceId, id, updatedData).catch((err) => {
-            set({ clients: previousClients });
-            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving client" }));
-          });
+          dbUpdateClient(
+            workspaceId,
+            id,
+            data as Record<string, unknown>
+          ).catch(console.error);
         }
       },
 
-      deleteClient: (id, workspaceId?) => {
-        const client = get().clients.find((c) => c.id === id);
-        if (!client) return;
-
-        const previousClients = get().clients;
+      deleteClient: (id, workspaceId) => {
         set((s) => ({ clients: s.clients.filter((c) => c.id !== id) }));
-
-        // Clean up all related records across stores
-        cleanupClientRecords(id);
-        logActivity("delete", "clients", `Deleted client "${client.name}"`);
-        toast(`Client "${client.name}" deleted`, "info");
-
-        // Sync to Supabase if workspaceId available
+        toast("Client deleted");
         if (workspaceId) {
-          dbDeleteClient(workspaceId, id).catch((err) => {
-            // Rollback delete -- restore client to list
-            set({ clients: previousClients });
-            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting client" }));
-          });
+          dbDeleteClient(workspaceId, id).catch(console.error);
         }
       },
 
@@ -305,61 +116,19 @@ export const useClientsStore = create<ClientsStore>()(
           (c) =>
             c.name.toLowerCase().includes(q) ||
             c.email.toLowerCase().includes(q) ||
-            c.company?.toLowerCase().includes(q) ||
             c.phone.includes(q)
         );
       },
 
-      getClientsByTag: (tag) =>
-        get().clients.filter((c) => c.tags.includes(tag)),
-
-      getClientsByStatus: (status) =>
-        get().clients.filter((c) => c.status === status),
-
-      // ---------------------------------------------------------------
-      // Supabase sync
-      // ---------------------------------------------------------------
-
-      syncToSupabase: async (workspaceId: string) => {
+      loadFromSupabase: async (workspaceId) => {
         try {
-          const { clients } = get();
-          await dbUpsertClients(workspaceId, clients);
+          const clients = await fetchClients(workspaceId);
+          set({ clients });
         } catch (err) {
-          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing clients" }));
-        }
-      },
-
-      loadFromSupabase: async (workspaceId: string) => {
-        try {
-          const rows = await fetchClients(workspaceId);
-          const mappedClients = (rows ?? []).map((row: Record<string, unknown>) =>
-            mapClientFromDB(row)
-          );
-          set({ clients: mappedClients });
-        } catch (err) {
-          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing clients" }));
+          console.debug("[store] loadFromSupabase skipped:", err);
         }
       },
     }),
-    {
-      name: "magic-crm-clients",
-      version: 2,
-      migrate: (persisted: unknown, version: number) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const state = persisted as Record<string, any>;
-        if (version < 2) {
-          // Add customData and relationships to existing clients
-          return {
-            ...state,
-            clients: (state.clients ?? []).map((c: Record<string, unknown>) => ({
-              ...c,
-              customData: c.customData ?? {},
-              relationships: c.relationships ?? [],
-            })),
-          };
-        }
-        return state;
-      },
-    }
+    { name: "magic-crm-clients", version: 2 }
   )
 );

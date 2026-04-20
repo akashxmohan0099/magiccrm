@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { bootstrapWorkspaceForUser } from "@/lib/auth/bootstrap-workspace";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const { allowed } = await rateLimit(`bootstrap:${ip}`, 5, 300_000);
+    if (!allowed) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
     const body = await req.json().catch(() => ({}));
-    const { workspaceName, industry, persona } = body ?? {};
+    const { workspaceName } = body ?? {};
 
     const supabase = await createClient();
     const {
@@ -21,8 +28,6 @@ export async function POST(req: NextRequest) {
       authUserId: user.id,
       email: user.email,
       workspaceName,
-      industry,
-      persona,
     });
 
     if (!result.success || !result.workspaceId) {

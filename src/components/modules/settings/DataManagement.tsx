@@ -47,12 +47,12 @@ export function DataManagement() {
     const reader = new FileReader();
     reader.onload = () => {
       try {
-        const parsed = JSON.parse(reader.result as string) as unknown;
-        const result = restoreMagicCrmBackup(window.localStorage, parsed);
+        const json = reader.result as string;
+        const result = restoreMagicCrmBackup(window.localStorage, json);
         setImportStatus(
-          result.mode === "full"
-            ? `Restored ${result.restoredKeys.length} stores. Reloading…`
-            : `Restored ${result.restoredKeys.length} legacy data stores. Reloading…`
+          result.errors.length === 0
+            ? `Restored ${result.restored} stores. Reloading...`
+            : `Restored ${result.restored} stores with ${result.errors.length} error(s). Reloading...`
         );
         window.setTimeout(() => {
           window.location.reload();

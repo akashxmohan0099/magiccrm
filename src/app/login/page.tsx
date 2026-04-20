@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { safeRedirect } from "@/lib/safe-redirect";
+import posthog from "posthog-js";
 
 export default function LoginPage() {
   return (
@@ -77,6 +78,9 @@ function LoginContent() {
         setLoading(false);
         return;
       }
+
+      posthog.identify(email.trim(), { email: email.trim() });
+      posthog.capture("user_logged_in", { email: email.trim() });
 
       // Redirect to the page they were trying to access, or dashboard
       const redirect = safeRedirect(searchParams.get("redirect"));

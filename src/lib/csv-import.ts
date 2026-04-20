@@ -1,248 +1,371 @@
-// ── CSV Import Utilities ────────────────────────────────────
+/**
+ * CSV Import utilities for migrating data from Fresha, Timely, and generic CSVs.
+ *
+ * Supports:
+ *  - Automatic format detection (Fresha vs Timely vs generic)
+ *  - Column mapping with smart defaults
+ *  - Preview and validation before commit
+ */
 
-export interface CSVParseResult {
-  headers: string[];
-  rows: string[][];
-  rowCount: number;
-}
+// ---------------------------------------------------------------------------
+// CSV Parser (handles quoted fields, newlines in quotes, BOM)
+// ---------------------------------------------------------------------------
 
-export interface ColumnMapping {
-  csvColumn: string;
-  targetField: string;
-  transform?: "none" | "trim" | "lowercase";
-}
-
-export interface ImportTarget {
-  id: "clients" | "leads" | "products";
-  label: string;
-  requiredFields: string[];
-  optionalFields: string[];
-  fieldLabels: Record<string, string>;
-}
-
-export const IMPORT_TARGETS: ImportTarget[] = [
-  {
-    id: "clients",
-    label: "Clients",
-    requiredFields: ["name"],
-    optionalFields: ["email", "phone", "company", "address", "tags", "notes", "source", "status"],
-    fieldLabels: {
-      name: "Name",
-      email: "Email",
-      phone: "Phone",
-      company: "Company",
-      address: "Address",
-      tags: "Tags",
-      notes: "Notes",
-      source: "Source",
-      status: "Status",
-    },
-  },
-  {
-    id: "leads",
-    label: "Leads",
-    requiredFields: ["name"],
-    optionalFields: ["email", "phone", "company", "source", "stage", "value", "notes"],
-    fieldLabels: {
-      name: "Name",
-      email: "Email",
-      phone: "Phone",
-      company: "Company",
-      source: "Source",
-      stage: "Stage",
-      value: "Value",
-      notes: "Notes",
-    },
-  },
-  {
-    id: "products",
-    label: "Products",
-    requiredFields: ["name", "price"],
-    optionalFields: ["description", "category", "sku", "quantity"],
-    fieldLabels: {
-      name: "Name",
-      price: "Price",
-      description: "Description",
-      category: "Category",
-      sku: "SKU",
-      quantity: "Stock Quantity",
-    },
-  },
-];
-
-// ── CSV Parser ──────────────────────────────────────────────
-
-function parseCSVRow(line: string): string[] {
-  const cells: string[] = [];
-  let current = "";
+export function parseCSV(raw: string): { headers: string[]; rows: string[][] } {
+  // Strip BOM
+  const text = raw.replace(/^\uFEFF/, "");
+  const rows: string[][] = [];
+  let current: string[] = [];
+  let field = "";
   let inQuotes = false;
 
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    const next = text[i + 1];
+
     if (inQuotes) {
-      if (ch === '"') {
-        // Check for escaped quote ("")
-        if (i + 1 < line.length && line[i + 1] === '"') {
-          current += '"';
-          i++; // skip next quote
-        } else {
-          inQuotes = false;
-        }
+      if (ch === '"' && next === '"') {
+        field += '"';
+        i++; // skip escaped quote
+      } else if (ch === '"') {
+        inQuotes = false;
       } else {
-        current += ch;
+        field += ch;
       }
     } else {
       if (ch === '"') {
         inQuotes = true;
       } else if (ch === ",") {
-        cells.push(current);
-        current = "";
+        current.push(field.trim());
+        field = "";
+      } else if (ch === "\n" || (ch === "\r" && next === "\n")) {
+        current.push(field.trim());
+        if (current.some((c) => c !== "")) rows.push(current);
+        current = [];
+        field = "";
+        if (ch === "\r") i++; // skip \n after \r
       } else {
-        current += ch;
+        field += ch;
       }
     }
   }
-  cells.push(current);
-  return cells;
+
+  // Last field/row
+  current.push(field.trim());
+  if (current.some((c) => c !== "")) rows.push(current);
+
+  if (rows.length === 0) return { headers: [], rows: [] };
+
+  const headers = rows[0];
+  return { headers, rows: rows.slice(1) };
 }
 
-export function parseCSV(text: string): CSVParseResult {
-  // Normalize line endings and handle quoted fields with newlines
-  const normalized = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+// ---------------------------------------------------------------------------
+// Format detection
+// ---------------------------------------------------------------------------
 
-  // Split into logical lines, respecting quoted fields that may contain newlines
-  const lines: string[] = [];
-  let currentLine = "";
-  let inQuotes = false;
+export type ImportSource = "fresha" | "timely" | "generic";
 
-  for (let i = 0; i < normalized.length; i++) {
-    const ch = normalized[i];
-    if (ch === '"') {
-      inQuotes = !inQuotes;
-      currentLine += ch;
-    } else if (ch === "\n" && !inQuotes) {
-      if (currentLine.trim()) {
-        lines.push(currentLine);
-      }
-      currentLine = "";
-    } else {
-      currentLine += ch;
-    }
-  }
-  if (currentLine.trim()) {
-    lines.push(currentLine);
-  }
+const FRESHA_CLIENT_SIGNALS = ["first name", "last name", "mobile", "date of birth"];
+const TIMELY_CLIENT_SIGNALS = ["client_name", "client_email", "client_phone"];
+const FRESHA_SERVICE_SIGNALS = ["service name", "sale price", "duration"];
+const TIMELY_SERVICE_SIGNALS = ["service_name", "duration_minutes", "base_price"];
 
-  if (lines.length === 0) {
-    return { headers: [], rows: [], rowCount: 0 };
-  }
+export function detectSource(headers: string[]): ImportSource {
+  const lower = headers.map((h) => h.toLowerCase().trim());
 
-  const headers = parseCSVRow(lines[0]).map((h) => h.trim());
-  const rows = lines.slice(1).map((line) => parseCSVRow(line));
+  const freshaClientHits = FRESHA_CLIENT_SIGNALS.filter((s) => lower.includes(s)).length;
+  const timelyClientHits = TIMELY_CLIENT_SIGNALS.filter((s) => lower.includes(s)).length;
+  const freshaServiceHits = FRESHA_SERVICE_SIGNALS.filter((s) => lower.includes(s)).length;
+  const timelyServiceHits = TIMELY_SERVICE_SIGNALS.filter((s) => lower.includes(s)).length;
 
-  return { headers, rows, rowCount: rows.length };
+  const freshaTotal = freshaClientHits + freshaServiceHits;
+  const timelyTotal = timelyClientHits + timelyServiceHits;
+
+  if (freshaTotal >= 2) return "fresha";
+  if (timelyTotal >= 2) return "timely";
+  return "generic";
 }
 
-// ── Auto Column Mapping ─────────────────────────────────────
+// ---------------------------------------------------------------------------
+// Column mapping
+// ---------------------------------------------------------------------------
 
-const FIELD_ALIASES: Record<string, string[]> = {
-  name: ["name", "full name", "fullname", "client name", "customer name", "contact name", "lead name", "product name", "first name", "display name"],
-  email: ["email", "e-mail", "email address", "e-mail address", "mail"],
-  phone: ["phone", "phone number", "telephone", "tel", "mobile", "cell", "contact number"],
-  company: ["company", "company name", "organization", "organisation", "business", "business name"],
-  address: ["address", "street address", "location", "street"],
-  tags: ["tags", "labels", "categories", "groups"],
-  notes: ["notes", "note", "comments", "description", "memo"],
-  source: ["source", "lead source", "referral source", "how found", "channel"],
-  status: ["status", "client status", "state"],
-  stage: ["stage", "pipeline stage", "lead stage", "deal stage"],
-  value: ["value", "deal value", "amount", "revenue", "worth"],
-  price: ["price", "cost", "unit price", "rate", "amount"],
-  description: ["description", "desc", "details", "summary", "about"],
-  category: ["category", "type", "product category", "group"],
-  sku: ["sku", "product code", "item code", "part number", "barcode"],
-  quantity: ["quantity", "stock", "stock quantity", "qty", "inventory", "count", "units"],
-};
+export type ImportType = "clients" | "services";
 
-export function autoMapColumns(headers: string[], target: ImportTarget): ColumnMapping[] {
-  const allFields = [...target.requiredFields, ...target.optionalFields];
+export interface ColumnMapping {
+  /** CSV header name */
+  csvColumn: string;
+  /** Target field in our system (or "skip") */
+  targetField: string;
+}
 
-  return headers.map((header) => {
-    const normalizedHeader = header.toLowerCase().trim();
+/** Fields available for client import */
+export const CLIENT_TARGET_FIELDS = [
+  { value: "skip", label: "Skip this column" },
+  { value: "name", label: "Full Name" },
+  { value: "firstName", label: "First Name" },
+  { value: "lastName", label: "Last Name" },
+  { value: "email", label: "Email" },
+  { value: "phone", label: "Phone" },
+  { value: "notes", label: "Notes" },
+  { value: "birthday", label: "Birthday" },
+  { value: "medicalAlerts", label: "Medical Alerts" },
+  { value: "source", label: "Source" },
+  { value: "addressStreet", label: "Street Address" },
+  { value: "addressSuburb", label: "Suburb" },
+  { value: "addressPostcode", label: "Postcode" },
+  { value: "addressState", label: "State" },
+] as const;
 
-    // Try to find a matching field
-    let matchedField = "";
-    for (const field of allFields) {
-      const aliases = FIELD_ALIASES[field] || [field];
-      if (aliases.some((alias) => alias === normalizedHeader)) {
-        matchedField = field;
-        break;
-      }
-    }
+/** Fields available for service import */
+export const SERVICE_TARGET_FIELDS = [
+  { value: "skip", label: "Skip this column" },
+  { value: "name", label: "Service Name" },
+  { value: "description", label: "Description" },
+  { value: "price", label: "Price" },
+  { value: "duration", label: "Duration (minutes)" },
+  { value: "category", label: "Category" },
+] as const;
 
-    // Fallback: try partial matching
-    if (!matchedField) {
-      for (const field of allFields) {
-        const aliases = FIELD_ALIASES[field] || [field];
-        if (aliases.some((alias) => normalizedHeader.includes(alias) || alias.includes(normalizedHeader))) {
-          matchedField = field;
-          break;
-        }
-      }
-    }
+type FieldMapping = Record<string, string>;
 
-    return {
-      csvColumn: header,
-      targetField: matchedField || "__skip__",
-      transform: "trim" as const,
+/** Smart defaults: map CSV header to our field based on common naming. */
+function guessField(header: string, type: ImportType): string {
+  const h = header.toLowerCase().trim().replace(/[_\-\s]+/g, " ");
+
+  if (type === "clients") {
+    const map: FieldMapping = {
+      "name": "name",
+      "full name": "name",
+      "client name": "name",
+      "client_name": "name",
+      "first name": "firstName",
+      "firstname": "firstName",
+      "last name": "lastName",
+      "lastname": "lastName",
+      "surname": "lastName",
+      "email": "email",
+      "email address": "email",
+      "client email": "email",
+      "client_email": "email",
+      "phone": "phone",
+      "phone number": "phone",
+      "mobile": "phone",
+      "mobile number": "phone",
+      "cell": "phone",
+      "client phone": "phone",
+      "client_phone": "phone",
+      "contact phone": "phone",
+      "notes": "notes",
+      "client notes": "notes",
+      "birthday": "birthday",
+      "date of birth": "birthday",
+      "dob": "birthday",
+      "birth date": "birthday",
+      "medical alerts": "medicalAlerts",
+      "medical notes": "medicalAlerts",
+      "allergies": "medicalAlerts",
+      "source": "source",
+      "referral source": "source",
+      "how did you hear": "source",
+      "address": "addressStreet",
+      "street": "addressStreet",
+      "street address": "addressStreet",
+      "address street": "addressStreet",
+      "suburb": "addressSuburb",
+      "city": "addressSuburb",
+      "town": "addressSuburb",
+      "postcode": "addressPostcode",
+      "zip": "addressPostcode",
+      "zip code": "addressPostcode",
+      "postal code": "addressPostcode",
+      "state": "addressState",
+      "region": "addressState",
     };
-  });
+    return map[h] || "skip";
+  }
+
+  // services
+  const map: FieldMapping = {
+    "name": "name",
+    "service name": "name",
+    "service_name": "name",
+    "service": "name",
+    "title": "name",
+    "description": "description",
+    "service description": "description",
+    "price": "price",
+    "sale price": "price",
+    "base price": "price",
+    "base_price": "price",
+    "cost": "price",
+    "amount": "price",
+    "duration": "duration",
+    "duration minutes": "duration",
+    "duration_minutes": "duration",
+    "time": "duration",
+    "length": "duration",
+    "category": "category",
+    "service category": "category",
+    "group": "category",
+    "type": "category",
+  };
+  return map[h] || "skip";
 }
 
-// ── Row Validation ──────────────────────────────────────────
+export function buildDefaultMappings(headers: string[], type: ImportType): ColumnMapping[] {
+  return headers.map((csvColumn) => ({
+    csvColumn,
+    targetField: guessField(csvColumn, type),
+  }));
+}
 
-export function validateRow(row: Record<string, string>, target: ImportTarget): string[] {
+// ---------------------------------------------------------------------------
+// Row transformation
+// ---------------------------------------------------------------------------
+
+export interface ImportedClient {
+  name: string;
+  email: string;
+  phone: string;
+  notes: string;
+  birthday?: string;
+  medicalAlerts?: string;
+  source?: string;
+  addressStreet?: string;
+  addressSuburb?: string;
+  addressPostcode?: string;
+  addressState?: string;
+}
+
+export interface ImportedService {
+  name: string;
+  description: string;
+  price: number;
+  duration: number;
+  category: string;
+}
+
+function normalizePhone(raw: string): string {
+  // Strip spaces, dashes, parens
+  let p = raw.replace(/[\s\-()]/g, "");
+  // Convert AU local format to international
+  if (p.startsWith("04") && p.length === 10) p = "+61" + p.slice(1);
+  return p;
+}
+
+function normalizeBirthday(raw: string): string | undefined {
+  if (!raw) return undefined;
+  // Try common formats: DD/MM/YYYY, MM/DD/YYYY, YYYY-MM-DD
+  const isoMatch = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (isoMatch) return raw;
+
+  const slashMatch = raw.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})$/);
+  if (slashMatch) {
+    const [, a, b, y] = slashMatch;
+    // Assume DD/MM/YYYY (AU format)
+    const mm = b.padStart(2, "0");
+    const dd = a.padStart(2, "0");
+    return `${y}-${mm}-${dd}`;
+  }
+  return undefined;
+}
+
+export function transformClientRows(
+  rows: string[][],
+  headers: string[],
+  mappings: ColumnMapping[],
+): { valid: ImportedClient[]; skipped: number; errors: string[] } {
+  const valid: ImportedClient[] = [];
   const errors: string[] = [];
+  let skipped = 0;
 
-  for (const field of target.requiredFields) {
-    const value = row[field];
-    if (!value || !value.trim()) {
-      errors.push(`Missing required field: ${target.fieldLabels[field] || field}`);
+  const fieldIndex = new Map<string, number>();
+  for (const m of mappings) {
+    if (m.targetField === "skip") continue;
+    const idx = headers.indexOf(m.csvColumn);
+    if (idx >= 0) fieldIndex.set(m.targetField, idx);
+  }
+
+  for (let rowNum = 0; rowNum < rows.length; rowNum++) {
+    const row = rows[rowNum];
+    const get = (field: string) => (fieldIndex.has(field) ? (row[fieldIndex.get(field)!] || "") : "");
+
+    let name = get("name");
+    const firstName = get("firstName");
+    const lastName = get("lastName");
+
+    // Merge first + last if no full name
+    if (!name && (firstName || lastName)) {
+      name = [firstName, lastName].filter(Boolean).join(" ");
     }
-  }
 
-  // Type-specific validations
-  if (target.id === "products" && row.price) {
-    const price = parseFloat(row.price);
-    if (isNaN(price) || price < 0) {
-      errors.push("Price must be a valid positive number");
+    if (!name.trim()) {
+      skipped++;
+      continue;
     }
-  }
 
-  if (target.id === "leads" && row.value) {
-    const value = parseFloat(row.value);
-    if (isNaN(value)) {
-      errors.push("Value must be a valid number");
+    const email = get("email").toLowerCase();
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errors.push(`Row ${rowNum + 2}: Invalid email "${email}" for ${name}`);
     }
+
+    valid.push({
+      name: name.trim(),
+      email,
+      phone: normalizePhone(get("phone")),
+      notes: get("notes"),
+      birthday: normalizeBirthday(get("birthday")),
+      medicalAlerts: get("medicalAlerts") || undefined,
+      source: get("source") || "csv-import",
+      addressStreet: get("addressStreet") || undefined,
+      addressSuburb: get("addressSuburb") || undefined,
+      addressPostcode: get("addressPostcode") || undefined,
+      addressState: get("addressState") || undefined,
+    });
   }
 
-  if (row.email && row.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email.trim())) {
-    errors.push("Invalid email format");
-  }
-
-  return errors;
+  return { valid, skipped, errors };
 }
 
-// ── Transform Helper ────────────────────────────────────────
+export function transformServiceRows(
+  rows: string[][],
+  headers: string[],
+  mappings: ColumnMapping[],
+): { valid: ImportedService[]; skipped: number; errors: string[] } {
+  const valid: ImportedService[] = [];
+  const errors: string[] = [];
+  let skipped = 0;
 
-export function applyTransform(value: string, transform: ColumnMapping["transform"]): string {
-  if (!value) return value;
-  switch (transform) {
-    case "trim":
-      return value.trim();
-    case "lowercase":
-      return value.toLowerCase().trim();
-    default:
-      return value;
+  const fieldIndex = new Map<string, number>();
+  for (const m of mappings) {
+    if (m.targetField === "skip") continue;
+    const idx = headers.indexOf(m.csvColumn);
+    if (idx >= 0) fieldIndex.set(m.targetField, idx);
   }
+
+  for (let rowNum = 0; rowNum < rows.length; rowNum++) {
+    const row = rows[rowNum];
+    const get = (field: string) => (fieldIndex.has(field) ? (row[fieldIndex.get(field)!] || "") : "");
+
+    const name = get("name").trim();
+    if (!name) { skipped++; continue; }
+
+    const rawPrice = get("price").replace(/[^0-9.]/g, "");
+    const price = parseFloat(rawPrice) || 0;
+
+    const rawDuration = get("duration").replace(/[^0-9]/g, "");
+    const duration = parseInt(rawDuration) || 60;
+
+    valid.push({
+      name,
+      description: get("description"),
+      price,
+      duration,
+      category: get("category") || "Imported",
+    });
+  }
+
+  return { valid, skipped, errors };
 }

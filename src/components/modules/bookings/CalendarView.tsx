@@ -1,11 +1,10 @@
 "use client";
 
 import { useState, useMemo, useRef, useCallback } from "react";
-import { ChevronLeft, ChevronRight, Plus, Coffee, Ban, Clock } from "lucide-react";
-import { Booking, BookingType } from "@/types/models";
+import { ChevronLeft, ChevronRight, Plus, Clock } from "lucide-react";
+import { Booking } from "@/types/models";
 import { useClientsStore } from "@/store/clients";
-import { useBookingsStore } from "@/store/bookings";
-import { useAuth } from "@/hooks/useAuth";
+import { useServicesStore } from "@/store/services";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 
 interface CalendarViewProps {
@@ -20,6 +19,7 @@ type CalendarMode = "today" | "week" | "month";
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const HOURS = Array.from({ length: 14 }, (_, i) => i + 7); // 7 AM to 8 PM
 const PX_PER_HOUR = 64;
+const WEEK_PX_PER_HOUR = 48;
 const MIN_MINUTES = 420; // 7 AM in minutes
 
 function formatDateKey(d: Date): string {
@@ -37,6 +37,11 @@ function getWeekDays(date: Date): Date[] {
 }
 
 function timeToMinutes(time: string): number {
+  // Handle both ISO timestamps and HH:MM format
+  if (time.includes("T")) {
+    const d = new Date(time);
+    return d.getHours() * 60 + d.getMinutes();
+  }
   const [h, m] = time.split(":").map(Number);
   return h * 60 + (m || 0);
 }
@@ -45,6 +50,14 @@ function minutesToTime(mins: number): string {
   const h = Math.floor(mins / 60);
   const m = mins % 60;
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+function formatTimeDisplay(isoOrTime: string): string {
+  if (isoOrTime.includes("T")) {
+    const d = new Date(isoOrTime);
+    return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  }
+  return isoOrTime;
 }
 
 function snapTo15(yOffset: number): number {
@@ -59,26 +72,21 @@ function formatTimeLabel(hour: number): string {
   return `${hour} AM`;
 }
 
-const TYPE_STYLES: Record<string, string> = {
-  appointment: "bg-primary/20 border-primary/30 text-foreground",
+const STATUS_STYLES: Record<string, string> = {
   confirmed: "bg-primary/20 border-primary/30 text-foreground",
   pending: "bg-yellow-50 border-yellow-200 text-yellow-800",
   completed: "bg-emerald-50 border-emerald-200 text-emerald-800",
   cancelled: "bg-red-50 border-red-200 text-red-500 line-through opacity-50",
-  break: "bg-amber-50 border-amber-200 text-amber-700",
-  unavailable: "bg-gray-100 border-gray-300 text-gray-500",
+  no_show: "bg-gray-100 border-gray-300 text-gray-500",
 };
 
 function getBookingStyle(b: Booking): string {
-  if (b.bookingType === "break") return TYPE_STYLES.break;
-  if (b.bookingType === "unavailable") return TYPE_STYLES.unavailable;
-  return TYPE_STYLES[b.status] || TYPE_STYLES.appointment;
+  return STATUS_STYLES[b.status] || STATUS_STYLES.confirmed;
 }
 
 export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSelect }: CalendarViewProps) {
   const { clients } = useClientsStore();
-  const { addBooking } = useBookingsStore();
-  const { workspaceId } = useAuth();
+  const { services } = useServicesStore();
   const [mode, setMode] = useState<CalendarMode>("today");
   const [currentDate, setCurrentDate] = useState(() => new Date());
 
@@ -101,13 +109,30 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
     return map;
   }, [clients]);
 
+  const serviceMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    services.forEach((s) => { map[s.id] = s.name; });
+    return map;
+  }, [services]);
+
+  const serviceObjMap = useMemo(() => new Map(services.map((s) => [s.id, s])), [services]);
+
+  const getBookingLabel = useCallback((b: Booking): string => {
+    if (b.serviceId && serviceMap[b.serviceId]) return serviceMap[b.serviceId];
+    return "Booking";
+  }, [serviceMap]);
+
   const bookingsByDate = useMemo(() => {
     const map: Record<string, Booking[]> = {};
     bookings.forEach((b) => {
       if (!map[b.date]) map[b.date] = [];
       map[b.date].push(b);
     });
-    Object.values(map).forEach((arr) => arr.sort((a, b) => a.startTime.localeCompare(b.startTime)));
+    Object.values(map).forEach((arr) => arr.sort((a, b) => {
+      const aMin = timeToMinutes(a.startAt);
+      const bMin = timeToMinutes(b.startAt);
+      return aMin - bMin;
+    }));
     return map;
   }, [bookings]);
 
@@ -134,21 +159,25 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
     : mode === "week"
     ? (() => {
         const week = getWeekDays(currentDate);
-        return `${week[0].toLocaleDateString("default", { month: "short", day: "numeric" })} — ${week[6].toLocaleDateString("default", { month: "short", day: "numeric", year: "numeric" })}`;
+        return `${week[0].toLocaleDateString("default", { month: "short", day: "numeric" })} —${week[6].toLocaleDateString("default", { month: "short", day: "numeric", year: "numeric" })}`;
       })()
     : currentDate.toLocaleString("default", { month: "long", year: "numeric" });
 
   // ── Drag handlers (shared by day + week) ──
-  const getMinutesFromY = useCallback((clientY: number, ref: React.RefObject<HTMLDivElement | null>): number => {
+  const getMinutesFromY = useCallback((clientY: number, ref: React.RefObject<HTMLDivElement | null>, pxPerHour?: number): number => {
     if (!ref.current) return MIN_MINUTES;
     const rect = ref.current.getBoundingClientRect();
-    const y = clientY - rect.top;
-    return snapTo15(y);
+    const y = clientY - rect.top + ref.current.scrollTop;
+    const px = pxPerHour || PX_PER_HOUR;
+    const totalMinutes = MIN_MINUTES + (y / px) * 60;
+    const snapped = Math.round(totalMinutes / 15) * 15;
+    return Math.max(MIN_MINUTES, Math.min(snapped, MIN_MINUTES + HOURS.length * 60));
   }, []);
 
   const startDrag = useCallback((e: React.MouseEvent, ref: React.RefObject<HTMLDivElement | null>, dateKey: string, dayIdx?: number) => {
     if (e.button !== 0) return;
-    const mins = getMinutesFromY(e.clientY, ref);
+    const pxPerHour = dayIdx !== undefined ? WEEK_PX_PER_HOUR : PX_PER_HOUR;
+    const mins = getMinutesFromY(e.clientY, ref, pxPerHour);
     setIsDragging(true);
     setDragStartMin(mins);
     setDragEndMin(mins + 30);
@@ -157,9 +186,10 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
     setShowQuickAdd(false);
   }, [getMinutesFromY]);
 
-  const moveDrag = useCallback((e: React.MouseEvent, ref: React.RefObject<HTMLDivElement | null>) => {
+  const moveDrag = useCallback((e: React.MouseEvent, ref: React.RefObject<HTMLDivElement | null>, isWeek?: boolean) => {
     if (!isDragging) return;
-    const mins = getMinutesFromY(e.clientY, ref);
+    const pxPerHour = isWeek ? WEEK_PX_PER_HOUR : PX_PER_HOUR;
+    const mins = getMinutesFromY(e.clientY, ref, pxPerHour);
     setDragEndMin(Math.max(mins, dragStartMin + 15));
   }, [isDragging, dragStartMin, getMinutesFromY]);
 
@@ -176,31 +206,18 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
     if (isDragging) { setIsDragging(false); setShowQuickAdd(false); }
   }, [isDragging]);
 
-  const createBlock = useCallback((type: BookingType) => {
+  const createBookingFromDrag = useCallback(() => {
     const dateKey = dragDateKey || formatDateKey(currentDate);
     const start = Math.min(dragStartMin, dragEndMin);
     const end = Math.max(dragStartMin, dragEndMin);
-    const title = type === "break" ? "Break" : type === "unavailable" ? "Unavailable" : "";
 
-    if (type === "appointment") {
-      if (onTimeSelect) {
-        onTimeSelect(dateKey, minutesToTime(start), minutesToTime(end));
-      } else {
-        onDateSelect(dateKey);
-      }
+    if (onTimeSelect) {
+      onTimeSelect(dateKey, minutesToTime(start), minutesToTime(end));
     } else {
-      addBooking({
-        title,
-        date: dateKey,
-        startTime: minutesToTime(start),
-        endTime: minutesToTime(end),
-        status: "confirmed",
-        bookingType: type,
-        notes: "",
-      }, workspaceId ?? undefined);
+      onDateSelect(dateKey);
     }
     setShowQuickAdd(false);
-  }, [currentDate, dragDateKey, dragStartMin, dragEndMin, onTimeSelect, onDateSelect, addBooking, workspaceId]);
+  }, [currentDate, dragDateKey, dragStartMin, dragEndMin, onTimeSelect, onDateSelect]);
 
   // Booking preview popup
   const [previewBooking, setPreviewBooking] = useState<Booking | null>(null);
@@ -217,7 +234,7 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
   const dragTop = ((Math.min(dragStartMin, dragEndMin) - MIN_MINUTES) / 60) * PX_PER_HOUR;
   const dragHeight = Math.max((Math.abs(dragEndMin - dragStartMin) / 60) * PX_PER_HOUR, 16);
 
-  const WEEK_PX_PER_HOUR = 48;
+  // WEEK_PX_PER_HOUR is now a module-level constant
 
   return (
     <div className="space-y-4">
@@ -225,8 +242,8 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 px-4 py-3 border-b border-border-light">
           <div className="flex items-center gap-2">
-            <button onClick={prev} className="p-1.5 rounded-lg hover:bg-surface text-text-secondary cursor-pointer"><ChevronLeft className="w-4 h-4" /></button>
-            <button onClick={next} className="p-1.5 rounded-lg hover:bg-surface text-text-secondary cursor-pointer"><ChevronRight className="w-4 h-4" /></button>
+            <button onClick={prev} className="p-2 sm:p-1.5 rounded-lg hover:bg-surface text-text-secondary cursor-pointer"><ChevronLeft className="w-4 h-4" /></button>
+            <button onClick={next} className="p-2 sm:p-1.5 rounded-lg hover:bg-surface text-text-secondary cursor-pointer"><ChevronRight className="w-4 h-4" /></button>
             <h3 className="text-sm font-semibold text-foreground ml-1">{headerLabel}</h3>
           </div>
           <div className="flex items-center gap-2">
@@ -303,37 +320,48 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
                   </div>
                 )}
 
-                {/* Booking blocks */}
+                {/* Booking blocks + buffer zones */}
                 {dayBookings.filter(b => b.status !== "cancelled").map((b) => {
-                  const startMin = timeToMinutes(b.startTime);
-                  const endMin = timeToMinutes(b.endTime);
+                  const startMin = timeToMinutes(b.startAt);
+                  const endMin = timeToMinutes(b.endAt);
                   const top = ((startMin - MIN_MINUTES) / 60) * PX_PER_HOUR;
                   const height = Math.max(((endMin - startMin) / 60) * PX_PER_HOUR, 28);
                   const style = getBookingStyle(b);
-                  const isBlock = b.bookingType === "break" || b.bookingType === "unavailable";
+                  const label = getBookingLabel(b);
+                  const startDisplay = formatTimeDisplay(b.startAt);
+                  const endDisplay = formatTimeDisplay(b.endAt);
+                  const svcName = b.serviceId ? serviceMap[b.serviceId] : undefined;
+                  const svcObj = b.serviceId ? serviceObjMap.get(b.serviceId) : undefined;
+                  const bufferMins = svcObj?.bufferMinutes || 0;
 
                   return (
+                    <div key={b.id}>
+                    {/* Buffer zone after booking */}
+                    {bufferMins > 0 && (
+                      <div
+                        className="absolute left-[56px] sm:left-[72px] right-3 rounded-b-lg bg-foreground/[0.04] border border-dashed border-border-light z-[2] flex items-center justify-center"
+                        style={{ top: Math.max(top, 0) + height, height: (bufferMins / 60) * PX_PER_HOUR }}
+                      >
+                        <span className="text-[9px] text-text-tertiary">Buffer {bufferMins}m</span>
+                      </div>
+                    )}
                     <button
                       key={b.id}
                       onClick={(e) => handleBookingPreview(b, e)}
                       onMouseDown={(e) => e.stopPropagation()}
-                      className={`absolute left-[56px] sm:left-[72px] right-3 rounded-lg border px-3 py-1.5 cursor-pointer hover:shadow-md transition-shadow z-[5] ${style} ${isBlock ? "opacity-80" : ""}`}
+                      className={`absolute left-[56px] sm:left-[72px] right-3 rounded-lg border px-3 py-1.5 cursor-pointer hover:shadow-md transition-shadow z-[5] ${style}`}
                       style={{ top: Math.max(top, 0), height }}
                     >
                       <div className="flex items-center gap-1.5">
-                        {b.bookingType === "break" && <Coffee className="w-3 h-3 flex-shrink-0" />}
-                        {b.bookingType === "unavailable" && <Ban className="w-3 h-3 flex-shrink-0" />}
-                        <p className="text-xs font-semibold truncate">{b.title || (b.bookingType === "break" ? "Break" : "Unavailable")}</p>
+                        <p className="text-xs font-semibold truncate">{label}</p>
                       </div>
-                      {!isBlock && (
-                        <p className="text-[11px] text-text-secondary truncate">
-                          {b.startTime} – {b.endTime}
-                          {b.serviceName ? ` · ${b.serviceName}` : ""}
-                          {b.clientId && clientMap[b.clientId] ? ` · ${clientMap[b.clientId]}` : ""}
-                        </p>
-                      )}
-                      {isBlock && <p className="text-[10px] opacity-70">{b.startTime} – {b.endTime}</p>}
+                      <p className="text-[11px] text-text-secondary truncate">
+                        {startDisplay} – {endDisplay}
+                        {svcName ? ` · ${svcName}` : ""}
+                        {b.clientId && clientMap[b.clientId] ? ` · ${clientMap[b.clientId]}` : ""}
+                      </p>
                     </button>
+                    </div>
                   );
                 })}
               </div>
@@ -342,7 +370,7 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
               {dayBookings.length === 0 && !isDragging && !showQuickAdd && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <div className="text-center bg-card-bg/90 rounded-xl px-6 py-4 pointer-events-auto">
-                    <p className="text-[13px] text-text-tertiary mb-2">Drag to add an appointment, break, or block time</p>
+                    <p className="text-[13px] text-text-tertiary mb-2">Drag to add an appointment</p>
                   </div>
                 </div>
               )}
@@ -359,7 +387,7 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
           return (
             <div className="select-none overflow-x-auto">
              <div className="min-w-[600px]">
-              {/* Day headers — double-click to go to day view */}
+              {/* Day headers -- double-click to go to day view */}
               <div className="grid grid-cols-7 border-b border-border-light">
                 {weekDays.map((d, i) => {
                   const dk = formatDateKey(d);
@@ -382,7 +410,7 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
                 ref={weekGridRef}
                 className="relative"
                 style={{ height: HOURS.length * WEEK_PX_PER_HOUR }}
-                onMouseMove={(e) => moveDrag(e, weekGridRef)}
+                onMouseMove={(e) => moveDrag(e, weekGridRef, true)}
                 onMouseUp={endDrag}
                 onMouseLeave={cancelDrag}
               >
@@ -428,11 +456,13 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
                   const dk = formatDateKey(d);
                   const dayBookings = (bookingsByDate[dk] || []).filter(b => b.status !== "cancelled");
                   return dayBookings.map((b) => {
-                    const startMin = timeToMinutes(b.startTime);
-                    const endMin = timeToMinutes(b.endTime);
+                    const startMin = timeToMinutes(b.startAt);
+                    const endMin = timeToMinutes(b.endAt);
                     const top = ((startMin - MIN_MINUTES) / 60) * WEEK_PX_PER_HOUR;
                     const height = Math.max(((endMin - startMin) / 60) * WEEK_PX_PER_HOUR, 22);
                     const style = getBookingStyle(b);
+                    const label = getBookingLabel(b);
+                    const startDisplay = formatTimeDisplay(b.startAt);
                     return (
                       <button
                         key={b.id}
@@ -445,10 +475,8 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
                           width: `calc((100% - 48px) / 7 - 4px)`,
                         }}
                       >
-                        <p className="text-[10px] font-semibold truncate">
-                          {b.bookingType === "break" ? "Break" : b.bookingType === "unavailable" ? "Blocked" : b.title}
-                        </p>
-                        {height > 28 && <p className="text-[9px] text-text-secondary truncate">{b.startTime}</p>}
+                        <p className="text-[10px] font-semibold truncate">{label}</p>
+                        {height > 28 && <p className="text-[9px] text-text-secondary truncate">{startDisplay}</p>}
                       </button>
                     );
                   });
@@ -488,7 +516,7 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
                         <div className="mt-0.5 space-y-0.5">
                           {dayBookings.slice(0, 2).map((b) => (
                             <div key={b.id} className={`text-[10px] px-1.5 py-0.5 rounded truncate ${getBookingStyle(b)}`}>
-                              {b.bookingType === "break" ? "Break" : b.bookingType === "unavailable" ? "Blocked" : `${b.startTime} ${b.title}`}
+                              {`${formatTimeDisplay(b.startAt)} ${getBookingLabel(b)}`}
                             </div>
                           ))}
                           {dayBookings.length > 2 && <p className="text-[10px] text-text-tertiary px-1.5">+{dayBookings.length - 2} more</p>}
@@ -509,25 +537,18 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
           <div className="fixed inset-0 z-[90]" onClick={() => setShowQuickAdd(false)} />
           <div
             className="fixed z-[95] bg-card-bg rounded-xl border border-border-light shadow-xl p-1.5 min-w-[180px]"
-            style={{ left: Math.min(quickAddPos.x, window.innerWidth - 200), top: Math.min(quickAddPos.y, window.innerHeight - 160) }}
+            style={{ left: Math.min(quickAddPos.x, window.innerWidth - 200), top: Math.min(quickAddPos.y, window.innerHeight - 120) }}
           >
             <p className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider px-2.5 py-1.5">
               {minutesToTime(Math.min(dragStartMin, dragEndMin))} — {minutesToTime(Math.max(dragStartMin, dragEndMin))}
             </p>
-            {[
-              { type: "appointment" as BookingType, label: "Appointment", icon: Plus, color: "text-primary" },
-              { type: "break" as BookingType, label: "Break", icon: Coffee, color: "text-amber-600" },
-              { type: "unavailable" as BookingType, label: "Unavailable", icon: Ban, color: "text-gray-500" },
-            ].map((opt) => (
-              <button
-                key={opt.type}
-                onClick={() => createBlock(opt.type)}
-                className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-surface transition-colors cursor-pointer text-left"
-              >
-                <opt.icon className={`w-4 h-4 ${opt.color}`} />
-                <span className="text-[13px] font-medium text-foreground">{opt.label}</span>
-              </button>
-            ))}
+            <button
+              onClick={() => createBookingFromDrag()}
+              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-surface transition-colors cursor-pointer text-left"
+            >
+              <Plus className={`w-4 h-4 text-primary`} />
+              <span className="text-[13px] font-medium text-foreground">New Appointment</span>
+            </button>
           </div>
         </>
       )}
@@ -543,10 +564,8 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
             <div className="flex items-start justify-between mb-3">
               <div>
                 <div className="flex items-center gap-1.5 mb-1">
-                  {previewBooking.bookingType === "break" && <Coffee className="w-3.5 h-3.5 text-amber-600" />}
-                  {previewBooking.bookingType === "unavailable" && <Ban className="w-3.5 h-3.5 text-gray-500" />}
                   <p className="text-[15px] font-semibold text-foreground">
-                    {previewBooking.title || (previewBooking.bookingType === "break" ? "Break" : "Unavailable")}
+                    {getBookingLabel(previewBooking)}
                   </p>
                 </div>
                 <p className="text-xs text-text-secondary">
@@ -559,10 +578,10 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
             <div className="space-y-2 mb-4">
               <div className="flex items-center gap-2 text-[13px]">
                 <Clock className="w-3.5 h-3.5 text-text-tertiary" />
-                <span className="text-foreground">{previewBooking.startTime} — {previewBooking.endTime}</span>
+                <span className="text-foreground">{formatTimeDisplay(previewBooking.startAt)} — {formatTimeDisplay(previewBooking.endAt)}</span>
               </div>
-              {previewBooking.serviceName && (
-                <p className="text-xs text-text-secondary ml-5.5">{previewBooking.serviceName}</p>
+              {previewBooking.serviceId && serviceMap[previewBooking.serviceId] && (
+                <p className="text-xs text-text-secondary ml-5.5">{serviceMap[previewBooking.serviceId]}</p>
               )}
               {previewBooking.clientId && clientMap[previewBooking.clientId] && (
                 <div className="flex items-center gap-2 text-[13px]">
@@ -582,7 +601,7 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
                 onClick={() => { closePreview(); onBookingClick(previewBooking); }}
                 className="flex-1 px-3 py-1.5 bg-foreground text-background rounded-lg text-xs font-medium cursor-pointer hover:opacity-90 transition-opacity"
               >
-                Edit
+                View Details
               </button>
               <button
                 onClick={closePreview}

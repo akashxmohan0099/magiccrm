@@ -1,44 +1,36 @@
 import "server-only";
 
 import { createAdminClient } from "@/lib/supabase-server";
-import type { AutomationTrigger } from "@/types/models";
+import { sendEmail, interpolateTemplate, wrapInEmailLayout } from "@/lib/integrations/email";
+import { sendSMS } from "@/lib/integrations/twilio";
 
 interface AutomationRunParams {
   workspaceId: string;
-  trigger: AutomationTrigger | string;
+  type: string;
   entityId?: string | null;
+  /** Extra context: clientName, clientEmail, clientPhone, serviceName, date, time, etc. */
   entityData?: Record<string, unknown>;
 }
 
 interface AutomationRunResult {
   ruleId: string;
-  action: string;
+  channel: string;
   success: boolean;
+  emailSent?: boolean;
+  smsSent?: boolean;
   error?: string;
 }
 
-const STATUS_TABLE_ALLOWLIST = new Set([
-  "bookings",
-  "clients",
-  "invoices",
-  "jobs",
-  "leads",
-  "support_tickets",
-]);
-
-function safeDelayHours(raw: string | undefined) {
-  const parsed = Number.parseInt(raw ?? "24", 10);
-  return Number.isFinite(parsed) ? parsed : 24;
-}
-
-function safeDelayDays(raw: string | undefined) {
-  const parsed = Number.parseInt(raw ?? "3", 10);
-  return Number.isFinite(parsed) ? parsed : 3;
-}
-
+/**
+ * Run all enabled automation rules for a given event type within a workspace.
+ *
+ * Called from:
+ *  - API routes (event-driven: booking_confirmation, post_service_followup)
+ *  - Cron jobs (time-driven: rebooking nudge, win-back)
+ */
 export async function runAutomationRules({
   workspaceId,
-  trigger,
+  type,
   entityId,
   entityData,
 }: AutomationRunParams) {
@@ -48,7 +40,7 @@ export async function runAutomationRules({
     .from("automation_rules")
     .select("*")
     .eq("workspace_id", workspaceId)
-    .eq("trigger", trigger)
+    .eq("type", type)
     .eq("enabled", true);
 
   if (rulesError) {
@@ -63,131 +55,140 @@ export async function runAutomationRules({
     };
   }
 
+  // Resolve business name for email branding.
+  // Prefer workspace_settings.business_name (user-configured), fall back to workspaces.name.
+  const [{ data: settings }, { data: workspaceRow }] = await Promise.all([
+    supabase
+      .from("workspace_settings")
+      .select("business_name")
+      .eq("workspace_id", workspaceId)
+      .maybeSingle(),
+    supabase
+      .from("workspaces")
+      .select("name")
+      .eq("id", workspaceId)
+      .maybeSingle(),
+  ]);
+
+  const businessName =
+    (settings?.business_name as string) ||
+    (workspaceRow?.name as string) ||
+    "Your Salon";
+
+  // Resolve client contact info
+  let clientName = (entityData?.clientName as string) || null;
+  let clientEmail = (entityData?.clientEmail as string) || null;
+  let clientPhone = (entityData?.clientPhone as string) || null;
+
+  if (entityId && (!clientName || !clientEmail)) {
+    const { data: client } = await supabase
+      .from("clients")
+      .select("email, name, phone")
+      .eq("id", entityId)
+      .eq("workspace_id", workspaceId)
+      .single();
+
+    if (client) {
+      clientName = clientName || (client.name as string);
+      clientEmail = clientEmail || (client.email as string);
+      clientPhone = clientPhone || (client.phone as string);
+    }
+  }
+
   const results: AutomationRunResult[] = [];
 
   for (const rule of rules) {
     try {
-      const config = (rule.action_config ?? {}) as Record<string, string>;
+      const channel = (rule.channel ?? "email") as string;
+      const messageTemplate = (rule.message_template ?? "") as string;
 
-      switch (rule.action) {
-        case "send-email": {
-          const { data: client } = entityId
-            ? await supabase
-                .from("clients")
-                .select("email, name")
-                .eq("id", entityId)
-                .eq("workspace_id", workspaceId)
-                .single()
-            : { data: null };
+      // Build template variables from entityData
+      const templateVars: Record<string, string | undefined> = {
+        clientName: clientName || "there",
+        businessName,
+        serviceName: entityData?.serviceName as string | undefined,
+        date: entityData?.date as string | undefined,
+        time: entityData?.time as string | undefined,
+        daysSince:
+          entityData?.daysSince !== undefined
+            ? String(entityData.daysSince)
+            : undefined,
+        invoiceNumber: entityData?.invoiceNumber as string | undefined,
+        total: entityData?.total as string | undefined,
+      };
 
-          if (client?.email) {
-            await supabase.from("activity_log").insert({
-              workspace_id: workspaceId,
-              action: "create",
-              entity_type: "automations",
-              entity_id: rule.id,
-              description: `Auto-email "${config.subject || rule.name}" sent to ${client.name}`,
-            });
-          }
+      const renderedMessage = messageTemplate
+        ? interpolateTemplate(messageTemplate, templateVars)
+        : `Automated notification from ${businessName}`;
 
-          results.push({ ruleId: rule.id, action: "send-email", success: true });
-          break;
-        }
+      let emailSent = false;
+      let smsSent = false;
 
-        case "create-task": {
-          await supabase.from("reminders").insert({
-            workspace_id: workspaceId,
-            title: config.taskTitle || `Auto-task: ${rule.name}`,
-            description: config.taskDescription || `Triggered by: ${trigger}`,
-            due_date: new Date(
-              Date.now() + safeDelayHours(config.delayHours) * 60 * 60 * 1000,
-            ).toISOString(),
-            entity_type: entityData?.type || "automation",
-            entity_id: entityId || rule.id,
-            completed: false,
-          });
+      // ── Send email ──
+      if ((channel === "email" || channel === "both") && clientEmail) {
+        const subject = interpolateTemplate(
+          getSubjectForType(type, businessName),
+          templateVars,
+        );
+        const html = wrapInEmailLayout(
+          `<p style="margin:0 0 8px;font-size:14px;color:#333;">Hi ${clientName || "there"},</p>
+           <p style="margin:0;font-size:14px;color:#333;">${renderedMessage.replace(/\n/g, "<br/>")}</p>`,
+          businessName,
+        );
 
-          results.push({ ruleId: rule.id, action: "create-task", success: true });
-          break;
-        }
-
-        case "update-status": {
-          const targetTable =
-            typeof config.targetTable === "string" && STATUS_TABLE_ALLOWLIST.has(config.targetTable)
-              ? config.targetTable
-              : typeof entityData?.table === "string" && STATUS_TABLE_ALLOWLIST.has(entityData.table)
-                ? entityData.table
-                : null;
-
-          if (targetTable && entityId && config.newStatus) {
-            await supabase
-              .from(targetTable)
-              .update({ status: config.newStatus, updated_at: new Date().toISOString() })
-              .eq("id", entityId)
-              .eq("workspace_id", workspaceId);
-          }
-
-          results.push({ ruleId: rule.id, action: "update-status", success: true });
-          break;
-        }
-
-        case "send-notification": {
-          await supabase.from("activity_log").insert({
-            workspace_id: workspaceId,
-            action: "automation",
-            entity_type: "automations",
-            entity_id: rule.id,
-            description: config.message || `Automation "${rule.name}" triggered`,
-          });
-
-          results.push({ ruleId: rule.id, action: "send-notification", success: true });
-          break;
-        }
-
-        case "create-follow-up": {
-          await supabase.from("reminders").insert({
-            workspace_id: workspaceId,
-            title: config.followUpTitle || `Follow up: ${rule.name}`,
-            description: config.followUpDescription || `Auto-created follow-up for ${trigger}`,
-            due_date: new Date(
-              Date.now() + safeDelayDays(config.delayDays) * 24 * 60 * 60 * 1000,
-            ).toISOString(),
-            entity_type: entityData?.type || "client",
-            entity_id: entityId || rule.id,
-            completed: false,
-          });
-
-          results.push({ ruleId: rule.id, action: "create-follow-up", success: true });
-          break;
-        }
-
-        default:
-          results.push({
-            ruleId: rule.id,
-            action: rule.action,
-            success: false,
-            error: "Unknown action",
-          });
-      }
-
-      try {
-        await supabase.from("automation_log").insert({
-          workspace_id: workspaceId,
-          rule_id: rule.id,
-          rule_name: rule.name,
-          trigger,
-          action: rule.action,
-          entity_id: entityId,
-          success: true,
-          executed_at: new Date().toISOString(),
+        const result = await sendEmail({
+          to: clientEmail,
+          subject,
+          html,
+          from: `${businessName} <bookings@magiccrm.app>`,
         });
-      } catch {
-        // Logging is non-critical.
+
+        emailSent = result.success;
+        if (!result.success) {
+          console.warn(`[automation-runner] Email failed for rule ${rule.id}:`, result.error);
+        }
       }
+
+      // ── Send SMS ──
+      if ((channel === "sms" || channel === "both") && clientPhone) {
+        const twilioConfigured = !!(
+          process.env.TWILIO_ACCOUNT_SID &&
+          process.env.TWILIO_AUTH_TOKEN &&
+          process.env.TWILIO_PHONE_NUMBER
+        );
+
+        if (twilioConfigured) {
+          try {
+            await sendSMS({
+              to: clientPhone,
+              body: renderedMessage,
+            });
+            smsSent = true;
+          } catch (smsErr) {
+            console.warn(`[automation-runner] SMS failed for rule ${rule.id}:`, smsErr);
+          }
+        }
+      }
+
+      // ── Log to activity feed ──
+      const channelsSent = [emailSent && "email", smsSent && "SMS"].filter(Boolean).join(" + ");
+      const description = channelsSent
+        ? `Auto "${type}" sent via ${channelsSent}${clientName ? ` to ${clientName}` : ""}`
+        : `Auto "${type}" executed (no delivery — missing contact info)`;
+
+      await supabase.from("activity_log").insert({
+        workspace_id: workspaceId,
+        type: "automation",
+        entity_type: "automations",
+        entity_id: rule.id,
+        description,
+      });
+
+      results.push({ ruleId: rule.id, channel, success: true, emailSent, smsSent });
     } catch (error) {
       results.push({
         ruleId: rule.id,
-        action: rule.action,
+        channel: (rule.channel ?? "unknown") as string,
         success: false,
         error: error instanceof Error ? error.message : String(error),
       });
@@ -198,4 +199,23 @@ export async function runAutomationRules({
     executed: results.length,
     results,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function getSubjectForType(type: string, businessName: string): string {
+  const subjects: Record<string, string> = {
+    booking_confirmation: `Booking Confirmed — {{serviceName}} at ${businessName}`,
+    appointment_reminder: `Reminder: {{serviceName}} tomorrow at ${businessName}`,
+    post_service_followup: `Thanks for visiting ${businessName}!`,
+    review_request: `How was your visit to ${businessName}?`,
+    rebooking_nudge: `We miss you at ${businessName}!`,
+    no_show_followup: `We missed you at ${businessName}`,
+    invoice_auto_send: `Invoice from ${businessName}`,
+    cancellation_confirmation: `Cancellation Confirmed — ${businessName}`,
+    welcome: `Welcome to ${businessName}!`,
+  };
+  return subjects[type] || `Update from ${businessName}`;
 }

@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase-server";
 import { rateLimit } from "@/lib/rate-limit";
 import { generateId } from "@/lib/id";
-import { resolveBookingWorkspaceBySlug } from "@/lib/server/public-booking";
+import {
+  fetchWorkspaceAvailability,
+  getAvailableMembersForSlot,
+  resolveBookingWorkspaceBySlug,
+} from "@/lib/server/public-booking";
 import { runAutomationRules } from "@/lib/server/automation-runner";
 
 /**
@@ -62,28 +66,15 @@ export async function POST(req: NextRequest) {
 
     const { workspaceId, businessName } = resolvedWorkspace;
     const supabase = await createAdminClient();
+    const availability = await fetchWorkspaceAvailability(workspaceId);
 
-    // ---- fetch the service (try services table, fall back to products) ----
-    let service: { id: string; name: string; duration: number; price: number } | null = null;
-
-    const { data: svc } = await supabase
+    // ---- fetch the service ----
+    const { data: service } = await supabase
       .from("services")
       .select("id, name, duration, price")
       .eq("id", serviceId)
       .eq("workspace_id", workspaceId)
       .maybeSingle();
-
-    if (svc) {
-      service = svc;
-    } else {
-      const { data: prod } = await supabase
-        .from("products")
-        .select("id, name, duration, price")
-        .eq("id", serviceId)
-        .eq("workspace_id", workspaceId)
-        .maybeSingle();
-      if (prod) service = prod;
-    }
 
     if (!service) {
       return NextResponse.json({ error: "Service not found" }, { status: 404 });
@@ -98,50 +89,20 @@ export async function POST(req: NextRequest) {
     const startAt = `${date}T${time}:00`;
     const endAt = `${date}T${endTime}:00`;
 
-    // ---- check for conflicts ----
-    const { data: conflicting } = await supabase
-      .from("bookings")
-      .select("id")
-      .eq("workspace_id", workspaceId)
-      .neq("status", "cancelled")
-      .lt("start_at", endAt)
-      .gt("end_at", startAt)
-      .limit(1);
+    const availableMembers = await getAvailableMembersForSlot({
+      workspaceId,
+      serviceId,
+      date,
+      startTime: time,
+      endTime,
+      defaultAvailability: availability,
+    });
 
-    if (conflicting && conflicting.length > 0) {
+    if (availableMembers.length === 0) {
       return NextResponse.json(
         { error: "This time slot is no longer available. Please choose another time." },
         { status: 409 }
       );
-    }
-
-    // ---- check availability settings ----
-    const { data: moduleSettings } = await supabase
-      .from("workspace_modules")
-      .select("settings")
-      .eq("workspace_id", workspaceId)
-      .eq("module_id", "bookings-calendar")
-      .maybeSingle();
-
-    if (moduleSettings?.settings) {
-      const settings = moduleSettings.settings as { availability?: { day: number; startTime: string; endTime: string; enabled: boolean }[] };
-      const availability = settings.availability;
-      if (availability && availability.length > 0) {
-        const bookingDay = new Date(`${date}T12:00:00`).getDay();
-        const daySlot = availability.find((s) => s.day === bookingDay);
-        if (!daySlot || !daySlot.enabled) {
-          return NextResponse.json(
-            { error: "Bookings are not available on this day." },
-            { status: 400 }
-          );
-        }
-        if (time < daySlot.startTime || endTime > daySlot.endTime) {
-          return NextResponse.json(
-            { error: "Selected time is outside business hours." },
-            { status: 400 }
-          );
-        }
-      }
     }
 
     // ---- find or create client ----
@@ -165,8 +126,6 @@ export async function POST(req: NextRequest) {
         name: clientName,
         email: clientEmail,
         phone: clientPhone || "",
-        status: "active",
-        source: "booking",
         created_at: now,
         updated_at: now,
       });
@@ -182,17 +141,14 @@ export async function POST(req: NextRequest) {
     const { error: bookingErr } = await supabase.from("bookings").insert({
       id: bookingId,
       workspace_id: workspaceId,
-      title: `${service.name} — ${clientName}`,
+      assigned_to_id: availableMembers[0].id,
       client_id: clientId,
+      service_id: serviceId,
+      date,
       start_at: startAt,
       end_at: endAt,
       status: "confirmed",
-      booking_type: "appointment",
       notes: notes || "",
-      service_id: serviceId,
-      service_name: service.name,
-      price: service.price ?? null,
-      duration: durationMinutes,
       created_at: now,
       updated_at: now,
     });
@@ -206,7 +162,7 @@ export async function POST(req: NextRequest) {
     try {
       await supabase.from("activity_log").insert({
         workspace_id: workspaceId,
-        action: "create",
+        type: "create",
         entity_type: "bookings",
         entity_id: bookingId,
         description: `Online booking: "${service.name}" by ${clientName} on ${date} at ${time}`,
@@ -219,11 +175,10 @@ export async function POST(req: NextRequest) {
     try {
       await runAutomationRules({
         workspaceId,
-        trigger: "booking-created",
-        entityId: bookingId,
+        type: "booking_confirmation",
+        entityId: clientId,
         entityData: {
-          type: "booking",
-          table: "bookings",
+          bookingId,
           clientName,
           clientEmail,
           serviceName: service.name,

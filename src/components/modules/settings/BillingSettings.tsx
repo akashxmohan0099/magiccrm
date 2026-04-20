@@ -1,47 +1,77 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, CreditCard, ExternalLink, AlertTriangle } from "lucide-react";
+import { Loader2, CreditCard, ExternalLink, AlertTriangle, Check } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import type { BillingStatus } from "@/app/api/billing/status/route";
+import { toast } from "@/components/ui/Toast";
+import { PRICING_TIERS } from "@/lib/pricing";
+
+interface BillingStatus {
+  plan: string;
+  tier: string | null;
+  trialEndsAt: string | null;
+  currentPeriodEnd: string | null;
+  cancelAtPeriodEnd: boolean;
+}
 
 export function BillingSettings() {
   const { workspaceId, member } = useAuth();
   const [status, setStatus] = useState<BillingStatus | null>(null);
   const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [billingUnavailable, setBillingUnavailable] = useState(false);
   const isOwner = member?.role === "owner";
 
   useEffect(() => {
-    if (!workspaceId) return;
+    if (!workspaceId) {
+      setLoading(false);
+      return;
+    }
+
     fetch(`/api/billing/status?workspaceId=${workspaceId}`)
-      .then((res) => res.json())
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Billing API unavailable");
+        return res.json();
+      })
       .then((data) => setStatus(data))
-      .catch(() => setStatus({ plan: "free", trialEndsAt: null, currentPeriodEnd: null, cancelAtPeriodEnd: false }))
+      .catch(() => {
+        setBillingUnavailable(true);
+        setStatus({ plan: "free", tier: null, trialEndsAt: null, currentPeriodEnd: null, cancelAtPeriodEnd: false });
+      })
       .finally(() => setLoading(false));
   }, [workspaceId]);
 
-  const handleSubscribe = async () => {
-    setActionLoading(true);
+  const handleSubscribe = async (tierId: string) => {
+    if (billingUnavailable) {
+      toast("Billing is not configured yet. Set STRIPE_SECRET_KEY and Stripe Price IDs in your env.", "warning");
+      return;
+    }
+    setActionLoading(tierId);
     try {
       const res = await fetch("/api/billing/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ workspaceId, returnUrl: "/dashboard/settings" }),
+        body: JSON.stringify({ workspaceId, tierId, returnUrl: "/dashboard/settings" }),
       });
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;
+      } else {
+        toast(data.error || "Unable to start checkout.", "error");
       }
     } catch {
-      // Error handled by API
+      toast("Unable to start checkout.", "error");
     } finally {
-      setActionLoading(false);
+      setActionLoading(null);
     }
   };
 
   const handleManageBilling = async () => {
-    setActionLoading(true);
+    if (billingUnavailable) {
+      toast("Billing is not configured yet.", "warning");
+      return;
+    }
+    setActionLoading("portal");
     try {
       const res = await fetch("/api/billing/portal", {
         method: "POST",
@@ -51,11 +81,13 @@ export function BillingSettings() {
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;
+      } else {
+        toast(data.error || "Unable to open billing portal.", "error");
       }
     } catch {
-      // Error handled by API
+      toast("Unable to open billing portal.", "error");
     } finally {
-      setActionLoading(false);
+      setActionLoading(null);
     }
   };
 
@@ -84,29 +116,31 @@ export function BillingSettings() {
   };
 
   const plan = status?.plan ?? "free";
+  const currentTier = status?.tier || null;
+  const isSubscribed = plan === "trial" || plan === "active";
 
   return (
     <div className="p-6 space-y-6">
-      {/* Plan Status */}
+      {/* Current Plan Status */}
       <div className="bg-card-bg border border-border-light rounded-xl p-6">
         <div className="flex items-start justify-between">
           <div>
             <div className="flex items-center gap-3 mb-1">
               <h3 className="text-base font-semibold text-foreground">
-                Magic CRM
+                Magic CRM{currentTier ? ` — ${PRICING_TIERS.find((t) => t.id === currentTier)?.name || currentTier}` : ""}
               </h3>
-              <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${planColor[plan]}`}>
-                {planLabel[plan]}
+              <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${planColor[plan] || planColor.free}`}>
+                {planLabel[plan] || plan}
               </span>
             </div>
             <p className="text-sm text-text-secondary">
-              {plan === "free" && "Start your 14-day free trial. $49/month after. No per-seat fees."}
+              {plan === "free" && "Choose a plan below to start your 14-day free trial."}
               {plan === "trial" && status?.trialEndsAt && (
                 <>Trial ends {new Date(status.trialEndsAt).toLocaleDateString("en-AU", { month: "long", day: "numeric", year: "numeric" })}</>
               )}
               {plan === "active" && status?.currentPeriodEnd && (
                 <>
-                  $49/month. {status.cancelAtPeriodEnd
+                  {status.cancelAtPeriodEnd
                     ? `Cancels ${new Date(status.currentPeriodEnd).toLocaleDateString("en-AU", { month: "long", day: "numeric" })}`
                     : `Renews ${new Date(status.currentPeriodEnd).toLocaleDateString("en-AU", { month: "long", day: "numeric" })}`
                   }
@@ -128,29 +162,25 @@ export function BillingSettings() {
           </div>
         )}
 
-        {isOwner && (
-          <div className="mt-5 flex gap-3">
-            {(plan === "free" || plan === "cancelled") && (
-              <button
-                onClick={handleSubscribe}
-                disabled={actionLoading}
-                className="inline-flex items-center justify-center gap-2 font-semibold rounded-xl px-5 py-2.5 text-sm bg-foreground text-background hover:opacity-90 transition-all disabled:opacity-40 cursor-pointer"
-              >
-                {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                Start 14-day free trial
-              </button>
-            )}
-            {(plan === "trial" || plan === "active" || plan === "past_due") && (
-              <button
-                onClick={handleManageBilling}
-                disabled={actionLoading}
-                className="inline-flex items-center justify-center gap-2 font-semibold rounded-xl px-5 py-2.5 text-sm bg-card-bg text-foreground border border-border-light hover:bg-surface transition-all disabled:opacity-40 cursor-pointer"
-              >
-                {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                <ExternalLink className="w-4 h-4" />
-                Manage billing
-              </button>
-            )}
+        {billingUnavailable && (
+          <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
+            <p className="text-sm text-amber-900">
+              Stripe billing is not configured in this environment. Add STRIPE_SECRET_KEY and price IDs to your .env to enable subscriptions.
+            </p>
+          </div>
+        )}
+
+        {isOwner && isSubscribed && (
+          <div className="mt-5">
+            <button
+              onClick={handleManageBilling}
+              disabled={!!actionLoading}
+              className="inline-flex items-center justify-center gap-2 font-semibold rounded-xl px-5 py-2.5 text-sm bg-card-bg text-foreground border border-border-light hover:bg-surface transition-all disabled:opacity-40 cursor-pointer"
+            >
+              {actionLoading === "portal" && <Loader2 className="w-4 h-4 animate-spin" />}
+              <ExternalLink className="w-4 h-4" />
+              Manage billing
+            </button>
           </div>
         )}
 
@@ -161,22 +191,51 @@ export function BillingSettings() {
         )}
       </div>
 
-      {/* What's included */}
-      <div className="bg-card-bg border border-border-light rounded-xl p-6">
-        <h3 className="text-sm font-semibold text-foreground mb-3">
-          What&apos;s included
-        </h3>
-        <div className="grid grid-cols-2 gap-2 text-sm text-text-secondary">
-          <div>Unlimited users</div>
-          <div>All 31 modules</div>
-          <div>Unlimited clients</div>
-          <div>Supabase database</div>
-          <div>AI insights & builder</div>
-          <div>Email & SMS</div>
-          <div>Stripe payments</div>
-          <div>Calendar sync</div>
+      {/* Pricing Tiers */}
+      {isOwner && !isSubscribed && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {PRICING_TIERS.map((tier) => (
+            <div
+              key={tier.id}
+              className={`bg-card-bg border rounded-xl p-5 flex flex-col ${
+                tier.highlighted ? "border-foreground/20 shadow-md" : "border-border-light"
+              }`}
+            >
+              {tier.highlighted && (
+                <span className="text-[10px] font-semibold bg-foreground text-background px-2 py-0.5 rounded-full self-start mb-2">
+                  Most popular
+                </span>
+              )}
+              <h4 className="text-[14px] font-bold text-foreground">{tier.name}</h4>
+              <p className="text-[12px] text-text-secondary mt-0.5 mb-3">{tier.description}</p>
+              <div className="mb-4">
+                <span className="text-[28px] font-bold text-foreground">${tier.price}</span>
+                <span className="text-text-secondary text-[13px]">/mo</span>
+              </div>
+              <div className="space-y-2 mb-5 flex-1">
+                {tier.features.map((f, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                    <span className="text-[12px] text-text-secondary">{f}</span>
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={() => handleSubscribe(tier.id)}
+                disabled={!!actionLoading}
+                className={`w-full inline-flex items-center justify-center gap-2 font-semibold rounded-xl px-4 py-2.5 text-[13px] transition-all disabled:opacity-40 cursor-pointer ${
+                  tier.highlighted
+                    ? "bg-foreground text-background hover:opacity-90"
+                    : "bg-surface text-foreground hover:bg-foreground hover:text-background border border-border-light"
+                }`}
+              >
+                {actionLoading === tier.id && <Loader2 className="w-4 h-4 animate-spin" />}
+                {tier.cta}
+              </button>
+            </div>
+          ))}
         </div>
-      </div>
+      )}
     </div>
   );
 }

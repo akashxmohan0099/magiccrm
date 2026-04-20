@@ -1,42 +1,46 @@
 "use client";
 
-import { useState } from "react";
-import { Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAutomationsStore } from "@/store/automations";
 import { AutomationRule } from "@/types/models";
 import { useAuth } from "@/hooks/useAuth";
-import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 interface AutomationListProps {
   rules: AutomationRule[];
   onEdit: (rule: AutomationRule) => void;
 }
 
-const TRIGGER_LABELS: Record<string, string> = {
-  "lead-created": "When a lead is created",
-  "lead-stage-changed": "When a lead stage changes",
-  "client-created": "When a client is created",
-  "invoice-sent": "When an invoice is sent",
-  "invoice-overdue": "When an invoice is overdue",
-  "booking-created": "When a booking is created",
-  "booking-cancelled": "When a booking is cancelled",
-  "job-completed": "When a job is completed",
-  "ticket-created": "When a ticket is created",
+const TYPE_LABELS: Record<string, string> = {
+  booking_confirmation: "Booking Confirmation",
+  appointment_reminder: "Appointment Reminder",
+  post_service_followup: "Post-Service Follow-Up",
+  review_request: "Review Request",
+  rebooking_nudge: "Rebooking Nudge",
+  no_show_followup: "No-Show Follow-Up",
+  invoice_auto_send: "Invoice Auto-Send",
+  cancellation_confirmation: "Cancellation Confirmation",
 };
 
-const ACTION_LABELS: Record<string, string> = {
-  "send-email": "Send an email",
-  "create-task": "Create a task",
-  "update-status": "Update status",
-  "send-notification": "Send a notification",
-  "create-follow-up": "Create a follow-up",
+const TYPE_DESCRIPTIONS: Record<string, string> = {
+  booking_confirmation: "Send a confirmation when a booking is created",
+  appointment_reminder: "Remind the client before their appointment",
+  post_service_followup: "Follow up after a completed appointment",
+  review_request: "Ask for a review after the appointment",
+  rebooking_nudge: "Reach out to clients inactive for a while",
+  no_show_followup: "Reach out when a client doesn't show up",
+  invoice_auto_send: "Automatically send invoices to clients",
+  cancellation_confirmation: "Confirm when a booking is cancelled",
+};
+
+const CHANNEL_LABELS: Record<string, string> = {
+  email: "Email",
+  sms: "SMS",
+  both: "Email & SMS",
 };
 
 export function AutomationList({ rules, onEdit }: AutomationListProps) {
-  const { toggleRule, deleteRule } = useAutomationsStore();
+  const { toggleRule } = useAutomationsStore();
   const { workspaceId } = useAuth();
-  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   return (
     <div className="space-y-3">
@@ -53,11 +57,21 @@ export function AutomationList({ rules, onEdit }: AutomationListProps) {
             className="flex-1 text-left cursor-pointer bg-transparent border-none p-0"
           >
             <h3 className="text-sm font-semibold text-foreground tracking-tight">
-              {rule.name}
+              {TYPE_LABELS[rule.type] ?? rule.type}
             </h3>
             <p className="text-xs text-text-secondary mt-1">
-              {TRIGGER_LABELS[rule.trigger] ?? rule.trigger} &rarr;{" "}
-              {ACTION_LABELS[rule.action] ?? rule.action}
+              {TYPE_DESCRIPTIONS[rule.type] ?? rule.type}
+              {" · "}
+              {CHANNEL_LABELS[rule.channel] ?? rule.channel}
+              {rule.timingValue && rule.timingUnit && (
+                <> · {rule.timingValue} {rule.timingUnit} {
+                  rule.type === "post_service_followup" ||
+                  rule.type === "review_request" ||
+                  rule.type === "rebooking_nudge"
+                    ? "after"
+                    : "before"
+                }</>
+              )}
             </p>
           </button>
 
@@ -79,33 +93,9 @@ export function AutomationList({ rules, onEdit }: AutomationListProps) {
                 }`}
               />
             </button>
-
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setDeleteTarget(rule.id);
-              }}
-              className="p-1.5 rounded-lg hover:bg-surface text-text-secondary hover:text-red-500 transition-colors cursor-pointer"
-              title="Delete"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
           </div>
         </motion.div>
       ))}
-
-      <ConfirmDialog
-        open={deleteTarget !== null}
-        onClose={() => setDeleteTarget(null)}
-        onConfirm={() => {
-          if (deleteTarget) deleteRule(deleteTarget, workspaceId ?? undefined);
-          setDeleteTarget(null);
-        }}
-        title="Delete Automation"
-        message="Are you sure you want to delete this automation rule? This action cannot be undone."
-        confirmLabel="Delete"
-        variant="danger"
-      />
     </div>
   );
 }

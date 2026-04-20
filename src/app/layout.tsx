@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import { Urbanist } from "next/font/google";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { ThemeGate } from "@/components/providers/ThemeGate";
+import { SentryInit } from "@/components/providers/SentryInit";
 import "./globals.css";
+
+const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://usemagic.com";
 
 const urbanist = Urbanist({
   subsets: ["latin"],
@@ -10,22 +13,32 @@ const urbanist = Urbanist({
   display: "swap",
 });
 
+const themeBootstrapScript = `(function(){try{if(!/^\\/dashboard/.test(location.pathname))return;var t=localStorage.getItem("magic-theme")||"light";if(t==="dark"||(t==="system"&&window.matchMedia("(prefers-color-scheme:dark)").matches))document.documentElement.classList.add("dark")}catch(e){}})()`;
+
 export const metadata: Metadata = {
-  title: "Magic — CRM Built for Beauty & Wellness Professionals",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "Magic — The Business Platform for Beauty & Wellness",
+    template: "%s | Magic",
+  },
   description:
-    "The CRM built specifically for hairstylists, lash techs, nail artists, makeup artists, and spa owners. Bookings, clients, invoicing, and AI — shaped to your specialty. $49/mo flat.",
+    "The AI-powered business platform built for hairstylists, lash techs, nail artists, makeup artists, and spa owners. Bookings, clients, payments, and a built-in AI assistant — shaped to your specialty.",
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
-    title: "Magic — CRM Built for Beauty & Wellness Professionals",
+    title: "Magic — The Business Platform for Beauty & Wellness",
     description:
-      "The CRM built specifically for hairstylists, lash techs, nail artists, makeup artists, and spa owners. Bookings, clients, invoicing, and AI — shaped to your specialty.",
+      "The AI-powered business platform built for hairstylists, lash techs, nail artists, makeup artists, and spa owners. Bookings, clients, payments, and a built-in AI assistant — shaped to your specialty.",
     type: "website",
     siteName: "Magic",
+    url: siteUrl,
   },
   twitter: {
     card: "summary_large_image",
-    title: "Magic — CRM Built for Beauty & Wellness Professionals",
+    title: "Magic — The Business Platform for Beauty & Wellness",
     description:
-      "The CRM built specifically for hairstylists, lash techs, nail artists, makeup artists, and spa owners. Bookings, clients, invoicing, and AI — shaped to your specialty.",
+      "The AI-powered business platform built for hairstylists, lash techs, nail artists, makeup artists, and spa owners. Bookings, clients, payments, and a built-in AI assistant — shaped to your specialty.",
   },
   robots: {
     index: true,
@@ -44,11 +57,12 @@ export default function RootLayout({
         <script
           suppressHydrationWarning
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{if(!/^\\/dashboard/.test(location.pathname))return;var t=localStorage.getItem("magic-theme")||"light";if(t==="dark"||(t==="system"&&window.matchMedia("(prefers-color-scheme:dark)").matches))document.documentElement.classList.add("dark")}catch(e){}})()`,
+            __html: themeBootstrapScript,
           }}
         />
       </head>
       <body className="antialiased">
+        <SentryInit />
         <ThemeGate />
         <AuthProvider>{children}</AuthProvider>
       </body>

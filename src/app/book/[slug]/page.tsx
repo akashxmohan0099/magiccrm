@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams } from "next/navigation";
+import posthog from "posthog-js";
 import {
   CheckCircle2,
   Loader2,
@@ -41,11 +42,6 @@ interface BookingConfirmation {
   duration: number;
   price: number;
   status: string;
-}
-
-interface ExistingBooking {
-  start_at: string;
-  end_at: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -132,8 +128,7 @@ export default function PublicBookingPage() {
   const [calMonth, setCalMonth] = useState(today.getMonth());
   const [calYear, setCalYear] = useState(today.getFullYear());
 
-  // ---- existing bookings for conflict checking ----
-  const [existingBookings, setExistingBookings] = useState<ExistingBooking[]>([]);
+  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
 
   // ---- load workspace data from slug ----
   useEffect(() => {
@@ -161,62 +156,22 @@ export default function PublicBookingPage() {
     })();
   }, [slug]);
 
-  // ---- load existing bookings for the selected month ----
+  // ---- load available time slots for the selected date and service ----
   useEffect(() => {
-    if (!workspaceId) return;
-    const startDate = `${calYear}-${String(calMonth + 1).padStart(2, "0")}-01`;
-    const endDays = getDaysInMonth(calYear, calMonth);
-    const endDate = `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(endDays).padStart(2, "0")}`;
-
-    fetch(`/api/public/book/info?slug=${encodeURIComponent(slug)}&bookingsFrom=${startDate}&bookingsTo=${endDate}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.existingBookings) setExistingBookings(data.existingBookings);
-      })
-      .catch(() => {});
-  }, [workspaceId, calMonth, calYear, slug]);
-
-  // ---- compute available time slots for the selected date ----
-  const availableSlots = useMemo(() => {
-    if (!selectedDate || !selectedService || availability.length === 0) return [];
-
-    const bookingDate = new Date(`${selectedDate}T12:00:00`);
-    const dayOfWeek = bookingDate.getDay();
-    const daySlot = availability.find((s) => s.day === dayOfWeek);
-
-    if (!daySlot || !daySlot.enabled) return [];
-
-    const durationMinutes = selectedService.duration || 60;
-    const startMinutes = parseInt(daySlot.startTime.split(":")[0]) * 60 + parseInt(daySlot.startTime.split(":")[1]);
-    const endMinutes = parseInt(daySlot.endTime.split(":")[0]) * 60 + parseInt(daySlot.endTime.split(":")[1]);
-
-    const slots: string[] = [];
-    for (let m = startMinutes; m + durationMinutes <= endMinutes; m += 30) {
-      const slotStart = `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
-      const slotEndM = m + durationMinutes;
-      const slotEnd = `${String(Math.floor(slotEndM / 60)).padStart(2, "0")}:${String(slotEndM % 60).padStart(2, "0")}`;
-
-      // Check against existing bookings
-      const slotStartISO = `${selectedDate}T${slotStart}:00`;
-      const slotEndISO = `${selectedDate}T${slotEnd}:00`;
-      const hasConflict = existingBookings.some(
-        (b) => b.start_at < slotEndISO && b.end_at > slotStartISO
-      );
-
-      // Don't show past time slots for today
-      if (selectedDate === formatDateStr(new Date())) {
-        const now = new Date();
-        const slotDate = new Date(`${selectedDate}T${slotStart}:00`);
-        if (slotDate <= now) continue;
-      }
-
-      if (!hasConflict) {
-        slots.push(slotStart);
-      }
+    if (!workspaceId || !selectedDate || !selectedService) {
+      setAvailableSlots([]);
+      return;
     }
 
-    return slots;
-  }, [selectedDate, selectedService, availability, existingBookings]);
+    fetch(`/api/public/book/info?slug=${encodeURIComponent(slug)}&bookingsDate=${selectedDate}&serviceId=${selectedService.id}`)
+      .then((r) => r.json())
+      .then((data) => {
+        setAvailableSlots(Array.isArray(data.availableSlots) ? data.availableSlots : []);
+      })
+      .catch(() => {
+        setAvailableSlots([]);
+      });
+  }, [workspaceId, selectedDate, selectedService, slug]);
 
   // ---- determine which days are enabled ----
   const enabledDays = useMemo(() => {
@@ -255,6 +210,13 @@ export default function PublicBookingPage() {
           return;
         }
 
+        posthog.capture("public_booking_submitted", {
+          service_name: selectedService?.name,
+          service_id: selectedService?.id,
+          date: selectedDate,
+          time: selectedTime,
+          business_slug: slug,
+        });
         setConfirmation(data.booking);
         setStep("confirmation");
       } catch {
@@ -263,7 +225,7 @@ export default function PublicBookingPage() {
         setSubmitting(false);
       }
     },
-    [workspaceId, selectedService, selectedDate, selectedTime, clientName, clientEmail, clientPhone, notes]
+    [workspaceId, slug, selectedService, selectedDate, selectedTime, clientName, clientEmail, clientPhone, notes]
   );
 
   // ---- calendar navigation ----
@@ -372,7 +334,7 @@ export default function PublicBookingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-8 sm:py-12">
+    <div className="min-h-screen bg-gray-50 px-3 sm:px-4 py-6 sm:py-12">
       <div className="max-w-lg mx-auto">
         {/* Header */}
         <div className="text-center mb-8">

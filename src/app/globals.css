@@ -10,8 +10,8 @@ html, body {
   --foreground: #111111;
   --primary: #34D399;
   --primary-hover: #2BBF89;
-  --primary-muted: rgba(52, 211, 153, 0.10);
-  --primary-subtle: rgba(52, 211, 153, 0.25);
+  --primary-muted: rgba(52, 211, 153, 0.18);
+  --primary-subtle: rgba(52, 211, 153, 0.30);
   --brand: #34D399;
   --brand-hover: #2BBF89;
   --brand-light: #ECFDF5;
@@ -29,8 +29,8 @@ html, body {
   --foreground: #EDEDED;
   --primary: #34D399;
   --primary-hover: #4ADE80;
-  --primary-muted: rgba(52, 211, 153, 0.12);
-  --primary-subtle: rgba(52, 211, 153, 0.20);
+  --primary-muted: rgba(52, 211, 153, 0.20);
+  --primary-subtle: rgba(52, 211, 153, 0.30);
   --brand: #34D399;
   --brand-hover: #4ADE80;
   --brand-light: #052E16;
@@ -117,6 +117,61 @@ button, a, input, select, textarea {
 .card-hover:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.06), 0 4px 10px -6px rgba(0, 0, 0, 0.04);
+}
+
+/* ── Dashboard stat cards ── */
+.stat-card {
+  position: relative;
+  overflow: hidden;
+  transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+}
+.stat-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  opacity: 0.04;
+  transition: opacity 200ms ease;
+  pointer-events: none;
+}
+.stat-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.06), 0 4px 10px -6px rgba(0, 0, 0, 0.04);
+}
+.stat-card:hover::before {
+  opacity: 0.08;
+}
+
+/* ── Dashboard section cards ── */
+.dash-section {
+  position: relative;
+  overflow: hidden;
+}
+.dash-section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary), transparent);
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+.dash-section:hover::before {
+  opacity: 0.6;
+}
+
+/* ── Subtle glass effect for sidebar ── */
+.sidebar-glass {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.dark .sidebar-glass {
+  background: rgba(20, 20, 20, 0.85);
 }
 
 /* ── Skeleton ── */

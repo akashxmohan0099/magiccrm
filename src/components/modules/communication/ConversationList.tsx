@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo } from "react";
-import { Mail, MessageSquare, Instagram, Facebook, MessageCircle, Linkedin } from "lucide-react";
+import { Mail, Instagram, Facebook, MessageCircle, Phone } from "lucide-react";
 import { Conversation, Channel } from "@/types/models";
+import { useCommunicationStore } from "@/store/communication";
 
 interface ConversationListProps {
   conversations: Conversation[];
@@ -12,11 +13,10 @@ interface ConversationListProps {
 
 const channelIcons: Record<Channel, typeof Mail> = {
   email: Mail,
-  sms: MessageSquare,
   instagram: Instagram,
   facebook: Facebook,
   whatsapp: MessageCircle,
-  linkedin: Linkedin,
+  sms: Phone,
 };
 
 function formatRelativeTime(timestamp: string): string {
@@ -35,9 +35,11 @@ function formatRelativeTime(timestamp: string): string {
 }
 
 export function ConversationList({ conversations, selectedId, onSelect }: ConversationListProps) {
+  const getMessages = useCommunicationStore((s) => s.getMessages);
+
   const sorted = useMemo(() => {
     return [...conversations].sort(
-      (a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()
+      (a, b) => new Date(b.lastMessageAt ?? b.createdAt).getTime() - new Date(a.lastMessageAt ?? a.createdAt).getTime()
     );
   }, [conversations]);
 
@@ -53,7 +55,8 @@ export function ConversationList({ conversations, selectedId, onSelect }: Conver
     <div>
       {sorted.map((convo) => {
         const Icon = channelIcons[convo.channel] ?? Mail;
-        const lastMessage = convo.messages[convo.messages.length - 1];
+        const messages = getMessages(convo.id);
+        const lastMessage = messages[messages.length - 1];
         const preview = lastMessage
           ? lastMessage.content.length > 60
             ? lastMessage.content.slice(0, 60) + "..."
@@ -75,19 +78,29 @@ export function ConversationList({ conversations, selectedId, onSelect }: Conver
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-medium text-foreground truncate">
-                    {convo.clientName}
+                  <span className={`text-sm truncate ${
+                    convo.unreadCount && convo.unreadCount > 0
+                      ? "font-semibold text-foreground"
+                      : "font-medium text-foreground"
+                  }`}>
+                    {convo.contactName || convo.contactEmail || "Unknown"}
                   </span>
-                  <span className="text-[11px] text-text-secondary shrink-0">
-                    {formatRelativeTime(convo.lastMessageAt)}
-                  </span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {convo.unreadCount != null && convo.unreadCount > 0 && (
+                      <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-brand text-[10px] font-bold text-white leading-none">
+                        {convo.unreadCount}
+                      </span>
+                    )}
+                    <span className="text-[11px] text-text-secondary">
+                      {convo.lastMessageAt ? formatRelativeTime(convo.lastMessageAt) : ""}
+                    </span>
+                  </div>
                 </div>
-                {convo.subject && (
-                  <p className="text-xs font-medium text-foreground truncate mt-0.5">
-                    {convo.subject}
-                  </p>
-                )}
-                <p className="text-xs text-text-secondary truncate mt-0.5">
+                <p className={`text-xs truncate mt-0.5 ${
+                  convo.unreadCount && convo.unreadCount > 0
+                    ? "text-foreground font-medium"
+                    : "text-text-secondary"
+                }`}>
                   {preview}
                 </p>
               </div>

@@ -5,7 +5,16 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/dashboard/", "/api/", "/auth/"],
+      disallow: [
+        "/dashboard/",
+        "/api/",
+        "/auth/",
+        "/login",
+        "/signup",
+        "/forgot-password",
+        "/reset-password",
+        "/onboarding",
+      ],
     },
     sitemap: `${process.env.NEXT_PUBLIC_APP_URL ?? "https://usemagic.com"}/sitemap.xml`,
   };

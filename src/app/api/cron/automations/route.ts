@@ -1,334 +1,360 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase-server";
+import { runAutomationRules } from "@/lib/server/automation-runner";
 
-interface AutomationLogRecord {
-  id?: string;
-  workspace_id: string;
-  automation_type: "win-back" | "waitlist" | "membership" | "recurring";
-  client_id?: string;
-  triggered_at: string;
-  status: "pending" | "completed" | "failed";
-  metadata?: Record<string, unknown>;
-}
+/**
+ * Cron endpoint: Process time-based automations.
+ *
+ * Runs on a schedule (e.g. every hour via Vercel Cron).
+ * Handles:
+ *  1. Post-appointment follow-up   — N hours after a completed booking
+ *  2. Review request               — N days after a completed booking
+ *  3. Rebooking nudge              — N days after a client's last visit
+ *
+ * Event-driven automations (booking_confirmation, cancellation_confirmation,
+ * no_show_followup) are handled inline in their respective API routes via
+ * runAutomationRules().
+ *
+ * All handlers delegate message rendering and delivery to runAutomationRules,
+ * so the user's configured channel and message template are honored.
+ */
+
+type Supabase = Awaited<ReturnType<typeof createAdminClient>>;
 
 interface ProcessingResult {
-  winBack: number;
-  waitlist: number;
-  memberships: number;
-  automations: number;
+  followUps: number;
+  reviewRequests: number;
+  rebookingNudges: number;
+  errors: number;
+}
+
+interface TimingRule {
+  id: string;
+  workspace_id: string;
+  timing_value: number | null;
+  timing_unit: "minutes" | "hours" | "days" | null;
 }
 
 async function verifyAuthorization(req: NextRequest): Promise<boolean> {
-  const authHeader = req.headers.get("authorization");
-  const expectedToken = `Bearer ${process.env.CRON_SECRET}`;
-  return authHeader === expectedToken;
+  const expected = process.env.CRON_SECRET;
+  if (!expected) return false;
+  const bearer = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+  const provided = bearer || req.headers.get("x-cron-secret");
+  return provided === expected;
 }
 
-async function logAutomationAction(
-  supabase: Awaited<ReturnType<typeof createAdminClient>>,
-  record: AutomationLogRecord
-): Promise<void> {
-  const { error } = await supabase
-    .from("automation_log")
-    .upsert([record], { onConflict: "id" });
+// ---------------------------------------------------------------------------
+// Shared helpers
+// ---------------------------------------------------------------------------
 
-  if (error) {
-    console.error("Failed to log automation action:", error);
+/** Fetch all enabled rules of a given type across workspaces. */
+async function fetchEnabledRules(
+  supabase: Supabase,
+  type: string,
+): Promise<TimingRule[]> {
+  const { data } = await supabase
+    .from("automation_rules")
+    .select("id, workspace_id, timing_value, timing_unit")
+    .eq("type", type)
+    .eq("enabled", true);
+
+  return (data ?? []) as TimingRule[];
+}
+
+/** Convert timingValue + unit → milliseconds. Falls back to a default. */
+function timingToMs(
+  rule: TimingRule,
+  fallbackMs: number,
+): number {
+  const value = rule.timing_value;
+  const unit = rule.timing_unit;
+  if (!value || !unit) return fallbackMs;
+
+  switch (unit) {
+    case "minutes": return value * 60 * 1000;
+    case "hours":   return value * 60 * 60 * 1000;
+    case "days":    return value * 24 * 60 * 60 * 1000;
+    default:        return fallbackMs;
   }
 }
 
-async function processWinBackRules(
-  supabase: Awaited<ReturnType<typeof createAdminClient>>
+/**
+ * Returns the subset of entityIds for which NO activity_log entry with the
+ * given `descriptionFragment` has been recorded recently.
+ */
+async function filterAlreadySent(
+  supabase: Supabase,
+  workspaceId: string,
+  entityIds: string[],
+  descriptionFragment: string,
+  lookbackMs: number,
+): Promise<Set<string>> {
+  if (entityIds.length === 0) return new Set();
+
+  const cutoff = new Date(Date.now() - lookbackMs).toISOString();
+  const { data } = await supabase
+    .from("activity_log")
+    .select("entity_id")
+    .eq("workspace_id", workspaceId)
+    .in("entity_id", entityIds)
+    .like("description", `%${descriptionFragment}%`)
+    .gte("created_at", cutoff);
+
+  return new Set((data ?? []).map((l) => l.entity_id as string));
+}
+
+// ---------------------------------------------------------------------------
+// 1. Post-appointment follow-up (N hours after completed booking)
+// ---------------------------------------------------------------------------
+
+async function processPostAppointmentFollowUps(
+  supabase: Supabase,
 ): Promise<number> {
-  let processed = 0;
+  const rules = await fetchEnabledRules(supabase, "post_service_followup");
+  if (rules.length === 0) return 0;
 
-  try {
-    const { data: rules, error: rulesError } = await supabase
-      .from("win_back_rules")
-      .select("*")
-      .eq("enabled", true);
+  let sent = 0;
+  const now = Date.now();
 
-    if (rulesError) throw rulesError;
-    if (!rules || rules.length === 0) return 0;
+  for (const rule of rules) {
+    // Default window: 23–25 hours after completion
+    const delayMs = timingToMs(rule, 24 * 60 * 60 * 1000);
+    const windowStart = new Date(now - delayMs - 60 * 60 * 1000);
+    const windowEnd = new Date(now - delayMs + 60 * 60 * 1000);
 
-    for (const rule of rules) {
-      try {
-        const thresholdDate = new Date();
-        thresholdDate.setDate(thresholdDate.getDate() - rule.days_threshold);
+    const { data: bookings } = await supabase
+      .from("bookings")
+      .select("id, client_id, service_id, end_at, services!inner(name)")
+      .eq("workspace_id", rule.workspace_id)
+      .eq("status", "completed")
+      .gte("end_at", windowStart.toISOString())
+      .lte("end_at", windowEnd.toISOString());
 
-        // Find clients whose last booking is older than threshold
-        const { data: clients, error: clientsError } = await supabase
-          .from("clients")
-          .select("id, workspace_id, last_win_back_sent_at")
-          .eq("workspace_id", rule.workspace_id)
-          .lt("last_booking_date", thresholdDate.toISOString());
+    if (!bookings || bookings.length === 0) continue;
 
-        if (clientsError) throw clientsError;
-        if (!clients) continue;
+    const bookingIds = bookings.map((b) => b.id as string);
+    const alreadySent = await filterAlreadySent(
+      supabase,
+      rule.workspace_id,
+      bookingIds,
+      "post_service_followup",
+      7 * 24 * 60 * 60 * 1000,
+    );
 
-        for (const client of clients) {
-          // Check if we already sent win-back recently
-          if (client.last_win_back_sent_at) {
-            const lastSent = new Date(client.last_win_back_sent_at);
-            const daysSinceSent = Math.floor(
-              (Date.now() - lastSent.getTime()) / (1000 * 60 * 60 * 24)
-            );
-            if (daysSinceSent < rule.days_threshold) {
-              continue; // Skip if we already sent one recently
-            }
-          }
+    for (const booking of bookings) {
+      if (alreadySent.has(booking.id as string)) continue;
 
-          // Log the action
-          await logAutomationAction(supabase, {
-            workspace_id: client.workspace_id,
-            automation_type: "win-back",
-            client_id: client.id,
-            triggered_at: new Date().toISOString(),
-            status: "pending",
-            metadata: { rule_id: rule.id },
-          });
+      const serviceName =
+        (booking.services as unknown as { name: string } | null)?.name ||
+        "your appointment";
 
-          // Update last_win_back_sent_at
-          await supabase
-            .from("clients")
-            .update({ last_win_back_sent_at: new Date().toISOString() })
-            .eq("id", client.id);
+      const result = await runAutomationRules({
+        workspaceId: rule.workspace_id,
+        type: "post_service_followup",
+        entityId: booking.client_id as string,
+        entityData: {
+          bookingId: booking.id,
+          serviceName,
+        },
+      });
 
-          processed++;
-        }
-      } catch (err) {
-        console.error(`Win-back rule ${rule.id} processing failed:`, err);
+      if (result.results.some((r) => r.emailSent || r.smsSent)) {
+        sent++;
       }
     }
-  } catch (err) {
-    console.error("Win-back processing error:", err);
   }
 
-  return processed;
+  return sent;
 }
 
-async function processWaitlistNotifications(
-  supabase: Awaited<ReturnType<typeof createAdminClient>>
-): Promise<number> {
-  let processed = 0;
+// ---------------------------------------------------------------------------
+// 2. Review request (N days after completed booking)
+// ---------------------------------------------------------------------------
 
-  try {
-    const { data: waitlistEntries, error: waitlistError } = await supabase
-      .from("waitlist_entries")
-      .select("*")
-      .eq("status", "waiting");
+async function processReviewRequests(supabase: Supabase): Promise<number> {
+  const rules = await fetchEnabledRules(supabase, "review_request");
+  if (rules.length === 0) return 0;
 
-    if (waitlistError) throw waitlistError;
-    if (!waitlistEntries || waitlistEntries.length === 0) return 0;
+  let sent = 0;
+  const now = Date.now();
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+  for (const rule of rules) {
+    // Default window: 3 days ± 12 hours after completion
+    const delayMs = timingToMs(rule, 3 * 24 * 60 * 60 * 1000);
+    const windowStart = new Date(now - delayMs - 12 * 60 * 60 * 1000);
+    const windowEnd = new Date(now - delayMs + 12 * 60 * 60 * 1000);
 
-    for (const entry of waitlistEntries) {
-      try {
-        // Check if the requested service has availability
-        const { data: bookings, error: bookingsError } = await supabase
-          .from("bookings")
-          .select("id")
-          .eq("service_id", entry.service_id)
-          .gte("booking_date", today.toISOString())
-          .lt("booking_date", tomorrow.toISOString());
+    const { data: bookings } = await supabase
+      .from("bookings")
+      .select("id, client_id, service_id, end_at, services!inner(name)")
+      .eq("workspace_id", rule.workspace_id)
+      .eq("status", "completed")
+      .gte("end_at", windowStart.toISOString())
+      .lte("end_at", windowEnd.toISOString());
 
-        if (bookingsError) throw bookingsError;
+    if (!bookings || bookings.length === 0) continue;
 
-        // Simplified availability check: if fewer than expected bookings, slot available
-        const maxSlots = 5; // Example: assume max 5 bookings per day
-        const isAvailable = !bookings || bookings.length < maxSlots;
+    const bookingIds = bookings.map((b) => b.id as string);
+    const alreadySent = await filterAlreadySent(
+      supabase,
+      rule.workspace_id,
+      bookingIds,
+      "review_request",
+      30 * 24 * 60 * 60 * 1000,
+    );
 
-        if (isAvailable) {
-          // Update status to notified
-          await supabase
-            .from("waitlist_entries")
-            .update({ status: "notified" })
-            .eq("id", entry.id);
+    for (const booking of bookings) {
+      if (alreadySent.has(booking.id as string)) continue;
 
-          // Log the action
-          await logAutomationAction(supabase, {
-            workspace_id: entry.workspace_id,
-            automation_type: "waitlist",
-            client_id: entry.client_id,
-            triggered_at: new Date().toISOString(),
-            status: "pending",
-            metadata: { waitlist_entry_id: entry.id, service_id: entry.service_id },
-          });
+      const serviceName =
+        (booking.services as unknown as { name: string } | null)?.name ||
+        "your appointment";
 
-          processed++;
-        }
-      } catch (err) {
-        console.error(`Waitlist entry ${entry.id} processing failed:`, err);
+      const result = await runAutomationRules({
+        workspaceId: rule.workspace_id,
+        type: "review_request",
+        entityId: booking.client_id as string,
+        entityData: {
+          bookingId: booking.id,
+          serviceName,
+        },
+      });
+
+      if (result.results.some((r) => r.emailSent || r.smsSent)) {
+        sent++;
       }
     }
-  } catch (err) {
-    console.error("Waitlist processing error:", err);
   }
 
-  return processed;
+  return sent;
 }
 
-async function processMembershipRenewals(
-  supabase: Awaited<ReturnType<typeof createAdminClient>>
-): Promise<number> {
-  let processed = 0;
+// ---------------------------------------------------------------------------
+// 3. Rebooking nudge (N days after client's last completed booking)
+// ---------------------------------------------------------------------------
 
-  try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+async function processRebookingNudges(supabase: Supabase): Promise<number> {
+  const rules = await fetchEnabledRules(supabase, "rebooking_nudge");
+  if (rules.length === 0) return 0;
 
-    const { data: memberships, error: membershipsError } = await supabase
-      .from("memberships")
-      .select("*")
-      .eq("status", "active")
-      .lte("next_renewal_date", today.toISOString());
+  let sent = 0;
+  const now = Date.now();
 
-    if (membershipsError) throw membershipsError;
-    if (!memberships || memberships.length === 0) return 0;
+  for (const rule of rules) {
+    // Default inactivity threshold: 30 days
+    const thresholdMs = timingToMs(rule, 30 * 24 * 60 * 60 * 1000);
+    const cutoff = new Date(now - thresholdMs);
 
-    for (const membership of memberships) {
-      try {
-        // Calculate next renewal date based on interval
-        const nextRenewalDate = new Date(membership.next_renewal_date);
-        const intervalDays = membership.renewal_interval_days || 30;
-        nextRenewalDate.setDate(nextRenewalDate.getDate() + intervalDays);
+    // Pull a batch of clients for this workspace (hard cap per run)
+    const { data: clients } = await supabase
+      .from("clients")
+      .select("id")
+      .eq("workspace_id", rule.workspace_id)
+      .limit(200);
 
-        // Create invoice
-        const invoiceData = {
-          workspace_id: membership.workspace_id,
-          client_id: membership.client_id,
-          amount: membership.plan_price,
-          status: "pending",
-          invoice_date: new Date().toISOString(),
-          due_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-          description: `Membership renewal: ${membership.plan_name}`,
-          metadata: { membership_id: membership.id },
-        };
+    if (!clients || clients.length === 0) continue;
 
-        const { error: invoiceError } = await supabase
-          .from("invoices")
-          .insert([invoiceData]);
+    const clientIds = clients.map((c) => c.id as string);
 
-        if (invoiceError) throw invoiceError;
+    // Last completed booking per client
+    const { data: allBookings } = await supabase
+      .from("bookings")
+      .select("client_id, end_at")
+      .eq("workspace_id", rule.workspace_id)
+      .eq("status", "completed")
+      .in("client_id", clientIds)
+      .order("end_at", { ascending: false });
 
-        // Update membership next_renewal_date
-        await supabase
-          .from("memberships")
-          .update({ next_renewal_date: nextRenewalDate.toISOString() })
-          .eq("id", membership.id);
-
-        // Log the action
-        await logAutomationAction(supabase, {
-          workspace_id: membership.workspace_id,
-          automation_type: "membership",
-          client_id: membership.client_id,
-          triggered_at: new Date().toISOString(),
-          status: "pending",
-          metadata: { membership_id: membership.id, invoice_amount: membership.plan_price },
-        });
-
-        processed++;
-      } catch (err) {
-        console.error(`Membership ${membership.id} renewal failed:`, err);
+    const lastBookingMap = new Map<string, Date>();
+    for (const b of allBookings ?? []) {
+      const cid = b.client_id as string;
+      if (!lastBookingMap.has(cid)) {
+        lastBookingMap.set(cid, new Date(b.end_at as string));
       }
     }
-  } catch (err) {
-    console.error("Membership renewal processing error:", err);
-  }
 
-  return processed;
-}
+    // Clients with a last visit before the cutoff
+    const staleIds = clientIds.filter((cid) => {
+      const last = lastBookingMap.get(cid);
+      return last && last < cutoff;
+    });
 
-async function processRecurringAutomations(
-  supabase: Awaited<ReturnType<typeof createAdminClient>>
-): Promise<number> {
-  let processed = 0;
+    if (staleIds.length === 0) continue;
 
-  try {
-    const now = new Date();
+    const alreadyNudged = await filterAlreadySent(
+      supabase,
+      rule.workspace_id,
+      staleIds,
+      "rebooking_nudge",
+      30 * 24 * 60 * 60 * 1000,
+    );
 
-    const { data: automations, error: automationsError } = await supabase
-      .from("automations")
-      .select("*")
-      .eq("enabled", true)
-      .lte("next_run_at", now.toISOString());
+    const eligible = staleIds.filter((id) => !alreadyNudged.has(id)).slice(0, 20);
 
-    if (automationsError) throw automationsError;
-    if (!automations || automations.length === 0) return 0;
+    for (const clientId of eligible) {
+      const lastDate = lastBookingMap.get(clientId)!;
+      const daysSince = Math.floor(
+        (now - lastDate.getTime()) / (1000 * 60 * 60 * 24),
+      );
 
-    for (const automation of automations) {
-      try {
-        // Calculate next run date based on recurrence
-        const nextRunDate = new Date(automation.next_run_at);
-        const recurrenceMinutes = automation.recurrence_minutes || 1440; // Default to daily
-        nextRunDate.setMinutes(nextRunDate.getMinutes() + recurrenceMinutes);
+      const result = await runAutomationRules({
+        workspaceId: rule.workspace_id,
+        type: "rebooking_nudge",
+        entityId: clientId,
+        entityData: { daysSince },
+      });
 
-        // Update next_run_at
-        await supabase
-          .from("automations")
-          .update({ next_run_at: nextRunDate.toISOString() })
-          .eq("id", automation.id);
-
-        // Log the triggered rule
-        await logAutomationAction(supabase, {
-          workspace_id: automation.workspace_id,
-          automation_type: "recurring",
-          triggered_at: new Date().toISOString(),
-          status: "pending",
-          metadata: {
-            automation_id: automation.id,
-            automation_name: automation.name,
-            rule: automation.rule,
-          },
-        });
-
-        processed++;
-      } catch (err) {
-        console.error(`Automation ${automation.id} processing failed:`, err);
+      if (result.results.some((r) => r.emailSent || r.smsSent)) {
+        sent++;
       }
     }
-  } catch (err) {
-    console.error("Recurring automation processing error:", err);
   }
 
-  return processed;
+  return sent;
 }
 
-export async function POST(req: NextRequest): Promise<NextResponse> {
-  // Verify authorization
-  const isAuthorized = await verifyAuthorization(req);
-  if (!isAuthorized) {
+// ---------------------------------------------------------------------------
+// Route handler
+// ---------------------------------------------------------------------------
+
+async function handleRequest(req: NextRequest): Promise<NextResponse> {
+  if (!(await verifyAuthorization(req))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const supabase = await createAdminClient();
   const result: ProcessingResult = {
-    winBack: 0,
-    waitlist: 0,
-    memberships: 0,
-    automations: 0,
+    followUps: 0,
+    reviewRequests: 0,
+    rebookingNudges: 0,
+    errors: 0,
   };
 
   try {
-    // Process each automation type
-    result.winBack = await processWinBackRules(supabase);
-    result.waitlist = await processWaitlistNotifications(supabase);
-    result.memberships = await processMembershipRenewals(supabase);
-    result.automations = await processRecurringAutomations(supabase);
-
-    return NextResponse.json({
-      success: true,
-      ...result,
-    });
+    result.followUps = await processPostAppointmentFollowUps(supabase);
   } catch (err) {
-    console.error("Cron automation route error:", err);
-    return NextResponse.json(
-      { error: "Internal server error", ...result },
-      { status: 500 }
-    );
+    console.error("[cron/automations] post_service_followup error:", err);
+    result.errors++;
   }
+
+  try {
+    result.reviewRequests = await processReviewRequests(supabase);
+  } catch (err) {
+    console.error("[cron/automations] review_request error:", err);
+    result.errors++;
+  }
+
+  try {
+    result.rebookingNudges = await processRebookingNudges(supabase);
+  } catch (err) {
+    console.error("[cron/automations] rebooking_nudge error:", err);
+    result.errors++;
+  }
+
+  const message = `Sent ${result.followUps} follow-ups, ${result.reviewRequests} review requests, ${result.rebookingNudges} rebooking nudges`;
+  const status = result.errors > 0 ? 207 : 200;
+  return NextResponse.json({ success: true, ...result, message }, { status });
 }
+
+export const POST = handleRequest;
+export const GET = handleRequest;

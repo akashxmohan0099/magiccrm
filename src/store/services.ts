@@ -1,52 +1,31 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { ServiceDefinition, ServiceVariant } from "@/types/industry-config";
+import type { Service } from "@/types/models";
 import { generateId } from "@/lib/id";
-import { logActivity } from "@/lib/activity-logger";
 import { toast } from "@/components/ui/Toast";
-import { validateService, sanitize } from "@/lib/validation";
 import {
   fetchServices,
   dbCreateService,
   dbUpdateService,
   dbDeleteService,
-  dbUpsertServices,
-  mapServiceFromDB,
 } from "@/lib/db/services";
 
 interface ServicesStore {
-  services: ServiceDefinition[];
-  initialized: boolean;
-  initializeFromConfig: (defaults: ServiceDefinition[]) => void;
+  services: Service[];
   addService: (
-    data: Omit<ServiceDefinition, "id">,
+    data: Omit<Service, "id" | "createdAt" | "updatedAt">,
     workspaceId?: string
-  ) => ServiceDefinition;
+  ) => Service;
+  bulkImportServices: (
+    items: { name: string; description: string; price: number; duration: number; category: string }[],
+    workspaceId: string
+  ) => number;
   updateService: (
     id: string,
-    data: Partial<ServiceDefinition>,
+    data: Partial<Service>,
     workspaceId?: string
   ) => void;
   deleteService: (id: string, workspaceId?: string) => void;
-  addVariant: (
-    serviceId: string,
-    variant: Omit<ServiceVariant, "id">,
-    workspaceId?: string
-  ) => void;
-  updateVariant: (
-    serviceId: string,
-    variantId: string,
-    data: Partial<ServiceVariant>,
-    workspaceId?: string
-  ) => void;
-  deleteVariant: (
-    serviceId: string,
-    variantId: string,
-    workspaceId?: string
-  ) => void;
-
-  // Supabase sync
-  syncToSupabase: (workspaceId: string) => Promise<void>;
   loadFromSupabase: (workspaceId: string) => Promise<void>;
 }
 
@@ -54,203 +33,102 @@ export const useServicesStore = create<ServicesStore>()(
   persist(
     (set, get) => ({
       services: [],
-      initialized: false,
 
-      initializeFromConfig: (defaults) => {
-        if (get().initialized) return;
-        set({ services: defaults, initialized: true });
+      bulkImportServices: (items, workspaceId) => {
+        const now = new Date().toISOString();
+        const existing = get().services;
+        const startOrder = existing.length > 0 ? Math.max(...existing.map((s) => s.sortOrder)) + 1 : 0;
+
+        const newServices: Service[] = items.map((item, i) => ({
+          id: generateId(),
+          workspaceId,
+          name: item.name,
+          description: item.description || "",
+          duration: item.duration,
+          price: item.price,
+          category: item.category || undefined,
+          enabled: true,
+          sortOrder: startOrder + i,
+          bufferMinutes: 0,
+          requiresConfirmation: false,
+          depositType: "none" as const,
+          depositAmount: 0,
+          locationType: "studio" as const,
+          createdAt: now,
+          updatedAt: now,
+        }));
+
+        set((s) => ({ services: [...s.services, ...newServices] }));
+        toast(`Imported ${newServices.length} services`);
+
+        // Async batch sync
+        const batch = async () => {
+          for (let i = 0; i < newServices.length; i += 10) {
+            const chunk = newServices.slice(i, i + 10);
+            await Promise.allSettled(
+              chunk.map((svc) =>
+                dbCreateService(workspaceId, svc as unknown as Record<string, unknown>)
+              )
+            );
+          }
+        };
+        batch().catch(console.error);
+
+        return newServices.length;
       },
 
-      addService: (data, workspaceId?) => {
-        const validation = validateService({ name: data.name, price: data.price, duration: data.duration });
-        if (!validation.valid) {
-          toast(validation.errors[0], "error");
-          return { id: "", name: data.name || "" } as ServiceDefinition;
-        }
-
-        const service: ServiceDefinition = {
-          ...data,
+      addService: (data, workspaceId) => {
+        const now = new Date().toISOString();
+        const service: Service = {
           id: generateId(),
-          name: sanitize(data.name, 200),
+          ...data,
+          createdAt: now,
+          updatedAt: now,
         };
-
-        const prevServices = get().services;
-        set((s) => ({ services: [...s.services, service] }));
-        logActivity("create", "services", `Added service "${service.name}"`);
-        toast(`Service "${service.name}" added`);
-
+        set((s) => ({ services: [service, ...s.services] }));
+        toast("Service created");
         if (workspaceId) {
-          dbCreateService(workspaceId, service).catch((err) => {
-            set({ services: prevServices }); // rollback
-            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving service" }));
-          });
+          dbCreateService(
+            workspaceId,
+            service as unknown as Record<string, unknown>
+          ).catch(console.error);
         }
-
         return service;
       },
 
-      updateService: (id, data, workspaceId?) => {
-        if (data.name !== undefined) {
-          const validation = validateService({
-            name: data.name,
-            price: data.price ?? get().services.find((s) => s.id === id)?.price,
-          });
-          if (!validation.valid) {
-            toast(validation.errors[0], "error");
-            return;
-          }
-        }
-
-        const sanitized = { ...data };
-        if (data.name !== undefined) sanitized.name = sanitize(data.name, 200);
-
-        const prevServices = get().services;
+      updateService: (id, data, workspaceId) => {
+        const now = new Date().toISOString();
         set((s) => ({
           services: s.services.map((svc) =>
-            svc.id === id ? { ...svc, ...sanitized } : svc
+            svc.id === id ? { ...svc, ...data, updatedAt: now } : svc
           ),
         }));
-        logActivity("update", "services", "Updated service");
-        toast("Service updated");
-
         if (workspaceId) {
-          dbUpdateService(workspaceId, id, sanitized).catch((err) => {
-            set({ services: prevServices }); // rollback
-            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating service" }));
-          });
+          dbUpdateService(
+            workspaceId,
+            id,
+            data as Record<string, unknown>
+          ).catch(console.error);
         }
       },
 
-      deleteService: (id, workspaceId?) => {
-        const service = get().services.find((svc) => svc.id === id);
-        const prevServices = get().services;
+      deleteService: (id, workspaceId) => {
         set((s) => ({ services: s.services.filter((svc) => svc.id !== id) }));
-        if (service) {
-          logActivity("delete", "services", `Deleted service "${service.name}"`);
-          toast(`Service "${service.name}" deleted`, "info");
-
-          if (workspaceId) {
-            dbDeleteService(workspaceId, id).catch((err) => {
-              set({ services: prevServices }); // rollback
-              import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting service" }));
-            });
-          }
-        }
-      },
-
-      addVariant: (serviceId, variant, workspaceId?) => {
-        const newVariant: ServiceVariant = { ...variant, id: generateId() };
-        const previousServices = get().services;
-        set((s) => ({
-          services: s.services.map((svc) =>
-            svc.id === serviceId
-              ? { ...svc, variants: [...(svc.variants ?? []), newVariant] }
-              : svc
-          ),
-        }));
-        logActivity("create", "services", `Added variant "${newVariant.label}"`);
-        toast(`Variant "${newVariant.label}" added`);
-
-        // Sync the updated variants JSONB to Supabase
+        toast("Service deleted");
         if (workspaceId) {
-          const updatedService = get().services.find((svc) => svc.id === serviceId);
-          if (updatedService) {
-            dbUpdateService(workspaceId, serviceId, {
-              variants: updatedService.variants,
-            }).catch((err) => {
-              set({ services: previousServices }); // rollback
-              import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving service variant" }));
-            });
-          }
+          dbDeleteService(workspaceId, id).catch(console.error);
         }
       },
 
-      updateVariant: (serviceId, variantId, data, workspaceId?) => {
-        const previousServices = get().services;
-        set((s) => ({
-          services: s.services.map((svc) =>
-            svc.id === serviceId
-              ? {
-                  ...svc,
-                  variants: (svc.variants ?? []).map((v) =>
-                    v.id === variantId ? { ...v, ...data } : v
-                  ),
-                }
-              : svc
-          ),
-        }));
-        logActivity("update", "services", "Updated service variant");
-        toast("Variant updated");
-
-        // Sync the updated variants JSONB to Supabase
-        if (workspaceId) {
-          const updatedService = get().services.find((svc) => svc.id === serviceId);
-          if (updatedService) {
-            dbUpdateService(workspaceId, serviceId, {
-              variants: updatedService.variants,
-            }).catch((err) => {
-              set({ services: previousServices }); // rollback
-              import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating service variant" }));
-            });
-          }
-        }
-      },
-
-      deleteVariant: (serviceId, variantId, workspaceId?) => {
-        const service = get().services.find((svc) => svc.id === serviceId);
-        const variant = service?.variants?.find((v) => v.id === variantId);
-        const previousServices = get().services;
-        set((s) => ({
-          services: s.services.map((svc) =>
-            svc.id === serviceId
-              ? { ...svc, variants: (svc.variants ?? []).filter((v) => v.id !== variantId) }
-              : svc
-          ),
-        }));
-        if (variant) {
-          logActivity("delete", "services", `Deleted variant "${variant.label}"`);
-          toast(`Variant "${variant.label}" deleted`, "info");
-        }
-
-        // Sync the updated variants JSONB to Supabase
-        if (workspaceId) {
-          const updatedService = get().services.find((svc) => svc.id === serviceId);
-          if (updatedService) {
-            dbUpdateService(workspaceId, serviceId, {
-              variants: updatedService.variants,
-            }).catch((err) => {
-              set({ services: previousServices }); // rollback
-              import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting service variant" }));
-            });
-          }
-        }
-      },
-
-      // ---------------------------------------------------------------
-      // Supabase sync
-      // ---------------------------------------------------------------
-
-      syncToSupabase: async (workspaceId: string) => {
+      loadFromSupabase: async (workspaceId) => {
         try {
-          const { services } = get();
-          await dbUpsertServices(workspaceId, services);
+          const services = await fetchServices(workspaceId);
+          set({ services });
         } catch (err) {
-          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing services to Supabase" }));
-        }
-      },
-
-      loadFromSupabase: async (workspaceId: string) => {
-        try {
-          const rows = await fetchServices(workspaceId);
-          const mappedServices = (rows ?? []).map((row: Record<string, unknown>) =>
-            mapServiceFromDB(row)
-          );
-          set({ services: mappedServices, initialized: true });
-        } catch (err) {
-          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "loading services from Supabase" }));
+          console.debug("[store] loadFromSupabase skipped:", err);
         }
       },
     }),
-    { name: "magic-crm-services" }
+    { name: "magic-crm-services", version: 2 }
   )
 );

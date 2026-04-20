@@ -1,73 +1,49 @@
 "use client";
 
-import { Mail, MessageSquare, Instagram, Facebook, MessageCircle, Linkedin, Inbox } from "lucide-react";
+import { Mail, Instagram, Facebook, MessageCircle, Inbox, Phone } from "lucide-react";
 import { Channel } from "@/types/models";
-import { useFeature } from "@/hooks/useFeature";
 
 interface ChannelFilterProps {
   selectedChannel: Channel | "all";
   onChange: (channel: Channel | "all") => void;
+  compact?: boolean;
 }
 
-interface ChannelOption {
-  value: Channel | "all";
-  label: string;
-  icon: typeof Mail;
-  featureId?: string;
-}
-
-const channels: ChannelOption[] = [
+// Only show channels that have a working backend integration.
+// Instagram, Facebook, WhatsApp are planned but not yet connected.
+// They remain in the Channel type — just hidden from the picker until wired.
+const channels: { value: Channel | "all"; label: string; icon: typeof Mail }[] = [
   { value: "all", label: "All", icon: Inbox },
-  { value: "email", label: "Email", icon: Mail, featureId: "email" },
-  { value: "sms", label: "SMS", icon: MessageSquare, featureId: "sms" },
-  { value: "instagram", label: "Instagram", icon: Instagram, featureId: "instagram-dms" },
-  { value: "facebook", label: "Facebook", icon: Facebook, featureId: "facebook-messenger" },
-  { value: "whatsapp", label: "WhatsApp", icon: MessageCircle, featureId: "whatsapp" },
-  { value: "linkedin", label: "LinkedIn", icon: Linkedin, featureId: "linkedin" },
+  { value: "sms", label: "SMS", icon: Phone },
+  { value: "email", label: "Email", icon: Mail },
+  // TODO: Uncomment when backend integrations are wired
+  // { value: "instagram", label: "IG", icon: Instagram },
+  // { value: "facebook", label: "FB", icon: Facebook },
+  // { value: "whatsapp", label: "WA", icon: MessageCircle },
 ];
-
-function ChannelButton({
-  channel,
-  selected,
-  onClick,
-}: {
-  channel: ChannelOption;
-  selected: boolean;
-  onClick: () => void;
-}) {
-  const enabled = useFeature("communication", channel.featureId ?? "");
-
-  // "All" has no featureId, always show it
-  if (channel.featureId && !enabled) return null;
-
-  const Icon = channel.icon;
-
-  return (
-    <button
-      onClick={onClick}
-      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-        selected
-          ? "bg-brand text-white"
-          : "bg-surface text-text-secondary border border-border-light hover:text-foreground hover:border-border-light"
-      }`}
-    >
-      <Icon className="w-3.5 h-3.5" />
-      {channel.label}
-    </button>
-  );
-}
 
 export function ChannelFilter({ selectedChannel, onChange }: ChannelFilterProps) {
   return (
-    <div className="flex items-center gap-2 flex-wrap">
-      {channels.map((ch) => (
-        <ChannelButton
-          key={ch.value}
-          channel={ch}
-          selected={selectedChannel === ch.value}
-          onClick={() => onChange(ch.value)}
-        />
-      ))}
+    <div className="flex items-center gap-1">
+      {channels.map((ch) => {
+        const Icon = ch.icon;
+        const selected = selectedChannel === ch.value;
+        return (
+          <button
+            key={ch.value}
+            onClick={() => onChange(ch.value)}
+            title={ch.label}
+            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors cursor-pointer ${
+              selected
+                ? "bg-primary text-white"
+                : "text-text-tertiary hover:text-foreground hover:bg-surface"
+            }`}
+          >
+            <Icon className="w-3.5 h-3.5" />
+            {ch.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
 
         if (invoiceId && !workspaceId) {
           const { data: invoice, error: invoiceLookupError } = await supabase
-            .from("invoices")
+            .from("payment_documents")
             .select("workspace_id")
             .eq("id", invoiceId)
             .maybeSingle();
@@ -47,13 +47,11 @@ export async function POST(req: NextRequest) {
         if (invoiceId && workspaceId) {
           // Mark invoice as paid in Supabase
           const { error } = await supabase
-            .from("invoices")
+            .from("payment_documents")
             .update({
               status: "paid",
-              paid_amount: amountTotal ? amountTotal / 100 : null,
               paid_at: new Date().toISOString(),
               payment_method: "stripe",
-              stripe_session_id: session.id,
               updated_at: new Date().toISOString(),
             })
             .eq("id", invoiceId)
@@ -68,8 +66,8 @@ export async function POST(req: NextRequest) {
           // Log activity
           await supabase.from("activity_log").insert({
             workspace_id: workspaceId,
-            action: "update",
-            entity_type: "invoices",
+            type: "update",
+            entity_type: "payment_documents",
             entity_id: invoiceId,
             description: `Payment received via Stripe — $${amountTotal ? (amountTotal / 100).toFixed(2) : "0.00"}`,
           }).then(({ error: logErr }) => {
@@ -80,89 +78,49 @@ export async function POST(req: NextRequest) {
       }
 
       case "invoice.paid": {
-        // Stripe subscription invoice paid (platform fee or recurring membership)
+        // TODO: Wire to client_memberships once stripe_subscription_id column is added
         const invoice = event.data.object as unknown as Record<string, unknown>;
         const subscriptionId = invoice.subscription as string | undefined;
-        const customerId = invoice.customer as string | undefined;
-        const amountPaid = invoice.amount_paid as number | undefined;
-
-        if (subscriptionId && customerId) {
-          // Update membership status if this is a membership subscription
-          const { data: membership } = await supabase
-            .from("memberships")
-            .select("id, workspace_id")
-            .eq("stripe_subscription_id", subscriptionId)
-            .single();
-
-          if (membership) {
-            await supabase
-              .from("memberships")
-              .update({
-                status: "active",
-                last_payment_at: new Date().toISOString(),
-                last_payment_amount: amountPaid ? amountPaid / 100 : null,
-              })
-              .eq("id", membership.id)
-              .eq("workspace_id", membership.workspace_id);
-
-            console.log(`[Stripe] Membership ${membership.id} payment recorded`);
-          }
+        if (subscriptionId) {
+          console.warn(
+            `[Stripe] invoice.paid for subscription ${subscriptionId} — client_memberships lacks stripe_subscription_id. Skipping.`
+          );
         }
         break;
       }
 
       case "customer.subscription.updated": {
         const subscription = event.data.object as unknown as Record<string, unknown>;
-        const subscriptionId = subscription.id as string;
-        const status = subscription.status as string;
-
-        // Map Stripe status to our status
-        const statusMap: Record<string, string> = {
-          active: "active",
-          past_due: "past_due",
-          unpaid: "past_due",
-          canceled: "cancelled",
-          incomplete: "pending",
-          incomplete_expired: "cancelled",
-          trialing: "active",
-          paused: "paused",
-        };
-
-        const mappedStatus = statusMap[status] || status;
-
-        const { error } = await supabase
-          .from("memberships")
-          .update({
-            status: mappedStatus,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("stripe_subscription_id", subscriptionId);
-
-        if (error) {
-          console.error("[Stripe] Failed to update subscription:", error.message);
-        } else {
-          console.log(`[Stripe] Subscription ${subscriptionId} updated to ${mappedStatus}`);
+        const metadata = subscription.metadata as Record<string, string> | undefined;
+        const workspaceId = metadata?.workspaceId;
+        if (workspaceId) {
+          const planTier = metadata?.tierId || null;
+          const subStatus = subscription.status as string;
+          await supabase
+            .from("workspace_settings")
+            .update({
+              stripe_subscription_id: subscription.id as string,
+              plan_tier: subStatus === "canceled" ? "free" : planTier,
+            })
+            .eq("workspace_id", workspaceId);
+          console.log(`[Stripe] subscription.updated for workspace ${workspaceId}: ${subStatus}, tier=${planTier}`);
         }
         break;
       }
 
       case "customer.subscription.deleted": {
         const subscription = event.data.object as unknown as Record<string, unknown>;
-        const subscriptionId = subscription.id as string;
-
-        const { error } = await supabase
-          .from("memberships")
-          .update({
-            status: "cancelled",
-            cancelled_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .eq("stripe_subscription_id", subscriptionId);
-
-        if (error) {
-          console.error("[Stripe] Failed to cancel subscription:", error.message);
-        } else {
-          console.log(`[Stripe] Subscription ${subscriptionId} cancelled`);
+        const metadata = subscription.metadata as Record<string, string> | undefined;
+        const workspaceId = metadata?.workspaceId;
+        if (workspaceId) {
+          await supabase
+            .from("workspace_settings")
+            .update({
+              stripe_subscription_id: null,
+              plan_tier: "free",
+            })
+            .eq("workspace_id", workspaceId);
+          console.log(`[Stripe] subscription.deleted for workspace ${workspaceId}`);
         }
         break;
       }
@@ -194,34 +152,16 @@ export async function POST(req: NextRequest) {
         const subscription = event.data.object as unknown as Record<string, unknown>;
         const metadata = subscription.metadata as Record<string, string> | undefined;
         const workspaceId = metadata?.workspaceId;
-        const status = subscription.status as string;
-
+        const tierId = metadata?.tierId || "growth";
         if (workspaceId) {
-          const trialEnd = subscription.trial_end as number | null;
-          const currentPeriodEnd = subscription.current_period_end as number;
-
-          // Read-modify-write for JSONB settings
-          const { data: existing } = await supabase
-            .from("workspace_settings")
-            .select("settings")
-            .eq("workspace_id", workspaceId)
-            .maybeSingle();
-
-          const currentSettings = (existing?.settings as Record<string, unknown>) ?? {};
           await supabase
             .from("workspace_settings")
             .update({
-              settings: {
-                ...currentSettings,
-                stripeSubscriptionId: subscription.id,
-                billingStatus: status === "trialing" ? "trial" : status,
-                trialEndsAt: trialEnd ? new Date(trialEnd * 1000).toISOString() : null,
-                currentPeriodEnd: new Date(currentPeriodEnd * 1000).toISOString(),
-              },
+              stripe_subscription_id: subscription.id as string,
+              plan_tier: tierId,
             })
             .eq("workspace_id", workspaceId);
-
-          console.log(`[Stripe] SaaS subscription created for workspace ${workspaceId}: ${status}`);
+          console.log(`[Stripe] SaaS subscription created for workspace ${workspaceId}: tier=${tierId}`);
         }
         break;
       }

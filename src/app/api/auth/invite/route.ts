@@ -1,17 +1,24 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { inviteTeamMember } from "@/lib/auth/invite";
+import { rateLimit } from "@/lib/rate-limit";
 
 /**
  * POST /api/auth/invite
  * Invites a new team member to a workspace.
  *
- * Body: { email, name, role, workspaceId, moduleAccess? }
+ * Body: { email, name, role, workspaceId }
  *
  * Requires the caller to be an authenticated owner or admin of the workspace.
  */
 export async function POST(request: Request) {
   try {
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const { allowed } = await rateLimit(`invite:${ip}`, 10, 300_000);
+    if (!allowed) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
     const supabase = await createClient();
 
     // Verify the caller is authenticated
@@ -24,7 +31,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { email, name, role, workspaceId, moduleAccess } = body;
+    const { email, name, role, workspaceId } = body;
 
     // Validate required fields
     if (!email || !name || !role || !workspaceId) {
@@ -62,7 +69,6 @@ export async function POST(request: Request) {
       name,
       role,
       workspaceId,
-      moduleAccess,
     });
 
     if (!result.success) {

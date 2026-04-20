@@ -6,7 +6,7 @@ import { MousePointer2 } from "lucide-react";
 import {
   Users, Inbox, MessageCircle, Calendar, Receipt, FolderKanban,
   Megaphone, Headphones, FileText, Zap, BarChart3,
-  Package, UsersRound, SlidersHorizontal, Search, Check, Globe,
+  Package, UsersRound, SlidersHorizontal, Search, Check, Globe, ScrollText,
 } from "lucide-react";
 
 const MODULES = [
@@ -16,6 +16,7 @@ const MODULES = [
   { name: "Scheduling", icon: Calendar },
   { name: "Projects", icon: FolderKanban },
   { name: "Billing", icon: Receipt },
+  { name: "Proposals", icon: ScrollText },
   { name: "Documents", icon: FileText },
   { name: "Products", icon: Package },
   { name: "Marketing", icon: Megaphone },
@@ -150,7 +151,7 @@ export function ModulePickerDemo() {
             See what you get.
           </h2>
           <p className="text-text-secondary text-[15px] max-w-md mx-auto mb-6">
-            Click a business type and see how their workspace looks. Same platform, completely different setup.
+            Pick a beauty specialty and see how their workspace looks. Same platform, completely different setup.
           </p>
 
           {/* Persona preset pills */}
@@ -218,7 +219,7 @@ export function ModulePickerDemo() {
               <span className="text-xs text-text-secondary">Off — hidden, data preserved</span>
             </div>
           </div>
-          <p className="text-xs text-text-tertiary mt-3">$49/mo flat. All modules included. No per-feature fees.</p>
+          <p className="text-xs text-text-tertiary mt-3">From A$29/mo. All modules included. No per-feature fees.</p>
         </div>
 
         {/* Mobile fallback */}
@@ -344,8 +345,10 @@ const MODULE_DEMOS: Record<string, { features: string[]; desc: string; content: 
     content: { type: "appointments", data: [{ time: "9:00 AM", name: "Sarah — Lash Fill", color: "bg-pink-400" }, { time: "11:30 AM", name: "Jess — Volume Set", color: "bg-purple-400" }, { time: "2:00 PM", name: "Emma — Brow Tint", color: "bg-blue-400" }] } },
   Projects: { features: ["Billable Rate Tracking", "Expense Tracking", "Client Approval", "Profitability Summary", "Job Templates", "Recurring Jobs"], desc: "Tasks, time tracking, and deadlines",
     content: { type: "table", data: [{ name: "Kitchen renovation", email: "In Progress", status: "high" }, { name: "Bathroom refit", email: "Quoted", status: "medium" }, { name: "Garden lights", email: "Complete", status: "low" }] } },
-  Billing: { features: ["Invoices", "Quotes", "Proposals", "Milestone Billing", "Payment Plans", "Aging Report"], desc: "Quotes, invoices, proposals — all in one",
-    content: { type: "table", data: [{ name: "INV-001 Sarah M.", email: "$175", status: "paid" }, { name: "INV-002 Jess T.", email: "$200", status: "sent" }, { name: "PROP-001 Tom K.", email: "$4,500", status: "viewed" }] } },
+  Billing: { features: ["Invoices", "Quotes", "Milestone Billing", "Payment Plans", "Aging Report", "Stripe Integration"], desc: "Quotes, invoices, and payments",
+    content: { type: "table", data: [{ name: "INV-001 Sarah M.", email: "A$175", status: "paid" }, { name: "INV-002 Jess T.", email: "A$200", status: "sent" }, { name: "INV-003 Emma R.", email: "A$90", status: "overdue" }] } },
+  Proposals: { features: ["Wedding Templates", "Multi-Session Packages", "E-Signatures", "Deposit Capture", "Client View Tracking", "Auto-Follow-Up"], desc: "Branded proposals with e-sign",
+    content: { type: "table", data: [{ name: "PROP-001 Bridal — Ava & James", email: "A$4,500", status: "viewed" }, { name: "PROP-002 Engagement — Mia K.", email: "A$850", status: "sent" }, { name: "PROP-003 Event — Lila R.", email: "A$2,200", status: "signed" }] } },
   Documents: { features: ["Contract Templates", "E-Signatures", "Version History", "Expiry Tracking", "Auto-Attach to Job", "Document Tags"], desc: "Contracts, files, and signatures",
     content: { type: "table", data: [{ name: "Service Agreement.pdf", email: "Contract", status: "signed" }, { name: "NDA — Tom K.pdf", email: "NDA", status: "pending" }] } },
   Marketing: { features: ["Email Sequences", "Social Scheduling", "Review Collection", "Coupon Codes", "Audience Segmentation", "Referral Program"], desc: "Campaigns, sequences, and reviews",
@@ -357,11 +360,11 @@ const MODULE_DEMOS: Record<string, { features: string[]; desc: string; content: 
   Automations: { features: ["Recurring Task Templates", "Email Automations", "Conditional Logic", "Trigger Rules", "Activity Triggers", "Automation Log"], desc: "Automate repetitive work",
     content: { type: "table", data: [{ name: "Welcome email", email: "New client added", status: "active" }, { name: "Follow-up", email: "No booking 30d", status: "active" }] } },
   Reporting: { features: ["Revenue Breakdown", "Client Retention", "Lead Conversion", "Tax Summary", "Profit & Loss", "Goal Tracking"], desc: "Dashboards and business insights",
-    content: { type: "table", data: [{ name: "Revenue", email: "$4,280", status: "+12%" }, { name: "Clients", email: "47", status: "+3" }] } },
+    content: { type: "table", data: [{ name: "Revenue", email: "A$4,280", status: "+12%" }, { name: "Clients", email: "47", status: "+3" }] } },
   Products: { features: ["Duration Variants", "Service Add-Ons", "Cost Margins", "Inventory Tracking", "Bundles", "Allergen Info"], desc: "Your service and product catalog",
-    content: { type: "table", data: [{ name: "Classic Full Set", email: "$150", status: "active" }, { name: "Volume Full Set", email: "$200", status: "active" }] } },
+    content: { type: "table", data: [{ name: "Classic Full Set", email: "A$150", status: "active" }, { name: "Volume Full Set", email: "A$200", status: "active" }] } },
   "Client Portal": { features: ["View Bookings", "Pay Invoices", "Track Job Progress", "Shared Documents", "Messages", "Custom Branding"], desc: "Self-service hub for your clients",
-    content: { type: "table", data: [{ name: "Upcoming Bookings", email: "2 appointments", status: "active" }, { name: "Outstanding Invoices", email: "$175 due", status: "sent" }] } },
+    content: { type: "table", data: [{ name: "Upcoming Bookings", email: "2 appointments", status: "active" }, { name: "Outstanding Invoices", email: "A$175 due", status: "sent" }] } },
 };
 
 // ── Module info cards (shown outside the demo frame) ──
@@ -372,7 +375,8 @@ const MODULE_INFO: Record<string, { headline: string; detail: string; stat?: str
   Messages: { headline: "Pick your channels, set your rules", detail: "From email and SMS to Instagram DMs and WhatsApp — turn on the channels you use. Add bulk messaging, canned responses, and auto-replies as you need them." },
   Scheduling: { headline: "Bookings built around your workflow", detail: "From online booking pages and deposits to walk-in queues and rebooking prompts — every scheduling feature is a toggle. Turn on what fits your business." },
   Projects: { headline: "Track work your way", detail: "From billable rate tracking and expense logging to client approval gates and profitability summaries — build the project workflow that matches how you actually work." },
-  Billing: { headline: "Invoices, quotes, and proposals — unified", detail: "Three tools in one module. From milestone billing and payment plans to branded proposals with e-signature — everything your billing needs, toggled on when you need it." },
+  Billing: { headline: "Invoices and quotes — built in", detail: "From milestone billing and payment plans to aging reports — everything your billing needs lives where your bookings do. Stripe-connected so paid invoices reconcile automatically." },
+  Proposals: { headline: "Win weddings and events", detail: "Send branded multi-session packages with photos, pricing tiers, and e-signature. Capture a deposit at sign, track when the client opens the proposal, and auto-follow-up if they go quiet." },
   Documents: { headline: "Contracts and files, simplified", detail: "From contract templates with merge fields to e-signatures and expiry alerts — manage your documents without leaving your workspace. Auto-attach to jobs as you go." },
   Marketing: { headline: "Grow without extra tools", detail: "From email sequences and social scheduling to review collection and referral programs — your marketing stack lives inside your workspace. No extra subscriptions." },
   Team: { headline: "Everyone sees only what they need", detail: "From module-level access control to role templates and performance dashboards — set up your team so everyone has exactly the tools they need, nothing more." },
@@ -390,7 +394,8 @@ const MODULE_LEFT_INFO: Record<string, { title: string; points: string[] }> = {
   Messages: { title: "Unified Inbox", points: ["Email, SMS, Instagram, WhatsApp", "Canned responses & templates", "Schedule messages in advance", "Auto-reply outside hours"] },
   Scheduling: { title: "Booking System", points: ["Online booking page", "Walk-in queue management", "Deposits & no-show protection", "Auto rebooking reminders"] },
   Projects: { title: "Job Tracking", points: ["Task lists with checklists", "Time tracking with billable rates", "Expense logging per job", "Client approval at each stage"] },
-  Billing: { title: "Billing Hub", points: ["Invoices with status tracking", "Quotes with version history", "Branded proposals with e-sign", "Milestone & deposit billing"] },
+  Billing: { title: "Billing Hub", points: ["Invoices with status tracking", "Quotes with version history", "Milestone & deposit billing", "Stripe-connected payments"] },
+  Proposals: { title: "Proposals", points: ["Branded wedding & event proposals", "Multi-session packages & tiers", "E-signature & deposit capture", "View tracking & auto-follow-up"] },
   Documents: { title: "Document Manager", points: ["Contract templates with merge fields", "E-signatures built in", "Auto-attach to jobs", "Expiry alerts & version history"] },
   Marketing: { title: "Marketing Suite", points: ["Email sequences & campaigns", "Social media scheduling", "Review collection automation", "Coupon codes & referral program"] },
   Team: { title: "Team Management", points: ["Module-level access control", "Role templates per industry", "Workload & performance views", "Internal discussion threads"] },
@@ -403,13 +408,24 @@ const MODULE_LEFT_INFO: Record<string, { title: string; points: string[] }> = {
 
 const CUSTOMIZE_TICK_MS = 3500;
 
+// ── Persona presets for the feature customize demo ──
+const FEATURE_PERSONAS = [
+  { label: "All", modules: MODULES.map((m) => m.name) },
+  { label: "Lash Tech", modules: ["Clients", "Messages", "Scheduling", "Products", "Marketing", "Automations", "Reporting"] },
+  { label: "Hair Stylist", modules: ["Clients", "Messages", "Scheduling", "Products", "Billing", "Marketing", "Team", "Automations", "Reporting"] },
+  { label: "Nail Tech", modules: ["Clients", "Messages", "Scheduling", "Products", "Billing", "Marketing", "Client Portal", "Automations", "Reporting"] },
+  { label: "Makeup Artist", modules: ["Clients", "Leads", "Messages", "Scheduling", "Proposals", "Documents", "Billing", "Marketing", "Automations", "Reporting"] },
+  { label: "Spa Owner", modules: ["Clients", "Leads", "Messages", "Scheduling", "Products", "Billing", "Documents", "Marketing", "Team", "Support", "Client Portal", "Automations", "Reporting"] },
+];
+
 export function FeatureCustomizeDemo() {
   const [paused, setPaused] = useState(false);
   const [activeModule, setActiveModule] = useState("Scheduling");
+  const [activePersona, setActivePersona] = useState(0);
   const [featureStates, setFeatureStates] = useState<Record<string, boolean>>({});
   const autoFeatureIdx = useRef(0);
   const containerRef2 = useRef<HTMLDivElement>(null);
-  const featureRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const featureRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const [cursorPos2, setCursorPos2] = useState({ x: 700, y: 200 });
   const [cursorVisible2, setCursorVisible2] = useState(true);
   const idleTimerRef2 = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -422,7 +438,7 @@ export function FeatureCustomizeDemo() {
     }, 5000);
   }, []);
 
-  const setFeatureRef = useCallback((name: string) => (el: HTMLDivElement | null) => {
+  const setFeatureRef = useCallback((name: string) => (el: HTMLButtonElement | null) => {
     featureRefs.current[name] = el;
   }, []);
 
@@ -482,6 +498,16 @@ export function FeatureCustomizeDemo() {
     scheduleResume2();
   };
 
+  const selectPersona = (index: number) => {
+    setActivePersona(index);
+    const persona = FEATURE_PERSONAS[index];
+    // Auto-select the first visible module for this persona
+    const firstVisible = MODULES.find((m) => persona.modules.includes(m.name) && MODULE_DEMOS[m.name]);
+    if (firstVisible) setActiveModule(firstVisible.name);
+  };
+
+  const visibleModuleNames = new Set(FEATURE_PERSONAS[activePersona].modules);
+
   const demo = MODULE_DEMOS[activeModule];
   const enabledCount = demo ? demo.features.filter((f) => featureStates[f]).length : 0;
 
@@ -508,9 +534,26 @@ export function FeatureCustomizeDemo() {
           <h2 className="text-[1.75rem] sm:text-[2.25rem] font-bold text-foreground leading-tight mb-3">
             Every tool is set up for how you work.
           </h2>
-          <p className="text-text-secondary text-[15px] max-w-md mx-auto">
-            Every field, every feature, every workflow — set up based on what you told us. Nothing you didn&apos;t ask for.
+          <p className="text-text-secondary text-[15px] max-w-md mx-auto mb-6">
+            Every field, every feature, every workflow — from rebooking reminders to colour formulas. Nothing you didn&apos;t ask for.
           </p>
+
+          {/* Persona toggle pills */}
+          <div className="flex flex-wrap justify-center gap-2">
+            {FEATURE_PERSONAS.map((persona, i) => (
+              <button
+                key={persona.label}
+                onClick={() => selectPersona(i)}
+                className={`px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                  activePersona === i
+                    ? "bg-foreground text-background shadow-md"
+                    : "bg-surface border border-border-light text-text-secondary hover:text-foreground hover:border-foreground/20"
+                }`}
+              >
+                {persona.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="relative">
@@ -562,10 +605,20 @@ export function FeatureCustomizeDemo() {
           </AnimatePresence>
         )}
 
-        {/* Mobile fallback */}
-        <div className="block md:hidden text-center py-8 px-4 bg-surface/50 rounded-2xl border border-border-light">
-          <p className="text-sm text-text-secondary">Try the interactive demo on desktop for the full experience.</p>
-        </div>
+        {/* Mobile demo — mirrors desktop structure: browser chrome + nav + content + customize */}
+        <MobileFeatureDemo
+          activeModule={activeModule}
+          visibleModuleNames={visibleModuleNames}
+          demo={demo}
+          leftInfo={leftInfo}
+          featureStates={featureStates}
+          enabledCount={enabledCount}
+          onSelectModule={(name) => { setActiveModule(name); setPaused(true); }}
+          onToggleFeature={(f) => {
+            setFeatureStates((prev) => ({ ...prev, [f]: !prev[f] }));
+            setPaused(true);
+          }}
+        />
 
         <div
           ref={containerRef2}
@@ -601,7 +654,7 @@ export function FeatureCustomizeDemo() {
                 </div>
               </div>
               <nav className="flex-1 px-2 py-2 overflow-y-auto">
-                {MODULES.filter((m) => MODULE_DEMOS[m.name]).map((mod) => (
+                {MODULES.filter((m) => MODULE_DEMOS[m.name] && visibleModuleNames.has(m.name)).map((mod) => (
                   <div
                     key={mod.name}
                     ref={(el) => { sidebarNavRefs.current[mod.name] = el; }}
@@ -662,12 +715,19 @@ export function FeatureCustomizeDemo() {
                     {demo?.features.map((f) => {
                       const isOn = featureStates[f] ?? false;
                       return (
-                        <div key={f} ref={setFeatureRef(f)} onClick={() => toggleFeature(f)} className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg transition-all duration-300 cursor-pointer hover:bg-background ${isOn ? "bg-primary/5" : ""}`}>
+                        <button
+                          key={f}
+                          type="button"
+                          ref={setFeatureRef(f)}
+                          aria-pressed={isOn}
+                          onClick={() => toggleFeature(f)}
+                          className={`appearance-none border-0 flex w-full items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition-all duration-300 cursor-pointer hover:bg-background ${isOn ? "bg-primary/5" : ""}`}
+                        >
                           <span className={`text-[10px] font-medium transition-colors duration-300 ${isOn ? "text-foreground" : "text-text-tertiary"}`}>{f}</span>
                           <div className={`w-7 h-[15px] rounded-full flex items-center px-0.5 transition-all duration-300 ${isOn ? "bg-primary justify-end" : "bg-gray-200 justify-start"}`}>
                             <motion.div layout transition={{ type: "spring", stiffness: 500, damping: 30 }} className="w-[11px] h-[11px] bg-card-bg rounded-full shadow-sm" />
                           </div>
-                        </div>
+                        </button>
                       );
                     })}
                   </div>
@@ -684,6 +744,187 @@ export function FeatureCustomizeDemo() {
         </p>
       </div>
     </section>
+  );
+}
+
+// ── Mobile variant of the feature-customize demo ──
+interface MobileFeatureDemoProps {
+  activeModule: string;
+  visibleModuleNames: Set<string>;
+  demo: { features: string[]; desc: string; content: { type: string; data: Record<string, unknown>[] } } | undefined;
+  leftInfo: { title: string; points: string[] } | undefined;
+  featureStates: Record<string, boolean>;
+  enabledCount: number;
+  onSelectModule: (name: string) => void;
+  onToggleFeature: (feature: string) => void;
+}
+
+function MobileFeatureDemo({
+  activeModule,
+  visibleModuleNames,
+  demo,
+  leftInfo,
+  featureStates,
+  enabledCount,
+  onSelectModule,
+  onToggleFeature,
+}: MobileFeatureDemoProps) {
+  const navRef = useRef<HTMLDivElement>(null);
+  const navItemRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+
+  // Auto-scroll the active nav chip into view when the module changes
+  useEffect(() => {
+    const el = navItemRefs.current[activeModule];
+    const container = navRef.current;
+    if (!el || !container) return;
+    const containerRect = container.getBoundingClientRect();
+    const elRect = el.getBoundingClientRect();
+    const targetScrollLeft =
+      container.scrollLeft +
+      (elRect.left - containerRect.left) -
+      (containerRect.width / 2 - elRect.width / 2);
+    container.scrollTo({ left: targetScrollLeft, behavior: "smooth" });
+  }, [activeModule]);
+
+  const visibleModules = MODULES.filter(
+    (m) => MODULE_DEMOS[m.name] && visibleModuleNames.has(m.name)
+  );
+
+  return (
+    <div className="block md:hidden rounded-2xl border border-border-light overflow-hidden shadow-xl bg-background">
+      {/* Browser chrome */}
+      <div className="bg-card-bg border-b border-border-light px-3 py-2 flex items-center gap-2">
+        <div className="flex gap-1">
+          <div className="w-2 h-2 rounded-full bg-red-400" />
+          <div className="w-2 h-2 rounded-full bg-yellow-400" />
+          <div className="w-2 h-2 rounded-full bg-green-400" />
+        </div>
+        <div className="flex-1 flex justify-center">
+          <div className="px-2 py-0.5 bg-background rounded text-[9px] text-text-tertiary">app.usemagic.com</div>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-1.5 h-1.5 bg-primary rounded-full pulse-dot" />
+          <span className="text-[8px] text-text-tertiary">Live</span>
+        </div>
+      </div>
+
+      {/* App top bar — Magic logo + search stub + avatar (matches desktop) */}
+      <div className="bg-card-bg border-b border-border-light px-3 py-2 flex items-center gap-2">
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <div className="w-4 h-4 rounded flex items-center justify-center" style={{ backgroundColor: "var(--logo-green)" }}>
+            <div className="w-1.5 h-1.5 bg-card-bg rounded-[1px]" />
+          </div>
+          <span className="text-[10px] font-bold text-foreground">Magic</span>
+        </div>
+        <div className="flex-1 flex items-center gap-1 px-2 py-0.5 bg-background border border-border-light rounded text-[9px] text-text-tertiary min-w-0">
+          <Search className="w-2.5 h-2.5 flex-shrink-0" />
+          <span className="truncate">Search…</span>
+        </div>
+        <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
+          <span className="text-[8px] font-bold text-white">M</span>
+        </div>
+      </div>
+
+      {/* Horizontal nav — underline-style active (replaces desktop left sidebar) */}
+      <div className="bg-card-bg border-b border-border-light">
+        <div
+          ref={navRef}
+          className="flex overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {visibleModules.map((mod) => {
+            const Icon = mod.icon;
+            const active = activeModule === mod.name;
+            return (
+              <button
+                key={mod.name}
+                ref={(el) => { navItemRefs.current[mod.name] = el; }}
+                onClick={() => onSelectModule(mod.name)}
+                className={`relative flex items-center gap-1 px-3 py-2.5 text-[11px] whitespace-nowrap flex-shrink-0 cursor-pointer transition-colors ${
+                  active ? "text-foreground font-semibold" : "text-text-secondary hover:text-foreground font-medium"
+                }`}
+              >
+                <Icon className="w-3 h-3" />
+                {mod.name}
+                {active && (
+                  <motion.div
+                    layoutId="mobile-demo-active-bar"
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    className="absolute left-2 right-2 bottom-0 h-[2px] bg-primary rounded-full"
+                  />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Main content — module header + DemoContent */}
+      {demo && leftInfo && (
+        <div className="px-3 py-3 bg-background border-b border-border-light">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeModule}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div className="flex items-center justify-between mb-3 gap-2">
+                <div className="min-w-0">
+                  <h3 className="text-[14px] font-bold text-foreground truncate">{leftInfo.title}</h3>
+                  <p className="text-[10px] text-text-tertiary truncate">{demo.desc}</p>
+                </div>
+                <div className="px-2 py-1 bg-foreground text-background rounded-md text-[9px] font-semibold flex-shrink-0">+ New</div>
+              </div>
+              <DemoContent module={activeModule} features={featureStates} data={demo.content} />
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      )}
+
+      {/* Customize panel — toggles (mirrors desktop right panel) */}
+      {demo && (
+        <div className="bg-card-bg">
+          <div className="px-3 py-2.5 border-b border-border-light flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <SlidersHorizontal className="w-3 h-3 text-text-secondary" />
+              <p className="text-[11px] font-bold text-foreground">Customize</p>
+            </div>
+            <span className="text-[9px] font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">
+              {enabledCount}/{demo.features.length} on
+            </span>
+          </div>
+          <div className="p-2 space-y-0.5">
+            {demo.features.map((f) => {
+              const on = !!featureStates[f];
+              return (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => onToggleFeature(f)}
+                  className={`appearance-none border-0 flex w-full items-center justify-between gap-3 px-2.5 py-2 rounded-lg text-left transition-colors cursor-pointer ${
+                    on ? "bg-primary/5" : "hover:bg-background"
+                  }`}
+                >
+                  <span className={`text-[12px] transition-colors ${on ? "text-foreground font-medium" : "text-text-tertiary"}`}>{f}</span>
+                  <div
+                    className={`w-8 h-[17px] rounded-full flex items-center px-0.5 transition-colors flex-shrink-0 ${
+                      on ? "bg-primary justify-end" : "bg-gray-200 justify-start"
+                    }`}
+                  >
+                    <motion.div
+                      layout
+                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                      className="w-3 h-3 bg-card-bg rounded-full shadow-sm"
+                    />
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -856,7 +1097,7 @@ function DemoContent({ module, features, data }: { module: string; features: Rec
             </div>
             <div className="px-3 py-2 bg-card-bg text-[9px] space-y-1">
               <div className="flex items-center justify-between"><span className="text-text-secondary">yourname.magic/book</span><span className="text-primary font-medium underline">Copy link</span></div>
-              <div className="flex gap-1">{["Lash Fill — $80", "Volume Set — $200"].map(s => <span key={s} className="px-1.5 py-0.5 bg-background border border-border-light rounded text-[8px] text-text-tertiary">{s}</span>)}</div>
+              <div className="flex gap-1">{["Lash Fill — A$80", "Volume Set — A$200"].map(s => <span key={s} className="px-1.5 py-0.5 bg-background border border-border-light rounded text-[8px] text-text-tertiary">{s}</span>)}</div>
             </div>
           </motion.div>
         )}
@@ -866,7 +1107,7 @@ function DemoContent({ module, features, data }: { module: string; features: Rec
               <div className={`w-1 h-5 rounded-full ${a.color}`} />
               <span className="text-[10px] text-text-tertiary w-14">{a.time}</span>
               <span className="text-[10px] font-medium text-foreground flex-1">{a.name}</span>
-              {f("Booking Deposits") && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[8px] px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded font-medium">$30 dep</motion.span>}
+              {f("Booking Deposits") && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[8px] px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded font-medium">A$30 dep</motion.span>}
               {f("Satisfaction Rating") && a.done && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[9px] text-yellow-500">&#9733;&#9733;&#9733;&#9733;&#9733;</motion.span>}
             </div>
           ))}
@@ -1051,7 +1292,7 @@ function DemoContent({ module, features, data }: { module: string; features: Rec
               <span className="font-medium text-foreground">{j.title}</span>
               <span className="text-text-secondary">{j.stage}</span>
               {f("Expense Tracking") && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-text-secondary">${j.cost}</motion.span>}
-              {f("Billable Rate Tracking") && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-text-secondary">$85/hr</motion.span>}
+              {f("Billable Rate Tracking") && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-text-secondary">A$85/hr</motion.span>}
             </motion.div>
           ))}
         </div>
@@ -1059,7 +1300,7 @@ function DemoContent({ module, features, data }: { module: string; features: Rec
           {f("Recurring Jobs") && <motion.div key="Recurring Jobs" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mt-2"><div className="text-[9px] text-text-tertiary">1 recurring job: Garden maintenance (monthly)</div></motion.div>}
           {f("Job Templates") && <motion.div key="Job Templates" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mt-2"><div className="flex gap-1">{["Renovation", "Repair", "Install"].map(t => <span key={t} className="px-2 py-1 bg-background border border-border-light rounded text-[9px] text-text-secondary">{t}</span>)}</div></motion.div>}
           {f("Client Approval") && <motion.div key="Client Approval" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mt-2"><div className="px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg text-[9px] text-blue-700">Kitchen renovation — awaiting client sign-off</div></motion.div>}
-          {f("Profitability Summary") && <motion.div key="Profitability Summary" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mt-2"><div className="px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg text-[10px] text-emerald-700">Total profit: <span className="font-bold">$1,850</span> across 3 jobs (42% margin)</div></motion.div>}
+          {f("Profitability Summary") && <motion.div key="Profitability Summary" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mt-2"><div className="px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg text-[10px] text-emerald-700">Total profit: <span className="font-bold">A$1,850</span> across 3 jobs (42% margin)</div></motion.div>}
         </AnimatePresence>
       </div>
     );
@@ -1138,9 +1379,9 @@ function DemoContent({ module, features, data }: { module: string; features: Rec
 
   if (module === "Team") {
     const members = [
-      { name: "You", role: "Owner", status: "online", tasks: 8, modules: ["All"], perf: { jobs: 24, revenue: "$3.2k" }, comments: 5 },
-      { name: "Alex K.", role: "Stylist", status: "online", tasks: 5, modules: ["Clients", "Scheduling", "Billing"], perf: { jobs: 18, revenue: "$2.1k" }, comments: 3 },
-      { name: "Mia L.", role: "Junior", status: "offline", tasks: 3, modules: ["Scheduling"], perf: { jobs: 9, revenue: "$0.8k" }, comments: 1 },
+      { name: "You", role: "Owner", status: "online", tasks: 8, modules: ["All"], perf: { jobs: 24, revenue: "A$3.2k" }, comments: 5 },
+      { name: "Alex K.", role: "Stylist", status: "online", tasks: 5, modules: ["Clients", "Scheduling", "Billing"], perf: { jobs: 18, revenue: "A$2.1k" }, comments: 3 },
+      { name: "Mia L.", role: "Junior", status: "offline", tasks: 3, modules: ["Scheduling"], perf: { jobs: 9, revenue: "A$0.8k" }, comments: 1 },
     ];
     return (
       <div>
@@ -1276,7 +1517,7 @@ function DemoContent({ module, features, data }: { module: string; features: Rec
       <div>
         {f("Revenue Breakdown") && <motion.div key="Revenue Breakdown" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-1.5 mb-3">{["Overview", "Revenue", "Clients"].map((t, i) => <span key={t} className={`px-2 py-1 rounded text-[9px] font-medium ${i === 0 ? "bg-foreground text-background" : "bg-background border border-border-light text-text-secondary"}`}>{t}</span>)}</motion.div>}
         <div className="grid grid-cols-3 gap-2 mb-3">
-          {[{ label: "Revenue", value: "$4,280", change: "+12%" }, { label: "Clients", value: "47", change: "+3" }, { label: "Bookings", value: "84", change: "+8%" }].map((stat) => (
+          {[{ label: "Revenue", value: "A$4,280", change: "+12%" }, { label: "Clients", value: "47", change: "+3" }, { label: "Bookings", value: "84", change: "+8%" }].map((stat) => (
             <div key={stat.label} className="px-3 py-2.5 rounded-xl bg-card-bg border border-border-light">
               <p className="text-[9px] text-text-tertiary">{stat.label}</p>
               <p className="text-[15px] font-bold text-foreground">{stat.value}</p>
@@ -1306,8 +1547,8 @@ function DemoContent({ module, features, data }: { module: string; features: Rec
           </motion.div>
         )}
         <AnimatePresence>
-          {f("Tax Summary") && <motion.div key="Tax Summary" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mt-2"><div className="px-3 py-2 bg-surface rounded-lg text-[10px] text-text-secondary">Tax collected this quarter: <span className="font-bold text-foreground">$1,284</span> — <span className="underline">Export for accountant</span></div></motion.div>}
-          {f("Profit & Loss") && <motion.div key="Profit & Loss" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mt-2"><div className="px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg text-[10px] text-emerald-700">Net profit this month: <span className="font-bold">$2,840</span> (66% margin)</div></motion.div>}
+          {f("Tax Summary") && <motion.div key="Tax Summary" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mt-2"><div className="px-3 py-2 bg-surface rounded-lg text-[10px] text-text-secondary">Tax collected this quarter: <span className="font-bold text-foreground">A$1,284</span> — <span className="underline">Export for accountant</span></div></motion.div>}
+          {f("Profit & Loss") && <motion.div key="Profit & Loss" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mt-2"><div className="px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg text-[10px] text-emerald-700">Net profit this month: <span className="font-bold">A$2,840</span> (66% margin)</div></motion.div>}
         </AnimatePresence>
       </div>
     );
@@ -1335,7 +1576,7 @@ function DemoContent({ module, features, data }: { module: string; features: Rec
             <motion.div layout key={p.name} className="grid px-3 py-2 border-b border-border-light/50 last:border-0 text-[10px] items-center" style={{ gridTemplateColumns: `1fr 50px ${f("Service Add-Ons") ? "55px " : ""}${f("Cost Margins") ? "50px " : ""}${f("Inventory Tracking") ? "40px " : ""}${f("Bundles") ? "50px " : ""}` }}>
               <span className="font-medium text-foreground truncate">{p.name}</span>
               <span className="font-medium text-foreground">${p.price}</span>
-              {f("Service Add-Ons") && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[8px] text-primary">{p.category === "Lashes" ? "+$20" : "—"}</motion.span>}
+              {f("Service Add-Ons") && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[8px] text-primary">{p.category === "Lashes" ? "+A$20" : "—"}</motion.span>}
               {f("Cost Margins") && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[8px] text-emerald-600 font-medium">{p.price > 100 ? "72%" : p.price > 50 ? "65%" : "58%"}</motion.span>}
               {f("Inventory Tracking") && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={`text-[9px] ${p.stock !== null && p.stock < 10 ? "text-red-500 font-medium" : "text-text-tertiary"}`}>{p.stock !== null ? p.stock : "\u221E"}</motion.span>}
               {f("Bundles") && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[8px] text-text-tertiary">{p.category === "Lashes" ? "In bundle" : "\u2014"}</motion.span>}
@@ -1344,7 +1585,7 @@ function DemoContent({ module, features, data }: { module: string; features: Rec
         </div>
         <AnimatePresence>
           {f("Allergen Info") && <motion.div key="Allergen Info" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mt-2"><div className="px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-lg text-[10px] text-yellow-800">Allergen notice: Lash Glue contains cyanoacrylate — flag for sensitive clients</div></motion.div>}
-          {f("Bundles") && <motion.div key="Bundles" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mt-2"><div className="px-3 py-2 bg-primary/5 border border-primary/10 rounded-lg text-[10px] text-primary">Bundle: &quot;Lash Starter Kit&quot; — Classic + Volume for $300 (save $50)</div></motion.div>}
+          {f("Bundles") && <motion.div key="Bundles" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mt-2"><div className="px-3 py-2 bg-primary/5 border border-primary/10 rounded-lg text-[10px] text-primary">Bundle: &quot;Lash Starter Kit&quot; — Classic + Volume for A$300 (save A$50)</div></motion.div>}
         </AnimatePresence>
       </div>
     );
@@ -1360,7 +1601,7 @@ function DemoContent({ module, features, data }: { module: string; features: Rec
           </div>
           {[
             { name: "Upcoming Bookings", detail: "2 appointments", status: "active", feature: "View Bookings" },
-            { name: "Outstanding Invoices", detail: "$175 due", status: "sent", feature: "Pay Invoices" },
+            { name: "Outstanding Invoices", detail: "A$175 due", status: "sent", feature: "Pay Invoices" },
             { name: "Job Progress", detail: "Kitchen reno", status: "active", feature: "Track Job Progress" },
             { name: "Documents", detail: "3 files shared", status: "active", feature: "Shared Documents" },
             { name: "Messages", detail: "1 unread", status: "active", feature: "Messages" },
@@ -1399,9 +1640,6 @@ function DemoContent({ module, features, data }: { module: string; features: Rec
 // Legacy export for backward compat
 export function CinematicDemo() {
   return (
-    <>
-      <ModulePickerDemo />
-      <FeatureCustomizeDemo />
-    </>
+    <FeatureCustomizeDemo />
   );
 }

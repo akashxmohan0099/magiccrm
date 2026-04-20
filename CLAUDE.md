@@ -1,16 +1,20 @@
 # MAGIC CRM — Development Guide
 
+## Product
+
+Conversation-first CRM for Beauty & Wellness. Three entry points (booking form, inquiry form, unified comms) funnel into 5 core objects: Client, Booking, Inquiry, Conversation, Payment Document.
+
+Clients are never manually created — a client record only exists when a booking is made.
+
 ## Architecture
 
-Feature-primitive composable module system. Modules are NOT hardcoded — they are compositions of 10 feature primitives (table, form, calendar, kanban, etc.) configured by ModuleSchema definitions. Onboarding answers drive Kimi AI to assemble features into persona-specific modules.
+Direct component rendering. No schema system, no persona variants, no dynamic module assembly. Each tab has its own page component.
 
-### Three Layers
+### 12 Dashboard Tabs
 
-```
-Layer 3: Module Assembly (persona selection + AI tuning)
-Layer 2: Module Schema (fields, views, status flows, actions)
-Layer 1: Feature Primitives (10 generic renderers)
-```
+**Daily Workflow:** Communications, Inquiries, Bookings, Calendar, Clients
+**Operations:** Payments, Marketing
+**Setup:** Services, Forms, Automations, Teams, Settings
 
 ### Key Directories
 
@@ -18,49 +22,48 @@ Layer 1: Feature Primitives (10 generic renderers)
 src/
   app/            — Next.js App Router pages + API routes
   components/
-    modules/      — Legacy module pages (31 modules)
-    primitives/   — Schema-driven renderers (SchemaTable, SchemaForm, etc.)
-    ui/           — Shared UI components (DataTable, KanbanBoard, Modal, etc.)
-    onboarding/   — Onboarding step components
-  store/          — 40 Zustand stores (all persist to localStorage)
+    modules/      — Tab page components (one directory per tab)
+    ui/           — Shared UI components (DataTable, Modal, Toast, etc.)
+  store/          — 12 Zustand stores (all persist to localStorage)
   lib/
-    module-schemas/  — Base schemas + persona variants
-    workspace-blueprints/ — Blueprint resolver pipeline
-    integrations/  — Third-party API clients
-    db/            — Supabase database operations
+    db/           — Supabase CRUD operations (one file per entity)
+    integrations/ — Stripe, Twilio
+    auth/         — Workspace bootstrap, invites
+    server/       — Server-side logic (automation runner, public booking)
   hooks/          — Custom React hooks
-  types/          — TypeScript type definitions
+  types/          — TypeScript type definitions (models.ts)
 ```
 
 ### Data Flow
 
 ```
-Onboarding → assembleWorkspaceSync() → assembled-schemas store
-→ useModuleSchema(moduleId) → legacy component reads labels
-→ Sidebar reads from assembled schemas for personalized labels
-→ Legacy components render with full functionality + schema labels
+User action → Zustand store (optimistic update) → Supabase DB (async)
+Page load → useSupabaseSync → loads all stores from Supabase
+Realtime → useRealtimeSync → Supabase Realtime → reload affected store
 ```
 
-### Schema System
+### Permissions
 
-- Base schemas: `src/lib/module-schemas/base/` (8 modules)
-- Persona variants: `src/lib/module-schemas/variants/` (12 personas)
-- Validator: `src/lib/schema-validator.ts` (4-level validation)
-- Assembly: `src/lib/assembly-pipeline.ts`
-
-Schema renderer is opt-in via `?renderer=schema`. Production uses legacy components + `useModuleSchema` hook for personalized labels.
+- **Owner**: sees all tabs, full CRUD on everything
+- **Team Member**: sees Bookings (own), Calendar (own), Clients (served), Earnings widget
+- Enforced at DB level via Supabase RLS with `get_my_workspace_id()`, `get_my_member_id()`, `is_workspace_owner()`
 
 ## Tech Stack
 
-- Next.js 16.1.7 (App Router)
-- React 19.2.3
+- Next.js (App Router)
+- React 19
 - TypeScript 5 (strict mode)
 - Tailwind CSS 4
-- Zustand 5 (state management, 40 stores)
-- Framer Motion 12 (animations)
-- Supabase (database + auth)
-- Kimi / Moonshot AI (onboarding tuning)
-- Claude / Anthropic (AI builder + insights)
+- Zustand 5 (state management, 12 stores)
+- Framer Motion (animations)
+- Supabase (database + auth + realtime + storage)
+- Stripe Connect (payments, on_behalf_of)
+- Twilio (SMS)
+
+Planned integrations (not yet wired):
+- Nylas (email + calendar sync)
+- Meta Graph API (Instagram + Facebook DMs)
+- WhatsApp Cloud API
 
 ## Commands
 
@@ -71,25 +74,24 @@ npm run test         # Run vitest tests
 npm run test:watch   # Watch mode tests
 ```
 
-## Environment Variables
+## Database
 
-See `.env.local.example` for all required variables. Critical ones:
-- `NEXT_PUBLIC_APP_URL` — Required for OAuth callbacks, invoice links, sitemap
-- `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase connection
-- `KIMI_API_KEY` — Onboarding AI questions + assembly tuning
-- `ANTHROPIC_API_KEY` — AI Builder + AI Insights
-
-## Testing
-
-381 tests across 11 test files. Run with `npx vitest run`.
-
-Tests cover: schema validation, persona flows (12 personas), assembly pipeline, workspace blueprints, feature registry, cascade delete, rate limiting.
+12 tables defined in `supabase/migration.sql`:
+- workspaces, workspace_members, workspace_settings
+- clients, bookings, inquiries, conversations, messages
+- payment_documents, payment_line_items
+- services, member_services, forms, automation_rules, campaigns
+- activity_log
 
 ## Conventions
 
 - Components: PascalCase files
 - Hooks: camelCase with `use` prefix
 - Lib/Store: kebab-case files
-- Schema IDs match module registry IDs (e.g., `client-database`, `leads-pipeline`)
-- All stores use Zustand `persist` middleware with versioned migrations
-- Errors: centralized via `sync-error-handler.ts` + toast notifications
+- All stores use Zustand `persist` middleware with version 2
+- DB files map snake_case ↔ camelCase between Supabase and frontend
+- Errors: toast notifications via `@/components/ui/Toast`
+
+## Addon Modules (Untouched)
+
+Legacy addon modules exist in `src/components/modules/` (leads, invoicing, jobs, proposals, etc.) but are NOT rendered by the core product. They may have broken imports. Do not fix them unless explicitly asked.

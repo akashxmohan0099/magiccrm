@@ -1,76 +1,61 @@
 import { createClient } from "@/lib/supabase";
-import type { Campaign, ReviewRequest, Coupon } from "@/types/models";
-import type { EmailSequence, ScheduledPost } from "@/store/marketing";
+import type { Campaign } from "@/types/models";
 
 // ---------------------------------------------------------------------------
 // snake_case <-> camelCase mapping
 // ---------------------------------------------------------------------------
 
+/** Convert a Supabase row (snake_case) to a frontend Campaign (camelCase). */
 export function mapCampaignFromDB(row: Record<string, unknown>): Campaign {
   return {
     id: row.id as string,
+    workspaceId: row.workspace_id as string,
     name: row.name as string,
-    type: row.type as Campaign["type"],
-    status: row.status as Campaign["status"],
     subject: (row.subject as string) || undefined,
-    content: (row.content as string) || "",
-    audienceTags: (row.audience_tags as string[]) || [],
+    body: (row.body as string) || "",
+    channel: row.channel as import("@/types/models").CampaignChannel,
+    targetSegment: row.target_segment as import("@/types/models").CampaignSegment,
+    inactiveDays: (row.inactive_days as number) ?? undefined,
+    status: row.status as import("@/types/models").CampaignStatus,
     scheduledAt: (row.scheduled_at as string) || undefined,
+    sentCount: (row.sent_count as number) ?? 0,
+    openCount: (row.open_count as number) ?? 0,
+    clickCount: (row.click_count as number) ?? 0,
     createdAt: row.created_at as string,
+    updatedAt: row.updated_at as string,
   };
 }
 
-export function mapReviewRequestFromDB(row: Record<string, unknown>): ReviewRequest {
-  return {
-    id: row.id as string,
-    clientId: (row.client_id as string) || undefined,
-    clientName: row.client_name as string,
-    status: row.status as ReviewRequest["status"],
-    rating: (row.rating as number) ?? undefined,
-    feedback: (row.feedback as string) || undefined,
-    createdAt: row.created_at as string,
-  };
-}
+/** Convert a frontend Campaign (camelCase) to a Supabase-ready object (snake_case). */
+function mapCampaignToDB(
+  workspaceId: string,
+  data: Record<string, unknown>
+): Record<string, unknown> {
+  const row: Record<string, unknown> = { workspace_id: workspaceId };
 
-export function mapCouponFromDB(row: Record<string, unknown>): Coupon {
-  return {
-    id: row.id as string,
-    code: row.code as string,
-    description: (row.description as string) || "",
-    discountType: row.discount_type as Coupon["discountType"],
-    discountValue: row.discount_value as number,
-    usageCount: (row.usage_count as number) ?? 0,
-    maxUses: (row.max_uses as number) ?? undefined,
-    expiresAt: (row.expires_at as string) || undefined,
-    active: row.active as boolean,
-    createdAt: row.created_at as string,
-  };
-}
+  if (data.id !== undefined) row.id = data.id;
+  if (data.name !== undefined) row.name = data.name;
+  if (data.subject !== undefined) row.subject = data.subject || null;
+  if (data.body !== undefined) row.body = data.body;
+  if (data.channel !== undefined) row.channel = data.channel;
+  if (data.targetSegment !== undefined) row.target_segment = data.targetSegment;
+  if (data.inactiveDays !== undefined) row.inactive_days = data.inactiveDays ?? null;
+  if (data.status !== undefined) row.status = data.status;
+  if (data.scheduledAt !== undefined) row.scheduled_at = data.scheduledAt || null;
+  if (data.sentCount !== undefined) row.sent_count = data.sentCount;
+  if (data.openCount !== undefined) row.open_count = data.openCount;
+  if (data.clickCount !== undefined) row.click_count = data.clickCount;
+  if (data.createdAt !== undefined) row.created_at = data.createdAt;
+  if (data.updatedAt !== undefined) row.updated_at = data.updatedAt;
 
-export function mapSequenceFromDB(row: Record<string, unknown>): EmailSequence {
-  return {
-    id: row.id as string,
-    name: row.name as string,
-    status: row.status as EmailSequence["status"],
-    emailCount: (row.email_count as number) ?? 0,
-    enrolledCount: (row.enrolled_count as number) ?? 0,
-  };
-}
-
-export function mapSocialPostFromDB(row: Record<string, unknown>): ScheduledPost {
-  return {
-    id: row.id as string,
-    platform: row.platform as ScheduledPost["platform"],
-    content: (row.content as string) || "",
-    scheduledAt: row.scheduled_at as string,
-    status: row.status as ScheduledPost["status"],
-  };
+  return row;
 }
 
 // ---------------------------------------------------------------------------
-// Campaigns CRUD
+// CRUD operations
 // ---------------------------------------------------------------------------
 
+/** Fetch all campaigns for a workspace. */
 export async function fetchCampaigns(workspaceId: string) {
   const supabase = createClient();
   const { data, error } = await supabase
@@ -78,51 +63,49 @@ export async function fetchCampaigns(workspaceId: string) {
     .select("*")
     .eq("workspace_id", workspaceId)
     .order("created_at", { ascending: false });
+
   if (error) throw error;
-  return data;
+  return (data ?? []).map(mapCampaignFromDB);
 }
 
-export async function dbCreateCampaign(workspaceId: string, c: Campaign) {
+/** Insert a new campaign row. */
+export async function dbCreateCampaign(
+  workspaceId: string,
+  data: Record<string, unknown>
+) {
   const supabase = createClient();
-  const { error } = await supabase.from("campaigns").insert({
-    id: c.id,
-    workspace_id: workspaceId,
-    name: c.name,
-    type: c.type,
-    status: c.status,
-    subject: c.subject || null,
-    content: c.content,
-    audience_tags: c.audienceTags,
-    scheduled_at: c.scheduledAt || null,
-    created_at: c.createdAt,
-  });
+  const row = mapCampaignToDB(workspaceId, data);
+
+  const { data: created, error } = await supabase
+    .from("campaigns")
+    .insert(row)
+    .select()
+    .single();
+
   if (error) throw error;
+  return mapCampaignFromDB(created);
 }
 
+/** Update an existing campaign row. Only sends fields that are provided. */
 export async function dbUpdateCampaign(
   workspaceId: string,
   id: string,
-  updates: Partial<Campaign>
+  data: Record<string, unknown>
 ) {
   const supabase = createClient();
-  const row: Record<string, unknown> = { updated_at: new Date().toISOString() };
-
-  if (updates.name !== undefined) row.name = updates.name;
-  if (updates.type !== undefined) row.type = updates.type;
-  if (updates.status !== undefined) row.status = updates.status;
-  if (updates.subject !== undefined) row.subject = updates.subject || null;
-  if (updates.content !== undefined) row.content = updates.content;
-  if (updates.audienceTags !== undefined) row.audience_tags = updates.audienceTags;
-  if (updates.scheduledAt !== undefined) row.scheduled_at = updates.scheduledAt || null;
+  const row = mapCampaignToDB(workspaceId, data);
+  delete row.workspace_id;
 
   const { error } = await supabase
     .from("campaigns")
     .update(row)
     .eq("id", id)
     .eq("workspace_id", workspaceId);
+
   if (error) throw error;
 }
 
+/** Delete a campaign row. */
 export async function dbDeleteCampaign(workspaceId: string, id: string) {
   const supabase = createClient();
   const { error } = await supabase
@@ -130,318 +113,6 @@ export async function dbDeleteCampaign(workspaceId: string, id: string) {
     .delete()
     .eq("id", id)
     .eq("workspace_id", workspaceId);
-  if (error) throw error;
-}
 
-export async function dbUpsertCampaigns(workspaceId: string, items: Campaign[]) {
-  if (items.length === 0) return;
-  const supabase = createClient();
-  const rows = items.map((c) => ({
-    id: c.id,
-    workspace_id: workspaceId,
-    name: c.name,
-    type: c.type,
-    status: c.status,
-    subject: c.subject || null,
-    content: c.content,
-    audience_tags: c.audienceTags,
-    scheduled_at: c.scheduledAt || null,
-    created_at: c.createdAt,
-  }));
-  const { error } = await supabase.from("campaigns").upsert(rows, { onConflict: "id" });
-  if (error) throw error;
-}
-
-// ---------------------------------------------------------------------------
-// Review Requests CRUD
-// ---------------------------------------------------------------------------
-
-export async function fetchReviewRequests(workspaceId: string) {
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .from("review_requests")
-    .select("*")
-    .eq("workspace_id", workspaceId)
-    .order("created_at", { ascending: false });
-  if (error) throw error;
-  return data;
-}
-
-export async function dbCreateReviewRequest(workspaceId: string, r: ReviewRequest) {
-  const supabase = createClient();
-  const { error } = await supabase.from("review_requests").insert({
-    id: r.id,
-    workspace_id: workspaceId,
-    client_id: r.clientId || null,
-    client_name: r.clientName,
-    status: r.status,
-    rating: r.rating ?? null,
-    feedback: r.feedback || null,
-    created_at: r.createdAt,
-  });
-  if (error) throw error;
-}
-
-export async function dbUpdateReviewRequest(
-  workspaceId: string,
-  id: string,
-  updates: Partial<ReviewRequest>
-) {
-  const supabase = createClient();
-  const row: Record<string, unknown> = { updated_at: new Date().toISOString() };
-
-  if (updates.clientId !== undefined) row.client_id = updates.clientId || null;
-  if (updates.clientName !== undefined) row.client_name = updates.clientName;
-  if (updates.status !== undefined) row.status = updates.status;
-  if (updates.rating !== undefined) row.rating = updates.rating ?? null;
-  if (updates.feedback !== undefined) row.feedback = updates.feedback || null;
-
-  const { error } = await supabase
-    .from("review_requests")
-    .update(row)
-    .eq("id", id)
-    .eq("workspace_id", workspaceId);
-  if (error) throw error;
-}
-
-export async function dbDeleteReviewRequest(workspaceId: string, id: string) {
-  const supabase = createClient();
-  const { error } = await supabase
-    .from("review_requests")
-    .delete()
-    .eq("id", id)
-    .eq("workspace_id", workspaceId);
-  if (error) throw error;
-}
-
-export async function dbUpsertReviewRequests(workspaceId: string, items: ReviewRequest[]) {
-  if (items.length === 0) return;
-  const supabase = createClient();
-  const rows = items.map((r) => ({
-    id: r.id,
-    workspace_id: workspaceId,
-    client_id: r.clientId || null,
-    client_name: r.clientName,
-    status: r.status,
-    rating: r.rating ?? null,
-    feedback: r.feedback || null,
-    created_at: r.createdAt,
-  }));
-  const { error } = await supabase.from("review_requests").upsert(rows, { onConflict: "id" });
-  if (error) throw error;
-}
-
-// ---------------------------------------------------------------------------
-// Coupons CRUD
-// ---------------------------------------------------------------------------
-
-export async function fetchCoupons(workspaceId: string) {
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .from("coupons")
-    .select("*")
-    .eq("workspace_id", workspaceId)
-    .order("created_at", { ascending: false });
-  if (error) throw error;
-  return data;
-}
-
-export async function dbCreateCoupon(workspaceId: string, c: Coupon) {
-  const supabase = createClient();
-  const { error } = await supabase.from("coupons").insert({
-    id: c.id,
-    workspace_id: workspaceId,
-    code: c.code,
-    description: c.description,
-    discount_type: c.discountType,
-    discount_value: c.discountValue,
-    usage_count: c.usageCount,
-    max_uses: c.maxUses ?? null,
-    expires_at: c.expiresAt || null,
-    active: c.active,
-    created_at: c.createdAt,
-  });
-  if (error) throw error;
-}
-
-export async function dbUpdateCoupon(
-  workspaceId: string,
-  id: string,
-  updates: Partial<Coupon>
-) {
-  const supabase = createClient();
-  const row: Record<string, unknown> = { updated_at: new Date().toISOString() };
-
-  if (updates.code !== undefined) row.code = updates.code;
-  if (updates.description !== undefined) row.description = updates.description;
-  if (updates.discountType !== undefined) row.discount_type = updates.discountType;
-  if (updates.discountValue !== undefined) row.discount_value = updates.discountValue;
-  if (updates.usageCount !== undefined) row.usage_count = updates.usageCount;
-  if (updates.maxUses !== undefined) row.max_uses = updates.maxUses ?? null;
-  if (updates.expiresAt !== undefined) row.expires_at = updates.expiresAt || null;
-  if (updates.active !== undefined) row.active = updates.active;
-
-  const { error } = await supabase
-    .from("coupons")
-    .update(row)
-    .eq("id", id)
-    .eq("workspace_id", workspaceId);
-  if (error) throw error;
-}
-
-export async function dbDeleteCoupon(workspaceId: string, id: string) {
-  const supabase = createClient();
-  const { error } = await supabase
-    .from("coupons")
-    .delete()
-    .eq("id", id)
-    .eq("workspace_id", workspaceId);
-  if (error) throw error;
-}
-
-export async function dbUpsertCoupons(workspaceId: string, items: Coupon[]) {
-  if (items.length === 0) return;
-  const supabase = createClient();
-  const rows = items.map((c) => ({
-    id: c.id,
-    workspace_id: workspaceId,
-    code: c.code,
-    description: c.description,
-    discount_type: c.discountType,
-    discount_value: c.discountValue,
-    usage_count: c.usageCount,
-    max_uses: c.maxUses ?? null,
-    expires_at: c.expiresAt || null,
-    active: c.active,
-    created_at: c.createdAt,
-  }));
-  const { error } = await supabase.from("coupons").upsert(rows, { onConflict: "id" });
-  if (error) throw error;
-}
-
-// ---------------------------------------------------------------------------
-// Email Sequences CRUD
-// ---------------------------------------------------------------------------
-
-export async function fetchSequences(workspaceId: string) {
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .from("email_sequences")
-    .select("*")
-    .eq("workspace_id", workspaceId)
-    .order("created_at", { ascending: false });
-  if (error) throw error;
-  return data;
-}
-
-export async function dbCreateSequence(workspaceId: string, s: EmailSequence) {
-  const supabase = createClient();
-  const { error } = await supabase.from("email_sequences").insert({
-    id: s.id,
-    workspace_id: workspaceId,
-    name: s.name,
-    status: s.status,
-    email_count: s.emailCount,
-    enrolled_count: s.enrolledCount,
-  });
-  if (error) throw error;
-}
-
-export async function dbUpdateSequence(
-  workspaceId: string,
-  id: string,
-  updates: Partial<EmailSequence>
-) {
-  const supabase = createClient();
-  const row: Record<string, unknown> = { updated_at: new Date().toISOString() };
-
-  if (updates.name !== undefined) row.name = updates.name;
-  if (updates.status !== undefined) row.status = updates.status;
-  if (updates.emailCount !== undefined) row.email_count = updates.emailCount;
-  if (updates.enrolledCount !== undefined) row.enrolled_count = updates.enrolledCount;
-
-  const { error } = await supabase
-    .from("email_sequences")
-    .update(row)
-    .eq("id", id)
-    .eq("workspace_id", workspaceId);
-  if (error) throw error;
-}
-
-export async function dbDeleteSequence(workspaceId: string, id: string) {
-  const supabase = createClient();
-  const { error } = await supabase
-    .from("email_sequences")
-    .delete()
-    .eq("id", id)
-    .eq("workspace_id", workspaceId);
-  if (error) throw error;
-}
-
-export async function dbUpsertSequences(workspaceId: string, items: EmailSequence[]) {
-  if (items.length === 0) return;
-  const supabase = createClient();
-  const rows = items.map((s) => ({
-    id: s.id,
-    workspace_id: workspaceId,
-    name: s.name,
-    status: s.status,
-    email_count: s.emailCount,
-    enrolled_count: s.enrolledCount,
-  }));
-  const { error } = await supabase.from("email_sequences").upsert(rows, { onConflict: "id" });
-  if (error) throw error;
-}
-
-// ---------------------------------------------------------------------------
-// Social Posts CRUD
-// ---------------------------------------------------------------------------
-
-export async function fetchSocialPosts(workspaceId: string) {
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .from("social_posts")
-    .select("*")
-    .eq("workspace_id", workspaceId)
-    .order("created_at", { ascending: false });
-  if (error) throw error;
-  return data;
-}
-
-export async function dbCreateSocialPost(workspaceId: string, p: ScheduledPost) {
-  const supabase = createClient();
-  const { error } = await supabase.from("social_posts").insert({
-    id: p.id,
-    workspace_id: workspaceId,
-    platform: p.platform,
-    content: p.content,
-    scheduled_at: p.scheduledAt,
-    status: p.status,
-  });
-  if (error) throw error;
-}
-
-export async function dbDeleteSocialPost(workspaceId: string, id: string) {
-  const supabase = createClient();
-  const { error } = await supabase
-    .from("social_posts")
-    .delete()
-    .eq("id", id)
-    .eq("workspace_id", workspaceId);
-  if (error) throw error;
-}
-
-export async function dbUpsertSocialPosts(workspaceId: string, items: ScheduledPost[]) {
-  if (items.length === 0) return;
-  const supabase = createClient();
-  const rows = items.map((p) => ({
-    id: p.id,
-    workspace_id: workspaceId,
-    platform: p.platform,
-    content: p.content,
-    scheduled_at: p.scheduledAt,
-    status: p.status,
-  }));
-  const { error } = await supabase.from("social_posts").upsert(rows, { onConflict: "id" });
   if (error) throw error;
 }

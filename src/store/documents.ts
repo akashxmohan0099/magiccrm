@@ -1,147 +1,121 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { Document } from "@/types/models";
+import type { DocumentTemplate, SentDocument, DocumentField } from "@/types/models";
 import { generateId } from "@/lib/id";
-import { logActivity } from "@/lib/activity-logger";
 import { toast } from "@/components/ui/Toast";
-import { validateDocument, sanitize } from "@/lib/validation";
-import {
-  fetchDocuments,
-  dbCreateDocument,
-  dbUpdateDocument,
-  dbDeleteDocument,
-  dbUpsertDocuments,
-  mapDocumentFromDB,
-} from "@/lib/db/documents";
+
+const DEFAULT_TEMPLATES: DocumentTemplate[] = [
+  {
+    id: "tpl-general-waiver",
+    workspaceId: "",
+    name: "General Waiver",
+    description: "Standard liability waiver for beauty and wellness services.",
+    content:
+      "I, the undersigned, acknowledge that I am voluntarily participating in beauty and wellness services. I understand that these services carry inherent risks, and I assume full responsibility for any results. I release the service provider from any liability arising from the services rendered.",
+    fields: [
+      { id: "f1", type: "text", label: "Full Name", required: true },
+      { id: "f2", type: "date", label: "Date", required: true },
+      { id: "f3", type: "checkbox", label: "I agree to the terms above", required: true },
+      { id: "f4", type: "signature", label: "Signature", required: true },
+    ],
+    isDefault: true,
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+  },
+  {
+    id: "tpl-consent-form",
+    workspaceId: "",
+    name: "Consent Form",
+    description: "Treatment consent form for specific procedures.",
+    content:
+      "I consent to the treatment(s) described by my service provider. I have been informed of the potential risks, benefits, and alternatives. I confirm that I have disclosed all relevant medical history and current medications.",
+    fields: [
+      { id: "f5", type: "text", label: "Full Name", required: true },
+      { id: "f6", type: "text", label: "Treatment Description", required: true },
+      { id: "f7", type: "checkbox", label: "I have disclosed all medical conditions", required: true },
+      { id: "f8", type: "date", label: "Date", required: true },
+      { id: "f9", type: "signature", label: "Signature", required: true },
+    ],
+    isDefault: true,
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+  },
+];
 
 interface DocumentsStore {
-  documents: Document[];
-  addDocument: (data: Omit<Document, "id" | "createdAt" | "updatedAt">, workspaceId?: string) => void;
-  updateDocument: (id: string, data: Partial<Document>, workspaceId?: string) => void;
-  deleteDocument: (id: string, workspaceId?: string) => void;
-  getDocumentsByCategory: (category: string) => Document[];
-  getTemplates: () => Document[];
-
-  // Supabase sync
-  syncToSupabase: (workspaceId: string) => Promise<void>;
-  loadFromSupabase: (workspaceId: string) => Promise<void>;
+  templates: DocumentTemplate[];
+  sentDocuments: SentDocument[];
+  addTemplate: (data: Omit<DocumentTemplate, "id" | "createdAt" | "updatedAt">) => DocumentTemplate;
+  updateTemplate: (id: string, data: Partial<DocumentTemplate>) => void;
+  deleteTemplate: (id: string) => void;
+  sendDocument: (templateId: string, clientId: string, clientName: string) => SentDocument | null;
+  updateSentDocument: (id: string, data: Partial<SentDocument>) => void;
 }
 
 export const useDocumentsStore = create<DocumentsStore>()(
   persist(
     (set, get) => ({
-      documents: [],
+      templates: DEFAULT_TEMPLATES,
+      sentDocuments: [],
 
-      addDocument: (data, workspaceId?) => {
-        // Validate
-        const validation = validateDocument({ name: data.name });
-        if (!validation.valid) {
-          validation.errors.forEach(error => toast(error, "error"));
-          return;
-        }
-
+      addTemplate: (data) => {
         const now = new Date().toISOString();
-        const sanitizedData = {
+        const template: DocumentTemplate = {
+          id: generateId(),
+          createdAt: now,
+          updatedAt: now,
           ...data,
-          name: sanitize(data.name, 500),
-          category: sanitize(data.category, 200),
         };
-        const doc: Document = { ...sanitizedData, id: generateId(), createdAt: now, updatedAt: now };
-        set((s) => ({ documents: [...s.documents, doc] }));
-        logActivity("create", "documents", `Uploaded "${doc.name}"`);
-        toast(`Created document "${doc.name}"`);
-
-        // Sync to Supabase if workspaceId available
-        if (workspaceId) {
-          dbCreateDocument(workspaceId, doc).catch((err) => {
-            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving document" }));
-          });
-        }
+        set((s) => ({ templates: [template, ...s.templates] }));
+        toast(`Template "${template.name}" created`);
+        return template;
       },
 
-      updateDocument: (id, data, workspaceId?) => {
-        // Validate if name changed
-        if (data.name !== undefined) {
-          const validation = validateDocument({ name: data.name });
-          if (!validation.valid) {
-            validation.errors.forEach(error => toast(error, "error"));
-            return;
-          }
-        }
-
-        const previousDocuments = get().documents;
-        const sanitizedData = {
-          ...data,
-          ...(data.name !== undefined && { name: sanitize(data.name, 500) }),
-          ...(data.category !== undefined && { category: sanitize(data.category, 200) }),
-          updatedAt: new Date().toISOString(),
-        };
-
+      updateTemplate: (id, data) => {
+        const now = new Date().toISOString();
         set((s) => ({
-          documents: s.documents.map((d) =>
-            d.id === id ? { ...d, ...sanitizedData } : d
+          templates: s.templates.map((t) =>
+            t.id === id ? { ...t, ...data, updatedAt: now } : t
           ),
         }));
-        logActivity("update", "documents", "Updated document");
-        toast("Document updated");
-
-        // Sync to Supabase if workspaceId available
-        if (workspaceId) {
-          dbUpdateDocument(workspaceId, id, sanitizedData).catch((err) => {
-            set({ documents: previousDocuments });
-            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating document" }));
-          });
-        }
       },
 
-      deleteDocument: (id, workspaceId?) => {
-        const previousDocuments = get().documents;
-        const doc = previousDocuments.find((d) => d.id === id);
-        set((s) => ({ documents: s.documents.filter((d) => d.id !== id) }));
-        if (doc) {
-          logActivity("delete", "documents", `Deleted "${doc.name}"`);
-          toast(`Document "${doc.name}" deleted`, "info");
-
-          // Sync to Supabase if workspaceId available
-          if (workspaceId) {
-            dbDeleteDocument(workspaceId, id).catch((err) => {
-              set({ documents: previousDocuments });
-              import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting document" }));
-            });
-          }
-        }
+      deleteTemplate: (id) => {
+        set((s) => ({ templates: s.templates.filter((t) => t.id !== id) }));
+        toast("Template deleted");
       },
 
-      getDocumentsByCategory: (category) =>
-        get().documents.filter((d) => d.category === category),
-
-      getTemplates: () => get().documents.filter((d) => d.isTemplate),
-
-      // ---------------------------------------------------------------
-      // Supabase sync
-      // ---------------------------------------------------------------
-
-      syncToSupabase: async (workspaceId: string) => {
-        try {
-          const { documents } = get();
-          await dbUpsertDocuments(workspaceId, documents);
-        } catch (err) {
-          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing documents to Supabase" }));
-        }
+      sendDocument: (templateId, clientId, clientName) => {
+        const template = get().templates.find((t) => t.id === templateId);
+        if (!template) return null;
+        const now = new Date().toISOString();
+        const doc: SentDocument = {
+          id: generateId(),
+          workspaceId: template.workspaceId,
+          templateId,
+          templateName: template.name,
+          clientId,
+          clientName,
+          status: "sent",
+          fields: template.fields.map((f) => ({ ...f, value: undefined })),
+          sentAt: now,
+          createdAt: now,
+          updatedAt: now,
+        };
+        set((s) => ({ sentDocuments: [doc, ...s.sentDocuments] }));
+        toast(`Document sent to ${clientName}`);
+        return doc;
       },
 
-      loadFromSupabase: async (workspaceId: string) => {
-        try {
-          const rows = await fetchDocuments(workspaceId);
-          const mappedDocuments = (rows ?? []).map((row: Record<string, unknown>) =>
-            mapDocumentFromDB(row)
-          );
-          set({ documents: mappedDocuments });
-        } catch (err) {
-          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "loading documents from Supabase" }));
-        }
+      updateSentDocument: (id, data) => {
+        const now = new Date().toISOString();
+        set((s) => ({
+          sentDocuments: s.sentDocuments.map((d) =>
+            d.id === id ? { ...d, ...data, updatedAt: now } : d
+          ),
+        }));
       },
     }),
-    { name: "magic-crm-documents" }
+    { name: "magic-crm-documents", version: 1 }
   )
 );

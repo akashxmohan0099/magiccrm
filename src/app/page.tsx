@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import {
   ArrowRight, Check, Star,
@@ -9,179 +9,30 @@ import {
   Ticket, CalendarRange, Building2, ScrollText, ListOrdered, BrainCircuit, TrendingUp,
   Scissors, Paintbrush, Eye, Droplets, Flower2, HandMetal,
   Users, Calendar, Receipt, MessageCircle, Inbox, BarChart3,
-  Bell, Instagram,
+  Bell, Clock, Send, Bot,
 } from "lucide-react";
-import { Button } from "@/components/ui/Button";
 import Link from "next/link";
 import { CinematicDemo } from "@/components/landing/CinematicDemo";
+import {
+  sectionHeadingVariants, sectionTransition, viewportConfig, ctaPulseVariants,
+  COMPARISON_PERSONAS, ADDON_PERSONAS, ADDON_BORDER_COLORS,
+} from "./landing-data";
 
-// ── Shared animation variants ──
+type LucideIcon = React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
 
-const sectionHeadingVariants = {
-  hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0 },
-};
-
-const sectionTransition = {
-  duration: 0.6,
-  ease: [0.25, 0.1, 0.25, 1] as const,
-};
-
-const viewportConfig = { once: true, margin: "-40px" as const };
-
-const ctaPulseVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.5,
-      ease: [0.25, 0.1, 0.25, 1] as [number, number, number, number],
-    },
-  },
-};
-
-const testimonialVariants = {
-  hidden: { opacity: 0, x: -40, rotate: -1 },
-  visible: { opacity: 1, x: 0, rotate: 0 },
-};
-
-// ── Persona comparison data ──
-
-const PERSONA_PREVIEWS = [
-  {
-    label: "Lash Tech",
-    businessName: "Lash Lab Co",
-    industry: "Beauty & Wellness",
-    accent: "#EC4899",
-    nav: ["Clients", "Services", "Appointments", "Receipts", "Leads"],
-    activeNav: "Services",
-    contentTitle: "Service Menu",
-    items: [
-      { name: "Classic Full Set", meta: "2hr", value: "$150" },
-      { name: "Volume Full Set", meta: "2.5hr", value: "$200" },
-      { name: "Lash Lift & Tint", meta: "1hr", value: "$80" },
-      { name: "Lash Removal", meta: "30min", value: "$25" },
-    ],
-    fields: ["Allergies", "Skin Type", "Preferred Products"],
-  },
-  {
-    label: "Hair Salon",
-    businessName: "Glow Studio",
-    industry: "Beauty & Wellness",
-    accent: "#8B5CF6",
-    nav: ["Clients", "Services", "Appointments", "Receipts", "Inquiries"],
-    activeNav: "Clients",
-    contentTitle: "Client List",
-    items: [
-      { name: "Sarah M.", meta: "VIP", value: "Last: 2 weeks ago" },
-      { name: "Emma R.", meta: "Regular", value: "Last: 5 days ago" },
-      { name: "Jessica T.", meta: "Active", value: "Last: 3 weeks ago" },
-      { name: "Olivia C.", meta: "Prospect", value: "Enquired balayage" },
-    ],
-    fields: ["Hair Type", "Colour Formula", "Scalp Condition"],
-  },
-  {
-    label: "Makeup Artist",
-    businessName: "Bridal Glam Co",
-    industry: "Beauty & Wellness",
-    accent: "#F59E0B",
-    nav: ["Clients", "Inquiries", "Appointments", "Invoices", "Services"],
-    activeNav: "Inquiries",
-    contentTitle: "Wedding Inquiries",
-    items: [
-      { name: "Jessica & Ryan", meta: "Trial Booked", value: "$650" },
-      { name: "Sophie & James", meta: "New Inquiry", value: "$850" },
-      { name: "Megan L.", meta: "Quoted", value: "$180" },
-      { name: "Anna K.", meta: "Booked", value: "$300" },
-    ],
-    fields: ["Skin Tone", "Foundation Shade", "Wedding Date"],
-  },
-];
-
-const INDUSTRIES = [
-  "Hair Salons", "Nail Techs", "Lash & Brow",
-  "Barbers", "Makeup Artists", "Spas & Massage",
-];
-
-// ── Comparison section data ──
-
-const COMPARISON_PERSONAS = [
-  {
-    label: "Hair Salon",
-    accent: "#8B5CF6",
-    items: [
-      { label: "Clients", sublabel: "With hair type, colour formula, allergies" },
-      { label: "Appointments", sublabel: "Calendar with services and rebooking" },
-      { label: "Services", sublabel: "Your cuts, colours, and treatments with pricing" },
-      { label: "Receipts", sublabel: "Pay-at-chair billing, no quotes or proposals" },
-      { label: "Inquiries", sublabel: "Instagram DMs \u2192 leads, one click" },
-    ],
-  },
-  {
-    label: "Lash Tech",
-    accent: "#EC4899",
-    items: [
-      { label: "Clients", sublabel: "Allergies, skin type, preferred products" },
-      { label: "Appointments", sublabel: "With set durations and no-show deposits" },
-      { label: "Service Menu", sublabel: "Classic, volume, lifts \u2014 with pricing" },
-      { label: "Receipts", sublabel: "Pay after service, tips included" },
-      { label: "Aftercare", sublabel: "Auto-send care instructions post-appointment" },
-    ],
-  },
-  {
-    label: "Makeup Artist",
-    accent: "#F59E0B",
-    items: [
-      { label: "Inquiries", sublabel: "Wedding date, party size, budget \u2014 captured upfront" },
-      { label: "Proposals", sublabel: "Branded quotes with packages and e-signature" },
-      { label: "Invoicing", sublabel: "Deposit-based billing with milestone payments" },
-      { label: "Clients", sublabel: "Skin tone, foundation shade, allergy notes" },
-      { label: "Trial Bookings", sublabel: "Separate trial and wedding-day scheduling" },
-    ],
-  },
-  {
-    label: "Nail Tech",
-    accent: "#10B981",
-    items: [
-      { label: "Clients", sublabel: "Nail shape, gel vs acrylic, allergy flags" },
-      { label: "Service Menu", sublabel: "Manicure, pedicure, nail art \u2014 with durations" },
-      { label: "Appointments", sublabel: "Home studio + mobile bookings" },
-      { label: "Receipts", sublabel: "Card and cash tracking per session" },
-      { label: "Reminders", sublabel: "Auto nudge when fill or maintenance is due" },
-    ],
-  },
-  {
-    label: "Spa Owner",
-    accent: "#6366F1",
-    items: [
-      { label: "Clients", sublabel: "Pressure preferences, contraindications, history" },
-      { label: "Team Schedule", sublabel: "Multi-therapist calendar across rooms" },
-      { label: "Treatment Menu", sublabel: "Massages, facials, body wraps with pricing" },
-      { label: "Receipts", sublabel: "Front-desk checkout with tips and upsells" },
-      { label: "Reporting", sublabel: "Revenue by therapist, utilisation, rebooking rate" },
-    ],
-  },
-];
-
-// ── Add-ons section data with persona tags ──
-
-const ADDON_PERSONAS = ["All", "Hair Salon", "Lash Tech", "Makeup Artist", "Nail Tech", "Spa Owner"] as const;
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const ADDONS_DATA: { name: string; icon: any; color: string; gradient: string; desc: string; personas: string[]; preview: React.ReactNode }[] = [
+const ADDONS_DATA: { name: string; icon: LucideIcon; color: string; gradient: string; desc: string; personas: string[]; preview: React.ReactNode }[] = [
   { name: "Gift Cards", icon: Ticket, color: "pink", gradient: "#EC4899", desc: "Create, sell, and track digital gift vouchers. A revenue channel that markets itself.", personas: ["Hair Salon", "Lash Tech", "Nail Tech", "Spa Owner"],
-    preview: <div className="space-y-1.5">{[{ code: "GIFT-7X4K", val: "$100", s: "Active", sc: "bg-emerald-50 text-emerald-700" }, { code: "GIFT-R9BW", val: "$25", s: "Partial", sc: "bg-amber-50 text-amber-700" }, { code: "GIFT-5FHQ", val: "$0", s: "Redeemed", sc: "bg-gray-100 text-gray-500" }].map(r => <div key={r.code} className="flex justify-between items-center px-3 py-2 rounded-lg bg-background/80"><span className="text-[11px] text-text-secondary font-mono">{r.code}</span><div className="flex items-center gap-2"><span className="text-[11px] font-semibold text-foreground">{r.val}</span><span className={`text-[8px] font-semibold px-1.5 py-0.5 rounded-full ${r.sc}`}>{r.s}</span></div></div>)}</div> },
-  { name: "AI Insights", icon: Lightbulb, color: "amber", gradient: "#F59E0B", desc: "Smart suggestions — overdue rebookings, revenue forecasts, and churn risk.", personas: ["Hair Salon", "Lash Tech", "Makeup Artist", "Nail Tech", "Spa Owner"],
+    preview: <div className="space-y-1.5">{[{ code: "GIFT-7X4K", val: "A$100", s: "Active", sc: "bg-emerald-50 text-emerald-700" }, { code: "GIFT-R9BW", val: "A$25", s: "Partial", sc: "bg-amber-50 text-amber-700" }, { code: "GIFT-5FHQ", val: "A$0", s: "Redeemed", sc: "bg-gray-100 text-gray-500" }].map(r => <div key={r.code} className="flex justify-between items-center px-3 py-2 rounded-lg bg-background/80"><span className="text-[11px] text-text-secondary font-mono">{r.code}</span><div className="flex items-center gap-2"><span className="text-[11px] font-semibold text-foreground">{r.val}</span><span className={`text-[8px] font-semibold px-1.5 py-0.5 rounded-full ${r.sc}`}>{r.s}</span></div></div>)}</div> },
+  { name: "Business Insights", icon: Lightbulb, color: "amber", gradient: "#F59E0B", desc: "Key metrics — overdue rebookings, revenue trends, and client retention.", personas: ["Hair Salon", "Lash Tech", "Makeup Artist", "Nail Tech", "Spa Owner"],
     preview: <div className="space-y-1.5">{[{ t: "Sarah M. is 2 weeks overdue for her lash fill", c: "border-l-red-400", tag: "Action", tc: "bg-red-50 text-red-600" }, { t: "Tom K. opened your quote 3x but hasn\u2019t responded", c: "border-l-amber-400", tag: "Follow up", tc: "bg-amber-50 text-amber-700" }, { t: "Tuesday afternoons are consistently empty", c: "border-l-blue-400", tag: "Opportunity", tc: "bg-blue-50 text-blue-600" }].map((r,i) => <div key={i} className={`px-3 py-2 rounded-lg bg-background/80 border-l-2 ${r.c}`}><p className="text-[11px] text-foreground leading-snug">{r.t}</p><span className={`text-[8px] font-semibold uppercase mt-1 inline-block px-1.5 py-0.5 rounded ${r.tc}`}>{r.tag}</span></div>)}</div> },
   { name: "Loyalty & Referrals", icon: Gift, color: "emerald", gradient: "#10B981", desc: "Points per visit, referral codes, and reward tiers for repeat clients.", personas: ["Hair Salon", "Lash Tech", "Nail Tech", "Spa Owner"],
     preview: <div className="space-y-1.5">{[{ name: "Sarah M.", pts: "420 pts", r: "1" }, { name: "Emma R.", pts: "310 pts", r: "2" }, { name: "Jess T.", pts: "185 pts", r: "3" }].map(m => <div key={m.r} className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-background/80"><span className="text-[10px] font-bold text-text-tertiary w-4">{m.r}.</span><div className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0"><span className="text-[8px] font-bold text-white">{m.name.split(" ").map(n=>n[0]).join("")}</span></div><span className="text-[11px] text-foreground font-medium flex-1">{m.name}</span><span className="text-[11px] font-bold text-emerald-600">{m.pts}</span></div>)}<div className="px-3 py-2 rounded-lg bg-emerald-50/50 border border-emerald-100"><p className="text-[10px] text-emerald-700 font-medium">Referral code SARAH10 used 4 times this month</p></div></div> },
   { name: "Memberships", icon: Crown, color: "purple", gradient: "#8B5CF6", desc: "Session packs, recurring plans, and member tracking with auto-billing.", personas: ["Hair Salon", "Spa Owner"],
-    preview: <div className="space-y-1.5">{[{ plan: "10-Session Pack", price: "$450", mem: "8 active" }, { plan: "Monthly Unlimited", price: "$99/mo", mem: "12 active" }].map(p => <div key={p.plan} className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-background/80"><div><p className="text-[11px] font-semibold text-foreground">{p.plan}</p><p className="text-[9px] text-text-tertiary">{p.mem}</p></div><span className="text-[13px] font-bold text-foreground">{p.price}</span></div>)}</div> },
+    preview: <div className="space-y-1.5">{[{ plan: "10-Session Pack", price: "A$450", mem: "8 active" }, { plan: "Monthly Unlimited", price: "A$99/mo", mem: "12 active" }].map(p => <div key={p.plan} className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-background/80"><div><p className="text-[11px] font-semibold text-foreground">{p.plan}</p><p className="text-[9px] text-text-tertiary">{p.mem}</p></div><span className="text-[13px] font-bold text-foreground">{p.price}</span></div>)}</div> },
   { name: "Win-Back", icon: UserCheck, color: "amber", gradient: "#F59E0B", desc: "Detect lapsed clients and auto-send re-engagement messages.", personas: ["Hair Salon", "Lash Tech", "Nail Tech", "Spa Owner"],
     preview: <div className="space-y-1.5">{[{ name: "Sarah M.", days: "45 days inactive", s: "Contacted", sc: "bg-emerald-50 text-emerald-700" }, { name: "Tom K.", days: "62 days inactive", s: "Detected", sc: "bg-amber-50 text-amber-700" }].map(c => <div key={c.name} className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-background/80"><div><p className="text-[11px] font-semibold text-foreground">{c.name}</p><p className="text-[9px] text-text-tertiary">{c.days}</p></div><span className={`text-[9px] px-2 py-0.5 rounded-full font-semibold ${c.sc}`}>{c.s}</span></div>)}</div> },
   { name: "Storefront", icon: Store, color: "cyan", gradient: "#06B6D4", desc: "A public page showcasing your services with pricing and booking links.", personas: ["Hair Salon", "Lash Tech", "Nail Tech", "Spa Owner"],
-    preview: <div className="rounded-lg bg-background/80 p-3"><div className="flex items-center justify-between mb-2"><p className="text-[11px] font-bold text-foreground">Your Business</p><span className="text-[8px] px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded-full font-semibold">Live</span></div><p className="text-[9px] text-text-tertiary mb-2.5">yourbusiness.magic/book</p><div className="space-y-1.5">{["Lash Full Set — $150", "Brow Lamination — $65"].map(s => <div key={s} className="flex items-center justify-between text-[10px] px-2 py-1.5 bg-card-bg rounded border border-border-light"><span className="text-text-secondary">{s.split(" — ")[0]}</span><span className="font-bold text-foreground">{s.split(" — ")[1]}</span></div>)}</div></div> },
+    preview: <div className="rounded-lg bg-background/80 p-3"><div className="flex items-center justify-between mb-2"><p className="text-[11px] font-bold text-foreground">Your Business</p><span className="text-[8px] px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded-full font-semibold">Live</span></div><p className="text-[9px] text-text-tertiary mb-2.5">yourbusiness.magic/book</p><div className="space-y-1.5">{["Lash Full Set — A$150", "Brow Lamination — A$65"].map(s => <div key={s} className="flex items-center justify-between text-[10px] px-2 py-1.5 bg-card-bg rounded border border-border-light"><span className="text-text-secondary">{s.split(" — ")[0]}</span><span className="font-bold text-foreground">{s.split(" — ")[1]}</span></div>)}</div></div> },
   { name: "Intake Forms", icon: FileInput, color: "pink", gradient: "#EC4899", desc: "Custom questionnaires with conditional logic for client intake.", personas: ["Lash Tech", "Makeup Artist", "Spa Owner"],
     preview: <div className="rounded-lg bg-background/80 p-3 space-y-2">{["Full Name *", "Email *", "Any allergies?"].map(f => <div key={f}><p className="text-[9px] text-text-tertiary mb-0.5">{f}</p><div className="h-7 bg-card-bg rounded-lg border border-border-light" /></div>)}<div className="h-8 bg-foreground rounded-lg flex items-center justify-center text-[10px] text-background font-semibold">Submit</div></div> },
   { name: "Before & After", icon: Camera, color: "teal", gradient: "#14B8A6", desc: "Capture proof of work with photos and digital checklists.", personas: ["Hair Salon", "Lash Tech", "Nail Tech"],
@@ -195,22 +46,24 @@ const ADDONS_DATA: { name: string; icon: any; color: string; gradient: string; d
   { name: "Vendors", icon: Building2, color: "orange", gradient: "#F97316", desc: "Track suppliers, vendor availability, contracts, and payments.", personas: ["Hair Salon", "Spa Owner"],
     preview: <div className="space-y-1.5">{[{ name: "Lash Supplies AU", type: "Lash Products", stars: 5 }, { name: "Salon Essentials", type: "Hair Products", stars: 4 }, { name: "NailCo Wholesale", type: "Nail Supplies", stars: 5 }].map(v => <div key={v.name} className="flex items-center justify-between px-3 py-2 rounded-lg bg-background/80"><div><p className="text-[11px] font-semibold text-foreground">{v.name}</p><p className="text-[9px] text-text-tertiary">{v.type}</p></div><div className="flex gap-0.5">{Array.from({length: v.stars}).map((_,i) => <Star key={i} className="w-3 h-3 fill-orange-400 text-orange-400" />)}</div></div>)}</div> },
   { name: "Proposals", icon: ScrollText, color: "violet", gradient: "#7C3AED", desc: "Branded proposal pages with interactive pricing and e-signature.", personas: ["Makeup Artist"],
-    preview: <div className="space-y-1.5">{[{ id: "PROP-001", title: "Bridal Package", s: "Sent", amt: "$650", sc: "bg-blue-50 text-blue-600" }, { id: "PROP-002", title: "Lash Package", s: "Viewed", amt: "$350", sc: "bg-amber-50 text-amber-700" }, { id: "PROP-003", title: "Wedding Party", s: "Accepted \u2713", amt: "$1,200", sc: "bg-emerald-50 text-emerald-700" }].map(p => <div key={p.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-background/80"><div className="flex items-center gap-2"><span className="text-[9px] font-mono text-text-tertiary">{p.id}</span><span className="text-[11px] font-semibold text-foreground">{p.title}</span></div><div className="flex items-center gap-2"><span className={`text-[8px] px-1.5 py-0.5 rounded-full font-semibold ${p.sc}`}>{p.s}</span><span className="text-[11px] font-bold text-foreground">{p.amt}</span></div></div>)}</div> },
+    preview: <div className="space-y-1.5">{[{ id: "PROP-001", title: "Bridal Package", s: "Sent", amt: "A$650", sc: "bg-blue-50 text-blue-600" }, { id: "PROP-002", title: "Lash Package", s: "Viewed", amt: "A$350", sc: "bg-amber-50 text-amber-700" }, { id: "PROP-003", title: "Wedding Party", s: "Accepted \u2713", amt: "A$1,200", sc: "bg-emerald-50 text-emerald-700" }].map(p => <div key={p.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-background/80"><div className="flex items-center gap-2"><span className="text-[9px] font-mono text-text-tertiary">{p.id}</span><span className="text-[11px] font-semibold text-foreground">{p.title}</span></div><div className="flex items-center gap-2"><span className={`text-[8px] px-1.5 py-0.5 rounded-full font-semibold ${p.sc}`}>{p.s}</span><span className="text-[11px] font-bold text-foreground">{p.amt}</span></div></div>)}</div> },
   { name: "Waitlist", icon: ListOrdered, color: "teal", gradient: "#14B8A6", desc: "Manage walk-in queues and auto-notify clients when spots open up.", personas: ["Hair Salon", "Nail Tech", "Spa Owner"],
     preview: <div className="space-y-1.5">{[{ name: "Emma R.", d: "Lash Fill", s: "Waiting", sc: "bg-amber-50 text-amber-700" }, { name: "Tom K.", d: "2:00 PM slot", s: "Notified \u2713", sc: "bg-blue-50 text-blue-600" }].map(w => <div key={w.name} className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-background/80"><div><p className="text-[11px] font-semibold text-foreground">{w.name}</p><p className="text-[9px] text-text-tertiary">{w.d}</p></div><span className={`text-[9px] px-2 py-0.5 rounded-full font-semibold ${w.sc}`}>{w.s}</span></div>)}<div className="px-3 py-2 rounded-lg bg-teal-50/50 border border-teal-100"><p className="text-[10px] text-teal-700 font-medium">Spot opened! Auto-notified 2 clients</p></div></div> },
 ];
 
-const ADDON_BORDER_COLORS: Record<string, string> = {
-  pink: "hover:border-pink-200", amber: "hover:border-amber-200", emerald: "hover:border-emerald-200",
-  purple: "hover:border-purple-200", cyan: "hover:border-cyan-200", teal: "hover:border-teal-200",
-  indigo: "hover:border-indigo-200", sky: "hover:border-sky-200", violet: "hover:border-violet-200",
-  orange: "hover:border-orange-200",
-};
-
 function AddonsGrid({ viewportConfig }: { viewportConfig: { once: boolean; margin: string } }) {
   const [filter, setFilter] = useState<string>("All");
+  const [expanded, setExpanded] = useState(false);
 
   const filtered = filter === "All" ? ADDONS_DATA : ADDONS_DATA.filter((a) => a.personas.includes(filter));
+  const visible = expanded ? filtered : filtered.slice(0, 6);
+  const hasMore = filtered.length > 6;
+
+  // Reset expanded when filter changes
+  const handleFilter = (p: string) => {
+    setFilter(p);
+    setExpanded(false);
+  };
 
   return (
     <>
@@ -218,7 +71,7 @@ function AddonsGrid({ viewportConfig }: { viewportConfig: { once: boolean; margi
         {ADDON_PERSONAS.map((p) => (
           <button
             key={p}
-            onClick={() => setFilter(p)}
+            onClick={() => handleFilter(p)}
             className={`px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
               filter === p
                 ? "bg-foreground text-background shadow-md"
@@ -232,7 +85,7 @@ function AddonsGrid({ viewportConfig }: { viewportConfig: { once: boolean; margi
 
       <div className="flex flex-wrap justify-center gap-5">
         <AnimatePresence mode="popLayout">
-          {filtered.map((addon) => {
+          {visible.map((addon) => {
             const Icon = addon.icon;
             return (
               <motion.div
@@ -268,10 +121,32 @@ function AddonsGrid({ viewportConfig }: { viewportConfig: { once: boolean; margi
         </AnimatePresence>
       </div>
 
+      {hasMore && !expanded && (
+        <div className="text-center mt-8">
+          <button
+            onClick={() => setExpanded(true)}
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-surface border border-border-light text-[13px] font-semibold text-foreground hover:bg-foreground hover:text-background transition-all cursor-pointer"
+          >
+            View all {filtered.length} add-ons <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {expanded && hasMore && (
+        <div className="text-center mt-8">
+          <button
+            onClick={() => setExpanded(false)}
+            className="text-[13px] text-text-secondary font-medium hover:text-foreground transition-colors cursor-pointer"
+          >
+            Show less
+          </button>
+        </div>
+      )}
+
       {filter !== "All" && (
         <p className="text-center text-xs text-text-tertiary mt-6">
-          Showing {filtered.length} of {ADDONS_DATA.length} add-ons relevant to {filter}s.{" "}
-          <button onClick={() => setFilter("All")} className="text-primary font-medium hover:underline cursor-pointer">Show all</button>
+          Showing {visible.length}{!expanded && hasMore ? ` of ${filtered.length}` : ""} add-ons relevant to {filter}s.{" "}
+          <button onClick={() => handleFilter("All")} className="text-primary font-medium hover:underline cursor-pointer">Show all</button>
         </p>
       )}
     </>
@@ -367,6 +242,438 @@ function ComparisonToggle({ viewportConfig }: { viewportConfig: { once: boolean;
   );
 }
 
+// ── AI Chat Demo ──
+
+type ChatMessage = {
+  role: "user" | "ai";
+  text: string;
+  card?: React.ReactNode;
+};
+
+const AI_CHAT_CONVERSATIONS: { label: string; icon: typeof Receipt; messages: ChatMessage[] }[] = [
+  {
+    label: "Send an invoice",
+    icon: Receipt,
+    messages: [
+      { role: "user", text: "Send Sarah M. her invoice for today\u2019s lash fill" },
+      { role: "ai", text: "Here\u2019s the invoice I\u2019ve prepared:",
+        card: (
+          <div className="mt-2 rounded-xl border border-primary/20 bg-primary/5 p-3.5 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-mono text-text-tertiary">INV-1047</span>
+              <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">Sent</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[13px] font-semibold text-foreground">Sarah M.</p>
+                <p className="text-[11px] text-text-tertiary">Lash Full Set</p>
+              </div>
+              <p className="text-[18px] font-bold text-foreground">A$120</p>
+            </div>
+            <div className="flex items-center gap-3 pt-1 border-t border-border-light">
+              <span className="text-[10px] text-text-tertiary flex items-center gap-1"><MessageCircle className="w-3 h-3" /> SMS sent</span>
+              <span className="text-[10px] text-text-tertiary flex items-center gap-1"><Send className="w-3 h-3" /> Email sent</span>
+            </div>
+          </div>
+        ),
+      },
+      { role: "user", text: "Perfect. Does she have any upcoming bookings?" },
+      { role: "ai", text: "Yes \u2014 she has a lash fill booked for April 28 at 10:00 AM. That\u2019s 9 days away. She\u2019s also due for a brow tint based on her usual 6-week cycle. Want me to suggest that when she comes in?" },
+    ],
+  },
+  {
+    label: "Check availability",
+    icon: Calendar,
+    messages: [
+      { role: "user", text: "Am I free Thursday at 2pm? Can I fit a volume set?" },
+      { role: "ai", text: "Let me check your Thursday schedule:",
+        card: (
+          <div className="mt-2 rounded-xl border border-border-light bg-surface/50 p-3.5 space-y-1.5">
+            {[
+              { time: "9:00 AM", client: "Megan T.", service: "Classic Set", color: "#EC4899" },
+              { time: "12:00 PM", client: "Lunch break", service: "", color: "#9CA3AF" },
+              { time: "2:00 PM", client: "Available", service: "2.5hr slot open", color: "#10B981" },
+              { time: "5:00 PM", client: "Lily P.", service: "Lash Lift", color: "#8B5CF6" },
+            ].map((s) => (
+              <div key={s.time} className="flex items-center gap-2.5">
+                <span className="text-[10px] font-mono text-text-tertiary w-14 flex-shrink-0">{s.time}</span>
+                <div className="w-1 h-8 rounded-full flex-shrink-0" style={{ backgroundColor: s.color }} />
+                <div>
+                  <p className={`text-[12px] font-medium ${s.color === "#10B981" ? "text-emerald-600" : "text-foreground"}`}>{s.client}</p>
+                  {s.service && <p className="text-[10px] text-text-tertiary">{s.service}</p>}
+                </div>
+              </div>
+            ))}
+          </div>
+        ),
+      },
+      { role: "ai", text: "A volume set (2.5hrs) would finish at 4:30 PM, and Lily P. is at 5:00 PM. You\u2019re good with 30 min buffer. Want me to hold the slot?" },
+      { role: "user", text: "Yes, hold it for now" },
+      { role: "ai", text: "Done. Thursday 2:00 PM is now blocked as a hold. I\u2019ll remind you tomorrow if it\u2019s still unbooked." },
+    ],
+  },
+  {
+    label: "Business insights",
+    icon: BarChart3,
+    messages: [
+      { role: "user", text: "How did this week compare to last week?" },
+      { role: "ai", text: "Here\u2019s your weekly snapshot:",
+        card: (
+          <div className="mt-2 rounded-xl border border-border-light bg-surface/50 p-3.5">
+            <div className="grid grid-cols-3 gap-3 mb-3">
+              {[
+                { label: "Revenue", value: "A$2,840", change: "+18%", up: true },
+                { label: "Bookings", value: "24", change: "+3", up: true },
+                { label: "Rebooking", value: "71%", change: "+9%", up: true },
+              ].map((m) => (
+                <div key={m.label} className="text-center">
+                  <p className="text-[10px] text-text-tertiary uppercase tracking-wider mb-0.5">{m.label}</p>
+                  <p className="text-[18px] font-bold text-foreground leading-tight">{m.value}</p>
+                  <p className={`text-[11px] font-semibold ${m.up ? "text-emerald-600" : "text-red-500"}`}>{m.change}</p>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center gap-1.5 pt-2 border-t border-border-light">
+              <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+              <p className="text-[11px] text-text-secondary">Tuesday afternoon is still your quietest slot</p>
+            </div>
+          </div>
+        ),
+      },
+      { role: "user", text: "What can I do about those empty Tuesdays?" },
+      { role: "ai", text: "Three options: run a 10% Tuesday-only promo to your 18 clients who\u2019ve visited in the last 60 days, open Tuesday slots on your Instagram booking link, or try a last-minute deal via SMS on Monday evening. Want me to draft any of these?" },
+    ],
+  },
+  {
+    label: "Client lookup",
+    icon: Users,
+    messages: [
+      { role: "user", text: "What products did I use on Emma R. last time?" },
+      { role: "ai", text: "Here\u2019s Emma R.\u2019s last visit:",
+        card: (
+          <div className="mt-2 rounded-xl border border-border-light bg-surface/50 p-3.5 space-y-2.5">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 bg-pink-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-[11px] font-bold text-pink-600">ER</span>
+              </div>
+              <div>
+                <p className="text-[13px] font-semibold text-foreground">Emma R.</p>
+                <p className="text-[10px] text-text-tertiary">Last visit: March 12, 2026</p>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <p className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">Service</p>
+              <p className="text-[12px] text-foreground">Classic Lash Set</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">Products</p>
+              <p className="text-[12px] text-foreground">Lash Box LA C-curl 0.15mm, 10\u201313mm mix</p>
+            </div>
+            <div className="flex items-center gap-1.5 pt-1 border-t border-border-light">
+              <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-amber-50 text-amber-700">Note: Mild sensitivity on outer corners</span>
+            </div>
+          </div>
+        ),
+      },
+      { role: "user", text: "She\u2019s coming in tomorrow. Should I adjust anything?" },
+      { role: "ai", text: "Based on her sensitivity note, I\u2019d suggest switching to a sensitive adhesive for the outer corners, or going with a slightly shorter length (11mm max) on the outer edges. I\u2019ve added a prep reminder to her appointment for tomorrow." },
+    ],
+  },
+];
+
+function AIChatDemo() {
+  const [activeConvo, setActiveConvo] = useState(0);
+  const [visibleMessages, setVisibleMessages] = useState(0);
+  const [completedConvos, setCompletedConvos] = useState<Set<number>>(new Set());
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const convo = AI_CHAT_CONVERSATIONS[activeConvo];
+
+  useEffect(() => {
+    // If this conversation has already played once, render it in full
+    // immediately — no re-animation.
+    if (completedConvos.has(activeConvo)) {
+      setVisibleMessages(convo.messages.length);
+      const el = messagesContainerRef.current;
+      if (el) el.scrollTop = el.scrollHeight;
+      return;
+    }
+
+    setVisibleMessages(0);
+    if (messagesContainerRef.current) messagesContainerRef.current.scrollTop = 0;
+
+    // Pace the reveal: give AI responses a longer "typing" window and
+    // let the user's follow-ups breathe instead of snapping instantly.
+    let cumulative = 0;
+    const delays = convo.messages.map((msg, i) => {
+      if (i === 0) {
+        cumulative = 500;
+      } else if (msg.role === "ai") {
+        cumulative += 1900; // typing indicator before AI response
+      } else {
+        cumulative += 1500; // user "thinking" before typing a reply
+      }
+      return cumulative;
+    });
+
+    const timers: ReturnType<typeof setTimeout>[] = delays.map((delay, i) =>
+      setTimeout(() => setVisibleMessages(i + 1), delay)
+    );
+    // Mark this conversation as played once the last message is visible.
+    const finalIdx = activeConvo;
+    timers.push(
+      setTimeout(
+        () => setCompletedConvos((prev) => new Set(prev).add(finalIdx)),
+        (delays[delays.length - 1] ?? 0) + 150
+      )
+    );
+    return () => timers.forEach(clearTimeout);
+  }, [activeConvo, completedConvos, convo.messages]);
+
+  // Auto-scroll chat container to bottom as new messages appear
+  useEffect(() => {
+    const el = messagesContainerRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+  }, [visibleMessages]);
+
+  return (
+    <motion.section
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      viewport={viewportConfig}
+      transition={{ duration: 0.5 }}
+      className="relative py-12 sm:py-20 overflow-hidden"
+      style={{ background: "linear-gradient(180deg, var(--card-bg) 0%, var(--background) 50%, var(--card-bg) 100%)" }}
+    >
+      {/* Decorative glow orbs */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] rounded-full opacity-[0.04]" style={{ background: "radial-gradient(circle, var(--logo-green) 0%, transparent 70%)" }} />
+        <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full opacity-[0.03]" style={{ background: "radial-gradient(circle, #8B5CF6 0%, transparent 70%)" }} />
+      </div>
+
+      <div className="relative max-w-6xl mx-auto px-4 sm:px-6">
+        <div className="text-center mb-8 sm:mb-10">
+          <motion.h2
+            variants={sectionHeadingVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={viewportConfig}
+            transition={sectionTransition}
+            className="text-[1.75rem] sm:text-[2.25rem] font-bold text-foreground leading-tight mb-3"
+          >
+            Just ask your <span className="text-primary">AI</span>. Magic handles it.
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={viewportConfig}
+            transition={{ delay: 0.1, ...sectionTransition }}
+            className="text-text-secondary text-[15px] max-w-xl mx-auto"
+          >
+            Send invoices, check your bookings, pull up a client card, or check your rebooking rate. Type it like you&apos;d say it.
+          </motion.p>
+        </div>
+
+        {/* Conversation tabs -- horizontal */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={viewportConfig}
+          transition={{ delay: 0.15, duration: 0.5 }}
+          className="flex justify-center gap-2 mb-5 overflow-x-auto scrollbar-hide pb-1"
+        >
+          {AI_CHAT_CONVERSATIONS.map((c, i) => {
+            const Icon = c.icon;
+            return (
+              <button
+                key={c.label}
+                onClick={() => setActiveConvo(i)}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-medium whitespace-nowrap transition-all duration-300 cursor-pointer ${
+                  activeConvo === i
+                    ? "bg-foreground text-background shadow-md"
+                    : "bg-surface border border-border-light text-text-secondary hover:text-foreground hover:border-foreground/20"
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5 flex-shrink-0" />
+                {c.label}
+              </button>
+            );
+          })}
+        </motion.div>
+
+        {/* Chat + flanking insight notes */}
+        <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,620px)_minmax(0,1fr)] gap-6 lg:gap-10 items-center">
+          {/* Left insight notes — desktop only */}
+          <div className="hidden lg:flex flex-col gap-8">
+            {[
+              { title: "Reads your workspace", desc: "Every client, booking, and payment — already loaded. No prompts to engineer." },
+              { title: "Speaks beauty & wellness", desc: "Lash fills, brow tints, regrowth cycles. The vocab is built in." },
+            ].map((note, i) => (
+              <motion.div
+                key={note.title}
+                initial={{ opacity: 0, x: -15 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={viewportConfig}
+                transition={{ delay: 0.3 + i * 0.08, duration: 0.5 }}
+                className="border-l-2 border-primary/40 pl-4"
+              >
+                <p className="text-[14px] font-bold text-foreground mb-1.5 tracking-tight">{note.title}</p>
+                <p className="text-[12px] text-text-secondary leading-relaxed">{note.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Chat window */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={viewportConfig}
+            transition={{ delay: 0.2, duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
+            className="relative w-full max-w-2xl mx-auto"
+          >
+            {/* Glow behind card */}
+            <div className="absolute -inset-4 rounded-3xl opacity-[0.07] blur-2xl pointer-events-none" style={{ background: "linear-gradient(135deg, var(--logo-green), #8B5CF6)" }} />
+
+            <div className="relative bg-background rounded-2xl border border-border-light overflow-hidden shadow-xl">
+            {/* Title bar */}
+            <div className="flex items-center gap-2.5 px-4 py-2.5 border-b border-border-light bg-surface/40">
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center shadow-sm" style={{ backgroundColor: "var(--logo-green)" }}>
+                <Bot className="w-3.5 h-3.5 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-semibold text-foreground">Magic AI</p>
+                <p className="text-[10px] text-text-tertiary truncate">Reads and writes across your workspace</p>
+              </div>
+              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-100 flex-shrink-0">
+                <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[9px] text-emerald-700 font-semibold">Online</span>
+              </div>
+            </div>
+
+            {/* Messages */}
+            <div ref={messagesContainerRef} className="px-4 py-4 h-[340px] sm:h-[360px] overflow-y-auto">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeConvo}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="space-y-4"
+                >
+                  {convo.messages.map((msg, i) => (
+                    <AnimatePresence key={i}>
+                      {visibleMessages > i && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 14 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+                          className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                        >
+                          {msg.role === "ai" && (
+                            <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-1 shadow-sm" style={{ backgroundColor: "var(--logo-green)" }}>
+                              <div className="w-2.5 h-2.5 bg-white rounded-[3px]" />
+                            </div>
+                          )}
+                          <div
+                            className={`max-w-[82%] sm:max-w-[75%] rounded-2xl px-4 py-3 ${
+                              msg.role === "user"
+                                ? "bg-foreground text-background rounded-br-md shadow-md"
+                                : "bg-surface/60 border border-border-light text-foreground rounded-bl-md"
+                            }`}
+                          >
+                            <p className="text-[13px] leading-relaxed">{msg.text}</p>
+                            {msg.card && msg.card}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  ))}
+
+                  {/* Typing indicator */}
+                  {visibleMessages < convo.messages.length && visibleMessages > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="flex gap-3 justify-start"
+                    >
+                      <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-1 shadow-sm" style={{ backgroundColor: "var(--logo-green)" }}>
+                        <div className="w-2.5 h-2.5 bg-white rounded-[3px]" />
+                      </div>
+                      <div className="bg-surface/60 border border-border-light rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-1.5">
+                        {[0, 1, 2].map((d) => (
+                          <motion.div
+                            key={d}
+                            className="w-1.5 h-1.5 rounded-full bg-text-tertiary"
+                            animate={{ opacity: [0.3, 1, 0.3] }}
+                            transition={{ duration: 1, repeat: Infinity, delay: d * 0.2 }}
+                          />
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </motion.div>
+              </AnimatePresence>
+            </div>
+
+            {/* Input bar */}
+            <div className="px-4 pb-3 pt-2 border-t border-border-light">
+              <div className="flex items-center gap-2 px-3 py-2.5 bg-surface rounded-xl border border-border-light mt-1.5">
+                <span className="text-[12px] text-text-tertiary flex-1">Ask Magic anything about your business…</span>
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm" style={{ backgroundColor: "var(--logo-green)" }}>
+                  <Send className="w-3.5 h-3.5 text-white" />
+                </div>
+              </div>
+            </div>
+            </div>
+          </motion.div>
+
+          {/* Right insight notes — desktop only */}
+          <div className="hidden lg:flex flex-col gap-8">
+            {[
+              { title: "Takes real actions", desc: "Not just answers — sends invoices, books appointments, drafts campaigns." },
+              { title: "Always asks first", desc: "Every change shows a draft. Nothing sends until you confirm." },
+            ].map((note, i) => (
+              <motion.div
+                key={note.title}
+                initial={{ opacity: 0, x: 15 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={viewportConfig}
+                transition={{ delay: 0.3 + i * 0.08, duration: 0.5 }}
+                className="border-r-2 border-primary/40 pr-4 text-right"
+              >
+                <p className="text-[14px] font-bold text-foreground mb-1.5 tracking-tight">{note.title}</p>
+                <p className="text-[12px] text-text-secondary leading-relaxed">{note.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        {/* Mobile / tablet insight notes — stacked below chat */}
+        <div className="flex flex-col gap-5 mt-8 lg:hidden max-w-md mx-auto">
+          {[
+            { title: "Reads your workspace", desc: "Every client, booking, and payment — already loaded." },
+            { title: "Speaks beauty & wellness", desc: "Lash fills, brow tints, regrowth cycles — vocab built in." },
+            { title: "Takes real actions", desc: "Sends invoices, books appointments, drafts campaigns." },
+            { title: "Always asks first", desc: "Every change shows a draft. Nothing sends without your confirmation." },
+          ].map((note, i) => (
+            <motion.div
+              key={note.title}
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={viewportConfig}
+              transition={{ delay: 0.2 + i * 0.05, duration: 0.4 }}
+              className="border-l-2 border-primary/40 pl-3.5"
+            >
+              <p className="text-[13px] font-bold text-foreground mb-1 tracking-tight">{note.title}</p>
+              <p className="text-[12px] text-text-secondary leading-relaxed">{note.desc}</p>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </motion.section>
+  );
+}
+
 // ── Build Journey — the "How It Works" reimagined ──
 
 const JOURNEY_PERSONAS = [
@@ -408,7 +715,7 @@ function BuildJourney() {
   const buildTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   // Kick off the build sequence for a given persona index
-  const runBuildSequence = (personaIdx: number, isInitial: boolean) => {
+  const runBuildSequence = useCallback((_personaIdx: number, isInitial: boolean) => {
     // Clear any running timers
     buildTimers.current.forEach(clearTimeout);
     buildTimers.current = [];
@@ -424,7 +731,7 @@ function BuildJourney() {
       setTimeout(() => setBuildPhase(2), delay + 1200),
       setTimeout(() => setActiveStep(3), delay + 2200),
     );
-  };
+  }, []);
 
   const handleSelectPersona = (i: number) => {
     setSelectedPersona(i);
@@ -458,7 +765,7 @@ function BuildJourney() {
       observer.disconnect();
       buildTimers.current.forEach(clearTimeout);
     };
-  }, []);
+  }, [runBuildSequence]);
 
   // Resolve current persona data (fallback to Lash if none selected)
   const pIdx = selectedPersona >= 0 ? selectedPersona : 1;
@@ -496,7 +803,7 @@ function BuildJourney() {
             transition={{ delay: 0.1, ...sectionTransition }}
             className="text-text-secondary text-[15px] max-w-md mx-auto"
           >
-            No 30-minute onboarding call. No &ldquo;import your data&rdquo; step. Just pick, build, go.
+            Pick your specialty, get a workspace with your services, client cards, and booking page — ready in 60 seconds.
           </motion.p>
         </div>
 
@@ -532,13 +839,15 @@ function BuildJourney() {
                     const Icon = p.icon;
                     const isSelected = selectedPersona === i;
                     return (
-                      <motion.div
+                      <motion.button
                         key={p.label}
+                        type="button"
+                        aria-pressed={isSelected}
                         animate={isSelected ? {
                           scale: [1, 1.1, 1.05],
                           transition: { duration: 0.4 },
                         } : {}}
-                        className={`relative flex flex-col items-center gap-1.5 py-3 rounded-xl transition-all duration-300 cursor-pointer ${
+                        className={`relative appearance-none border-0 flex flex-col items-center gap-1.5 py-3 rounded-xl transition-all duration-300 cursor-pointer ${
                           isSelected
                             ? "bg-white shadow-lg dark:bg-card-bg"
                             : activeStep >= 1 && !isSelected && selectedPersona >= 0
@@ -570,7 +879,7 @@ function BuildJourney() {
                             <Check className="w-2.5 h-2.5 text-white" />
                           </motion.div>
                         )}
-                      </motion.div>
+                      </motion.button>
                     );
                   })}
                 </div>
@@ -682,7 +991,7 @@ function BuildJourney() {
               }`}>2</div>
               <h3 className="text-[17px] font-bold text-foreground mb-1.5">Workspace assembles</h3>
               <p className="text-[13px] text-text-secondary max-w-[220px] mx-auto">
-                Modules, fields, and vocabulary — all configured to match how you actually work.
+                Service menus, client cards, aftercare flows — configured to match how you actually work.
               </p>
             </div>
           </motion.div>
@@ -746,8 +1055,8 @@ function BuildJourney() {
                               <p className="text-[11px] font-bold">New booking!</p>
                               <p className="text-[10px] opacity-70">{calendar.notif.name} booked {calendar.notif.service}</p>
                               <div className="flex items-center gap-1.5 mt-1.5">
-                                <Instagram className="w-2.5 h-2.5 opacity-50" />
-                                <span className="text-[9px] opacity-50">via your booking link</span>
+                                <Clock className="w-2.5 h-2.5 opacity-50" />
+                                <span className="text-[9px] opacity-50">11:47 PM — while you were closed</span>
                               </div>
                             </div>
                           </div>
@@ -776,8 +1085,6 @@ function BuildJourney() {
 }
 
 export default function LandingPage() {
-  const [activePersona, setActivePersona] = useState(0);
-
   // Global scroll progress for the progress bar
   const { scrollYProgress } = useScroll();
 
@@ -790,6 +1097,9 @@ export default function LandingPage() {
   const heroY = useTransform(heroProgress, [0, 1], [0, 40]);
   const heroOpacity = useTransform(heroProgress, [0, 0.7, 1], [1, 0.8, 0]);
   const heroScale = useTransform(heroProgress, [0, 1], [1, 0.97]);
+
+  // Pricing: monthly vs annual billing
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly");
 
   return (
     <div className="min-h-screen bg-background grid-pattern noise-bg">
@@ -815,8 +1125,11 @@ export default function LandingPage() {
           <Link href="/login" className="text-[13px] text-text-secondary hover:text-foreground transition-colors font-medium">
             Log in
           </Link>
-          <Link href="/onboarding">
-            <Button size="sm">Start free</Button>
+          <Link
+            href="/onboarding"
+            className="inline-flex items-center justify-center rounded-full bg-foreground px-5 py-2 text-[13px] font-semibold tracking-[-0.01em] text-background transition-opacity hover:opacity-90"
+          >
+            Start free
           </Link>
         </div>
       </nav>
@@ -834,7 +1147,7 @@ export default function LandingPage() {
             transition={{ delay: 0.2, duration: 0.6 }}
             className="text-[13px] text-text-secondary font-medium mb-6"
           >
-            The AI-powered CRM for beauty professionals
+            The business platform for beauty &amp; wellness
           </motion.div>
 
           <motion.h1
@@ -843,8 +1156,8 @@ export default function LandingPage() {
             transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
             className="text-[2.25rem] sm:text-[3.5rem] md:text-[4rem] font-bold mb-6 leading-[1.05]"
           >
-            <span className="gradient-text">Clients, bookings, payments.</span><br />
-            <span className="text-text-secondary">All in one place.</span>
+            <span className="gradient-text">Grow your beauty business.</span><br />
+            <span className="text-text-secondary">Not your admin.</span>
           </motion.h1>
 
           <motion.p
@@ -853,7 +1166,7 @@ export default function LandingPage() {
             transition={{ delay: 0.15, duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
             className="text-[15px] sm:text-[17px] text-text-secondary mb-8 sm:mb-10 max-w-xl mx-auto leading-relaxed"
           >
-            Magic is the CRM that knows your clients, manages your calendar, and tells you who to rebook — built specifically for hairstylists, lash techs, nail artists, and beauty pros.
+            Magic replaces Fresha, Timely, and the spreadsheet you hate. Bookings, clients, payments, and smart reminders — built for hair, lash, nail, and spa businesses in Australia.
           </motion.p>
 
           <motion.div
@@ -862,149 +1175,46 @@ export default function LandingPage() {
             transition={{ delay: 0.3, duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
             className="flex flex-col items-center gap-4"
           >
-            <Link href="/onboarding">
-              <Button size="lg" className="px-10">
-                Get started free <ArrowRight className="w-5 h-5" />
-              </Button>
+            <Link
+              href="/onboarding"
+              className="inline-flex items-center justify-center gap-2.5 rounded-full bg-foreground px-10 py-3.5 text-[15px] font-semibold tracking-[-0.01em] text-background transition-opacity hover:opacity-90"
+            >
+              Start free trial <ArrowRight className="w-5 h-5" />
             </Link>
             <p className="text-sm text-text-tertiary">
               Set up in 60 seconds. No credit card needed.
             </p>
           </motion.div>
         </motion.div>
+
       </section>
 
-      {/* Stats bar — removed, numbers mentioned elsewhere */}
-
-      {/* Industry tags */}
+      {/* Trust bar */}
       <motion.section
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
         viewport={viewportConfig}
         transition={{ duration: 0.5 }}
-        className="pb-12 sm:pb-16"
+        className="pb-10 sm:pb-14"
       >
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={viewportConfig}
-            transition={{ duration: 0.5 }}
-            className="text-center text-sm text-text-tertiary mb-4 font-medium"
-          >
-            Made for Beauty Professionals.
-          </motion.p>
-          <div className="flex flex-wrap justify-center gap-2">
-            {INDUSTRIES.map((industry, i) => (
-              <motion.span
-                key={industry}
-                initial={{ opacity: 0, y: 15, scale: 0.95 }}
-                whileInView={{ opacity: 1, y: 0, scale: 1 }}
-                viewport={viewportConfig}
-                transition={{ delay: 0.4 + i * 0.04, duration: 0.4 }}
-                className="px-4 py-2 bg-surface border border-border-light rounded-full text-[13px] font-medium text-text-secondary"
-              >
-                {industry}
-              </motion.span>
-            ))}
-          </div>
-          <p className="text-center text-[13px] text-text-tertiary mt-4 max-w-md mx-auto">
-            Built for hair, nails, lashes, makeup, and more. Tested. Ready to go.
-          </p>
-        </div>
-      </motion.section>
-
-      {/* Persona Comparison — side by side */}
-      <motion.section
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={viewportConfig}
-        transition={{ duration: 0.5 }}
-        className="py-12 sm:py-20 bg-card-bg"
-      >
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-10 sm:mb-14">
-            <motion.h2
-              variants={sectionHeadingVariants}
-              initial="hidden"
-              whileInView="visible"
-              viewport={viewportConfig}
-              transition={sectionTransition}
-              className="text-[1.75rem] sm:text-[2.25rem] font-bold text-foreground leading-tight mb-3"
-            >
-              One platform. Shaped to your specialty.
-            </motion.h2>
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={viewportConfig}
-              transition={{ delay: 0.1, ...sectionTransition }}
-              className="text-text-secondary text-[15px] max-w-lg mx-auto"
-            >
-              A lash tech sees Appointments and Services. A hair salon sees Clients with colour formulas. A makeup artist sees Wedding Inquiries with deposits. Same platform, shaped to how you actually work.
-            </motion.p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {PERSONA_PREVIEWS.map((persona, i) => (
+          <div className="flex flex-wrap justify-center gap-3 sm:gap-5">
+            {[
+              "No per-staff fees",
+              "14-day free trial",
+              "No booking commissions",
+              "Built for Australian beauty & wellness",
+            ].map((signal, i) => (
               <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 30, scale: 0.96 }}
-                whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                key={signal}
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
                 viewport={viewportConfig}
-                transition={{ delay: i * 0.08, duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
-                onClick={() => setActivePersona(i)}
-                className={`bg-card-bg rounded-2xl border overflow-hidden cursor-pointer transition-all duration-300 glow-border ${
-                  activePersona === i
-                    ? "border-foreground/20 shadow-xl scale-[1.03] -translate-y-1"
-                    : "border-border-light hover:border-foreground/10 hover:shadow-lg hover:-translate-y-1"
-                }`}
+                transition={{ delay: 0.1 + i * 0.06, duration: 0.4 }}
+                className="flex items-center gap-2 px-4 py-2 bg-surface border border-border-light rounded-full"
               >
-                <div className="px-4 py-3 border-b border-border-light flex items-center gap-2.5" style={{ borderTop: `2px solid ${persona.accent}` }}>
-                  <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ backgroundColor: persona.accent + "18" }}>
-                    <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: persona.accent }} />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="text-[13px] font-semibold text-foreground leading-none">{persona.businessName}</p>
-                      <span className="text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full" style={{ backgroundColor: persona.accent + "15", color: persona.accent }}>{persona.label}</span>
-                    </div>
-                    <p className="text-[10px] text-text-tertiary mt-0.5">{persona.industry}</p>
-                  </div>
-                </div>
-                <div className="flex" style={{ minHeight: 195 }}>
-                  <div className="w-[100px] border-r border-border-light p-1.5 flex flex-col gap-0.5">
-                    {persona.nav.map((item) => (
-                      <div key={item} className={`text-[11px] py-1.5 px-2 rounded-md ${item === persona.activeNav ? "bg-background font-semibold text-foreground shadow-sm" : "text-text-tertiary"}`}>
-                        {item}
-                      </div>
-                    ))}
-                  </div>
-                  <div className="flex-1 p-3">
-                    <p className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider mb-2">{persona.contentTitle}</p>
-                    <div className="space-y-1.5">
-                      {persona.items.map((item, j) => (
-                        <div key={j} className="flex items-center gap-2 bg-background rounded-lg px-2.5 py-1.5">
-                          {"stageColor" in item && <div className={`w-2 h-2 rounded-full flex-shrink-0 ${item.stageColor}`} />}
-                          <span className="text-[11px] text-foreground font-medium flex-1 truncate">{item.name}</span>
-                          <span className="text-[10px] text-text-tertiary">{item.meta}</span>
-                          {"stageColor" in item
-                            ? <span className="text-[10px] font-medium text-text-secondary">{item.value}</span>
-                            : <span className="text-[11px] font-semibold text-foreground">{item.value}</span>
-                          }
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                <div className="px-3 py-2.5 border-t border-border-light">
-                  <p className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider mb-1.5">Client fields</p>
-                  <div className="flex flex-wrap gap-1">
-                    {persona.fields.map((f) => (
-                      <span key={f} className="text-[10px] px-2 py-0.5 bg-background border border-border-light rounded-full text-text-secondary">{f}</span>
-                    ))}
-                  </div>
-                </div>
+                <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                <span className="text-[13px] font-medium text-foreground">{signal}</span>
               </motion.div>
             ))}
           </div>
@@ -1017,6 +1227,9 @@ export default function LandingPage() {
       {/* Cinematic Demo */}
       <CinematicDemo />
 
+      {/* AI Chat Demo */}
+      <AIChatDemo />
+
       {/* The Difference — Generic CRM vs Magic */}
       <motion.section
         initial={{ opacity: 0 }}
@@ -1027,6 +1240,9 @@ export default function LandingPage() {
       >
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-12">
+            <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={viewportConfig} transition={{ duration: 0.4 }} className="inline-flex items-center gap-2 px-3.5 py-1 bg-surface border border-border-light rounded-full text-[11px] font-medium text-text-secondary mb-5">
+              <Sparkles className="w-3 h-3" /> Beauty &amp; wellness, not generic software
+            </motion.div>
             <motion.h2
               variants={sectionHeadingVariants}
               initial="hidden"
@@ -1035,7 +1251,7 @@ export default function LandingPage() {
               transition={sectionTransition}
               className="text-[1.75rem] sm:text-[2.25rem] font-bold text-foreground leading-tight mb-3"
             >
-              Not another tool with settings you&apos;ll never touch.
+              Built for your specialty. Not for everyone.
             </motion.h2>
           </div>
 
@@ -1073,375 +1289,11 @@ export default function LandingPage() {
               transition={{ delay: 0.1, ...sectionTransition }}
               className="text-text-secondary text-[15px] max-w-lg mx-auto"
             >
-              Your core workspace is built for you. These add-ons snap in when the time is right — one click, no migration.
+              Start lean. Add gift cards, loyalty, intake forms, or memberships when your business is ready. One click, no migration.
             </motion.p>
           </div>
 
           <AddonsGrid viewportConfig={viewportConfig} />
-          <div className="hidden">{/* Gift Cards - legacy block start */}
-            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-card-bg rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-pink-200">
-              <div className="absolute top-0 left-0 right-0 h-32 opacity-[0.06] group-hover:opacity-[0.1] transition-opacity" style={{ background: "linear-gradient(to bottom, #EC4899, transparent)" }} />
-              <div className="relative px-5 pt-5 pb-3">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-pink-500/10 mb-3"><Ticket className="w-5 h-5 text-pink-500" /></div>
-                <h3 className="text-[15px] font-bold text-foreground">Gift Cards</h3>
-                <p className="text-xs text-text-secondary mt-1">Create, sell, and track digital gift vouchers. A revenue channel that markets itself.</p>
-              </div>
-              <div className="relative px-5 pb-5 space-y-1.5">
-                {[{ label: "GIFT-7X4K-M2NP", value: "$100.00", status: "Active" }, { label: "GIFT-R9BW-3CTL", value: "$25.00", status: "Partial" }, { label: "GIFT-5FHQ-8YJA", value: "$0.00", status: "Redeemed" }].map((row, i) => (
-                  <div key={i} className="flex justify-between items-center px-3 py-2 rounded-lg bg-background/80">
-                    <span className="text-[11px] text-text-secondary font-mono">{row.label}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[11px] font-semibold text-foreground">{row.value}</span>
-                      <span className={`text-[8px] font-semibold px-1.5 py-0.5 rounded-full ${row.status === "Active" ? "bg-emerald-50 text-emerald-700" : row.status === "Partial" ? "bg-amber-50 text-amber-700" : "bg-gray-100 text-gray-500"}`}>{row.status}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-
-            {/* AI Insights */}
-            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} transition={{ delay: 0.06 }} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-card-bg rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-amber-200">
-              <div className="absolute top-0 left-0 right-0 h-32 opacity-[0.06] group-hover:opacity-[0.1] transition-opacity" style={{ background: "linear-gradient(to bottom, #F59E0B, transparent)" }} />
-              <div className="relative px-5 pt-5 pb-3">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-amber-500/10 mb-3"><Lightbulb className="w-5 h-5 text-amber-500" /></div>
-                <h3 className="text-[15px] font-bold text-foreground">AI Insights</h3>
-                <p className="text-xs text-text-secondary mt-1">Smart suggestions — overdue rebookings, revenue forecasts, and churn risk.</p>
-              </div>
-              <div className="relative px-5 pb-5 space-y-1.5">
-                {[{ text: "Sarah M. is 2 weeks overdue for her lash fill", color: "border-l-red-400", tag: "Action", tagColor: "bg-red-50 text-red-600" }, { text: "Tom K. opened your quote 3x but hasn\u2019t responded", color: "border-l-amber-400", tag: "Follow up", tagColor: "bg-amber-50 text-amber-700" }, { text: "Tuesday afternoons are consistently empty", color: "border-l-blue-400", tag: "Opportunity", tagColor: "bg-blue-50 text-blue-600" }].map((insight, i) => (
-                  <div key={i} className={`px-3 py-2 rounded-lg bg-background/80 border-l-2 ${insight.color}`}>
-                    <p className="text-[11px] text-foreground leading-snug">{insight.text}</p>
-                    <span className={`text-[8px] font-semibold uppercase mt-1 inline-block px-1.5 py-0.5 rounded ${insight.tagColor}`}>{insight.tag}</span>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-
-            {/* Loyalty & Referrals */}
-            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} transition={{ delay: 0.12 }} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-card-bg rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-emerald-200">
-              <div className="absolute top-0 left-0 right-0 h-32 opacity-[0.06] group-hover:opacity-[0.1] transition-opacity" style={{ background: "linear-gradient(to bottom, #10B981, transparent)" }} />
-              <div className="relative px-5 pt-5 pb-3">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-emerald-500/10 mb-3"><Gift className="w-5 h-5 text-emerald-500" /></div>
-                <h3 className="text-[15px] font-bold text-foreground">Loyalty & Referrals</h3>
-                <p className="text-xs text-text-secondary mt-1">Points per visit, referral codes, and reward tiers for repeat clients.</p>
-              </div>
-              <div className="relative px-5 pb-5 space-y-1.5">
-                {[{ name: "Sarah M.", points: "420 pts", rank: "1" }, { name: "Emma R.", points: "310 pts", rank: "2" }, { name: "Jess T.", points: "185 pts", rank: "3" }].map((m, i) => (
-                  <div key={i} className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-background/80">
-                    <span className="text-[10px] font-bold text-text-tertiary w-4">{m.rank}.</span>
-                    <div className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0"><span className="text-[8px] font-bold text-white">{m.name.split(" ").map(n => n[0]).join("")}</span></div>
-                    <span className="text-[11px] text-foreground font-medium flex-1">{m.name}</span>
-                    <span className="text-[11px] font-bold text-emerald-600">{m.points}</span>
-                  </div>
-                ))}
-                <div className="px-3 py-2 rounded-lg bg-emerald-50/50 border border-emerald-100"><p className="text-[10px] text-emerald-700 font-medium">Referral code SARAH10 used 4 times this month</p></div>
-              </div>
-            </motion.div>
-
-            {/* Memberships */}
-            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} transition={{ delay: 0.04 }} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-card-bg rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-purple-200">
-              <div className="absolute top-0 left-0 right-0 h-32 opacity-[0.06] group-hover:opacity-[0.1] transition-opacity" style={{ background: "linear-gradient(to bottom, #8B5CF6, transparent)" }} />
-              <div className="relative px-5 pt-5 pb-3">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-purple-500/10 mb-3"><Crown className="w-5 h-5 text-purple-500" /></div>
-                <h3 className="text-[15px] font-bold text-foreground">Memberships</h3>
-                <p className="text-xs text-text-secondary mt-1">Session packs, recurring plans, and member tracking with auto-billing.</p>
-              </div>
-              <div className="relative px-5 pb-5 space-y-1.5">
-                {[{ plan: "10-Session Pack", price: "$450", members: "8 active" }, { plan: "Monthly Unlimited", price: "$99/mo", members: "12 active" }].map((p) => (
-                  <div key={p.plan} className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-background/80">
-                    <div><p className="text-[11px] font-semibold text-foreground">{p.plan}</p><p className="text-[9px] text-text-tertiary">{p.members}</p></div>
-                    <span className="text-[13px] font-bold text-foreground">{p.price}</span>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-
-            {/* Win-Back */}
-            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} transition={{ delay: 0.1 }} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-card-bg rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-amber-200">
-              <div className="absolute top-0 left-0 right-0 h-32 opacity-[0.06] group-hover:opacity-[0.1] transition-opacity" style={{ background: "linear-gradient(to bottom, #F59E0B, transparent)" }} />
-              <div className="relative px-5 pt-5 pb-3">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-amber-500/10 mb-3"><UserCheck className="w-5 h-5 text-amber-500" /></div>
-                <h3 className="text-[15px] font-bold text-foreground">Win-Back</h3>
-                <p className="text-xs text-text-secondary mt-1">Detect lapsed clients and auto-send re-engagement messages.</p>
-              </div>
-              <div className="relative px-5 pb-5 space-y-1.5">
-                {[{ name: "Sarah M.", days: "45 days inactive", status: "Contacted", sc: "bg-emerald-50 text-emerald-700" }, { name: "Tom K.", days: "62 days inactive", status: "Detected", sc: "bg-amber-50 text-amber-700" }].map((c) => (
-                  <div key={c.name} className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-background/80">
-                    <div><p className="text-[11px] font-semibold text-foreground">{c.name}</p><p className="text-[9px] text-text-tertiary">{c.days}</p></div>
-                    <span className={`text-[9px] px-2 py-0.5 rounded-full font-semibold ${c.sc}`}>{c.status}</span>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-
-            {/* Storefront */}
-            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} transition={{ delay: 0.16 }} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-card-bg rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-cyan-200">
-              <div className="absolute top-0 left-0 right-0 h-32 opacity-[0.06] group-hover:opacity-[0.1] transition-opacity" style={{ background: "linear-gradient(to bottom, #06B6D4, transparent)" }} />
-              <div className="relative px-5 pt-5 pb-3">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-cyan-500/10 mb-3"><Store className="w-5 h-5 text-cyan-500" /></div>
-                <h3 className="text-[15px] font-bold text-foreground">Storefront</h3>
-                <p className="text-xs text-text-secondary mt-1">A public page showcasing your services with pricing and booking links.</p>
-              </div>
-              <div className="relative px-5 pb-5">
-                <div className="rounded-lg bg-background/80 p-3">
-                  <div className="flex items-center justify-between mb-2"><p className="text-[11px] font-bold text-foreground">Your Business</p><span className="text-[8px] px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded-full font-semibold">Live</span></div>
-                  <p className="text-[9px] text-text-tertiary mb-2.5">yourbusiness.magic/book</p>
-                  <div className="space-y-1.5">{["Lash Full Set — $150", "Brow Lamination — $65"].map((s) => (<div key={s} className="flex items-center justify-between text-[10px] px-2 py-1.5 bg-card-bg rounded border border-border-light"><span className="text-text-secondary">{s.split(" — ")[0]}</span><span className="font-bold text-foreground">{s.split(" — ")[1]}</span></div>))}</div>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Intake Forms */}
-            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} transition={{ delay: 0.04 }} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-card-bg rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-pink-200">
-              <div className="absolute top-0 left-0 right-0 h-32 opacity-[0.06] group-hover:opacity-[0.1] transition-opacity" style={{ background: "linear-gradient(to bottom, #EC4899, transparent)" }} />
-              <div className="relative px-5 pt-5 pb-3">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-pink-500/10 mb-3"><FileInput className="w-5 h-5 text-pink-500" /></div>
-                <h3 className="text-[15px] font-bold text-foreground">Intake Forms</h3>
-                <p className="text-xs text-text-secondary mt-1">Custom questionnaires with conditional logic for client intake.</p>
-              </div>
-              <div className="relative px-5 pb-5">
-                <div className="rounded-lg bg-background/80 p-3 space-y-2">
-                  {["Full Name *", "Email *", "Any allergies?"].map((field) => (<div key={field}><p className="text-[9px] text-text-tertiary mb-0.5">{field}</p><div className="h-7 bg-card-bg rounded-lg border border-border-light" /></div>))}
-                  <div className="h-8 bg-foreground rounded-lg flex items-center justify-center text-[10px] text-background font-semibold">Submit</div>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Before & After */}
-            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} transition={{ delay: 0.1 }} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-card-bg rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-teal-200">
-              <div className="absolute top-0 left-0 right-0 h-32 opacity-[0.06] group-hover:opacity-[0.1] transition-opacity" style={{ background: "linear-gradient(to bottom, #14B8A6, transparent)" }} />
-              <div className="relative px-5 pt-5 pb-3">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-teal-500/10 mb-3"><Camera className="w-5 h-5 text-teal-500" /></div>
-                <h3 className="text-[15px] font-bold text-foreground">Before & After</h3>
-                <p className="text-xs text-text-secondary mt-1">Capture proof of work with photos and digital checklists.</p>
-              </div>
-              <div className="relative px-5 pb-5">
-                <div className="grid grid-cols-2 gap-2.5">
-                  <div><p className="text-[9px] text-text-tertiary mb-1.5 text-center font-medium">Before</p><div className="aspect-[4/3] bg-surface rounded-xl border border-border-light flex items-center justify-center"><Camera className="w-6 h-6 text-text-tertiary/20" /></div></div>
-                  <div><p className="text-[9px] text-teal-600 mb-1.5 text-center font-medium">After</p><div className="aspect-[4/3] bg-teal-50/50 rounded-xl border border-teal-200/50 flex items-center justify-center"><Camera className="w-6 h-6 text-teal-300" /></div></div>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Treatment Notes */}
-            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} transition={{ delay: 0.16 }} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-card-bg rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-indigo-200">
-              <div className="absolute top-0 left-0 right-0 h-32 opacity-[0.06] group-hover:opacity-[0.1] transition-opacity" style={{ background: "linear-gradient(to bottom, #6366F1, transparent)" }} />
-              <div className="relative px-5 pt-5 pb-3">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-indigo-500/10 mb-3"><ClipboardList className="w-5 h-5 text-indigo-500" /></div>
-                <h3 className="text-[15px] font-bold text-foreground">Treatment Notes</h3>
-                <p className="text-xs text-text-secondary mt-1">Structured SOAP notes for clinical treatment records.</p>
-              </div>
-              <div className="relative px-5 pb-5 space-y-1.5">
-                {[{ letter: "S", label: "Subjective", text: "Client wants fuller brows, previous microblading faded..." }, { letter: "O", label: "Objective", text: "Skin type: normal, no sensitivities noted..." }, { letter: "A", label: "Assessment", text: "Good candidate for combo brows, patch test clear..." }].map((n) => (
-                  <div key={n.letter} className="flex items-start gap-2.5 px-3 py-2 rounded-lg bg-background/80">
-                    <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 w-5 h-5 rounded flex items-center justify-center flex-shrink-0">{n.letter}</span>
-                    <div><p className="text-[10px] font-semibold text-foreground">{n.label}</p><p className="text-[9px] text-text-tertiary">{n.text}</p></div>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-
-            {/* Notes & Docs */}
-            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} transition={{ delay: 0.22 }} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-card-bg rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-sky-200">
-              <div className="absolute top-0 left-0 right-0 h-32 opacity-[0.06] group-hover:opacity-[0.1] transition-opacity" style={{ background: "linear-gradient(to bottom, #0EA5E9, transparent)" }} />
-              <div className="relative px-5 pt-5 pb-3">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-sky-500/10 mb-3"><NotebookPen className="w-5 h-5 text-sky-500" /></div>
-                <h3 className="text-[15px] font-bold text-foreground">Notes & Docs</h3>
-                <p className="text-xs text-text-secondary mt-1">Write notes, create docs, and share with your team. Simple formatting, no bloat.</p>
-              </div>
-              <div className="relative px-5 pb-5">
-                <div className="rounded-xl bg-background/80 overflow-hidden border border-border-light">
-                  <div className="px-3 py-1.5 border-b border-border-light flex items-center gap-1.5">
-                    <span className="text-[10px] font-bold text-text-secondary px-1.5 py-0.5 hover:bg-surface rounded">B</span>
-                    <span className="text-[10px] italic text-text-secondary px-1.5 py-0.5 hover:bg-surface rounded">I</span>
-                    <span className="text-[10px] underline text-text-secondary px-1.5 py-0.5 hover:bg-surface rounded">U</span>
-                    <div className="w-px h-3.5 bg-border-light mx-1" />
-                    <span className="text-[9px] text-text-tertiary px-1">Aa</span>
-                    <div className="w-3 h-3 rounded bg-foreground" />
-                    <div className="w-px h-3.5 bg-border-light mx-1" />
-                    <span className="text-[9px] text-text-tertiary">L</span>
-                    <span className="text-[9px] text-text-tertiary">C</span>
-                    <span className="text-[9px] text-text-tertiary">R</span>
-                  </div>
-                  <div className="px-3 py-2.5">
-                    <p className="text-[11px] font-bold text-foreground mb-1">Session notes — Sarah M.</p>
-                    <p className="text-[10px] text-text-secondary leading-relaxed">Discussed goals for Q2. Wants to <span className="font-bold">increase bookings by 20%</span> and launch a referral program.</p>
-                    <div className="flex items-center gap-1.5 mt-2"><span className="text-[8px] px-1.5 py-0.5 bg-sky-50 text-sky-600 rounded font-medium">Linked: Sarah M.</span><span className="text-[8px] px-1.5 py-0.5 bg-yellow-50 text-yellow-700 rounded font-medium">Pinned</span></div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Class Timetable */}
-            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} transition={{ delay: 0.04 }} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-card-bg rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-violet-200">
-              <div className="absolute top-0 left-0 right-0 h-32 opacity-[0.06] group-hover:opacity-[0.10] transition-opacity" style={{ background: "linear-gradient(to bottom, #8B5CF6, transparent)" }} />
-              <div className="relative px-5 pt-5 pb-3">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-violet-500/10 mb-3"><CalendarRange className="w-5 h-5 text-violet-500" /></div>
-                <h3 className="text-[15px] font-bold text-foreground">Class Timetable</h3>
-                <p className="text-xs text-text-secondary mt-1">Visual weekly class schedule with capacity limits and check-in.</p>
-              </div>
-              <div className="relative px-5 pb-5 space-y-1.5">
-                {[{ day: "Mon 9:00", name: "Lash Masterclass", cap: "4/8" }, { day: "Wed 6:00", name: "Nail Art Workshop", cap: "6/10" }, { day: "Fri 10:00", name: "Brow Lamination", cap: "5/8" }].map((cls) => (
-                  <div key={cls.name} className="flex items-center justify-between px-3 py-2 rounded-lg bg-background/80">
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-[10px] font-mono text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded font-semibold">{cls.day}</span>
-                      <span className="text-[11px] font-semibold text-foreground">{cls.name}</span>
-                    </div>
-                    <span className="text-[10px] text-text-tertiary font-medium">{cls.cap}</span>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-
-            {/* Vendors */}
-            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} transition={{ delay: 0.1 }} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-card-bg rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-orange-200">
-              <div className="absolute top-0 left-0 right-0 h-32 opacity-[0.06] group-hover:opacity-[0.10] transition-opacity" style={{ background: "linear-gradient(to bottom, #F97316, transparent)" }} />
-              <div className="relative px-5 pt-5 pb-3">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-orange-500/10 mb-3"><Building2 className="w-5 h-5 text-orange-500" /></div>
-                <h3 className="text-[15px] font-bold text-foreground">Vendors</h3>
-                <p className="text-xs text-text-secondary mt-1">Track suppliers, vendor availability, contracts, and payments.</p>
-              </div>
-              <div className="relative px-5 pb-5 space-y-1.5">
-                {[{ name: "Lash Supplies AU", type: "Lash Products", stars: 5 }, { name: "Salon Essentials", type: "Hair Products", stars: 4 }, { name: "NailCo Wholesale", type: "Nail Supplies", stars: 5 }].map((v) => (
-                  <div key={v.name} className="flex items-center justify-between px-3 py-2 rounded-lg bg-background/80">
-                    <div><p className="text-[11px] font-semibold text-foreground">{v.name}</p><p className="text-[9px] text-text-tertiary">{v.type}</p></div>
-                    <div className="flex gap-0.5">{Array.from({ length: v.stars }).map((_, i) => (<Star key={i} className="w-3 h-3 fill-orange-400 text-orange-400" />))}</div>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-
-            {/* Proposals */}
-            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} transition={{ delay: 0.16 }} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-card-bg rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-violet-200">
-              <div className="absolute top-0 left-0 right-0 h-32 opacity-[0.06] group-hover:opacity-[0.10] transition-opacity" style={{ background: "linear-gradient(to bottom, #7C3AED, transparent)" }} />
-              <div className="relative px-5 pt-5 pb-3">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-violet-600/10 mb-3"><ScrollText className="w-5 h-5 text-violet-600" /></div>
-                <h3 className="text-[15px] font-bold text-foreground">Proposals</h3>
-                <p className="text-xs text-text-secondary mt-1">Branded proposal pages with interactive pricing and e-signature.</p>
-              </div>
-              <div className="relative px-5 pb-5 space-y-1.5">
-                {[{ id: "PROP-001", title: "Bridal Package", status: "Sent", amount: "$650", sc: "bg-blue-50 text-blue-600" }, { id: "PROP-002", title: "Lash Extension Package", status: "Viewed", amount: "$350", sc: "bg-amber-50 text-amber-700" }, { id: "PROP-003", title: "Wedding Party (x5)", status: "Accepted", amount: "$1,200", sc: "bg-emerald-50 text-emerald-700" }].map((p) => (
-                  <div key={p.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-background/80">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[9px] font-mono text-text-tertiary">{p.id}</span>
-                      <span className="text-[11px] font-semibold text-foreground">{p.title}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className={`text-[8px] px-1.5 py-0.5 rounded-full font-semibold ${p.sc}`}>{p.status}{p.status === "Accepted" ? " \u2713" : ""}</span>
-                      <span className="text-[11px] font-bold text-foreground">{p.amount}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-
-            {/* Waitlist */}
-            <motion.div initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={viewportConfig} transition={{ delay: 0.22 }} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] group relative bg-card-bg rounded-2xl border border-border-light overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-teal-200">
-              <div className="absolute top-0 left-0 right-0 h-32 opacity-[0.06] group-hover:opacity-[0.10] transition-opacity" style={{ background: "linear-gradient(to bottom, #14B8A6, transparent)" }} />
-              <div className="relative px-5 pt-5 pb-3">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-teal-500/10 mb-3"><ListOrdered className="w-5 h-5 text-teal-500" /></div>
-                <h3 className="text-[15px] font-bold text-foreground">Waitlist</h3>
-                <p className="text-xs text-text-secondary mt-1">Manage walk-in queues and auto-notify clients when spots open up.</p>
-              </div>
-              <div className="relative px-5 pb-5 space-y-1.5">
-                {[{ name: "Emma R.", detail: "Lash Fill", status: "Waiting", sc: "bg-amber-50 text-amber-700" }, { name: "Tom K.", detail: "2:00 PM slot", status: "Notified \u2713", sc: "bg-blue-50 text-blue-600" }].map((w) => (
-                  <div key={w.name} className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-background/80">
-                    <div><p className="text-[11px] font-semibold text-foreground">{w.name}</p><p className="text-[9px] text-text-tertiary">{w.detail}</p></div>
-                    <span className={`text-[9px] px-2 py-0.5 rounded-full font-semibold ${w.sc}`}>{w.status}</span>
-                  </div>
-                ))}
-                <div className="px-3 py-2 rounded-lg bg-teal-50/50 border border-teal-100"><p className="text-[10px] text-teal-700 font-medium">Spot opened! Auto-notified 2 clients</p></div>
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      </motion.section>
-
-      {/* Build Your Own */}
-      <motion.section
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={viewportConfig}
-        transition={{ duration: 0.5 }}
-        className="py-12 sm:py-20 bg-card-bg"
-      >
-        <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
-            <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={viewportConfig} transition={{ duration: 0.5 }}>
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-50 border border-purple-200 rounded-full text-[11px] font-medium text-purple-700 mb-4">
-                <Zap className="w-3 h-3" /> AI-Powered
-              </div>
-              <motion.h2
-                variants={sectionHeadingVariants}
-                initial="hidden"
-                whileInView="visible"
-                viewport={viewportConfig}
-                transition={sectionTransition}
-                className="text-[1.75rem] sm:text-[2.25rem] font-bold text-foreground leading-tight mb-4"
-              >
-                Build your own<br />features with AI.
-              </motion.h2>
-              <p className="text-text-secondary text-[15px] leading-relaxed mb-6">
-                Need something we don&apos;t have? Describe it in plain English and our AI builder creates a custom module — with its own data, views, and automations. Built on top of your existing data.
-              </p>
-              <div className="space-y-3">
-                {[
-                  { title: "Describe what you need", desc: "\"I need a warranty tracker for each job\"" },
-                  { title: "AI builds it", desc: "Custom data model, views, and automations — in seconds" },
-                  { title: "It lives in your sidebar", desc: "Uses your existing clients, jobs, and invoices" },
-                ].map((step, i) => (
-                  <div key={i} className="flex items-start gap-3">
-                    <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-[11px] font-bold text-white">{i + 1}</span>
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">{step.title}</p>
-                      <p className="text-xs text-text-secondary">{step.desc}</p>
-                    </div>
-                  </div>
-                ))}
-                <div className="flex items-center gap-3 mt-6 pt-4 border-t border-border-light">
-                  <span className="text-[11px] text-text-tertiary">Powered by</span>
-                  <div className="flex items-center gap-1">
-                    <span className="text-xs font-semibold text-text-tertiary hover:text-text-secondary transition-colors">Anthropic</span>
-                    <span className="text-[10px] text-border-light mx-1">/</span>
-                    <span className="text-xs font-semibold text-text-tertiary hover:text-text-secondary transition-colors">OpenAI</span>
-                    <span className="text-[10px] text-border-light mx-1">/</span>
-                    <span className="text-xs font-semibold text-text-tertiary hover:text-text-secondary transition-colors">Kimi</span>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-
-            <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={viewportConfig} transition={{ delay: 0.2, duration: 0.5 }}>
-              <div className="bg-card-bg rounded-2xl border border-border-light overflow-hidden shadow-lg">
-                <div className="px-5 py-3 border-b border-border-light flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-purple-500" />
-                  <span className="text-[13px] font-semibold text-foreground">AI Builder</span>
-                  <span className="ml-auto text-[10px] bg-primary text-foreground px-2 py-0.5 rounded-full font-semibold">25 credits</span>
-                </div>
-                <div className="p-5 space-y-4">
-                  <div>
-                    <p className="text-[11px] text-text-tertiary mb-2">Describe your feature</p>
-                    <div className="px-4 py-3 bg-background border border-border-light rounded-xl text-[13px] text-text-secondary italic">
-                      &ldquo;I need a warranty tracker that links to completed jobs, tracks expiry dates, and sends reminders before warranties expire&rdquo;
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <div className="flex-1 h-9 bg-foreground rounded-xl flex items-center justify-center text-xs text-background font-semibold">Build Feature</div>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-[10px] text-text-tertiary uppercase tracking-wider font-semibold">What AI can build</p>
-                    {["Custom data collections", "Table & kanban views", "Automated triggers", "Connected to your data"].map((c) => (
-                      <div key={c} className="flex items-center gap-2 text-[11px] text-text-secondary">
-                        <Check className="w-3 h-3 text-primary" />{c}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </div>
         </div>
       </motion.section>
 
@@ -1454,121 +1306,162 @@ export default function LandingPage() {
         className="py-12 sm:py-20"
       >
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-start">
-            <div>
-              <motion.h2
-                variants={sectionHeadingVariants}
-                initial="hidden"
-                whileInView="visible"
-                viewport={viewportConfig}
-                transition={sectionTransition}
-                className="text-[1.75rem] sm:text-[2.25rem] font-bold text-foreground leading-tight mb-4"
-              >
-                Why switch from<br />Fresha or Vagaro?
-              </motion.h2>
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={viewportConfig}
-                transition={{ delay: 0.1, ...sectionTransition }}
-                className="text-text-secondary text-[15px] leading-relaxed mb-8"
-              >
-                Because booking tools don&apos;t know your clients. They schedule appointments — they don&apos;t tell you who&apos;s overdue for a rebook or who hasn&apos;t been back in 6 weeks.
-              </motion.p>
-              <div className="space-y-4">
-                {[
-                  { title: "No hidden marketplace fees", desc: "You don't pay 20% when a client finds you on Google and books through your page." },
-                  { title: "AI that works for you", desc: "Smart nudges tell you who to rebook, which invoices are overdue, and when your calendar is empty." },
-                  { title: "Your client data, front and centre", desc: "Colour formulas, lash preferences, skin types — not buried in a tab nobody clicks." },
-                  { title: "Simple, honest pricing", desc: "No per-seat fees, no feature gates, no surprise charges. One plan, everything included." },
-                  { title: "Built for beauty, not for everyone", desc: "Every label, every field, every default is designed for how beauty professionals actually work." },
-                ].map((item, i) => (
-                  <motion.div key={i} initial={{ opacity: 0, x: -10 }} whileInView={{ opacity: 1, x: 0 }} viewport={viewportConfig} transition={{ delay: i * 0.08 }} className="flex items-start gap-3">
-                    <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <Check className="w-3 h-3 text-white" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-foreground text-sm">{item.title}</p>
-                      <p className="text-[13px] text-text-secondary">{item.desc}</p>
-                    </div>
-                  </motion.div>
-                ))}
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={viewportConfig} transition={{ duration: 0.4 }} className="inline-flex items-center gap-2 px-3.5 py-1 bg-surface border border-border-light rounded-full text-[11px] font-medium text-text-secondary mb-5">
+              <TrendingUp className="w-3 h-3" /> How Magic stacks up
+            </motion.div>
+            <motion.h2
+              variants={sectionHeadingVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={viewportConfig}
+              transition={sectionTransition}
+              className="text-[1.75rem] sm:text-[2.25rem] font-bold text-foreground leading-tight mb-3"
+            >
+              Why switch from Fresha or Timely?
+            </motion.h2>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={viewportConfig}
+              transition={{ delay: 0.1, ...sectionTransition }}
+              className="text-text-secondary text-[15px] leading-relaxed"
+            >
+              Flat pricing, no per-staff fees, and AI that actually helps you rebook.
+            </motion.p>
+          </div>
+
+          {/* Visual comparison table */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={viewportConfig}
+            transition={{ duration: 0.5 }}
+            className="bg-card-bg rounded-2xl border border-border-light overflow-hidden"
+          >
+            {/* Column headers */}
+            <div className="grid grid-cols-[1.3fr_1fr_1fr_1fr] sm:grid-cols-[1.4fr_1fr_1fr_1fr] gap-0 border-b border-border-light">
+              <div className="px-2.5 sm:px-5 py-4 sm:py-5 flex items-end">
+                <p className="text-[10px] sm:text-[11px] text-text-tertiary uppercase tracking-wider font-semibold">Feature</p>
+              </div>
+              <div className="bg-primary/5 border-x border-primary/20 px-2 sm:px-5 py-4 sm:py-5 text-center">
+                <div className="flex items-center justify-center gap-1 sm:gap-1.5">
+                  <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-[4px] flex items-center justify-center" style={{ backgroundColor: "var(--logo-green)" }}>
+                    <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 bg-card-bg rounded-[1px]" />
+                  </div>
+                  <span className="text-[12px] sm:text-[14px] font-bold text-primary">Magic</span>
+                </div>
+              </div>
+              <div className="px-2 sm:px-5 py-4 sm:py-5 text-center">
+                <span className="text-[11px] sm:text-[13px] font-semibold text-text-secondary">Fresha</span>
+              </div>
+              <div className="px-2 sm:px-5 py-4 sm:py-5 text-center">
+                <span className="text-[11px] sm:text-[13px] font-semibold text-text-secondary">Timely</span>
               </div>
             </div>
 
-            {/* Social proof */}
-            <div className="space-y-4">
-              <motion.div
-                variants={testimonialVariants}
-                initial="hidden"
-                whileInView="visible"
-                viewport={viewportConfig}
-                transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
-                className="bg-card-bg rounded-xl border border-border-light p-6 relative"
-              >
-                <div className="absolute -top-2 -left-2 text-5xl text-foreground/5">&ldquo;</div>
-                <div className="flex items-center gap-1 mb-3">
-                  {[1,2,3,4,5].map((s) => <Star key={s} className="w-4 h-4 fill-primary text-primary" />)}
-                </div>
-                <p className="text-sm text-foreground leading-relaxed mb-4">
-                  I was paying $180/mo for software I used 10% of. Magic gave me exactly what I needed for my salon in under 5 minutes.
-                </p>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-surface rounded-full flex items-center justify-center"><span className="text-xs font-bold text-foreground">SK</span></div>
-                  <div>
-                    <p className="text-[13px] font-semibold text-foreground">Sarah K.</p>
-                    <p className="text-[11px] text-text-tertiary">Hair salon owner, Melbourne</p>
-                  </div>
-                </div>
-              </motion.div>
-              <motion.div
-                variants={testimonialVariants}
-                initial="hidden"
-                whileInView="visible"
-                viewport={viewportConfig}
-                transition={{ delay: 0.08, duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
-                className="bg-card-bg rounded-xl border border-border-light p-6 relative"
-              >
-                <div className="absolute -top-2 -left-2 text-5xl text-foreground/5">&ldquo;</div>
-                <div className="flex items-center gap-1 mb-3">
-                  {[1,2,3,4,5].map((s) => <Star key={s} className="w-4 h-4 fill-primary text-primary" />)}
-                </div>
-                <p className="text-sm text-foreground leading-relaxed mb-4">
-                  Switched from Fresha and never looked back. No hidden fees, no surprises. The rebooking nudges alone have paid for themselves.
-                </p>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-surface rounded-full flex items-center justify-center"><span className="text-xs font-bold text-foreground">ER</span></div>
-                  <div>
-                    <p className="text-[13px] font-semibold text-foreground">Emma R.</p>
-                    <p className="text-[11px] text-text-tertiary">Lash Tech, Melbourne</p>
-                  </div>
-                </div>
-              </motion.div>
-              <motion.div
-                variants={testimonialVariants}
-                initial="hidden"
-                whileInView="visible"
-                viewport={viewportConfig}
-                transition={{ delay: 0.16, duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
-                className="bg-card-bg rounded-xl border border-border-light p-6 relative"
-              >
-                <div className="absolute -top-2 -left-2 text-5xl text-foreground/5">&ldquo;</div>
-                <div className="flex items-center gap-1 mb-3">
-                  {[1,2,3,4,5].map((s) => <Star key={s} className="w-4 h-4 fill-primary text-primary" />)}
-                </div>
-                <p className="text-sm text-foreground leading-relaxed mb-4">
-                  The client portal and gift cards changed everything. My clients book themselves, pay online, and gift cards sell themselves around the holidays.
-                </p>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-surface rounded-full flex items-center justify-center"><span className="text-xs font-bold text-foreground">JT</span></div>
-                  <div>
-                    <p className="text-[13px] font-semibold text-foreground">Jess T.</p>
-                    <p className="text-[11px] text-text-tertiary">Nail Tech, Sydney</p>
-                  </div>
-                </div>
-              </motion.div>
+            {/* Section: Pricing */}
+            <div className="grid grid-cols-[1.3fr_1fr_1fr_1fr] sm:grid-cols-[1.4fr_1fr_1fr_1fr] bg-surface/50 border-b border-border-light">
+              <div className="col-span-4 px-3 sm:px-5 py-2">
+                <p className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider">Pricing</p>
+              </div>
             </div>
-          </div>
+
+            {/* Rows */}
+            {([
+              { kind: "row", icon: Receipt,      feature: "Pricing model",     sub: null,                   magic: { text: "Flat monthly", tone: "win" },  fresha: { text: "Per staff", tone: "loss" }, timely: { text: "Per staff", tone: "loss" } },
+              { kind: "row", icon: Users,        feature: "Solo operator",     sub: null,                   magic: { text: "A$29/mo",     tone: "win" },  fresha: { text: "A$45/mo",   tone: "neutral" }, timely: { text: "A$42/mo",  tone: "neutral" } },
+              { kind: "row", icon: Users,        feature: "5-person team",     sub: null,                   magic: { text: "A$59/mo",     tone: "win" },  fresha: { text: "A$165/mo",  tone: "loss" },    timely: { text: "A$210/mo", tone: "loss" } },
+              { kind: "divider", label: "Core features" },
+              { kind: "row", icon: Calendar,     feature: "Online booking",    sub: null,                   magic: { text: "check",        tone: "win" },  fresha: { text: "check",     tone: "neutral" }, timely: { text: "check",    tone: "neutral" } },
+              { kind: "row", icon: Bell,         feature: "Reminders",         sub: null,                   magic: { text: "Email + SMS",  tone: "win" },  fresha: { text: "Email + SMS", tone: "neutral" }, timely: { text: "Email + SMS", tone: "neutral" } },
+              { kind: "row", icon: Zap,          feature: "Smart rebooking",   sub: "AI nudges overdue clients",    magic: { text: "check",        tone: "win" },  fresha: { text: "cross",     tone: "loss" },    timely: { text: "cross",    tone: "loss" } },
+              { kind: "row", icon: BrainCircuit, feature: "AI insights",       sub: "No-shows, gaps, revenue",       magic: { text: "check",        tone: "win" },  fresha: { text: "cross",     tone: "loss" },    timely: { text: "cross",    tone: "loss" } },
+              { kind: "row", icon: Bot,          feature: "AI assistant",      sub: "Chat that reads & writes data", magic: { text: "check",        tone: "win" },  fresha: { text: "cross",     tone: "loss" },    timely: { text: "cross",    tone: "loss" } },
+              { kind: "divider", label: "Specialty features" },
+              { kind: "row", icon: ScrollText,   feature: "Wedding proposals", sub: "Makeup artists",             magic: { text: "check",        tone: "win" },  fresha: { text: "cross",     tone: "loss" },    timely: { text: "cross",    tone: "loss" } },
+              { kind: "row", icon: ClipboardList, feature: "Treatment notes",  sub: "Skin clinics",               magic: { text: "check",        tone: "win" },  fresha: { text: "cross",     tone: "loss" },    timely: { text: "cross",    tone: "loss" } },
+              { kind: "row", icon: Camera,       feature: "Before & after photos", sub: "Lash & nail",             magic: { text: "check",        tone: "win" },  fresha: { text: "cross",     tone: "loss" },    timely: { text: "cross",    tone: "loss" } },
+              { kind: "row", icon: Crown,        feature: "Memberships",       sub: "Spas & wellness",            magic: { text: "check",        tone: "win" },  fresha: { text: "check",     tone: "neutral" }, timely: { text: "cross",    tone: "loss" } },
+              { kind: "row", icon: Ticket,       feature: "Gift cards",        sub: null,                         magic: { text: "check",        tone: "win" },  fresha: { text: "check",     tone: "neutral" }, timely: { text: "check",    tone: "neutral" } },
+            ] as const).map((item, i) => {
+              if (item.kind === "divider") {
+                return (
+                  <div key={i} className="grid grid-cols-[1.3fr_1fr_1fr_1fr] sm:grid-cols-[1.4fr_1fr_1fr_1fr] bg-surface/50 border-b border-border-light">
+                    <div className="col-span-4 px-3 sm:px-5 py-2">
+                      <p className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider">{item.label}</p>
+                    </div>
+                  </div>
+                );
+              }
+
+              const RowIcon = item.icon;
+              const renderCell = (cell: { text: string; tone: string }, isMagic: boolean) => {
+                if (cell.text === "check") {
+                  return isMagic
+                    ? <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center"><Check className="w-3.5 h-3.5 text-white" strokeWidth={3} /></div>
+                    : <div className="w-6 h-6 rounded-full bg-text-tertiary/15 flex items-center justify-center"><Check className="w-3.5 h-3.5 text-text-secondary" strokeWidth={2.5} /></div>;
+                }
+                if (cell.text === "cross") {
+                  return <div className="w-6 h-6 rounded-full bg-red-50 flex items-center justify-center"><span className="text-red-400 text-[13px] font-bold leading-none">✕</span></div>;
+                }
+                return (
+                  <span className={`text-[11px] sm:text-[13px] text-center leading-tight ${isMagic ? "text-primary font-bold" : cell.tone === "loss" ? "text-red-500/80" : "text-text-secondary"}`}>
+                    {cell.text}
+                  </span>
+                );
+              };
+
+              return (
+                <div
+                  key={i}
+                  className="grid grid-cols-[1.3fr_1fr_1fr_1fr] sm:grid-cols-[1.4fr_1fr_1fr_1fr] items-center border-b border-border-light last:border-b-0"
+                >
+                  <div className="px-2.5 sm:px-5 py-3 flex items-center gap-2 sm:gap-3 min-w-0">
+                    <div className="hidden sm:flex w-7 h-7 rounded-lg bg-foreground/5 items-center justify-center flex-shrink-0">
+                      <RowIcon className="w-3.5 h-3.5 text-text-secondary" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[12px] sm:text-[13px] font-medium text-foreground leading-tight sm:truncate">{item.feature}</p>
+                      {item.sub && <p className="text-[10px] sm:text-[11px] text-text-tertiary leading-tight mt-0.5 sm:truncate">{item.sub}</p>}
+                    </div>
+                  </div>
+                  <div className="px-1.5 sm:px-5 py-3 bg-primary/5 border-x border-primary/20 flex items-center justify-center min-w-0">
+                    {renderCell(item.magic, true)}
+                  </div>
+                  <div className="px-1.5 sm:px-5 py-3 flex items-center justify-center min-w-0">
+                    {renderCell(item.fresha, false)}
+                  </div>
+                  <div className="px-1.5 sm:px-5 py-3 flex items-center justify-center min-w-0">
+                    {renderCell(item.timely, false)}
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Footer — time + money saved */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 border-t-2 border-primary/20 bg-primary/5">
+              <div className="px-6 py-5 flex items-center gap-3 border-b sm:border-b-0 sm:border-r border-primary/20">
+                <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center flex-shrink-0">
+                  <Zap className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-[11px] text-text-tertiary uppercase tracking-wider font-semibold">Admin time saved</p>
+                  <p className="text-[20px] font-bold text-primary leading-tight">~6 hrs / week</p>
+                </div>
+              </div>
+              <div className="px-6 py-5 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center flex-shrink-0">
+                  <TrendingUp className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-[11px] text-text-tertiary uppercase tracking-wider font-semibold">Money saved</p>
+                  <p className="text-[20px] font-bold text-primary leading-tight">A$150 / month</p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+          <p className="text-[11px] text-text-tertiary text-center mt-3">Based on published pricing · 2026 · AUD</p>
         </div>
       </motion.section>
 
@@ -1580,7 +1473,7 @@ export default function LandingPage() {
         transition={{ duration: 0.5 }}
         className="py-12 sm:py-20 bg-card-bg"
       >
-        <div className="max-w-md mx-auto px-4 sm:px-6 text-center">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
           <motion.h2
             variants={sectionHeadingVariants}
             initial="hidden"
@@ -1589,69 +1482,139 @@ export default function LandingPage() {
             transition={sectionTransition}
             className="text-[1.75rem] sm:text-[2.25rem] font-bold text-foreground mb-3 leading-tight"
           >
-            One plan. Everything included.
+            Flat pricing. No per-staff fees. Ever.
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={viewportConfig}
             transition={{ delay: 0.1, ...sectionTransition }}
-            className="text-text-secondary mb-10 text-[15px]"
+            className="text-text-secondary mb-8 text-[15px]"
           >
-            No tiers. No per-user fees. No feature gates.
+            14-day free trial on every plan. No credit card required.
           </motion.p>
 
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={viewportConfig}
-            transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
-            className="bg-card-bg rounded-2xl border border-border-light p-8 text-left"
-          >
-            <div className="mb-6">
-              <motion.span
-                initial={{ opacity: 0, scale: 0.8 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={viewportConfig}
-                transition={{ delay: 0.2, duration: 0.4, type: "spring", stiffness: 200, damping: 12 }}
-                className="text-[40px] font-bold text-foreground inline-block"
-              >
-                $49
-              </motion.span>
-              <span className="text-text-secondary text-[15px]">/month</span>
-            </div>
-            <div className="space-y-3 mb-8">
-              {[
-                "Workspace built from your answers",
-                "Tools, fields, and labels that match your business",
-                "Add-ons — install anytime from your sidebar",
-                "Unlimited team members",
-                "AI-powered workspace tuning",
-                "Priority email support",
-              ].map((item, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <Check className="w-4 h-4 text-primary flex-shrink-0" />
-                  <span className="text-sm text-foreground">{item}</span>
-                </div>
-              ))}
-            </div>
-            <motion.div
-              variants={ctaPulseVariants}
-              initial="hidden"
-              whileInView="visible"
-              viewport={viewportConfig}
+          {/* Billing cycle toggle */}
+          <div className="inline-flex items-center p-1 bg-surface border border-border-light rounded-full mb-10">
+            <button
+              onClick={() => setBillingCycle("monthly")}
+              className={`px-4 py-1.5 rounded-full text-[13px] font-semibold transition-all cursor-pointer ${
+                billingCycle === "monthly"
+                  ? "bg-foreground text-background"
+                  : "text-text-secondary hover:text-foreground"
+              }`}
             >
-              <Link href="/onboarding">
-                <Button size="lg" className="w-full cta-glow">
-                  Start building <ArrowRight className="w-5 h-5" />
-                </Button>
-              </Link>
-            </motion.div>
-            <p className="text-[11px] text-text-tertiary mt-3 text-center">
-              14-day free trial. No credit card required to start.<br />
-              Extra integrations from $10/mo. AI credits from $5 per 10.
-            </p>
-          </motion.div>
+              Monthly
+            </button>
+            <button
+              onClick={() => setBillingCycle("annual")}
+              className={`px-4 py-1.5 rounded-full text-[13px] font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                billingCycle === "annual"
+                  ? "bg-foreground text-background"
+                  : "text-text-secondary hover:text-foreground"
+              }`}
+            >
+              Annual
+              <span
+                className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                  billingCycle === "annual" ? "bg-primary text-white" : "bg-primary/15 text-primary"
+                }`}
+              >
+                SAVE 20%
+              </span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {[
+              {
+                name: "Starter",
+                monthly: 29,
+                annual: 24,
+                annualTotal: 288,
+                desc: "For solo operators getting organised.",
+                features: ["1 team member", "Clients, bookings, calendar", "Invoicing & payments", "Online booking page", "Email reminders"],
+                highlighted: false,
+              },
+              {
+                name: "Growth",
+                monthly: 59,
+                annual: 49,
+                annualTotal: 588,
+                desc: "For growing salons that need automation.",
+                features: ["Up to 5 team members", "Everything in Starter", "Automations & workflows", "SMS reminders & campaigns", "Business Insights", "CSV import / export", "Embeddable booking widget"],
+                highlighted: true,
+              },
+              {
+                name: "Scale",
+                monthly: 99,
+                annual: 79,
+                annualTotal: 948,
+                desc: "For multi-location or high-volume businesses.",
+                features: ["Unlimited team members", "Everything in Growth", "Client portal", "Proposals & e-signatures", "Memberships & packages", "Marketing campaigns", "Gift cards & loyalty", "Priority support"],
+                highlighted: false,
+              },
+            ].map((tier, idx) => {
+              const displayPrice = billingCycle === "annual" ? tier.annual : tier.monthly;
+              return (
+                <motion.div
+                  key={tier.name}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={viewportConfig}
+                  transition={{ delay: idx * 0.08, duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
+                  className={`rounded-2xl border p-6 sm:p-7 text-left flex flex-col ${
+                    tier.highlighted
+                      ? "border-foreground/20 shadow-xl scale-[1.03] -translate-y-1 bg-card-bg relative"
+                      : "border-border-light bg-card-bg"
+                  }`}
+                >
+                  {tier.highlighted && (
+                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-[11px] font-semibold bg-foreground text-background px-3 py-1 rounded-full">
+                      Most popular
+                    </span>
+                  )}
+                  <div className="mb-1">
+                    <h3 className="text-[15px] font-bold text-foreground">{tier.name}</h3>
+                    <p className="text-[12px] text-text-secondary mt-0.5">{tier.desc}</p>
+                  </div>
+                  <div className="my-4">
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-[36px] font-bold text-foreground tabular-nums">A${displayPrice}</span>
+                      <span className="text-text-secondary text-[14px]">/month</span>
+                    </div>
+                    <p className="text-[12px] text-text-tertiary mt-1 h-4">
+                      {billingCycle === "annual" ? `Billed A$${tier.annualTotal}/year` : "\u00A0"}
+                    </p>
+                  </div>
+                  <div className="space-y-2.5 mb-6 flex-1">
+                    {tier.features.map((f, i) => (
+                      <div key={i} className="flex items-center gap-2.5">
+                        <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                        <span className="text-[13px] text-foreground">{f}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <Link
+                    href="/onboarding"
+                    className={`inline-flex w-full items-center justify-center gap-2 rounded-full px-6 py-3 text-[14px] font-semibold tracking-[-0.01em] transition-all ${
+                      tier.highlighted
+                        ? "bg-foreground text-background hover:opacity-90 cta-glow"
+                        : "bg-surface text-foreground hover:bg-foreground hover:text-background border border-border-light"
+                    }`}
+                  >
+                    Start free trial <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </motion.div>
+              );
+            })}
+          </div>
+          <p className="text-[12px] text-text-secondary mt-6 font-medium">
+            A 5-person salon on Fresha: A$165/mo. On Timely: A$210/mo. On Magic: A$59/mo. All prices in AUD.
+          </p>
+          <p className="text-[11px] text-text-tertiary mt-2">
+            All prices in AUD. {billingCycle === "annual" ? "Billed annually. Cancel anytime." : "Billed monthly. Switch to annual to save 20%."}
+          </p>
         </div>
       </motion.section>
 
@@ -1669,7 +1632,7 @@ export default function LandingPage() {
             transition={{ duration: 0.5 }}
             className="mb-5"
           >
-            <span className="text-[13px] font-medium" style={{ color: "#7CFE9D" }}>Built for beauty professionals</span>
+            <span className="text-[13px] font-medium" style={{ color: "var(--logo-green)" }}>Built for beauty professionals</span>
           </motion.div>
           <motion.h2
             variants={sectionHeadingVariants}
@@ -1690,18 +1653,19 @@ export default function LandingPage() {
             className="mb-10 text-[15px] max-w-md mx-auto"
             style={{ color: "#888" }}
           >
-            Clients, bookings, invoices, and AI-powered rebooking — all in one platform that speaks your language.
+            Everything your beauty business needs. One login. One price. No per-staff surprises.
           </motion.p>
           <motion.div variants={ctaPulseVariants} initial="hidden" whileInView="visible" viewport={viewportConfig}>
-            <Link href="/onboarding">
-              <Button size="lg" className="px-10 bg-primary text-foreground hover:bg-primary-hover shadow-none hover:shadow-none cta-glow">
-                Get started free <ArrowRight className="w-5 h-5" />
-              </Button>
+            <Link
+              href="/onboarding"
+              className="inline-flex items-center justify-center gap-2.5 rounded-full bg-primary px-10 py-3.5 text-[15px] font-semibold tracking-[-0.01em] text-foreground transition-colors hover:bg-primary-hover cta-glow"
+            >
+              Start free trial <ArrowRight className="w-5 h-5" />
             </Link>
           </motion.div>
         </div>
 
-        {/* Intelligence strip */}
+        {/* AI capabilities strip */}
         <div className="relative max-w-5xl mx-auto px-6 pb-8">
           <motion.div
             initial={{ opacity: 0 }}
@@ -1710,70 +1674,46 @@ export default function LandingPage() {
             transition={{ duration: 0.6 }}
             className="border-t border-white/[0.06] pt-10 pb-8"
           >
-            {/* Animated pipeline */}
-            <div className="relative flex items-center justify-center gap-3 sm:gap-4 mb-6">
+            {/* AI feature pills */}
+            <div className="flex flex-wrap items-center justify-center gap-3 mb-6">
               {[
-                { icon: Zap, label: "Collects" },
-                { icon: Lightbulb, label: "Learns" },
-                { icon: TrendingUp, label: "Predicts" },
-                { icon: Sparkles, label: "Acts" },
-              ].map((node, i) => (
+                { icon: Send, label: "Send invoices" },
+                { icon: Calendar, label: "Check availability" },
+                { icon: Users, label: "Look up clients" },
+                { icon: BarChart3, label: "Get insights" },
+                { icon: Bell, label: "Manage bookings" },
+                { icon: Sparkles, label: "Smart nudges" },
+              ].map((item, i) => (
                 <motion.div
-                  key={node.label}
+                  key={item.label}
                   initial={{ opacity: 0, scale: 0.8 }}
                   whileInView={{ opacity: 1, scale: 1 }}
                   viewport={viewportConfig}
-                  transition={{ delay: 0.1 + i * 0.08, duration: 0.3 }}
-                  className="flex items-center gap-3 sm:gap-4"
+                  transition={{ delay: 0.1 + i * 0.06, duration: 0.3 }}
+                  className="flex items-center gap-2 px-3.5 py-2 rounded-lg border"
+                  style={{ backgroundColor: "rgba(255,255,255,0.03)", borderColor: "rgba(255,255,255,0.08)" }}
                 >
-                  {i > 0 && (
-                    <div className="w-6 sm:w-10 h-px relative overflow-hidden" style={{ backgroundColor: "rgba(255,255,255,0.06)" }}>
-                      <motion.div
-                        className="absolute inset-y-0 w-4"
-                        style={{ background: "linear-gradient(90deg, transparent, #7CFE9D, transparent)" }}
-                        animate={{ left: ["-16px", "calc(100% + 16px)"] }}
-                        transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.3, ease: "linear" }}
-                      />
-                    </div>
-                  )}
-                  <motion.div
-                    animate={{ boxShadow: ["0 0 0 0 rgba(124,254,157,0)", "0 0 14px 2px rgba(124,254,157,0.1)", "0 0 0 0 rgba(124,254,157,0)"] }}
-                    transition={{ duration: 2.5, repeat: Infinity, delay: i * 0.5 }}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg border"
-                    style={{ backgroundColor: "rgba(255,255,255,0.03)", borderColor: "rgba(255,255,255,0.08)" }}
-                  >
-                    <node.icon className="w-3.5 h-3.5" style={{ color: "#7CFE9D" }} />
-                    <span className="text-[13px] font-medium" style={{ color: "#ccc" }}>{node.label}</span>
-                  </motion.div>
+                  <item.icon className="w-3.5 h-3.5" style={{ color: "var(--logo-green)" }} />
+                  <span className="text-[13px] font-medium" style={{ color: "#ccc" }}>{item.label}</span>
                 </motion.div>
               ))}
             </div>
 
-            {/* ML line */}
             <p className="text-center text-[15px] mb-1.5" style={{ color: "#777" }}>
-              AI that doesn&apos;t just answer questions — it shapes your entire workspace.
+              AI that knows your clients, your bookings, and your services — not a generic chatbot.
             </p>
             <p className="text-center text-[15px]" style={{ color: "#777" }}>
-              From onboarding to daily use, it learns how you work and <span className="font-semibold" style={{ color: "#7CFE9D" }}>keeps adapting</span>.
+              Type what you need. <span className="font-semibold" style={{ color: "var(--logo-green)" }}>Magic handles the rest</span>.
             </p>
           </motion.div>
 
           {/* Bottom bar */}
           <div className="border-t border-white/[0.06] py-6 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ backgroundColor: "#7CFE9D" }}>
+              <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ backgroundColor: "var(--logo-green)" }}>
                 <div className="w-2.5 h-2.5 bg-card-bg rounded-sm" />
               </div>
               <span className="text-sm font-semibold" style={{ color: "#777" }}>Magic</span>
-            </div>
-            <div className="flex items-center gap-2.5">
-              <span className="text-[13px]" style={{ color: "#555" }}>Powered by</span>
-              {["Anthropic", "OpenAI", "Kimi"].map((name, i) => (
-                <span key={name} className="flex items-center gap-2.5">
-                  {i > 0 && <span className="text-[13px]" style={{ color: "#444" }}>&middot;</span>}
-                  <span className="text-sm font-semibold" style={{ color: "#888" }}>{name}</span>
-                </span>
-              ))}
             </div>
             <div className="flex items-center gap-4">
               <Link href="/privacy" className="text-xs hover:underline" style={{ color: "#555" }}>Privacy</Link>

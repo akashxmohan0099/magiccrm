@@ -1,281 +1,172 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { AutomationRule, RecurringTaskTemplate } from "@/types/models";
+import type { AutomationRule, AutomationType } from "@/types/models";
 import { generateId } from "@/lib/id";
-import { logActivity } from "@/lib/activity-logger";
 import { toast } from "@/components/ui/Toast";
-import { validateAutomationRule, sanitize } from "@/lib/validation";
-import { useRemindersStore } from "@/store/reminders";
 import {
   fetchAutomationRules,
-  dbCreateRule,
-  dbUpdateRule,
-  dbDeleteRule,
-  dbUpsertRules,
-  mapRuleFromDB,
-  fetchRecurringTemplates,
-  dbCreateTemplate,
-  dbDeleteTemplate,
-  dbUpsertTemplates,
-  mapTemplateFromDB,
+  dbCreateAutomationRule,
+  dbUpdateAutomationRule,
 } from "@/lib/db/automations";
 
-const BUILT_IN_TEMPLATES: Omit<RecurringTaskTemplate, "id" | "createdAt">[] = [
-  { name: "Weekly Report", description: "Send a weekly activity summary", frequency: "weekly", category: "reporting", taskTitle: "Send weekly report", isBuiltIn: true },
-  { name: "Monthly Review", description: "Review monthly performance", frequency: "monthly", category: "reviews", taskTitle: "Monthly business review", isBuiltIn: true },
-  { name: "Quarterly Check-In", description: "Check in with key clients", frequency: "quarterly", category: "reviews", taskTitle: "Quarterly client check-in", isBuiltIn: true },
-  { name: "Daily Inbox Clear", description: "Clear and respond to all messages", frequency: "daily", category: "admin", taskTitle: "Clear inbox", isBuiltIn: true },
+const DEFAULT_RULES: {
+  type: AutomationType;
+  messageTemplate: string;
+  timingValue?: number;
+  timingUnit?: "minutes" | "hours" | "days";
+}[] = [
+  {
+    type: "booking_confirmation",
+    messageTemplate:
+      "Hi {clientName}, your appointment on {date} at {time} has been confirmed!",
+  },
+  {
+    type: "appointment_reminder",
+    messageTemplate:
+      "Reminder: You have an appointment tomorrow at {time}. See you then!",
+    timingValue: 24,
+    timingUnit: "hours",
+  },
+  {
+    type: "post_service_followup",
+    messageTemplate:
+      "Thanks for visiting us, {clientName}! We hope you enjoyed your experience.",
+    timingValue: 2,
+    timingUnit: "hours",
+  },
+  {
+    type: "review_request",
+    messageTemplate:
+      "Hi {clientName}, we'd love to hear your feedback! Please leave us a review.",
+    timingValue: 1,
+    timingUnit: "days",
+  },
+  {
+    type: "rebooking_nudge",
+    messageTemplate:
+      "Hi {clientName}, it's been {daysSince} days since your last visit to {businessName}. Ready to book your next appointment?",
+    timingValue: 30,
+    timingUnit: "days",
+  },
+  {
+    type: "no_show_followup",
+    messageTemplate:
+      "Hi {clientName}, we missed you today. Would you like to reschedule?",
+    timingValue: 1,
+    timingUnit: "hours",
+  },
+  {
+    type: "invoice_auto_send",
+    messageTemplate:
+      "Hi {clientName}, your invoice #{invoiceNumber} is ready. Total: {total}.",
+  },
+  {
+    type: "cancellation_confirmation",
+    messageTemplate:
+      "Your appointment on {date} has been cancelled. Contact us to reschedule anytime.",
+  },
 ];
-
-function initBuiltInTemplates(): RecurringTaskTemplate[] {
-  return BUILT_IN_TEMPLATES.map((t) => ({
-    ...t,
-    id: generateId(),
-    createdAt: new Date().toISOString(),
-  }));
-}
 
 interface AutomationsStore {
   rules: AutomationRule[];
-  recurringTemplates: RecurringTaskTemplate[];
-  addRule: (data: Omit<AutomationRule, "id" | "createdAt">, workspaceId?: string) => void;
-  updateRule: (id: string, data: Partial<AutomationRule>, workspaceId?: string) => void;
-  deleteRule: (id: string, workspaceId?: string) => void;
+  updateRule: (
+    id: string,
+    data: Partial<AutomationRule>,
+    workspaceId?: string
+  ) => void;
   toggleRule: (id: string, workspaceId?: string) => void;
-  addRecurringTemplate: (data: Omit<RecurringTaskTemplate, "id" | "createdAt">, workspaceId?: string) => void;
-  deleteRecurringTemplate: (id: string, workspaceId?: string) => void;
-  createTaskFromTemplate: (templateId: string) => void;
-
-  // Supabase sync
-  syncToSupabase: (workspaceId: string) => Promise<void>;
   loadFromSupabase: (workspaceId: string) => Promise<void>;
+  initDefaults: (workspaceId?: string) => void;
 }
 
 export const useAutomationsStore = create<AutomationsStore>()(
   persist(
     (set, get) => ({
       rules: [],
-      recurringTemplates: initBuiltInTemplates(),
 
-      addRule: (data, workspaceId?) => {
-        // Validate
-        const validation = validateAutomationRule({
-          name: data.name,
-          trigger: data.trigger,
-          action: data.action,
-        });
-        if (!validation.valid) {
-          validation.errors.forEach(error => toast(error, "error"));
-          return;
-        }
-
-        const sanitizedData = {
-          ...data,
-          name: sanitize(data.name, 200),
-        };
-
-        const rule: AutomationRule = { ...sanitizedData, id: generateId(), createdAt: new Date().toISOString() };
-        set((s) => ({ rules: [...s.rules, rule] }));
-        logActivity("create", "automations", `Created automation "${rule.name}"`);
-        toast(`Created automation "${rule.name}"`);
-
-        if (workspaceId) {
-          dbCreateRule(workspaceId, rule).catch((err) => {
-            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving automation rule" }));
-          });
-        }
-      },
-
-      updateRule: (id, data, workspaceId?) => {
-        // Validate if name changed
-        if (data.name !== undefined) {
-          const validation = validateAutomationRule({
-            name: data.name,
-            trigger: data.trigger,
-            action: data.action,
-          });
-          if (!validation.valid) {
-            validation.errors.forEach(error => toast(error, "error"));
-            return;
-          }
-        }
-
-        const previousRules = get().rules;
-        const sanitizedData = {
-          ...data,
-          ...(data.name !== undefined && { name: sanitize(data.name, 200) }),
-        };
-
-        set((s) => ({
-          rules: s.rules.map((r) => (r.id === id ? { ...r, ...sanitizedData } : r)),
-        }));
-        logActivity("update", "automations", "Updated automation");
-        toast("Automation updated");
-
-        if (workspaceId) {
-          dbUpdateRule(workspaceId, id, sanitizedData).catch((err) => {
-            set({ rules: previousRules });
-            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating automation rule" }));
-          });
-        }
-      },
-
-      deleteRule: (id, workspaceId?) => {
-        const previousRules = get().rules;
-        set((s) => ({ rules: s.rules.filter((r) => r.id !== id) }));
-        toast("Automation deleted", "info");
-
-        if (workspaceId) {
-          dbDeleteRule(workspaceId, id).catch((err) => {
-            set({ rules: previousRules });
-            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting automation rule" }));
-          });
-        }
-      },
-
-      toggleRule: (id, workspaceId?) => {
+      updateRule: (id, data, workspaceId) => {
+        const now = new Date().toISOString();
         set((s) => ({
           rules: s.rules.map((r) =>
-            r.id === id ? { ...r, enabled: !r.enabled } : r
+            r.id === id ? { ...r, ...data, updatedAt: now } : r
           ),
         }));
+        toast("Automation updated");
+        if (workspaceId) {
+          dbUpdateAutomationRule(
+            workspaceId,
+            id,
+            data as Record<string, unknown>
+          ).catch(console.error);
+        }
+      },
+
+      toggleRule: (id, workspaceId) => {
         const rule = get().rules.find((r) => r.id === id);
-        if (rule) toast(`Automation "${rule.name}" ${rule.enabled ? "enabled" : "disabled"}`);
-
-        if (workspaceId && rule) {
-          dbUpdateRule(workspaceId, id, { enabled: rule.enabled }).catch((err) => {
-            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "toggling automation rule" }));
-          });
-        }
-      },
-
-      addRecurringTemplate: (data, workspaceId?) => {
-        const template: RecurringTaskTemplate = {
-          ...data,
-          id: generateId(),
-          createdAt: new Date().toISOString(),
-        };
-        set((s) => ({ recurringTemplates: [...s.recurringTemplates, template] }));
-        logActivity("create", "automations", `Created recurring template "${template.name}"`);
-        toast(`Template "${template.name}" created`);
-
+        if (!rule) return;
+        const now = new Date().toISOString();
+        const newEnabled = !rule.enabled;
+        set((s) => ({
+          rules: s.rules.map((r) =>
+            r.id === id ? { ...r, enabled: newEnabled, updatedAt: now } : r
+          ),
+        }));
+        toast(
+          `Automation ${newEnabled ? "enabled" : "disabled"}`
+        );
         if (workspaceId) {
-          dbCreateTemplate(workspaceId, template).catch((err) => {
-            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving recurring template" }));
-          });
+          dbUpdateAutomationRule(workspaceId, id, {
+            enabled: newEnabled,
+          } as unknown as Record<string, unknown>).catch(console.error);
         }
       },
 
-      deleteRecurringTemplate: (id, workspaceId?) => {
-        const template = get().recurringTemplates.find((t) => t.id === id);
-        if (template?.isBuiltIn) {
-          toast("Built-in templates cannot be deleted", "error");
-          return;
-        }
-        const previousRecurringTemplates = get().recurringTemplates;
-        set((s) => ({ recurringTemplates: s.recurringTemplates.filter((t) => t.id !== id) }));
-        logActivity("delete", "automations", "Deleted recurring template");
-        toast("Template deleted", "info");
+      initDefaults: (workspaceId) => {
+        const existing = get().rules;
+        const existingTypes = new Set(existing.map((r) => r.type));
+        const now = new Date().toISOString();
 
-        if (workspaceId) {
-          dbDeleteTemplate(workspaceId, id).catch((err) => {
-            set({ recurringTemplates: previousRecurringTemplates });
-            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting recurring template" }));
-          });
+        const newRules: AutomationRule[] = [];
+        for (const def of DEFAULT_RULES) {
+          if (!existingTypes.has(def.type)) {
+            const rule: AutomationRule = {
+              id: generateId(),
+              workspaceId: workspaceId || "",
+              type: def.type,
+              enabled: false,
+              channel: "email",
+              messageTemplate: def.messageTemplate,
+              timingValue: def.timingValue,
+              timingUnit: def.timingUnit,
+              createdAt: now,
+              updatedAt: now,
+            };
+            newRules.push(rule);
+          }
+        }
+
+        if (newRules.length > 0) {
+          set((s) => ({ rules: [...s.rules, ...newRules] }));
+          if (workspaceId) {
+            for (const rule of newRules) {
+              dbCreateAutomationRule(
+                workspaceId,
+                rule as unknown as Record<string, unknown>
+              ).catch(console.error);
+            }
+          }
         }
       },
 
-      createTaskFromTemplate: (templateId) => {
-        const template = get().recurringTemplates.find((t) => t.id === templateId);
-        if (!template) return;
-
-        const dueDate = new Date();
-        switch (template.frequency) {
-          case "daily":
-            dueDate.setDate(dueDate.getDate() + 1);
-            break;
-          case "weekly":
-            dueDate.setDate(dueDate.getDate() + 7);
-            break;
-          case "biweekly":
-            dueDate.setDate(dueDate.getDate() + 14);
-            break;
-          case "monthly":
-            dueDate.setMonth(dueDate.getMonth() + 1);
-            break;
-          case "quarterly":
-            dueDate.setMonth(dueDate.getMonth() + 3);
-            break;
-        }
-
-        useRemindersStore.getState().addReminder({
-          title: template.taskTitle,
-          entityType: "job",
-          entityId: templateId,
-          dueDate: dueDate.toISOString(),
-        });
-
-        logActivity("create", "automations", `Created task from template "${template.name}"`);
-      },
-
-      // ---------------------------------------------------------------
-      // Supabase sync
-      // ---------------------------------------------------------------
-
-      syncToSupabase: async (workspaceId: string) => {
+      loadFromSupabase: async (workspaceId) => {
         try {
-          const { rules, recurringTemplates } = get();
-          await Promise.all([
-            dbUpsertRules(workspaceId, rules),
-            dbUpsertTemplates(workspaceId, recurringTemplates),
-          ]);
+          const rules = await fetchAutomationRules(workspaceId);
+          set({ rules });
         } catch (err) {
-          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing automations to Supabase" }));
-        }
-      },
-
-      loadFromSupabase: async (workspaceId: string) => {
-        try {
-          const [ruleRows, templateRows] = await Promise.all([
-            fetchAutomationRules(workspaceId),
-            fetchRecurringTemplates(workspaceId),
-          ]);
-
-          const updates: Record<string, unknown> = {};
-
-          if (ruleRows && ruleRows.length > 0) {
-            updates.rules = ruleRows.map((row: Record<string, unknown>) =>
-              mapRuleFromDB(row)
-            );
-          }
-
-          if (templateRows && templateRows.length > 0) {
-            updates.recurringTemplates = templateRows.map((row: Record<string, unknown>) =>
-              mapTemplateFromDB(row)
-            );
-          }
-
-          if (Object.keys(updates).length > 0) {
-            set(updates as Partial<AutomationsStore>);
-          }
-        } catch (err) {
-          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "loading automations from Supabase" }));
+          console.debug("[store] loadFromSupabase skipped:", err);
         }
       },
     }),
-    {
-      name: "magic-crm-automations",
-      version: 1,
-      migrate: (persisted: unknown, version: number) => {
-        const state = persisted as Record<string, unknown>;
-        if (version === 0) {
-          return {
-            ...state,
-            recurringTemplates: initBuiltInTemplates(),
-          };
-        }
-        return state;
-      },
-    }
+    { name: "magic-crm-automations", version: 2 }
   )
 );

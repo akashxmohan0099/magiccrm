@@ -40,6 +40,8 @@ const COLORS: Record<string, { bg: string; text: string; dot: string }> = {
   declined:  { bg: "bg-surface", text: "text-text-tertiary", dot: "bg-red-400" },
   lost:      { bg: "bg-surface", text: "text-text-tertiary", dot: "bg-red-400" },
   churned:   { bg: "bg-surface", text: "text-text-tertiary", dot: "bg-red-400" },
+  no_show:   { bg: "bg-red-500/10", text: "text-red-500", dot: "bg-red-400" },
+  in_progress: { bg: "bg-surface", text: "text-foreground", dot: "bg-amber-400" },
 };
 
 const DEFAULT = { bg: "bg-surface", text: "text-text-secondary", dot: "bg-text-tertiary" };
@@ -51,7 +53,7 @@ interface StatusBadgeProps {
 
 export function StatusBadge({ status, className = "" }: StatusBadgeProps) {
   const colors = COLORS[status] || DEFAULT;
-  const label = status.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  const label = status.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
   return (
     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${colors.bg} ${colors.text} ${className}`}>

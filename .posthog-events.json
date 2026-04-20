@@ -1,0 +1,52 @@
+[
+  {
+    "event": "signup_completed",
+    "description": "Triggered server-side when a new workspace owner successfully signs up and their workspace is bootstrapped.",
+    "file": "src/app/api/auth/signup/route.ts"
+  },
+  {
+    "event": "user_logged_in",
+    "description": "Triggered client-side when a user successfully signs in from the login page.",
+    "file": "src/app/login/page.tsx"
+  },
+  {
+    "event": "onboarding_completed",
+    "description": "Triggered client-side when a new user finishes the onboarding wizard and launches their dashboard.",
+    "file": "src/app/onboarding/page.tsx"
+  },
+  {
+    "event": "public_booking_submitted",
+    "description": "Triggered client-side on the public booking page when a client submits the booking form.",
+    "file": "src/app/book/[slug]/page.tsx"
+  },
+  {
+    "event": "public_booking_confirmed",
+    "description": "Triggered server-side when a public booking is successfully created in the database.",
+    "file": "src/app/api/public/book/route.ts"
+  },
+  {
+    "event": "public_inquiry_submitted",
+    "description": "Triggered client-side on the inquiry form page when a client submits an inquiry.",
+    "file": "src/app/inquiry/[slug]/page.tsx"
+  },
+  {
+    "event": "public_inquiry_received",
+    "description": "Triggered server-side when a public inquiry is successfully saved to the database.",
+    "file": "src/app/api/public/inquiry/route.ts"
+  },
+  {
+    "event": "stripe_payment_received",
+    "description": "Triggered server-side via Stripe webhook when a checkout.session.completed event marks an invoice as paid.",
+    "file": "src/app/api/webhooks/stripe/route.ts"
+  },
+  {
+    "event": "invoice_created",
+    "description": "Triggered client-side in the dashboard when a new invoice or quote is created by the workspace owner.",
+    "file": "src/components/modules/payments/CreatePaymentForm.tsx"
+  },
+  {
+    "event": "dashboard_booking_created",
+    "description": "Triggered client-side in the dashboard when a new booking is manually created by the workspace owner.",
+    "file": "src/components/modules/bookings/BookingForm.tsx"
+  }
+]

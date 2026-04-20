@@ -1,104 +1,89 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAuth } from "@/lib/api-auth";
-import Stripe from "stripe";
-
-export type BillingStatus = {
-  plan: "free" | "trial" | "active" | "past_due" | "cancelled";
-  trialEndsAt: string | null;
-  currentPeriodEnd: string | null;
-  cancelAtPeriodEnd: boolean;
-};
+import { createClient } from "@/lib/supabase-server";
+import { getStripeClient } from "@/lib/integrations/stripe";
 
 /**
  * GET /api/billing/status?workspaceId=xxx
- * Returns the current subscription status for a workspace.
+ * Returns subscription status for the workspace.
  */
 export async function GET(req: NextRequest) {
   try {
-    const stripeKey = process.env.STRIPE_SECRET_KEY;
-    if (!stripeKey) {
-      // Billing not configured -- treat as free/unlimited (dev mode)
-      return NextResponse.json({
-        plan: "free",
-        trialEndsAt: null,
-        currentPeriodEnd: null,
-        cancelAtPeriodEnd: false,
-      } satisfies BillingStatus);
-    }
-
-    const { user, supabase, error: authError } = await requireAuth();
-    if (authError) return authError;
-
     const workspaceId = req.nextUrl.searchParams.get("workspaceId");
     if (!workspaceId) {
       return NextResponse.json({ error: "Missing workspaceId" }, { status: 400 });
     }
 
-    // Verify user belongs to workspace
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Verify user belongs to this workspace
     const { data: member } = await supabase
       .from("workspace_members")
       .select("id")
-      .eq("auth_user_id", user.id)
       .eq("workspace_id", workspaceId)
+      .eq("auth_user_id", user.id)
       .maybeSingle();
 
     if (!member) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Get Stripe customer ID
-    const { data: settings } = await supabase
+    // Get workspace subscription info
+    const { data: ws } = await supabase
       .from("workspace_settings")
-      .select("settings")
+      .select("stripe_customer_id, stripe_subscription_id, plan_tier")
       .eq("workspace_id", workspaceId)
       .maybeSingle();
 
-    const customerId = (settings?.settings as Record<string, unknown>)?.stripeCustomerId as string | undefined;
-
-    if (!customerId) {
+    if (!ws?.stripe_subscription_id) {
       return NextResponse.json({
-        plan: "free",
+        plan: ws?.plan_tier || "free",
+        tier: ws?.plan_tier || null,
         trialEndsAt: null,
         currentPeriodEnd: null,
         cancelAtPeriodEnd: false,
-      } satisfies BillingStatus);
+      });
     }
 
-    const stripe = new Stripe(stripeKey);
+    // Fetch live status from Stripe
+    try {
+      const stripe = getStripeClient();
+      const sub = await stripe.subscriptions.retrieve(ws.stripe_subscription_id) as unknown as {
+        status: string;
+        trial_end: number | null;
+        current_period_end: number;
+        cancel_at_period_end: boolean;
+      };
 
-    // Get the customer's active subscription
-    const subscriptions = await stripe.subscriptions.list({
-      customer: customerId,
-      status: "all",
-      limit: 1,
-    });
+      let plan: string;
+      if (sub.status === "trialing") plan = "trial";
+      else if (sub.status === "active") plan = "active";
+      else if (sub.status === "past_due") plan = "past_due";
+      else if (sub.status === "canceled" || sub.status === "unpaid") plan = "cancelled";
+      else plan = sub.status;
 
-    const sub = subscriptions.data[0];
-
-    if (!sub) {
       return NextResponse.json({
-        plan: "free",
+        plan,
+        tier: ws.plan_tier || null,
+        trialEndsAt: sub.trial_end ? new Date(sub.trial_end * 1000).toISOString() : null,
+        currentPeriodEnd: new Date(sub.current_period_end * 1000).toISOString(),
+        cancelAtPeriodEnd: sub.cancel_at_period_end,
+      });
+    } catch {
+      // Stripe not configured or sub missing
+      return NextResponse.json({
+        plan: ws.plan_tier || "free",
+        tier: ws.plan_tier || null,
         trialEndsAt: null,
         currentPeriodEnd: null,
         cancelAtPeriodEnd: false,
-      } satisfies BillingStatus);
+      });
     }
-
-    const plan: BillingStatus["plan"] =
-      sub.status === "trialing" ? "trial" :
-      sub.status === "active" ? "active" :
-      sub.status === "past_due" ? "past_due" :
-      (sub.status === "canceled" || sub.status === "incomplete_expired") ? "cancelled" :
-      "free";
-
-    return NextResponse.json({
-      plan,
-      trialEndsAt: sub.trial_end ? new Date(sub.trial_end * 1000).toISOString() : null,
-      currentPeriodEnd: new Date(((sub as unknown as Record<string, number>).current_period_end ?? 0) * 1000).toISOString(),
-      cancelAtPeriodEnd: sub.cancel_at_period_end ?? false,
-    } satisfies BillingStatus);
-  } catch (error) {
-    console.error("[Billing] Status error:", error);
-    return NextResponse.json({ error: "Failed to check billing status" }, { status: 500 });
+  } catch (err) {
+    console.error("[billing/status] Error:", err);
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Save,
@@ -13,25 +13,26 @@ import {
   Sparkles,
   X,
   ImagePlus,
-  FileText,
   Sun,
   Moon,
   Monitor,
 } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
-import { useOnboardingStore } from "@/store/onboarding";
-import {
-  useBrandSettingsStore,
-  PRESET_COLORS,
-} from "@/store/brand-settings";
-import { INVOICE_TEMPLATES } from "@/lib/invoice-templates";
-import { INDUSTRIES } from "@/types/onboarding";
-import { SelectField } from "@/components/ui/SelectField";
+import { useSettingsStore } from "@/store/settings";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/Button";
+import type { WorkspaceSettings } from "@/types/models";
 
-const INDUSTRY_OPTIONS = [
-  { value: "", label: "Select industry..." },
-  ...INDUSTRIES.map((i) => ({ value: i, label: i })),
+// --- Preset brand colors ---
+const PRESET_COLORS = [
+  { id: "emerald", label: "Emerald", hex: "#34D399" },
+  { id: "blue", label: "Blue", hex: "#3B82F6" },
+  { id: "violet", label: "Violet", hex: "#8B5CF6" },
+  { id: "rose", label: "Rose", hex: "#F43F5E" },
+  { id: "amber", label: "Amber", hex: "#F59E0B" },
+  { id: "teal", label: "Teal", hex: "#14B8A6" },
+  { id: "pink", label: "Pink", hex: "#EC4899" },
+  { id: "slate", label: "Slate", hex: "#475569" },
 ];
 
 // --- Hex validation ---
@@ -100,25 +101,33 @@ function SettingsSection({
 // ============================================================
 // Logo Upload
 // ============================================================
-function LogoUpload() {
-  const { logoBase64, setLogoBase64, clearLogo } = useBrandSettingsStore();
-  const { brandColor } = useBrandSettingsStore();
+function LogoUpload({
+  logoUrl,
+  onLogoChange,
+  onClearLogo,
+  brandColor,
+}: {
+  logoUrl?: string;
+  onLogoChange: (base64: string) => void;
+  onClearLogo: () => void;
+  brandColor: string;
+}) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
   const handleFile = useCallback(
     (file: File) => {
       if (!file.type.startsWith("image/")) return;
-      if (file.size > 5 * 1024 * 1024) return; // 5MB limit
+      if (file.size > 5 * 1024 * 1024) return;
       const reader = new FileReader();
       reader.onload = (e) => {
         if (e.target?.result) {
-          setLogoBase64(e.target.result as string);
+          onLogoChange(e.target.result as string);
         }
       };
       reader.readAsDataURL(file);
     },
-    [setLogoBase64]
+    [onLogoChange]
   );
 
   const handleDrop = useCallback(
@@ -131,42 +140,27 @@ function LogoUpload() {
     [handleFile]
   );
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  }, []);
-
-  const handleDragLeave = useCallback(() => {
-    setIsDragging(false);
-  }, []);
-
   return (
     <div className="flex items-center gap-6">
-      {/* Upload zone */}
       <div
         className="relative group cursor-pointer"
         onClick={() => fileRef.current?.click()}
         onDrop={handleDrop}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
+        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+        onDragLeave={() => setIsDragging(false)}
       >
         <div
           className={`w-24 h-24 rounded-full border-2 border-dashed flex items-center justify-center transition-all duration-200 overflow-hidden ${
             isDragging
               ? "border-foreground bg-surface scale-105"
-              : logoBase64
+              : logoUrl
               ? "border-transparent"
               : "border-border-warm hover:border-foreground/30 bg-surface hover:bg-surface/80"
           }`}
         >
-          {logoBase64 ? (
+          {logoUrl ? (
             <>
-              <img
-                src={logoBase64}
-                alt="Business logo"
-                className="w-full h-full object-cover"
-              />
-              {/* Hover overlay */}
+              <img src={logoUrl} alt="Business logo" className="w-full h-full object-cover" />
               <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                 <Camera className="w-5 h-5 text-white" />
               </div>
@@ -178,13 +172,9 @@ function LogoUpload() {
           )}
         </div>
 
-        {/* Remove button */}
-        {logoBase64 && (
+        {logoUrl && (
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              clearLogo();
-            }}
+            onClick={(e) => { e.stopPropagation(); onClearLogo(); }}
             className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-card-bg border border-border-light shadow-sm flex items-center justify-center hover:bg-red-50 hover:border-red-200 transition-colors cursor-pointer"
           >
             <X className="w-3 h-3 text-text-tertiary hover:text-red-500" />
@@ -204,12 +194,12 @@ function LogoUpload() {
 
       <div>
         <p className="text-sm font-medium text-foreground">
-          {logoBase64 ? "Logo uploaded" : "Upload your logo"}
+          {logoUrl ? "Logo uploaded" : "Upload your logo"}
         </p>
         <p className="text-xs text-text-tertiary mt-0.5">
           Drag & drop or click to browse. PNG, JPG up to 5MB.
         </p>
-        {logoBase64 && (
+        {logoUrl && (
           <button
             onClick={() => fileRef.current?.click()}
             className="text-xs font-medium mt-1.5 cursor-pointer transition-colors"
@@ -226,8 +216,13 @@ function LogoUpload() {
 // ============================================================
 // Color Picker
 // ============================================================
-function ColorPicker() {
-  const { brandColor, setBrandColor } = useBrandSettingsStore();
+function ColorPicker({
+  brandColor,
+  onColorChange,
+}: {
+  brandColor: string;
+  onColorChange: (hex: string) => void;
+}) {
   const isPreset = PRESET_COLORS.some((c) => c.hex === brandColor);
   const [customHex, setCustomHex] = useState(() => (isPreset ? "" : brandColor));
   const [customMode, setCustomMode] = useState(() => !isPreset);
@@ -238,7 +233,7 @@ function ColorPicker() {
     let hex = customHexValue.trim();
     if (!hex.startsWith("#")) hex = "#" + hex;
     if (isValidHex(hex)) {
-      setBrandColor(hex);
+      onColorChange(hex);
       setCustomHex(hex);
       setCustomMode(true);
     }
@@ -246,11 +241,8 @@ function ColorPicker() {
 
   return (
     <div className="space-y-5">
-      {/* Preset swatches */}
       <div>
-        <p className="text-xs font-medium text-text-secondary mb-3">
-          Choose a preset
-        </p>
+        <p className="text-xs font-medium text-text-secondary mb-3">Choose a preset</p>
         <div className="flex flex-wrap gap-3">
           {PRESET_COLORS.map((color) => {
             const isSelected = brandColor === color.hex;
@@ -258,7 +250,7 @@ function ColorPicker() {
               <button
                 key={color.id}
                 onClick={() => {
-                  setBrandColor(color.hex);
+                  onColorChange(color.hex);
                   setCustomMode(false);
                   setCustomHex("");
                 }}
@@ -267,35 +259,21 @@ function ColorPicker() {
               >
                 <div
                   className={`w-9 h-9 rounded-full transition-all duration-200 flex items-center justify-center ${
-                    isSelected
-                      ? "ring-2 ring-offset-2 ring-offset-card-bg scale-110"
-                      : "hover:scale-110"
+                    isSelected ? "ring-2 ring-offset-2 ring-offset-card-bg scale-110" : "hover:scale-110"
                   }`}
                   style={{
                     backgroundColor: color.hex,
-                    ...(isSelected ? { ringColor: color.hex } : {}),
-                    boxShadow: isSelected
-                      ? `0 0 0 2px var(--card-bg), 0 0 0 4px ${color.hex}`
-                      : undefined,
+                    boxShadow: isSelected ? `0 0 0 2px var(--card-bg), 0 0 0 4px ${color.hex}` : undefined,
                   }}
                 >
                   <AnimatePresence>
                     {isSelected && (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        exit={{ scale: 0 }}
-                        transition={{ duration: 0.15 }}
-                      >
-                        <Check
-                          className="w-4 h-4"
-                          style={{ color: getContrastColor(color.hex) }}
-                        />
+                      <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} transition={{ duration: 0.15 }}>
+                        <Check className="w-4 h-4" style={{ color: getContrastColor(color.hex) }} />
                       </motion.div>
                     )}
                   </AnimatePresence>
                 </div>
-                {/* Tooltip */}
                 <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] text-text-tertiary opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
                   {color.label}
                 </span>
@@ -305,32 +283,22 @@ function ColorPicker() {
         </div>
       </div>
 
-      {/* Custom color */}
       <div>
         {!showCustom ? (
           <button
-            onClick={() => {
-              setCustomMode(true);
-              if (!customHexValue) setCustomHex(brandColor);
-            }}
+            onClick={() => { setCustomMode(true); if (!customHexValue) setCustomHex(brandColor); }}
             className="text-xs font-medium text-text-tertiary hover:text-foreground transition-colors cursor-pointer"
           >
             + Custom color
           </button>
         ) : (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            className="flex items-center gap-2"
-          >
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="flex items-center gap-2">
             <div
               className="w-9 h-9 rounded-full border border-border-light flex-shrink-0"
               style={{
                 backgroundColor:
                   isValidHex(customHexValue) || isValidHex("#" + customHexValue)
-                    ? customHexValue.startsWith("#")
-                      ? customHexValue
-                      : "#" + customHexValue
+                    ? customHexValue.startsWith("#") ? customHexValue : "#" + customHexValue
                     : "#E5E5E5",
               }}
             />
@@ -344,11 +312,7 @@ function ColorPicker() {
               className="w-28 px-3 py-2 bg-surface border border-border-light rounded-xl text-sm text-foreground font-mono placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-foreground/10"
             />
             <button
-              onClick={() => {
-                setCustomMode(false);
-                setCustomHex("");
-                if (!isPreset) setBrandColor(PRESET_COLORS[0].hex);
-              }}
+              onClick={() => { setCustomMode(false); setCustomHex(""); if (!isPreset) onColorChange(PRESET_COLORS[0].hex); }}
               className="text-xs text-text-tertiary hover:text-foreground cursor-pointer"
             >
               Cancel
@@ -363,8 +327,7 @@ function ColorPicker() {
 // ============================================================
 // Live Preview Card
 // ============================================================
-function BrandPreview() {
-  const { brandColor } = useBrandSettingsStore();
+function BrandPreview({ brandColor }: { brandColor: string }) {
   const contrastColor = getContrastColor(brandColor);
 
   return (
@@ -374,7 +337,6 @@ function BrandPreview() {
         Live preview
       </p>
       <div className="space-y-3">
-        {/* Button preview */}
         <div className="flex items-center gap-3">
           <span
             className="px-5 py-2 rounded-full text-xs font-semibold transition-colors"
@@ -389,42 +351,23 @@ function BrandPreview() {
             View Details
           </span>
         </div>
-
-        {/* Badge preview */}
         <div className="flex items-center gap-2">
           <span
             className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium"
-            style={{
-              backgroundColor: brandColor + "18",
-              color: brandColor,
-            }}
+            style={{ backgroundColor: brandColor + "18", color: brandColor }}
           >
-            <span
-              className="w-1.5 h-1.5 rounded-full"
-              style={{ backgroundColor: brandColor }}
-            />
+            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: brandColor }} />
             Active
           </span>
           <span
             className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium"
-            style={{
-              backgroundColor: brandColor + "18",
-              color: brandColor,
-            }}
+            style={{ backgroundColor: brandColor + "18", color: brandColor }}
           >
-            <span
-              className="w-1.5 h-1.5 rounded-full"
-              style={{ backgroundColor: brandColor }}
-            />
+            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: brandColor }} />
             Confirmed
           </span>
         </div>
-
-        {/* Heading preview */}
-        <p
-          className="text-sm font-bold tracking-tight"
-          style={{ color: brandColor }}
-        >
+        <p className="text-sm font-bold tracking-tight" style={{ color: brandColor }}>
           Dashboard Heading
         </p>
       </div>
@@ -433,95 +376,7 @@ function BrandPreview() {
 }
 
 // ============================================================
-// Invoice Template Picker
-// ============================================================
-function InvoiceTemplatePicker() {
-  const { invoiceTemplate, setInvoiceTemplate, brandColor } = useBrandSettingsStore();
-
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-      {INVOICE_TEMPLATES.map((t) => {
-        const isSelected = invoiceTemplate === t.id;
-        const previewAccent = t.id === "clean" || t.id === "bold" ? brandColor : t.preview.accentBg;
-        const headerBg = t.id === "bold" ? brandColor : t.preview.headerBg;
-        return (
-          <button
-            key={t.id}
-            onClick={() => setInvoiceTemplate(t.id)}
-            className={`group relative rounded-xl border-2 p-1 transition-all cursor-pointer ${
-              isSelected
-                ? "border-foreground shadow-sm"
-                : "border-border-light hover:border-foreground/20"
-            }`}
-          >
-            {/* Mini preview */}
-            <div className="aspect-[3/4] rounded-lg overflow-hidden bg-white">
-              {/* Header area */}
-              <div
-                className="h-[28%] flex items-center justify-between px-3"
-                style={{ backgroundColor: headerBg }}
-              >
-                <div className="flex flex-col gap-1">
-                  <div
-                    className="h-1.5 rounded-full"
-                    style={{
-                      width: 28,
-                      backgroundColor: headerBg === "#111111" || headerBg === brandColor ? "#fff" : "#333",
-                      opacity: 0.7,
-                    }}
-                  />
-                  <div
-                    className="h-1 rounded-full"
-                    style={{
-                      width: 18,
-                      backgroundColor: headerBg === "#111111" || headerBg === brandColor ? "#fff" : "#999",
-                      opacity: 0.4,
-                    }}
-                  />
-                </div>
-                <div
-                  className="h-2.5 rounded"
-                  style={{
-                    width: 20,
-                    backgroundColor: previewAccent,
-                    opacity: headerBg === brandColor ? 0.3 : 0.8,
-                  }}
-                />
-              </div>
-              {/* Body lines */}
-              <div className="px-3 pt-2 space-y-1.5">
-                <div className="h-1 bg-gray-200 rounded-full w-full" />
-                <div className="h-1 bg-gray-100 rounded-full w-3/4" />
-                <div className="h-1 bg-gray-100 rounded-full w-5/6" />
-                <div className="h-1 bg-gray-100 rounded-full w-2/3" />
-                <div className="mt-2 h-1 rounded-full w-1/3 ml-auto" style={{ backgroundColor: previewAccent, opacity: 0.6 }} />
-              </div>
-            </div>
-            {/* Label */}
-            <div className="mt-2 mb-1 text-center">
-              <p className={`text-xs font-medium ${isSelected ? "text-foreground" : "text-text-secondary"}`}>
-                {t.name}
-              </p>
-              <p className="text-[10px] text-text-tertiary leading-tight">{t.description}</p>
-            </div>
-            {/* Selected check */}
-            {isSelected && (
-              <div
-                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center"
-                style={{ backgroundColor: brandColor }}
-              >
-                <Check className="w-3 h-3" style={{ color: getContrastColor(brandColor) }} />
-              </div>
-            )}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-// ============================================================
-// Main GeneralSettings
+// Appearance Section
 // ============================================================
 function AppearanceSection() {
   const { theme, setTheme } = useTheme();
@@ -558,27 +413,39 @@ function AppearanceSection() {
   );
 }
 
+// ============================================================
+// Main GeneralSettings
+// ============================================================
 export function GeneralSettings() {
-  const { businessContext, setBusinessContext } = useOnboardingStore();
-  const { brandColor, tagline, setTagline } = useBrandSettingsStore();
+  const { settings, updateSettings } = useSettingsStore();
+  const { workspaceId } = useAuth();
+  return (
+    <GeneralSettingsContent
+      key={`${settings?.workspaceId ?? "workspace"}:${settings?.updatedAt ?? "empty"}`}
+      settings={settings}
+      updateSettings={updateSettings}
+      workspaceId={workspaceId ?? undefined}
+    />
+  );
+}
 
-  const [form, setForm] = useState({
-    businessName: "",
-    businessDescription: "",
-    industry: "",
-    location: "",
-  });
+function GeneralSettingsContent({
+  settings,
+  updateSettings,
+  workspaceId,
+}: {
+  settings: WorkspaceSettings | null;
+  updateSettings: (data: Partial<WorkspaceSettings>, workspaceId?: string) => void;
+  workspaceId?: string;
+}) {
+  const brandColor = settings?.branding?.primaryColor || "#34D399";
+  const [form, setForm] = useState(() => ({
+    businessName: settings?.businessName || "",
+    contactEmail: settings?.contactEmail || "",
+    contactPhone: settings?.contactPhone || "",
+    address: settings?.address || "",
+  }));
   const [saved, setSaved] = useState(false);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setForm({
-      businessName: businessContext.businessName,
-      businessDescription: businessContext.businessDescription,
-      industry: businessContext.industry,
-      location: businessContext.location,
-    });
-  }, [businessContext]);
 
   const update = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -586,14 +453,38 @@ export function GeneralSettings() {
   };
 
   const handleSave = () => {
-    setBusinessContext({
-      businessName: form.businessName.trim(),
-      businessDescription: form.businessDescription.trim(),
-      industry: form.industry,
-      location: form.location.trim(),
-    });
+    updateSettings(
+      {
+        businessName: form.businessName.trim(),
+        contactEmail: form.contactEmail.trim(),
+        contactPhone: form.contactPhone.trim(),
+        address: form.address.trim(),
+      },
+      workspaceId
+    );
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+  };
+
+  const handleColorChange = (hex: string) => {
+    updateSettings(
+      { branding: { ...settings?.branding, primaryColor: hex } },
+      workspaceId
+    );
+  };
+
+  const handleLogoChange = (base64: string) => {
+    updateSettings(
+      { branding: { ...settings?.branding, logo: base64 } },
+      workspaceId
+    );
+  };
+
+  const handleClearLogo = () => {
+    updateSettings(
+      { branding: { ...settings?.branding, logo: undefined } },
+      workspaceId
+    );
   };
 
   const inputClass =
@@ -601,7 +492,7 @@ export function GeneralSettings() {
 
   return (
     <div className="max-w-2xl space-y-5">
-      {/* ── Hero banner ── */}
+      {/* Hero banner */}
       <motion.div
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -612,43 +503,25 @@ export function GeneralSettings() {
         }}
       >
         <div className="relative z-10">
-          <h2 className="text-xl font-bold text-foreground tracking-tight">
-            Brand & Settings
-          </h2>
-          <p className="text-sm text-text-secondary mt-1">
-            Make your workspace feel uniquely yours
-          </p>
+          <h2 className="text-xl font-bold text-foreground tracking-tight">Brand & Settings</h2>
+          <p className="text-sm text-text-secondary mt-1">Make your workspace feel uniquely yours</p>
         </div>
-        {/* Decorative circles */}
-        <div
-          className="absolute -top-8 -right-8 w-32 h-32 rounded-full opacity-[0.07]"
-          style={{ backgroundColor: brandColor }}
-        />
-        <div
-          className="absolute -bottom-4 -right-16 w-24 h-24 rounded-full opacity-[0.05]"
-          style={{ backgroundColor: brandColor }}
-        />
+        <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full opacity-[0.07]" style={{ backgroundColor: brandColor }} />
+        <div className="absolute -bottom-4 -right-16 w-24 h-24 rounded-full opacity-[0.05]" style={{ backgroundColor: brandColor }} />
       </motion.div>
 
-      {/* ── Brand Identity Section ── */}
-      <SettingsSection
-        icon={Building2}
-        title="Brand Identity"
-        description="Your logo, name, and tagline"
-        delay={0.05}
-      >
+      {/* Brand Identity Section */}
+      <SettingsSection icon={Building2} title="Brand Identity" description="Your logo, name, and contact info" delay={0.05}>
         <div className="space-y-6">
-          {/* Logo */}
-          <LogoUpload />
-
-          {/* Divider */}
+          <LogoUpload
+            logoUrl={settings?.branding?.logo || settings?.logoUrl}
+            onLogoChange={handleLogoChange}
+            onClearLogo={handleClearLogo}
+            brandColor={brandColor}
+          />
           <div className="border-t border-border-light" />
-
-          {/* Business name — large heading style */}
           <div>
-            <label className="block text-xs font-medium text-text-secondary mb-2">
-              Business Name
-            </label>
+            <label className="block text-xs font-medium text-text-secondary mb-2">Business Name</label>
             <input
               type="text"
               value={form.businessName}
@@ -657,92 +530,59 @@ export function GeneralSettings() {
               className="w-full px-0 py-2 bg-transparent border-none text-xl font-bold text-foreground tracking-tight placeholder:text-text-tertiary/50 placeholder:font-normal focus:outline-none focus:ring-0"
             />
           </div>
-
-          {/* Tagline / description */}
           <div>
-            <label className="block text-xs font-medium text-text-secondary mb-2">
-              Tagline
-            </label>
-            <textarea
-              value={form.businessDescription}
-              onChange={(e) => update("businessDescription", e.target.value)}
-              placeholder="A short description of what you do..."
-              rows={2}
-              className="w-full px-4 py-3 bg-surface/50 border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-foreground/10 focus:border-foreground transition-all resize-none"
-            />
-          </div>
-        </div>
-      </SettingsSection>
-
-      {/* ── Colors Section ── */}
-      <SettingsSection
-        icon={Palette}
-        title="Brand Color"
-        description="Choose a color that represents your brand"
-        delay={0.1}
-      >
-        <div className="space-y-6">
-          <ColorPicker />
-
-          {/* Divider */}
-          <div className="border-t border-border-light" />
-
-          {/* Live preview */}
-          <BrandPreview />
-        </div>
-      </SettingsSection>
-
-      {/* ── Invoice Template Section ── */}
-      <SettingsSection
-        icon={FileText}
-        title="Invoice Template"
-        description="Choose how your invoices and quotes look"
-        delay={0.12}
-      >
-        <InvoiceTemplatePicker />
-      </SettingsSection>
-
-      {/* ── Appearance Section ── */}
-      <AppearanceSection />
-
-      {/* ── Business Details Section ── */}
-      <SettingsSection
-        icon={Briefcase}
-        title="Business Details"
-        description="Industry and location information"
-        delay={0.18}
-      >
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          {/* Industry */}
-          <div>
-            <label className="block text-xs font-medium text-text-secondary mb-2">
-              Industry
-            </label>
-            <SelectField
-              options={INDUSTRY_OPTIONS}
-              value={form.industry}
-              onChange={(e) => update("industry", e.target.value)}
-            />
-          </div>
-
-          {/* Location */}
-          <div>
-            <label className="flex items-center gap-1.5 text-xs font-medium text-text-secondary mb-2">
-              <MapPin className="w-3 h-3" />
-              Location
-            </label>
+            <label className="block text-xs font-medium text-text-secondary mb-2">Contact Email</label>
             <input
-              type="text"
-              value={form.location}
-              onChange={(e) => update("location", e.target.value)}
-              placeholder="City, State or Country"
+              type="email"
+              value={form.contactEmail}
+              onChange={(e) => update("contactEmail", e.target.value)}
+              placeholder="hello@yourbusiness.com"
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-text-secondary mb-2">Contact Phone</label>
+            <input
+              type="tel"
+              value={form.contactPhone}
+              onChange={(e) => update("contactPhone", e.target.value)}
+              placeholder="+1 (555) 123-4567"
               className={inputClass}
             />
           </div>
         </div>
       </SettingsSection>
 
-      {/* ── Save Bar ── */}
+      {/* Colors Section */}
+      <SettingsSection icon={Palette} title="Brand Color" description="Choose a color that represents your brand" delay={0.1}>
+        <div className="space-y-6">
+          <ColorPicker brandColor={brandColor} onColorChange={handleColorChange} />
+          <div className="border-t border-border-light" />
+          <BrandPreview brandColor={brandColor} />
+        </div>
+      </SettingsSection>
+
+      {/* Appearance Section */}
+      <AppearanceSection />
+
+      {/* Business Details Section */}
+      <SettingsSection icon={MapPin} title="Business Address" description="Your business location" delay={0.18}>
+        <div>
+          <label className="flex items-center gap-1.5 text-xs font-medium text-text-secondary mb-2">
+            <MapPin className="w-3 h-3" />
+            Address
+          </label>
+          <input
+            type="text"
+            value={form.address}
+            onChange={(e) => update("address", e.target.value)}
+            placeholder="123 Main St, City, State"
+            className={inputClass}
+          />
+        </div>
+      </SettingsSection>
+
+      {/* Save Bar */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}

@@ -63,7 +63,7 @@ export function SlideOver({ open, onClose, title, children, wide }: SlideOverPro
             aria-modal="true"
             aria-labelledby={titleId}
             className={`absolute right-0 top-0 h-full bg-card-bg border-l border-border-light flex flex-col shadow-2xl shadow-black/8 ${
-              wide ? "w-full max-w-2xl" : "w-full max-w-lg"
+              wide ? "w-full max-w-3xl" : "w-full max-w-2xl"
             }`}
           >
             <div className="flex items-center justify-between px-6 py-4 border-b border-border-light">

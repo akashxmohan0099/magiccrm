@@ -10,7 +10,7 @@ export default defineConfig({
     screenshot: "only-on-failure",
   },
   webServer: {
-    command: "npm run dev",
+    command: "E2E_DEMO_MODE=1 npm run dev",
     port: 3000,
     reuseExistingServer: true,
   },

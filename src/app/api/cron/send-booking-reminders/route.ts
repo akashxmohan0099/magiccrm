@@ -1,148 +1,180 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase-server";
+import { runAutomationRules } from "@/lib/server/automation-runner";
 
 /**
- * Cron endpoint: Send 24-hour booking reminders.
+ * Cron endpoint: Send pre-appointment reminders.
  *
  * GET /api/cron/send-booking-reminders
  *
- * Finds all confirmed bookings starting in the next 23-25 hours
- * that haven't had a reminder sent yet, and sends an email via Resend.
+ * For each workspace with an enabled `appointment_reminder` automation rule,
+ * finds confirmed bookings that start within the rule's configured window
+ * (timing_value / timing_unit ahead of now) and delivers the reminder via
+ * `runAutomationRules` — so the user's configured channel and message
+ * template are honored.
  *
- * Call this every hour via Vercel Cron, EasyCron, or similar.
- * Protect with CRON_SECRET header in production.
+ * Runs hourly via Vercel Cron (or similar). Protect with CRON_SECRET.
+ * Dedup: uses `bookings.reminder_sent_at` to avoid double-sending.
  */
-export async function GET(req: NextRequest) {
-  const cronSecret = process.env.CRON_SECRET;
-  const bearerToken = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-  const providedSecret = bearerToken || req.headers.get("x-cron-secret");
 
+type Supabase = Awaited<ReturnType<typeof createAdminClient>>;
+
+interface TimingRule {
+  id: string;
+  workspace_id: string;
+  timing_value: number | null;
+  timing_unit: "minutes" | "hours" | "days" | null;
+}
+
+function timingToMs(rule: TimingRule, fallbackMs: number): number {
+  const value = rule.timing_value;
+  const unit = rule.timing_unit;
+  if (!value || !unit) return fallbackMs;
+  switch (unit) {
+    case "minutes": return value * 60 * 1000;
+    case "hours":   return value * 60 * 60 * 1000;
+    case "days":    return value * 24 * 60 * 60 * 1000;
+    default:        return fallbackMs;
+  }
+}
+
+async function processWorkspaceReminders(
+  supabase: Supabase,
+  rule: TimingRule,
+): Promise<{ sent: number; skipped: number }> {
+  // Target window: bookings starting within ±1 hour of (now + timingMs)
+  const leadMs = timingToMs(rule, 24 * 60 * 60 * 1000);
+  const center = Date.now() + leadMs;
+  const windowStart = new Date(center - 60 * 60 * 1000);
+  const windowEnd = new Date(center + 60 * 60 * 1000);
+
+  const { data: bookings, error } = await supabase
+    .from("bookings")
+    .select(`
+      id, client_id, service_id, start_at,
+      services!inner(name)
+    `)
+    .eq("workspace_id", rule.workspace_id)
+    .eq("status", "confirmed")
+    .gte("start_at", windowStart.toISOString())
+    .lte("start_at", windowEnd.toISOString())
+    .is("reminder_sent_at", null)
+    .limit(100);
+
+  if (error || !bookings || bookings.length === 0) {
+    return { sent: 0, skipped: 0 };
+  }
+
+  let sent = 0;
+  let skipped = 0;
+
+  for (const booking of bookings) {
+    try {
+      const startAt = new Date(booking.start_at as string);
+      const formattedDate = startAt.toLocaleDateString("en-AU", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+      const formattedTime = startAt.toLocaleTimeString("en-AU", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      });
+      const serviceName =
+        (booking.services as unknown as { name: string } | null)?.name ||
+        "your appointment";
+
+      const result = await runAutomationRules({
+        workspaceId: rule.workspace_id,
+        type: "appointment_reminder",
+        entityId: booking.client_id as string,
+        entityData: {
+          bookingId: booking.id,
+          serviceName,
+          date: formattedDate,
+          time: formattedTime,
+        },
+      });
+
+      const delivered = result.results.some((r) => r.emailSent || r.smsSent);
+
+      if (delivered) {
+        // Mark reminder as sent so we don't double-dispatch
+        await supabase
+          .from("bookings")
+          .update({ reminder_sent_at: new Date().toISOString() })
+          .eq("id", booking.id);
+        sent++;
+      } else {
+        skipped++;
+      }
+    } catch (err) {
+      console.error(
+        `[cron/reminders] Failed for booking ${booking.id}:`,
+        err,
+      );
+      skipped++;
+    }
+  }
+
+  return { sent, skipped };
+}
+
+async function handleRequest(req: NextRequest): Promise<NextResponse> {
+  const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret) {
     console.error("[cron/reminders] CRON_SECRET is not configured");
     return NextResponse.json({ error: "Cron secret is not configured" }, { status: 500 });
   }
 
+  const bearerToken = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+  const providedSecret = bearerToken || req.headers.get("x-cron-secret");
   if (providedSecret !== cronSecret) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
     const supabase = await createAdminClient();
-    const now = new Date();
-    const windowStart = new Date(now.getTime() + 23 * 60 * 60 * 1000);
-    const windowEnd = new Date(now.getTime() + 25 * 60 * 60 * 1000);
 
-    // Find bookings starting in ~24 hours that haven't been reminded
-    const { data: bookings, error: fetchErr } = await supabase
-      .from("bookings")
-      .select(`
-        id, workspace_id, client_id, service_name, start_at, end_at, price,
-        reminder_sent_at
-      `)
-      .eq("status", "confirmed")
-      .gte("start_at", windowStart.toISOString())
-      .lte("start_at", windowEnd.toISOString())
-      .is("reminder_sent_at", null)
-      .limit(100);
+    const { data: rules } = await supabase
+      .from("automation_rules")
+      .select("id, workspace_id, timing_value, timing_unit")
+      .eq("type", "appointment_reminder")
+      .eq("enabled", true);
 
-    if (fetchErr) {
-      console.error("[cron/reminders] Fetch error:", fetchErr);
-      return NextResponse.json({ error: "Failed to fetch bookings" }, { status: 500 });
+    if (!rules || rules.length === 0) {
+      return NextResponse.json({ sent: 0, skipped: 0, message: "No workspaces with appointment_reminder enabled" });
     }
 
-    if (!bookings || bookings.length === 0) {
-      return NextResponse.json({ sent: 0, message: "No reminders to send" });
-    }
+    let totalSent = 0;
+    let totalSkipped = 0;
 
-    const resendApiKey = process.env.RESEND_API_KEY;
-    let sent = 0;
-    let skipped = 0;
-
-    for (const booking of bookings) {
+    for (const rule of rules as TimingRule[]) {
       try {
-        // Get client email
-        const { data: client } = await supabase
-          .from("clients")
-          .select("name, email")
-          .eq("id", booking.client_id)
-          .maybeSingle();
-
-        if (!client?.email) {
-          skipped++;
-          continue;
-        }
-
-        // Get workspace name
-        const { data: workspace } = await supabase
-          .from("workspaces")
-          .select("name")
-          .eq("id", booking.workspace_id)
-          .maybeSingle();
-
-        const businessName = workspace?.name || "Your Salon";
-        const startAt = new Date(booking.start_at);
-        const formattedDate = startAt.toLocaleDateString("en-AU", {
-          weekday: "long",
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        });
-        const formattedTime = startAt.toLocaleTimeString("en-AU", {
-          hour: "numeric",
-          minute: "2-digit",
-          hour12: true,
-        });
-
-        // Send email
-        if (resendApiKey) {
-          const { Resend } = await import("resend");
-          const resend = new Resend(resendApiKey);
-
-          await resend.emails.send({
-            from: `${businessName} <bookings@magiccrm.app>`,
-            to: client.email,
-            subject: `Reminder: ${booking.service_name || "Appointment"} tomorrow at ${formattedTime}`,
-            html: `
-              <div style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;">
-                <h1 style="font-size:20px;font-weight:700;color:#111;margin:0 0 4px;">Appointment Reminder</h1>
-                <p style="font-size:14px;color:#666;margin:0 0 24px;">${businessName}</p>
-                <div style="background:#f9f9f9;border-radius:12px;padding:20px;margin-bottom:24px;">
-                  <p style="margin:0 0 4px;font-size:13px;color:#999;">Hi ${client.name},</p>
-                  <p style="margin:0 0 16px;font-size:14px;color:#333;">This is a friendly reminder about your upcoming appointment:</p>
-                  <p style="margin:0 0 8px;"><strong style="color:#111;">${booking.service_name || "Appointment"}</strong></p>
-                  <p style="margin:0 0 4px;font-size:13px;color:#555;">${formattedDate}</p>
-                  <p style="margin:0;font-size:13px;color:#555;">${formattedTime}</p>
-                </div>
-                <p style="font-size:13px;color:#666;margin:0 0 24px;">If you need to reschedule, please contact us as soon as possible.</p>
-                <p style="font-size:11px;color:#ccc;margin:0;">Powered by Magic</p>
-              </div>
-            `,
-          });
-        } else if (process.env.NODE_ENV === "development") {
-          console.log(`[DEV] Reminder email → ${client.email}: ${booking.service_name} on ${formattedDate} at ${formattedTime}`);
-        }
-
-        // Mark reminder as sent
-        await supabase
-          .from("bookings")
-          .update({ reminder_sent_at: new Date().toISOString() })
-          .eq("id", booking.id);
-
-        sent++;
+        const { sent, skipped } = await processWorkspaceReminders(supabase, rule);
+        totalSent += sent;
+        totalSkipped += skipped;
       } catch (err) {
-        console.error(`[cron/reminders] Failed for booking ${booking.id}:`, err);
-        skipped++;
+        console.error(
+          `[cron/reminders] Workspace ${rule.workspace_id} failed:`,
+          err,
+        );
       }
     }
 
     return NextResponse.json({
-      sent,
-      skipped,
-      total: bookings.length,
-      message: `Sent ${sent} reminder${sent !== 1 ? "s" : ""}, skipped ${skipped}`,
+      sent: totalSent,
+      skipped: totalSkipped,
+      workspaces: rules.length,
+      message: `Sent ${totalSent} reminder${totalSent !== 1 ? "s" : ""} across ${rules.length} workspace${rules.length !== 1 ? "s" : ""}`,
     });
   } catch (error) {
     console.error("[cron/reminders] Unexpected error:", error);
     return NextResponse.json({ error: "Failed to process reminders" }, { status: 500 });
   }
 }
+
+export const GET = handleRequest;
+export const POST = handleRequest;

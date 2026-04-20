@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useMarketingStore } from "@/store/marketing";
 import { useAuth } from "@/hooks/useAuth";
-import { Campaign, CampaignType, CampaignStatus } from "@/types/models";
+import { Campaign, CampaignChannel, CampaignSegment, CampaignStatus } from "@/types/models";
 import { SlideOver } from "@/components/ui/SlideOver";
 import { FormField } from "@/components/ui/FormField";
 import { SelectField } from "@/components/ui/SelectField";
@@ -18,56 +18,79 @@ interface CampaignFormProps {
   campaign?: Campaign;
 }
 
-const typeOptions = [
+const channelOptions: { value: CampaignChannel; label: string }[] = [
   { value: "email", label: "Email" },
-  { value: "social", label: "Social" },
+  { value: "sms", label: "SMS" },
+  { value: "both", label: "Both" },
 ];
 
-const statusOptions = [
+const segmentOptions: { value: CampaignSegment; label: string }[] = [
+  { value: "all", label: "All Clients" },
+  { value: "new", label: "New Clients" },
+  { value: "returning", label: "Returning Clients" },
+  { value: "inactive", label: "Inactive Clients" },
+  { value: "high_value", label: "High Value" },
+];
+
+const statusOptions: { value: CampaignStatus; label: string }[] = [
   { value: "draft", label: "Draft" },
   { value: "scheduled", label: "Scheduled" },
+  { value: "sending", label: "Sending" },
   { value: "sent", label: "Sent" },
-  { value: "active", label: "Active" },
 ];
 
 const emptyForm = {
   name: "",
-  type: "email" as CampaignType,
+  channel: "email" as CampaignChannel,
+  targetSegment: "all" as CampaignSegment,
   status: "draft" as CampaignStatus,
   subject: "",
-  content: "",
-  audienceTags: "",
+  body: "",
   scheduledAt: "",
 };
 
 export function CampaignForm({ open, onClose, campaign }: CampaignFormProps) {
+  const formKey = campaign?.id ?? (open ? "new" : "closed");
+
+  return (
+    <SlideOver
+      open={open}
+      onClose={onClose}
+      title={campaign ? "Edit Campaign" : "New Campaign"}
+    >
+      {open ? (
+        <CampaignFormFields key={formKey} campaign={campaign} onClose={onClose} />
+      ) : null}
+    </SlideOver>
+  );
+}
+
+function getInitialCampaignForm(campaign?: Campaign) {
+  if (!campaign) return emptyForm;
+
+  return {
+    name: campaign.name,
+    channel: campaign.channel,
+    targetSegment: campaign.targetSegment,
+    status: campaign.status,
+    subject: campaign.subject ?? "",
+    body: campaign.body,
+    scheduledAt: campaign.scheduledAt ? campaign.scheduledAt.split("T")[0] : "",
+  };
+}
+
+function CampaignFormFields({
+  campaign,
+  onClose,
+}: {
+  campaign?: Campaign;
+  onClose: () => void;
+}) {
   const { addCampaign, updateCampaign, deleteCampaign } = useMarketingStore();
   const { workspaceId } = useAuth();
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState(() => getInitialCampaignForm(campaign));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [deleteOpen, setDeleteOpen] = useState(false);
-
-  useEffect(() => {
-    if (open) {
-      if (campaign) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setForm({
-          name: campaign.name,
-          type: campaign.type,
-          status: campaign.status,
-          subject: campaign.subject ?? "",
-          content: campaign.content,
-          audienceTags: campaign.audienceTags.join(", "),
-          scheduledAt: campaign.scheduledAt
-            ? campaign.scheduledAt.split("T")[0]
-            : "",
-        });
-      } else {
-        setForm(emptyForm);
-      }
-      setErrors({});
-    }
-  }, [open, campaign]);
 
   const validate = () => {
     const errs: Record<string, string> = {};
@@ -80,18 +103,17 @@ export function CampaignForm({ open, onClose, campaign }: CampaignFormProps) {
     e.preventDefault();
     if (!validate()) return;
 
-    const tags = form.audienceTags
-      .split(",")
-      .map((t) => t.trim())
-      .filter(Boolean);
-
-    const data = {
+    const data: Omit<Campaign, "id" | "createdAt" | "updatedAt"> = {
+      workspaceId: workspaceId ?? "",
       name: form.name.trim(),
-      type: form.type,
+      channel: form.channel,
+      targetSegment: form.targetSegment,
       status: form.status,
-      subject: form.type === "email" ? form.subject.trim() || undefined : undefined,
-      content: form.content.trim(),
-      audienceTags: tags,
+      subject: form.channel === "email" || form.channel === "both" ? form.subject.trim() || undefined : undefined,
+      body: form.body.trim(),
+      sentCount: campaign?.sentCount ?? 0,
+      openCount: campaign?.openCount ?? 0,
+      clickCount: campaign?.clickCount ?? 0,
       scheduledAt: form.scheduledAt
         ? new Date(form.scheduledAt).toISOString()
         : undefined,
@@ -110,11 +132,7 @@ export function CampaignForm({ open, onClose, campaign }: CampaignFormProps) {
     setForm((f) => ({ ...f, [key]: value }));
 
   return (
-    <SlideOver
-      open={open}
-      onClose={onClose}
-      title={campaign ? "Edit Campaign" : "New Campaign"}
-    >
+    <>
       <form onSubmit={handleSubmit} className="space-y-5">
         <FormField label="Campaign Name" required error={errors.name}>
           <input
@@ -126,11 +144,19 @@ export function CampaignForm({ open, onClose, campaign }: CampaignFormProps) {
           />
         </FormField>
 
-        <FormField label="Type">
+        <FormField label="Channel">
           <SelectField
-            options={typeOptions}
-            value={form.type}
-            onChange={(e) => set("type", e.target.value)}
+            options={channelOptions}
+            value={form.channel}
+            onChange={(e) => set("channel", e.target.value)}
+          />
+        </FormField>
+
+        <FormField label="Target Segment">
+          <SelectField
+            options={segmentOptions}
+            value={form.targetSegment}
+            onChange={(e) => set("targetSegment", e.target.value)}
           />
         </FormField>
 
@@ -142,7 +168,7 @@ export function CampaignForm({ open, onClose, campaign }: CampaignFormProps) {
           />
         </FormField>
 
-        {form.type === "email" && (
+        {(form.channel === "email" || form.channel === "both") && (
           <FormField label="Subject">
             <input
               type="text"
@@ -154,26 +180,13 @@ export function CampaignForm({ open, onClose, campaign }: CampaignFormProps) {
           </FormField>
         )}
 
-        <FormField label="Content">
+        <FormField label="Body">
           <TextArea
-            value={form.content}
-            onChange={(e) => set("content", e.target.value)}
+            value={form.body}
+            onChange={(e) => set("body", e.target.value)}
             placeholder="Campaign message or body content..."
             rows={5}
           />
-        </FormField>
-
-        <FormField label="Audience Tags">
-          <input
-            type="text"
-            value={form.audienceTags}
-            onChange={(e) => set("audienceTags", e.target.value)}
-            className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
-            placeholder="e.g. vip, new-customer, local"
-          />
-          <p className="text-xs text-text-secondary mt-1">
-            Comma-separated list of tags
-          </p>
         </FormField>
 
         <FormField label="Scheduled Date">
@@ -212,6 +225,6 @@ export function CampaignForm({ open, onClose, campaign }: CampaignFormProps) {
         confirmLabel="Delete"
         variant="danger"
       />
-    </SlideOver>
+    </>
   );
 }

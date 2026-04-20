@@ -1,159 +1,108 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { LoyaltyTransaction, ReferralCode } from "@/types/models";
+import type { LoyaltyConfig, LoyaltyBalance, ReferralCode } from "@/types/models";
 import { generateId } from "@/lib/id";
-import { logActivity } from "@/lib/activity-logger";
 import { toast } from "@/components/ui/Toast";
-import { validateLoyaltyTransaction, sanitize } from "@/lib/validation";
-import {
-  fetchLoyaltyTransactions, dbCreateTransaction, dbUpsertTransactions, mapTransactionFromDB,
-  fetchReferralCodes, dbCreateReferralCode, dbUpdateReferralCode, dbUpsertReferralCodes, mapReferralFromDB,
-} from "@/lib/db/loyalty";
+
+function generateReferralCode(name: string): string {
+  const prefix = name.replace(/\s+/g, "").substring(0, 4).toUpperCase();
+  const suffix = Math.floor(Math.random() * 9000 + 1000);
+  return `${prefix}${suffix}`;
+}
 
 interface LoyaltyStore {
-  transactions: LoyaltyTransaction[];
+  config: LoyaltyConfig;
+  balances: Record<string, LoyaltyBalance>; // keyed by clientId
   referralCodes: ReferralCode[];
-  pointsPerDollar: number;
-  redeemThreshold: number;
-  redeemValue: number;
-  referralBonus: number;
-  setConfig: (config: { pointsPerDollar?: number; redeemThreshold?: number; redeemValue?: number; referralBonus?: number }) => void;
-  addTransaction: (data: Omit<LoyaltyTransaction, "id" | "createdAt">, workspaceId?: string) => void;
-  getClientPoints: (clientId: string) => number;
-  addReferralCode: (data: Omit<ReferralCode, "id" | "createdAt" | "timesUsed">, workspaceId?: string) => ReferralCode;
-  useReferralCode: (code: string, workspaceId?: string) => void;
 
-  // Supabase sync
-  syncToSupabase: (workspaceId: string) => Promise<void>;
-  loadFromSupabase: (workspaceId: string) => Promise<void>;
+  updateConfig: (data: Partial<LoyaltyConfig>) => void;
+  awardPoints: (clientId: string, points: number) => void;
+  redeemPoints: (clientId: string, points: number) => boolean;
+  getBalance: (clientId: string) => LoyaltyBalance;
+  createReferralCode: (clientId: string, clientName: string, workspaceId: string) => ReferralCode;
+  recordReferral: (code: string) => void;
 }
 
 export const useLoyaltyStore = create<LoyaltyStore>()(
   persist(
     (set, get) => ({
-      transactions: [],
+      config: {
+        pointsPerBooking: 10,
+        pointsPerDollar: 0,
+        redemptionThreshold: 100, // 100 points = $10 off
+        enabled: true,
+      },
+      balances: {},
       referralCodes: [],
-      pointsPerDollar: 1,
-      redeemThreshold: 100,
-      redeemValue: 10,
-      referralBonus: 50,
-      setConfig: (config) => set(config),
-      addTransaction: (data, workspaceId?) => {
-        // Validate input
-        const validation = validateLoyaltyTransaction(data);
-        if (!validation.valid) {
-          toast(validation.errors[0], "error");
-          return;
-        }
 
-        // Sanitize string fields
-        const sanitizedData = {
-          ...data,
-          clientName: sanitize(data.clientName),
-          description: data.description ? sanitize(data.description) : "",
-        };
-
-        const tx: LoyaltyTransaction = { ...sanitizedData, id: generateId(), createdAt: new Date().toISOString() };
-        set((s) => ({ transactions: [...s.transactions, tx] }));
-        if (sanitizedData.type === "earned") {
-          logActivity("create", "loyalty", `${sanitizedData.clientName} earned ${sanitizedData.points} points`);
-          toast(`${sanitizedData.clientName} earned ${sanitizedData.points} points`);
-        } else if (sanitizedData.type === "redeemed") {
-          toast(`${sanitizedData.clientName} redeemed ${sanitizedData.points} points`);
-        }
-
-        if (workspaceId) {
-          dbCreateTransaction(workspaceId, tx).catch((err) => {
-            set((s) => ({ transactions: s.transactions.filter((t) => t.id !== tx.id) }));
-            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving loyalty transaction" }));
-          });
-        }
+      updateConfig: (data) => {
+        set((s) => ({ config: { ...s.config, ...data } }));
+        toast("Loyalty settings updated");
       },
-      getClientPoints: (clientId) => {
-        const txs = get().transactions.filter((t) => t.clientId === clientId);
-        return txs.reduce((sum, t) => sum + (t.type === "redeemed" ? -t.points : t.points), 0);
-      },
-      addReferralCode: (data, workspaceId?) => {
-        // Sanitize code field
-        const sanitizedData = {
-          ...data,
-          code: sanitize(data.code),
-        };
 
-        const code: ReferralCode = { ...sanitizedData, id: generateId(), timesUsed: 0, createdAt: new Date().toISOString() };
+      awardPoints: (clientId, points) => {
+        set((s) => {
+          const existing = s.balances[clientId] || { clientId, totalEarned: 0, totalRedeemed: 0, balance: 0 };
+          return {
+            balances: {
+              ...s.balances,
+              [clientId]: {
+                ...existing,
+                totalEarned: existing.totalEarned + points,
+                balance: existing.balance + points,
+              },
+            },
+          };
+        });
+      },
+
+      redeemPoints: (clientId, points) => {
+        const balance = get().balances[clientId];
+        if (!balance || balance.balance < points) return false;
+        set((s) => ({
+          balances: {
+            ...s.balances,
+            [clientId]: {
+              ...balance,
+              totalRedeemed: balance.totalRedeemed + points,
+              balance: balance.balance - points,
+            },
+          },
+        }));
+        toast(`Redeemed ${points} points`);
+        return true;
+      },
+
+      getBalance: (clientId) => {
+        return get().balances[clientId] || { clientId, totalEarned: 0, totalRedeemed: 0, balance: 0 };
+      },
+
+      createReferralCode: (clientId, clientName, workspaceId) => {
+        const existing = get().referralCodes.find((r) => r.clientId === clientId);
+        if (existing) return existing;
+        const code: ReferralCode = {
+          id: generateId(),
+          workspaceId,
+          clientId,
+          clientName,
+          code: generateReferralCode(clientName),
+          referralsMade: 0,
+          rewardsCredited: 0,
+          createdAt: new Date().toISOString(),
+        };
         set((s) => ({ referralCodes: [...s.referralCodes, code] }));
-        toast(`Referral code ${sanitizedData.code} created`);
-
-        if (workspaceId) {
-          dbCreateReferralCode(workspaceId, code).catch((err) => {
-            set((s) => ({ referralCodes: s.referralCodes.filter((c) => c.id !== code.id) }));
-            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving referral code" }));
-          });
-        }
+        toast(`Referral code ${code.code} created for ${clientName}`);
         return code;
       },
-      useReferralCode: (code, workspaceId?) => {
-        // Capture previous state for rollback
-        const previousCodes = get().referralCodes;
-        let newTimesUsed = 0;
+
+      recordReferral: (code) => {
         set((s) => ({
-          referralCodes: s.referralCodes.map((r) => {
-            if (r.code === code) {
-              newTimesUsed = r.timesUsed + 1;
-              return { ...r, timesUsed: newTimesUsed };
-            }
-            return r;
-          }),
+          referralCodes: s.referralCodes.map((r) =>
+            r.code === code ? { ...r, referralsMade: r.referralsMade + 1 } : r
+          ),
         }));
-
-        if (workspaceId) {
-          dbUpdateReferralCode(workspaceId, code, newTimesUsed).catch((err) => {
-            set({ referralCodes: previousCodes });
-            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "updating referral code usage" }));
-          });
-        }
-      },
-
-      // ---------------------------------------------------------------
-      // Supabase sync
-      // ---------------------------------------------------------------
-
-      syncToSupabase: async (workspaceId: string) => {
-        try {
-          const { transactions, referralCodes } = get();
-          await Promise.all([
-            dbUpsertTransactions(workspaceId, transactions),
-            dbUpsertReferralCodes(workspaceId, referralCodes),
-          ]);
-        } catch (err) {
-          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing loyalty data to Supabase" }));
-        }
-      },
-
-      loadFromSupabase: async (workspaceId: string) => {
-        try {
-          const [txRows, codeRows] = await Promise.all([
-            fetchLoyaltyTransactions(workspaceId),
-            fetchReferralCodes(workspaceId),
-          ]);
-
-          const updates: Record<string, unknown> = {};
-
-          if (txRows && txRows.length > 0) {
-            updates.transactions = txRows.map((r: Record<string, unknown>) => mapTransactionFromDB(r));
-          }
-          if (codeRows && codeRows.length > 0) {
-            updates.referralCodes = codeRows.map((r: Record<string, unknown>) => mapReferralFromDB(r));
-          }
-
-          if (Object.keys(updates).length > 0) {
-            set(updates as Partial<LoyaltyStore>);
-          }
-        } catch (err) {
-          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "loading loyalty data from Supabase" }));
-        }
       },
     }),
-    { name: "magic-crm-loyalty" }
+    { name: "magic-crm-loyalty", version: 1 }
   )
 );

@@ -123,7 +123,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setMember(null);
         }
       } catch (error) {
-        console.error("[useAuth] init failed:", error);
+        console.warn("[useAuth] init failed, running in demo mode:", error);
+        // Don't wait for the timeout — immediately stop loading
+        if (!cancelled) setLoading(false);
+        return;
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -133,7 +136,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const timeout = setTimeout(() => {
       if (!cancelled) setLoading(false);
-    }, 8000);
+    }, 2000);
 
     const {
       data: { subscription },

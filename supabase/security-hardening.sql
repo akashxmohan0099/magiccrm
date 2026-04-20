@@ -10,6 +10,30 @@ ALTER TABLE IF EXISTS workspace_settings
 ALTER TABLE IF EXISTS workspace_settings
   ADD COLUMN IF NOT EXISTS google_calendar_tokens JSONB;
 
+ALTER TABLE IF EXISTS workspace_settings
+  ADD COLUMN IF NOT EXISTS artist_type TEXT;
+
+ALTER TABLE IF EXISTS workspace_settings
+  ADD COLUMN IF NOT EXISTS work_location TEXT;
+
+ALTER TABLE IF EXISTS workspace_settings
+  ADD COLUMN IF NOT EXISTS team_size TEXT;
+
+ALTER TABLE IF EXISTS workspace_settings
+  ADD COLUMN IF NOT EXISTS booking_channels TEXT[] DEFAULT '{}';
+
+ALTER TABLE IF EXISTS workspace_settings
+  ADD COLUMN IF NOT EXISTS payment_methods TEXT[] DEFAULT '{}';
+
+ALTER TABLE IF EXISTS workspace_settings
+  ADD COLUMN IF NOT EXISTS resolved_persona TEXT;
+
+ALTER TABLE IF EXISTS workspace_settings
+  ADD COLUMN IF NOT EXISTS selected_onboarding_actions TEXT[] DEFAULT '{}';
+
+ALTER TABLE IF EXISTS workspace_settings
+  ADD COLUMN IF NOT EXISTS onboarding_follow_ups JSONB DEFAULT '{}';
+
 DO $$
 BEGIN
   IF EXISTS (

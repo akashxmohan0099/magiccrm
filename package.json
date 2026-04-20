@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.79.0",
-    "@rolldown/binding-linux-arm64-gnu": "^1.0.0-rc.13",
+    "@sentry/nextjs": "^10.49.0",
     "@supabase/ssr": "^0.9.0",
     "@supabase/supabase-js": "^2.99.2",
     "@upstash/ratelimit": "^2.0.8",
@@ -23,6 +23,8 @@
     "lucide-react": "^0.577.0",
     "next": "16.1.7",
     "openai": "^6.33.0",
+    "posthog-js": "^1.369.0",
+    "posthog-node": "^5.29.2",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "resend": "^6.9.4",
@@ -43,6 +45,7 @@
     "vitest": "^4.1.1"
   },
   "optionalDependencies": {
-    "@next/swc-linux-arm64-gnu": "^16.1.7"
+    "@next/swc-linux-arm64-gnu": "^16.2.4",
+    "@rolldown/binding-linux-arm64-gnu": "^1.0.0-rc.13"
   }
 }

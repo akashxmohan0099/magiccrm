@@ -1,45 +1,27 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import {
-  Mail,
-  Phone,
-  Building2,
-  MapPin,
-  Calendar,
-  Pencil,
-  Trash2,
-  Receipt,
-  FolderKanban,
-  Plus,
-  AlertTriangle,
+  Mail, Phone, Calendar, Trash2, Plus, Clock, CreditCard,
+  MessageCircle, CheckCircle2, XCircle, Bell, FileText,
+  ChevronRight, ChevronDown, DollarSign, User, ExternalLink,
 } from "lucide-react";
 import { useClientsStore } from "@/store/clients";
-import { useActivityStore } from "@/store/activity";
-import { useLeadsStore } from "@/store/leads";
-import { useJobsStore } from "@/store/jobs";
-import { useInvoicesStore } from "@/store/invoices";
 import { useBookingsStore } from "@/store/bookings";
-import { useVocabulary } from "@/hooks/useVocabulary";
-import { useIndustryConfig } from "@/hooks/useIndustryConfig";
+import { useServicesStore } from "@/store/services";
+import { useTeamStore } from "@/store/team";
+import { usePaymentsStore } from "@/store/payments";
+import { useCommunicationStore } from "@/store/communication";
 import { useAuth } from "@/hooks/useAuth";
+import { useCreatePayment } from "@/hooks/useCreatePayment";
 import { SlideOver } from "@/components/ui/SlideOver";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { FeatureSection } from "@/components/modules/FeatureSection";
-import { LinkedRecords } from "@/components/modules/LinkedRecords";
 import { BookingForm } from "@/components/modules/bookings/BookingForm";
-import { InvoiceForm } from "@/components/modules/invoicing/InvoiceForm";
-import { JobForm } from "@/components/modules/jobs/JobForm";
-import { LashMapSection } from "./LashMapSection";
-import { useOnboardingStore } from "@/store/onboarding";
-import { ClientForm } from "./ClientForm";
-import { ClientTags } from "./ClientTags";
-import { SegmentationFilters } from "./SegmentationFilters";
-import { FollowUpSection } from "./FollowUpSection";
-import { RelationshipsSection } from "./RelationshipsSection";
-import { DiscussionThread } from "@/components/ui/DiscussionThread";
+
+type Tab = "overview" | "bookings" | "payments" | "conversations" | "activity";
 
 interface ClientDetailProps {
   open: boolean;
@@ -50,50 +32,114 @@ interface ClientDetailProps {
 export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
   const { getClient, deleteClient, updateClient } = useClientsStore();
   const { workspaceId } = useAuth();
-  const { leads } = useLeadsStore();
-  const { jobs } = useJobsStore();
-  const { invoices } = useInvoicesStore();
   const { bookings } = useBookingsStore();
-  const { entries: activityEntries } = useActivityStore();
-  const vocab = useVocabulary();
-  const config = useIndustryConfig();
-  const customFieldDefs = config.customFields?.clients ?? [];
-  const selectedPersona = useOnboardingStore((s) => s.selectedPersona);
-  const [editOpen, setEditOpen] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [rebookOpen, setRebookOpen] = useState(false);
-  const [invoiceFormOpen, setInvoiceFormOpen] = useState(false);
-  const [bookingFormOpen, setBookingFormOpen] = useState(false);
-  const [jobFormOpen, setJobFormOpen] = useState(false);
+  const { services } = useServicesStore();
+  const { members } = useTeamStore();
+  const { documents } = usePaymentsStore();
+  const { conversations, getMessages } = useCommunicationStore();
+  const { createPayment } = useCreatePayment();
 
-  const lastBooking = useMemo(() => {
-    if (!clientId) return undefined;
-    return bookings
-      .filter((b) => b.clientId === clientId && b.status !== "cancelled")
-      .sort((a, b) => (b.date ?? "").localeCompare(a.date ?? "") || (b.startTime ?? "").localeCompare(a.startTime ?? ""))[0];
-  }, [bookings, clientId]);
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState<Tab>("overview");
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [bookingFormOpen, setBookingFormOpen] = useState(false);
+  const [expandedBookingId, setExpandedBookingId] = useState<string | null>(null);
 
   const client = clientId ? getClient(clientId) : undefined;
 
-  const clientActivities = useMemo(() => {
-    if (!client) return [];
-    return activityEntries.filter(
-      (entry) =>
-        entry.entityId === client.id ||
-        (entry.description ?? "").toLowerCase().includes(client.name.toLowerCase())
-    );
-  }, [activityEntries, client]);
+  const serviceMap = useMemo(() => new Map(services.map((s) => [s.id, s])), [services]);
+  const memberMap = useMemo(() => new Map(members.map((m) => [m.id, m])), [members]);
 
-  const linkedLeads = clientId ? leads.filter((l) => l.clientId === clientId).length : 0;
-  const linkedJobs = clientId ? jobs.filter((j) => j.clientId === clientId).length : 0;
-  const linkedInvoices = clientId ? invoices.filter((i) => i.clientId === clientId).length : 0;
-  const linkedBookings = clientId ? bookings.filter((b) => b.clientId === clientId).length : 0;
-  const hasLinkedRecords = linkedLeads + linkedJobs + linkedInvoices + linkedBookings > 0;
+  const clientBookings = useMemo(
+    () => clientId ? bookings.filter((b) => b.clientId === clientId).sort((a, b) => b.date.localeCompare(a.date)) : [],
+    [bookings, clientId]
+  );
+
+  const clientPayments = useMemo(
+    () => clientId ? documents.filter((d) => d.clientId === clientId).sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || "")) : [],
+    [documents, clientId]
+  );
+
+  const clientConversations = useMemo(
+    () => clientId ? conversations.filter((c) => c.clientId === clientId) : [],
+    [conversations, clientId]
+  );
+
+  const completedCount = useMemo(() => clientBookings.filter((b) => b.status === "completed").length, [clientBookings]);
+  const totalSpend = useMemo(() => clientPayments.filter((d) => d.status === "paid").reduce((s, d) => s + d.total, 0), [clientPayments]);
+
+  const lastBooking = useMemo(
+    () => clientBookings.find((b) => b.status === "completed"),
+    [clientBookings]
+  );
+  const nextBooking = useMemo(
+    () => {
+      const today = new Date().toISOString().split("T")[0];
+      return [...clientBookings].reverse().find((b) => (b.status === "confirmed" || b.status === "pending") && b.date >= today);
+    },
+    [clientBookings]
+  );
+
+  // Build activity timeline from all related data
+  const activityEvents = useMemo(() => {
+    if (!clientId) return [];
+    type Event = { time: string; label: string; detail?: string; color: string; icon: typeof Calendar };
+    const events: Event[] = [];
+
+    // Client created
+    if (client) {
+      events.push({ time: client.createdAt, label: "Client record created", color: "bg-blue-500", icon: User });
+    }
+
+    // Bookings
+    for (const b of clientBookings) {
+      const svc = b.serviceId ? serviceMap.get(b.serviceId)?.name : "Appointment";
+      events.push({ time: b.createdAt, label: `Booking created`, detail: `${svc} on ${formatDateShort(b.date)}`, color: "bg-blue-500", icon: Calendar });
+
+      if (b.status === "completed") {
+        events.push({ time: b.updatedAt, label: "Appointment completed", detail: svc, color: "bg-emerald-500", icon: CheckCircle2 });
+      }
+      if (b.status === "cancelled") {
+        events.push({ time: b.updatedAt, label: "Booking cancelled", detail: b.cancellationReason || svc, color: "bg-red-500", icon: XCircle });
+      }
+      if (b.status === "no_show") {
+        events.push({ time: b.updatedAt, label: "No-show", detail: svc, color: "bg-red-500", icon: XCircle });
+      }
+      if (b.reminderSentAt) {
+        events.push({ time: b.reminderSentAt, label: "Reminder sent", detail: svc, color: "bg-violet-500", icon: Bell });
+      }
+      if (b.followupSentAt) {
+        events.push({ time: b.followupSentAt, label: "Follow-up sent", detail: svc, color: "bg-violet-500", icon: Bell });
+      }
+      if (b.reviewRequestSentAt) {
+        events.push({ time: b.reviewRequestSentAt, label: "Review request sent", color: "bg-amber-500", icon: Bell });
+      }
+    }
+
+    // Payments
+    for (const d of clientPayments) {
+      events.push({ time: d.createdAt, label: `${d.label === "quote" ? "Quote" : "Invoice"} ${d.documentNumber} created`, detail: `$${d.total}`, color: "bg-blue-500", icon: FileText });
+      if (d.sentAt) {
+        events.push({ time: d.sentAt, label: `${d.documentNumber} sent to client`, color: "bg-violet-500", icon: Mail });
+      }
+      if (d.paidAt) {
+        events.push({ time: d.paidAt, label: `${d.documentNumber} paid`, detail: `$${d.total} via ${d.paymentMethod?.replace("_", " ") || "unknown"}`, color: "bg-emerald-500", icon: DollarSign });
+      }
+    }
+
+    // Conversations
+    for (const c of clientConversations) {
+      events.push({ time: c.createdAt, label: `Conversation started`, detail: `via ${c.channel}`, color: "bg-blue-500", icon: MessageCircle });
+    }
+
+    events.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+    return events;
+  }, [clientId, client, clientBookings, clientPayments, clientConversations, serviceMap]);
 
   if (!client) {
     return (
-      <SlideOver open={open} onClose={onClose} title={`${vocab.client} Details`}>
-        <p className="text-text-secondary text-sm">{vocab.client} not found.</p>
+      <SlideOver open={open} onClose={onClose} title="Client Details">
+        <p className="text-text-secondary text-sm">Client not found.</p>
       </SlideOver>
     );
   }
@@ -103,330 +149,308 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
     onClose();
   };
 
-  const [editingField, setEditingField] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState("");
-
-  const startEdit = (field: string, currentValue: string) => {
-    setEditingField(field);
-    setEditValue(currentValue);
-  };
-
-  const saveEdit = (field: string) => {
-    if (client) {
-      updateClient(client.id, { [field]: editValue }, workspaceId ?? undefined);
-    }
-    setEditingField(null);
-  };
-
-  const infoRow = (
-    icon: React.ReactNode,
-    label: string,
-    value: string | undefined,
-    field?: string
-  ) => (
-    <div
-      className={`flex items-start gap-3 py-2 ${field ? "cursor-pointer hover:bg-surface/80 -mx-2 px-2 rounded-lg transition-colors" : ""}`}
-      onClick={() => field && value !== undefined && startEdit(field, value || "")}
-    >
-      <span className="text-text-secondary mt-0.5">{icon}</span>
-      <div className="flex-1 min-w-0">
-        <p className="text-xs text-text-secondary">{label}</p>
-        {field && editingField === field ? (
-          <input
-            autoFocus
-            value={editValue}
-            onChange={(e) => setEditValue(e.target.value)}
-            onBlur={() => saveEdit(field!)}
-            onKeyDown={(e) => { if (e.key === "Enter") saveEdit(field!); if (e.key === "Escape") setEditingField(null); }}
-            className="text-sm text-foreground bg-transparent border-b border-primary/40 outline-none w-full py-0.5"
-          />
-        ) : (
-          <p className="text-sm text-foreground">{value || <span className="text-text-tertiary italic">Add {label.toLowerCase()}</span>}</p>
-        )}
-      </div>
-    </div>
-  );
+  const tabs: { key: Tab; label: string; count?: number }[] = [
+    { key: "overview", label: "Overview" },
+    { key: "bookings", label: "Bookings", count: clientBookings.length },
+    { key: "payments", label: "Payments", count: clientPayments.length },
+    { key: "conversations", label: "Messages", count: clientConversations.length },
+    { key: "activity", label: "Activity", count: activityEvents.length },
+  ];
 
   return (
     <>
-      <SlideOver open={open} onClose={onClose} title={`${vocab.client} Details`}>
-        <div className="space-y-6">
-          {/* Auto-Inactive Flag */}
-          <FeatureSection moduleId="client-database" featureId="auto-inactive-flag" featureLabel="Auto-Inactive Flag">
-            <div className="mb-4 px-4 py-3 bg-yellow-50 border border-yellow-200 rounded-xl flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-yellow-600 flex-shrink-0" />
-              <p className="text-xs text-yellow-800">This client has been inactive. Consider reaching out.</p>
-            </div>
-          </FeatureSection>
-
+      <SlideOver open={open} onClose={onClose} title="">
+        <div className="-mt-2">
           {/* Header */}
-          <div className="flex items-start justify-between">
-            <div>
-              <h3 className="text-xl font-semibold text-foreground tracking-tight">
-                {client.name}
-              </h3>
-              {client.company && (
-                <p className="text-sm text-text-secondary mt-0.5">
-                  {client.company}
-                </p>
-              )}
-              <div className="mt-2">
-                <StatusBadge status={client.status} />
-              </div>
+          <div className="flex items-start justify-between mb-1">
+            <div className="flex-1 min-w-0">
+              <InlineField value={client.name} field="name" clientId={client.id} updateClient={updateClient} workspaceId={workspaceId} className="text-xl font-bold text-foreground tracking-tight" />
+              <p className="text-[12px] text-text-secondary mt-0.5">Client since {formatDateShort(client.createdAt)}</p>
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setDeleteOpen(true)}
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                Delete
-              </Button>
-            </div>
+            <Button variant="ghost" size="sm" onClick={() => setDeleteOpen(true)}>
+              <Trash2 className="w-3.5 h-3.5" />
+            </Button>
           </div>
 
-          {/* Client Snapshot */}
-          {(() => {
-            const clientBookingsList = bookings.filter((b) => b.clientId === client.id);
-            const completedCount = clientBookingsList.filter((b) => b.status === "completed").length;
-            const lastBooking2 = clientBookingsList.filter((b) => b.status === "completed").sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""))[0];
-            const nextBooking = clientBookingsList.filter((b) => (b.status === "confirmed" || b.status === "pending") && b.date >= new Date().toISOString().split("T")[0]).sort((a, b) => a.date.localeCompare(b.date))[0];
-            const clientInvoicesList = invoices.filter((i) => i.clientId === client.id && i.status === "paid");
-            const totalSpent = clientInvoicesList.reduce((sum, inv) => sum + (inv.lineItems ?? []).reduce((s, li) => s + li.quantity * li.unitPrice, 0), 0);
-
-            return (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <div className="bg-surface rounded-lg p-3 border border-border-light text-center">
-                  <p className="text-[18px] font-bold text-foreground">{completedCount}</p>
-                  <p className="text-[10px] text-text-tertiary">Visits</p>
-                </div>
-                <div className="bg-surface rounded-lg p-3 border border-border-light text-center">
-                  <p className="text-[18px] font-bold text-foreground">${totalSpent.toLocaleString()}</p>
-                  <p className="text-[10px] text-text-tertiary">Lifetime Value</p>
-                </div>
-                <div className="bg-surface rounded-lg p-3 border border-border-light text-center">
-                  <p className="text-[13px] font-semibold text-foreground truncate">{lastBooking2?.serviceName || "—"}</p>
-                  <p className="text-[10px] text-text-tertiary">{lastBooking2 ? `Last: ${new Date(lastBooking2.date).toLocaleDateString("en-AU", { day: "numeric", month: "short" })}` : "No visits"}</p>
-                </div>
-                <div className="bg-surface rounded-lg p-3 border border-border-light text-center">
-                  <p className="text-[13px] font-semibold text-foreground truncate">{nextBooking?.title || "—"}</p>
-                  <p className="text-[10px] text-text-tertiary">{nextBooking ? `Next: ${new Date(nextBooking.date).toLocaleDateString("en-AU", { day: "numeric", month: "short" })}` : "None booked"}</p>
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* Contact Info */}
-          <div className="bg-surface rounded-lg p-4 border border-border-light">
-            <h4 className="text-sm font-medium text-foreground mb-2">
-              Contact Information
-            </h4>
-            {infoRow(<Mail className="w-4 h-4" />, "Email", client.email, "email")}
-            {infoRow(<Phone className="w-4 h-4" />, "Phone", client.phone || "", "phone")}
-            {infoRow(<Building2 className="w-4 h-4" />, "Company", client.company || "", "company")}
-            {infoRow(<MapPin className="w-4 h-4" />, "Address", client.address || "", "address")}
-            {infoRow(<Calendar className="w-4 h-4" />, "Client Since", new Date(client.createdAt).toLocaleDateString())}
-          </div>
-
-          {/* Beauty Profile — Custom Fields (elevated for beauty pros) */}
-          {customFieldDefs.length > 0 && (() => {
-            const customData = client.customData ?? {};
-            const groups: Record<string, typeof customFieldDefs> = {};
-            for (const f of customFieldDefs) {
-              const g = f.group ?? "Profile";
-              if (!groups[g]) groups[g] = [];
-              groups[g].push(f);
-            }
-            return (
-              <div className="bg-surface rounded-lg p-4 border border-border-light">
-                {Object.entries(groups).map(([groupLabel, fields]) => (
-                  <div key={groupLabel} className="mb-3 last:mb-0">
-                    <h4 className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-2">{groupLabel}</h4>
-                    <div className="grid grid-cols-2 gap-2">
-                      {fields.map((f) => {
-                        const val = customData[f.id];
-                        const display = val === undefined || val === "" || val === false
-                          ? "—"
-                          : f.type === "toggle" ? "Yes" : String(val);
-                        return (
-                          <div key={f.id} className="py-1">
-                            <p className="text-[11px] text-text-tertiary">{f.label}</p>
-                            <p className="text-sm text-foreground">{display}</p>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            );
-          })()}
-
-          {/* Notes */}
-          {client.notes && (
-            <div className="bg-surface rounded-lg p-4 border border-border-light">
-              <h4 className="text-sm font-medium text-foreground mb-2">
-                Notes
-              </h4>
-              <p className="text-sm text-text-secondary whitespace-pre-wrap">
-                {client.notes}
+          {/* Summary strip */}
+          <div className="grid grid-cols-3 gap-1.5 sm:gap-2 mb-4">
+            <div className="bg-surface rounded-lg p-2.5 border border-border-light text-center">
+              <p className="text-[16px] font-bold text-foreground">{completedCount}</p>
+              <p className="text-[10px] text-text-tertiary">Visits</p>
+            </div>
+            <div className="bg-surface rounded-lg p-2.5 border border-border-light text-center">
+              <p className="text-[16px] font-bold text-foreground">${totalSpend.toLocaleString()}</p>
+              <p className="text-[10px] text-text-tertiary">Total Spend</p>
+            </div>
+            <div className="bg-surface rounded-lg p-2.5 border border-border-light text-center">
+              <p className="text-[13px] font-semibold text-foreground truncate">
+                {nextBooking ? (serviceMap.get(nextBooking.serviceId || "")?.name || "Booked") : "—"}
+              </p>
+              <p className="text-[10px] text-text-tertiary">
+                {nextBooking ? `Next: ${formatDateShort(nextBooking.date)}` : "No upcoming"}
               </p>
             </div>
-          )}
-
-          {/* Lash Map — persona gated */}
-          {selectedPersona === "lash-brow-tech" && client.id && (
-            <LashMapSection
-              clientId={client.id}
-              customData={client.customData ?? {}}
-              onUpdate={(newCustomData) => updateClient(client.id, { customData: newCustomData }, workspaceId ?? undefined)}
-            />
-          )}
-
-          {/* Linked Records */}
-          <LinkedRecords clientId={client.id} onNavigate={onClose} />
-
-          {/* Quick Actions */}
-          <div className="bg-surface rounded-lg p-4 border border-border-light">
-            <h4 className="text-sm font-medium text-foreground mb-3">
-              Quick Actions
-            </h4>
-            <div className="space-y-2">
-              <button
-                onClick={() => setInvoiceFormOpen(true)}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-[13px] text-foreground hover:bg-card-bg border border-transparent hover:border-border-light transition-all group w-full text-left cursor-pointer"
-              >
-                <Receipt className="w-4 h-4 text-text-secondary group-hover:text-primary transition-colors" />
-                <span>Create Invoice for {client.name}</span>
-                <Plus className="w-3.5 h-3.5 text-text-secondary ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
-              </button>
-              <button
-                onClick={() => setBookingFormOpen(true)}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-[13px] text-foreground hover:bg-card-bg border border-transparent hover:border-border-light transition-all group w-full text-left cursor-pointer"
-              >
-                <Calendar className="w-4 h-4 text-text-secondary group-hover:text-primary transition-colors" />
-                <span>Book Appointment</span>
-                <Plus className="w-3.5 h-3.5 text-text-secondary ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
-              </button>
-              {lastBooking && (
-                <button
-                  onClick={() => setRebookOpen(true)}
-                  className="flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-[13px] text-foreground hover:bg-card-bg border border-transparent hover:border-border-light transition-all group w-full text-left cursor-pointer"
-                >
-                  <Calendar className="w-4 h-4 text-text-secondary group-hover:text-primary transition-colors" />
-                  <span className="truncate">Rebook: {lastBooking.title}</span>
-                  <Plus className="w-3.5 h-3.5 text-text-secondary ml-auto flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </button>
-              )}
-              <button
-                onClick={() => setJobFormOpen(true)}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-[13px] text-foreground hover:bg-card-bg border border-transparent hover:border-border-light transition-all group w-full text-left cursor-pointer"
-              >
-                <FolderKanban className="w-4 h-4 text-text-secondary group-hover:text-primary transition-colors" />
-                <span>Create Job</span>
-                <Plus className="w-3.5 h-3.5 text-text-secondary ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
-              </button>
-            </div>
           </div>
 
-          {/* Custom fields already shown above in Beauty Profile section */}
+          {/* Tabs */}
+          <div className="flex gap-0.5 border-b border-border-light mb-4 -mx-1 overflow-x-auto">
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`px-2.5 sm:px-3 py-2 text-[12px] font-medium transition-colors cursor-pointer relative whitespace-nowrap ${
+                  activeTab === tab.key
+                    ? "text-foreground"
+                    : "text-text-tertiary hover:text-foreground"
+                }`}
+              >
+                {tab.label}
+                {tab.count != null && tab.count > 0 && (
+                  <span className="ml-1 text-[10px] text-text-tertiary">{tab.count}</span>
+                )}
+                {activeTab === tab.key && (
+                  <div className="absolute bottom-0 left-2 right-2 h-[2px] bg-primary rounded-full" />
+                )}
+              </button>
+            ))}
+          </div>
 
-          {/* Relationships */}
-          {(config.relationships?.length ?? 0) > 0 && (
-            <RelationshipsSection
-              clientId={client.id}
-              relationships={client.relationships ?? []}
-              onUpdate={(relationships) => updateClient(client.id, { relationships }, workspaceId ?? undefined)}
-            />
-          )}
+          {/* Tab Content */}
+          <div className="space-y-4">
+            {activeTab === "overview" && (
+              <>
+                {/* Contact — click to edit */}
+                <div className="bg-surface rounded-lg p-4 border border-border-light space-y-3">
+                  <h4 className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider">Contact</h4>
+                  <div className="flex items-center gap-3">
+                    <Mail className="w-4 h-4 text-text-secondary flex-shrink-0" />
+                    <InlineField value={client.email} field="email" clientId={client.id} updateClient={updateClient} workspaceId={workspaceId} placeholder="Add email" />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Phone className="w-4 h-4 text-text-secondary flex-shrink-0" />
+                    <InlineField value={client.phone} field="phone" clientId={client.id} updateClient={updateClient} workspaceId={workspaceId} placeholder="Add phone" />
+                  </div>
+                </div>
 
-          {/* Tags - Feature Gated */}
-          <FeatureSection moduleId="client-database" featureId="client-tags">
-            <ClientTags clientId={client.id} />
-          </FeatureSection>
+                {/* Medical Alerts */}
+                {client.medicalAlerts && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <h4 className="text-[12px] font-semibold text-red-700 uppercase tracking-wider mb-1">⚠ Medical Alert</h4>
+                    <InlineField value={client.medicalAlerts || ""} field="medicalAlerts" clientId={client.id} updateClient={updateClient} workspaceId={workspaceId} placeholder="Add allergies or medical conditions..." className="text-[13px] text-red-800" />
+                  </div>
+                )}
 
-          {/* Segmentation Filters - Feature Gated */}
-          <FeatureSection
-            moduleId="client-database"
-            featureId="segmentation-filters"
-          >
-            <SegmentationFilters onFilterChange={() => {}} />
-          </FeatureSection>
+                {/* Profile Details */}
+                <div className="bg-surface rounded-lg p-4 border border-border-light space-y-3">
+                  <h4 className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider">Profile</h4>
+                  <div className="flex items-center gap-3">
+                    <Calendar className="w-4 h-4 text-text-secondary flex-shrink-0" />
+                    <InlineField value={client.birthday || ""} field="birthday" clientId={client.id} updateClient={updateClient} workspaceId={workspaceId} placeholder="Add birthday (DD/MM)" />
+                  </div>
+                  {!client.medicalAlerts && (
+                    <div className="flex items-center gap-3">
+                      <span className="w-4 h-4 text-text-secondary flex-shrink-0 text-center text-[12px]">⚠</span>
+                      <InlineField value={client.medicalAlerts || ""} field="medicalAlerts" clientId={client.id} updateClient={updateClient} workspaceId={workspaceId} placeholder="Add allergies / medical alerts" />
+                    </div>
+                  )}
+                  <div className="flex items-center gap-3">
+                    <User className="w-4 h-4 text-text-secondary flex-shrink-0" />
+                    <InlineField value={client.source || ""} field="source" clientId={client.id} updateClient={updateClient} workspaceId={workspaceId} placeholder="How did they find you?" />
+                  </div>
+                </div>
 
-          {/* Follow-Up Reminders - Feature Gated */}
-          <FeatureSection
-            moduleId="client-database"
-            featureId="follow-up-reminders"
-          >
-            <FollowUpSection clientId={client.id} />
-          </FeatureSection>
+                {/* Notes — click to edit */}
+                <div className="bg-surface rounded-lg p-4 border border-border-light">
+                  <h4 className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider mb-2">Notes</h4>
+                  <InlineField value={client.notes} field="notes" clientId={client.id} updateClient={updateClient} workspaceId={workspaceId} placeholder="Click to add notes..." multiline />
+                </div>
 
-          {/* Activity Timeline - Feature Gated */}
-          <FeatureSection moduleId="client-database" featureId="activity-timeline" featureLabel="Activity Timeline">
-            <div className="mt-6">
-              <h4 className="text-[13px] font-semibold text-text-tertiary uppercase tracking-wider mb-3">Activity Timeline</h4>
-              {clientActivities.length === 0 ? (
-                <p className="text-[13px] text-text-tertiary">No activity recorded yet.</p>
-              ) : (
-                <div className="space-y-2">
-                  {clientActivities.map((entry) => (
-                    <div key={entry.id} className="flex items-start gap-3 py-1.5">
-                      <div className="w-1.5 h-1.5 bg-primary rounded-full mt-2 flex-shrink-0" />
+                {/* Quick Actions */}
+                <div className="bg-surface rounded-lg p-4 border border-border-light">
+                  <h4 className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider mb-2">Quick Actions</h4>
+                  <div className="space-y-1">
+                    <button onClick={() => setBookingFormOpen(true)} className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] text-foreground hover:bg-card-bg transition-colors w-full text-left cursor-pointer group">
+                      <Plus className="w-4 h-4 text-text-secondary group-hover:text-primary" />
+                      <span>Book Appointment</span>
+                    </button>
+                    {lastBooking && (
+                      <button onClick={() => setBookingFormOpen(true)} className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] text-foreground hover:bg-card-bg transition-colors w-full text-left cursor-pointer group">
+                        <Calendar className="w-4 h-4 text-text-secondary group-hover:text-primary" />
+                        <span className="truncate">Rebook: {serviceMap.get(lastBooking.serviceId || "")?.name || "Appointment"}</span>
+                      </button>
+                    )}
+                    <button onClick={() => {
+                      createPayment({ clientId: client.id, clientName: client.name, label: "quote" });
+                    }} className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] text-foreground hover:bg-card-bg transition-colors w-full text-left cursor-pointer group">
+                      <FileText className="w-4 h-4 text-text-secondary group-hover:text-primary" />
+                      <span>Send Quote</span>
+                    </button>
+                    <button onClick={() => {
+                      createPayment({ clientId: client.id, clientName: client.name, label: "invoice" });
+                    }} className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] text-foreground hover:bg-card-bg transition-colors w-full text-left cursor-pointer group">
+                      <CreditCard className="w-4 h-4 text-text-secondary group-hover:text-primary" />
+                      <span>Send Invoice</span>
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {activeTab === "bookings" && (
+              <div className="space-y-2">
+                {clientBookings.length === 0 ? (
+                  <p className="text-[13px] text-text-tertiary text-center py-8">No bookings yet.</p>
+                ) : clientBookings.map((b) => {
+                  const svc = b.serviceId ? serviceMap.get(b.serviceId) : null;
+                  const member = b.assignedToId ? memberMap.get(b.assignedToId) : null;
+                  const isExpanded = expandedBookingId === b.id;
+                  return (
+                    <button
+                      key={b.id}
+                      onClick={() => setExpandedBookingId(isExpanded ? null : b.id)}
+                      className="w-full bg-surface rounded-lg border border-border-light text-left cursor-pointer hover:border-foreground/10 hover:shadow-sm transition-all"
+                    >
+                      <div className="flex items-center gap-3 p-3.5">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-[13px] font-semibold text-foreground">{svc?.name || "Appointment"}</p>
+                            <StatusBadge status={b.status} />
+                          </div>
+                          <p className="text-[11px] text-text-secondary mt-0.5">
+                            {formatDateShort(b.date)} · {formatTimeShort(b.startAt)} – {formatTimeShort(b.endAt)}
+                          </p>
+                        </div>
+                        {isExpanded ? <ChevronDown className="w-4 h-4 text-text-tertiary flex-shrink-0" /> : <ChevronRight className="w-4 h-4 text-text-tertiary flex-shrink-0" />}
+                      </div>
+                      {isExpanded && (
+                        <div className="px-3.5 pb-3.5 border-t border-border-light pt-3 space-y-2" onClick={(e) => e.stopPropagation()}>
+                          <div className="grid grid-cols-3 gap-1.5 sm:gap-2 text-[11px]">
+                            {svc && <div className="bg-card-bg rounded-lg p-2 text-center"><p className="font-bold text-foreground">${svc.price}</p><p className="text-text-tertiary">Price</p></div>}
+                            {svc && <div className="bg-card-bg rounded-lg p-2 text-center"><p className="font-bold text-foreground">{svc.duration}m</p><p className="text-text-tertiary">Duration</p></div>}
+                            {member && <div className="bg-card-bg rounded-lg p-2 text-center"><p className="font-bold text-foreground truncate">{member.name}</p><p className="text-text-tertiary">Stylist</p></div>}
+                          </div>
+                          {b.notes && <p className="text-[11px] text-text-secondary bg-card-bg rounded-lg px-2.5 py-2">{b.notes}</p>}
+                          {b.reminderSentAt && <p className="text-[10px] text-blue-600 flex items-center gap-1"><Bell className="w-3 h-3" /> Reminder sent {formatDateShort(b.reminderSentAt)}</p>}
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onClose(); router.push("/dashboard/bookings"); }}
+                            className="flex items-center gap-1.5 text-[11px] font-medium text-primary hover:underline cursor-pointer"
+                          >
+                            <ExternalLink className="w-3 h-3" /> View in Bookings
+                          </button>
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {activeTab === "payments" && (
+              <div className="space-y-2">
+                {clientPayments.length === 0 ? (
+                  <p className="text-[13px] text-text-tertiary text-center py-8">No payment documents.</p>
+                ) : clientPayments.map((d) => (
+                  <button
+                    key={d.id}
+                    onClick={() => { onClose(); router.push("/dashboard/payments"); }}
+                    className="w-full bg-surface rounded-lg p-3.5 border border-border-light flex items-center justify-between cursor-pointer hover:border-foreground/10 hover:shadow-sm transition-all text-left"
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-[13px] font-semibold text-foreground">{d.documentNumber}</p>
+                        <span className="text-[10px] font-medium text-text-tertiary uppercase bg-card-bg px-1.5 py-0.5 rounded">{d.label}</span>
+                      </div>
+                      <p className="text-[11px] text-text-secondary mt-0.5">
+                        {formatDateShort(d.createdAt)}
+                        {d.paidAt && ` · Paid ${formatDateShort(d.paidAt)}`}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <p className="text-[14px] font-bold text-foreground">${d.total.toLocaleString()}</p>
+                        <StatusBadge status={d.status} />
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-text-tertiary" />
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {activeTab === "conversations" && (
+              <div className="space-y-2">
+                {clientConversations.length === 0 ? (
+                  <p className="text-[13px] text-text-tertiary text-center py-8">No conversations linked.</p>
+                ) : clientConversations.map((c) => {
+                  const msgs = getMessages(c.id);
+                  const lastMsg = msgs[msgs.length - 1];
+                  const channelColors: Record<string, string> = { instagram: "bg-pink-100 text-pink-600", whatsapp: "bg-emerald-100 text-emerald-600", facebook: "bg-blue-100 text-blue-600", email: "bg-gray-100 text-gray-600" };
+                  return (
+                    <button
+                      key={c.id}
+                      onClick={() => { onClose(); router.push("/dashboard/communications"); }}
+                      className="w-full bg-surface rounded-lg p-3.5 border border-border-light cursor-pointer hover:border-foreground/10 hover:shadow-sm transition-all text-left"
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <div className="flex items-center gap-2">
+                          <MessageCircle className="w-4 h-4 text-text-secondary" />
+                          <p className="text-[13px] font-medium text-foreground">{c.contactName || "Conversation"}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full ${channelColors[c.channel] || "bg-gray-100 text-gray-600"}`}>
+                            {c.channel}
+                          </span>
+                          <ChevronRight className="w-4 h-4 text-text-tertiary" />
+                        </div>
+                      </div>
+                      {lastMsg && (
+                        <p className="text-[11px] text-text-secondary truncate pl-6">
+                          {lastMsg.sender === "user" ? "You: " : ""}{lastMsg.content}
+                        </p>
+                      )}
+                      <p className="text-[10px] text-text-tertiary mt-1 pl-6">{msgs.length} messages · Last: {c.lastMessageAt ? formatDateShort(c.lastMessageAt) : "—"}</p>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {activeTab === "activity" && (
+              <div className="relative pl-6">
+                {/* Timeline line */}
+                <div className="absolute left-[9px] top-2 bottom-2 w-px bg-border-light" />
+
+                {activityEvents.length === 0 ? (
+                  <p className="text-[13px] text-text-tertiary text-center py-8">No activity yet.</p>
+                ) : activityEvents.map((ev, i) => {
+                  const Icon = ev.icon;
+                  return (
+                    <div key={i} className="relative flex items-start gap-3 py-2.5">
+                      <div className={`w-[18px] h-[18px] rounded-full ${ev.color} flex items-center justify-center flex-shrink-0 -ml-[15px] z-10`}>
+                        <Icon className="w-2.5 h-2.5 text-white" />
+                      </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[13px] text-foreground">{entry.description}</p>
-                        <p className="text-[11px] text-text-tertiary">{new Date(entry.timestamp).toLocaleString()}</p>
+                        <p className="text-[12px] font-medium text-foreground">{ev.label}</p>
+                        {ev.detail && <p className="text-[11px] text-text-secondary">{ev.detail}</p>}
+                        <p className="text-[10px] text-text-tertiary mt-0.5">
+                          {formatDateShort(ev.time)} at {formatTimeShort(ev.time)}
+                        </p>
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </FeatureSection>
-
-          {/* Team Discussion - Feature Gated */}
-          <FeatureSection moduleId="team" featureId="record-discussions" featureLabel="Team Discussion">
-            <DiscussionThread entityType="client" entityId={client.id} />
-          </FeatureSection>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </SlideOver>
-
-      <ClientForm
-        open={editOpen}
-        onClose={() => setEditOpen(false)}
-        client={client}
-      />
 
       <ConfirmDialog
         open={deleteOpen}
         onClose={() => setDeleteOpen(false)}
         onConfirm={handleDelete}
-        title={`Delete ${vocab.client}`}
-        message={
-          hasLinkedRecords
-            ? `This ${vocab.client.toLowerCase()} has ${linkedLeads} ${vocab.leads.toLowerCase()}, ${linkedJobs} ${vocab.jobs.toLowerCase()}, ${linkedInvoices} ${vocab.invoices.toLowerCase()}, and ${linkedBookings} ${vocab.bookings.toLowerCase()} linked. These will become unlinked. Are you sure you want to delete "${client.name}"?`
-            : `Are you sure you want to delete "${client.name}"? This action cannot be undone.`
-        }
-      />
-
-      {lastBooking && (
-        <BookingForm
-          open={rebookOpen}
-          onClose={() => setRebookOpen(false)}
-          defaultDate={new Date().toISOString().split("T")[0]}
-          prefill={{
-            title: lastBooking.title,
-            clientId: lastBooking.clientId ?? "",
-            startTime: lastBooking.startTime,
-            endTime: lastBooking.endTime,
-          }}
-        />
-      )}
-
-      <InvoiceForm
-        open={invoiceFormOpen}
-        onClose={() => setInvoiceFormOpen(false)}
-        prefill={{ clientId: client.id }}
+        title="Delete Client"
+        message={`Are you sure you want to delete "${client.name}"? ${clientBookings.length > 0 ? `This client has ${clientBookings.length} bookings linked.` : ""}`}
       />
 
       <BookingForm
@@ -435,12 +459,86 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
         defaultDate={new Date().toISOString().split("T")[0]}
         prefill={{ clientId: client.id }}
       />
-
-      <JobForm
-        open={jobFormOpen}
-        onClose={() => setJobFormOpen(false)}
-        prefill={{ clientId: client.id }}
-      />
     </>
+  );
+}
+
+// ── Helpers ──
+
+function formatDateShort(iso: string) {
+  return new Date(iso.includes("T") ? iso : iso + "T00:00:00").toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
+}
+
+function formatTimeShort(iso: string) {
+  if (iso.includes("T")) {
+    return new Date(iso).toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" });
+  }
+  return iso;
+}
+
+// ── Inline editable field ──
+
+function InlineField({
+  value,
+  field,
+  clientId,
+  updateClient,
+  workspaceId,
+  placeholder,
+  multiline,
+  className,
+}: {
+  value: string;
+  field: string;
+  clientId: string;
+  updateClient: (id: string, data: Record<string, unknown>, wsId?: string) => void;
+  workspaceId: string | null;
+  placeholder?: string;
+  multiline?: boolean;
+  className?: string;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+
+  const save = () => {
+    if (draft !== value) {
+      updateClient(clientId, { [field]: draft }, workspaceId ?? undefined);
+    }
+    setEditing(false);
+  };
+
+  if (editing) {
+    if (multiline) {
+      return (
+        <textarea
+          autoFocus
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={save}
+          onKeyDown={(e) => { if (e.key === "Escape") { setDraft(value); setEditing(false); } }}
+          rows={3}
+          className="w-full text-[13px] text-foreground bg-card-bg border border-primary/30 rounded-lg p-2 outline-none focus:ring-1 focus:ring-primary/30 resize-none"
+        />
+      );
+    }
+    return (
+      <input
+        autoFocus
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={save}
+        onKeyDown={(e) => { if (e.key === "Enter") save(); if (e.key === "Escape") { setDraft(value); setEditing(false); } }}
+        className={`bg-transparent border-b-2 border-primary/30 outline-none text-foreground w-full ${className || "text-[13px]"}`}
+      />
+    );
+  }
+
+  return (
+    <span
+      onClick={() => { setDraft(value); setEditing(true); }}
+      className={`cursor-pointer hover:bg-primary/5 rounded px-1 -mx-1 transition-colors ${className || "text-[13px] text-foreground"} ${!value ? "italic text-text-tertiary" : ""}`}
+    >
+      {value || placeholder || "Click to edit"}
+    </span>
   );
 }

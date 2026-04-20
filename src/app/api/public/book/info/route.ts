@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase-server";
 import { rateLimit } from "@/lib/rate-limit";
-import { resolveBookingWorkspaceBySlug } from "@/lib/server/public-booking";
+import {
+  fetchWorkspaceAvailability,
+  getAvailableTimeSlots,
+  resolveBookingWorkspaceBySlug,
+} from "@/lib/server/public-booking";
 
 /**
  * Public booking info endpoint. No auth required.
@@ -9,8 +13,8 @@ import { resolveBookingWorkspaceBySlug } from "@/lib/server/public-booking";
  * GET /api/public/book/info?slug=xxx
  *   Returns: workspace info, services, and availability for the public booking page.
  *
- * GET /api/public/book/info?slug=xxx&bookingsFrom=yyyy-mm-dd&bookingsTo=yyyy-mm-dd
- *   Returns: existing bookings for conflict checking on the selected date range.
+ * GET /api/public/book/info?slug=xxx&bookingsDate=yyyy-mm-dd&serviceId=uuid
+ *   Returns: computed available slots for the selected day and service.
  */
 export async function GET(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
@@ -22,8 +26,8 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const slug = searchParams.get("slug");
-    const bookingsFrom = searchParams.get("bookingsFrom");
-    const bookingsTo = searchParams.get("bookingsTo");
+    const bookingsDate = searchParams.get("bookingsDate");
+    const serviceId = searchParams.get("serviceId");
 
     if (!slug) {
       return NextResponse.json({ error: "Missing slug" }, { status: 400 });
@@ -36,18 +40,34 @@ export async function GET(req: NextRequest) {
 
     const { workspaceId, businessName } = resolvedWorkspace;
     const supabase = await createAdminClient();
+    const availability = await fetchWorkspaceAvailability(workspaceId);
 
-    // ---- If fetching bookings for conflict detection ----
-    if (bookingsFrom && bookingsTo) {
-      const { data: bookings } = await supabase
-        .from("bookings")
-        .select("start_at, end_at")
+    // ---- If fetching available slots for a selected date/service ----
+    if (bookingsDate && serviceId) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(bookingsDate)) {
+        return NextResponse.json({ error: "Invalid bookingsDate" }, { status: 400 });
+      }
+
+      const { data: service } = await supabase
+        .from("services")
+        .select("id, duration")
+        .eq("id", serviceId)
         .eq("workspace_id", workspaceId)
-        .neq("status", "cancelled")
-        .gte("start_at", `${bookingsFrom}T00:00:00`)
-        .lte("start_at", `${bookingsTo}T23:59:59`);
+        .maybeSingle();
 
-      return NextResponse.json({ existingBookings: bookings ?? [] });
+      if (!service) {
+        return NextResponse.json({ error: "Service not found" }, { status: 404 });
+      }
+
+      const availableSlots = await getAvailableTimeSlots({
+        workspaceId,
+        serviceId,
+        date: bookingsDate,
+        durationMinutes: Number(service.duration ?? 60),
+        defaultAvailability: availability,
+      });
+
+      return NextResponse.json({ availableSlots });
     }
 
     // ---- fetch services ----
@@ -57,66 +77,22 @@ export async function GET(req: NextRequest) {
       .eq("workspace_id", workspaceId)
       .order("name", { ascending: true });
 
-    // ---- fetch availability from workspace_modules settings ----
-    const { data: moduleSettings } = await supabase
-      .from("workspace_modules")
-      .select("settings")
-      .eq("workspace_id", workspaceId)
-      .eq("module_id", "bookings-calendar")
-      .maybeSingle();
-
-    let availability: { day: number; startTime: string; endTime: string; enabled: boolean }[] = [];
-    if (moduleSettings?.settings) {
-      const settings = moduleSettings.settings as { availability?: typeof availability };
-      availability = settings.availability || [];
-    }
-
-    // If no availability configured, use sensible defaults (Mon-Fri 9-5)
-    if (availability.length === 0) {
-      availability = [
-        { day: 1, startTime: "09:00", endTime: "17:00", enabled: true },
-        { day: 2, startTime: "09:00", endTime: "17:00", enabled: true },
-        { day: 3, startTime: "09:00", endTime: "17:00", enabled: true },
-        { day: 4, startTime: "09:00", endTime: "17:00", enabled: true },
-        { day: 5, startTime: "09:00", endTime: "17:00", enabled: true },
-        { day: 6, startTime: "09:00", endTime: "12:00", enabled: false },
-        { day: 0, startTime: "09:00", endTime: "12:00", enabled: false },
-      ];
-    }
-
     // ---- fetch brand settings ----
     const { data: wsSettings } = await supabase
       .from("workspace_settings")
-      .select("brand")
+      .select("branding")
       .eq("workspace_id", workspaceId)
       .maybeSingle();
 
-    const brand = (wsSettings?.brand as { brandColor?: string; logoBase64?: string } | null) ?? {};
+    const brand = (wsSettings?.branding as { brandColor?: string; logoBase64?: string } | null) ?? {};
 
-    // ---- if no services table rows, try products table as fallback ----
-    let serviceList = (services ?? []).map((s) => ({
+    const serviceList = (services ?? []).map((s) => ({
       id: s.id,
       name: s.name,
       duration: Number(s.duration ?? 60),
       price: Number(s.price ?? 0),
       category: s.category as string ?? "",
     }));
-
-    if (serviceList.length === 0) {
-      const { data: products } = await supabase
-        .from("products")
-        .select("id, name, duration, price, category")
-        .eq("workspace_id", workspaceId)
-        .order("name", { ascending: true });
-
-      serviceList = (products ?? []).map((p) => ({
-        id: p.id,
-        name: p.name,
-        duration: Number(p.duration ?? 60),
-        price: Number(p.price ?? 0),
-        category: (p.category as string) ?? "",
-      }));
-    }
 
     return NextResponse.json({
       workspaceId,

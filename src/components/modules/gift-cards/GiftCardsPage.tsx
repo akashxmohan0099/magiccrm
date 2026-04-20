@@ -1,431 +1,556 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, CreditCard } from "lucide-react";
+import { useState, useMemo } from "react";
+import {
+  Plus,
+  Ticket,
+  CreditCard,
+  DollarSign,
+  CheckCircle2,
+  Copy,
+} from "lucide-react";
 import { useGiftCardStore } from "@/store/gift-cards";
-import { GiftCard } from "@/types/models";
-import { useAuth } from "@/hooks/useAuth";
+import { GiftCard, GiftCardStatus } from "@/types/models";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { EmptyState } from "@/components/ui/EmptyState";
-import { DataTable, Column } from "@/components/ui/DataTable";
 import { Button } from "@/components/ui/Button";
-import { FormField } from "@/components/ui/FormField";
+import { SearchInput } from "@/components/ui/SearchInput";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { SlideOver } from "@/components/ui/SlideOver";
-import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { toast } from "@/components/ui/Toast";
 
-const STATUS_BADGE: Record<GiftCard["status"], string> = {
-  active: "bg-green-100 text-green-700",
-  redeemed: "bg-gray-100 text-gray-600",
-  expired: "bg-red-100 text-red-600",
-};
+const PRESET_AMOUNTS = [50, 100, 150];
+
+const STATUS_FILTERS: { value: GiftCardStatus | "all"; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "active", label: "Active" },
+  { value: "redeemed", label: "Redeemed" },
+  { value: "expired", label: "Expired" },
+  { value: "cancelled", label: "Cancelled" },
+];
+
+function formatCurrency(amount: number) {
+  return `$${amount.toFixed(2)}`;
+}
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-AU", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
 
 export function GiftCardsPage() {
-  const { giftCards, addGiftCard, updateGiftCard, redeemGiftCard, deleteGiftCard } = useGiftCardStore();
-  const { workspaceId } = useAuth();
-  const [formOpen, setFormOpen] = useState(false);
-  const [detailCard, setDetailCard] = useState<GiftCard | null>(null);
-  const [detailOpen, setDetailOpen] = useState(false);
-  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const { cards, addCard, redeemCard, getCard } = useGiftCardStore();
+
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<GiftCardStatus | "all">("all");
+  const [createOpen, setCreateOpen] = useState(false);
+  const [detailCardId, setDetailCardId] = useState<string | null>(null);
 
   // Create form state
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [saving, setSaving] = useState(false);
-  const [amount, setAmount] = useState("");
+  const [selectedPreset, setSelectedPreset] = useState<number | null>(100);
+  const [customAmount, setCustomAmount] = useState("");
+  const [purchaserName, setPurchaserName] = useState("");
+  const [purchaserEmail, setPurchaserEmail] = useState("");
   const [recipientName, setRecipientName] = useState("");
   const [recipientEmail, setRecipientEmail] = useState("");
-  const [purchasedBy, setPurchasedBy] = useState("");
-  const [expiresAt, setExpiresAt] = useState("");
+  const [expiryDate, setExpiryDate] = useState("");
 
-  // Detail/edit form state
-  const [editRecipientName, setEditRecipientName] = useState("");
-  const [editRecipientEmail, setEditRecipientEmail] = useState("");
-  const [editPurchasedBy, setEditPurchasedBy] = useState("");
-  const [editExpiresAt, setEditExpiresAt] = useState("");
+  // Redeem state
   const [redeemAmount, setRedeemAmount] = useState("");
-  const [isEditing, setIsEditing] = useState(false);
 
-  const resetForm = () => {
-    setAmount("");
+  // --- Computed ---
+
+  const filteredCards = useMemo(() => {
+    let result = cards;
+    if (statusFilter !== "all") {
+      result = result.filter((c) => c.status === statusFilter);
+    }
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter(
+        (c) =>
+          c.code.toLowerCase().includes(q) ||
+          (c.purchaserName && c.purchaserName.toLowerCase().includes(q)) ||
+          (c.recipientName && c.recipientName.toLowerCase().includes(q)) ||
+          (c.purchaserEmail && c.purchaserEmail.toLowerCase().includes(q))
+      );
+    }
+    return result;
+  }, [cards, search, statusFilter]);
+
+  const activeCards = cards.filter((c) => c.status === "active");
+  const totalActiveValue = activeCards.reduce((sum, c) => sum + c.remainingBalance, 0);
+  const redeemedCards = cards.filter((c) => c.status === "redeemed");
+
+  const detailCard = detailCardId ? getCard(detailCardId) : null;
+
+  // --- Handlers ---
+
+  const resetCreateForm = () => {
+    setSelectedPreset(100);
+    setCustomAmount("");
+    setPurchaserName("");
+    setPurchaserEmail("");
     setRecipientName("");
     setRecipientEmail("");
-    setPurchasedBy("");
-    setExpiresAt("");
-    setErrors({});
-    setSaving(false);
+    setExpiryDate("");
   };
 
-  const openDetail = (card: GiftCard) => {
-    setDetailCard(card);
-    setEditRecipientName(card.recipientName || "");
-    setEditRecipientEmail(card.recipientEmail || "");
-    setEditPurchasedBy(card.purchasedBy || "");
-    setEditExpiresAt(card.expiresAt || "");
-    setRedeemAmount("");
-    setIsEditing(false);
-    setDetailOpen(true);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (saving) return;
-
-    const newErrors: Record<string, string> = {};
-    const val = parseFloat(amount);
-    if (!amount.trim() || isNaN(val) || val <= 0) newErrors.amount = "Amount must be greater than 0";
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
+  const handleCreate = () => {
+    const amount = selectedPreset ?? Number(customAmount);
+    if (!amount || amount <= 0) {
+      toast("Please enter a valid amount", "error");
       return;
     }
-    setErrors({});
-    setSaving(true);
+    if (!purchaserName.trim()) {
+      toast("Purchaser name is required", "error");
+      return;
+    }
 
-    addGiftCard({
-      amount: val,
+    addCard({
+      workspaceId: "",
+      originalAmount: amount,
+      purchaserName: purchaserName.trim(),
+      purchaserEmail: purchaserEmail.trim() || undefined,
       recipientName: recipientName.trim() || undefined,
       recipientEmail: recipientEmail.trim() || undefined,
-      purchasedBy: purchasedBy.trim() || undefined,
-      expiresAt: expiresAt || undefined,
-    }, workspaceId ?? undefined);
-    resetForm();
-    setFormOpen(false);
-  };
+      expiresAt: expiryDate || undefined,
+    });
 
-  const handleSaveEdit = () => {
-    if (!detailCard) return;
-    updateGiftCard(detailCard.id, {
-      recipientName: editRecipientName.trim() || undefined,
-      recipientEmail: editRecipientEmail.trim() || undefined,
-      purchasedBy: editPurchasedBy.trim() || undefined,
-      expiresAt: editExpiresAt || undefined,
-    }, workspaceId ?? undefined);
-    // Refresh the detail card from store
-    const updated = useGiftCardStore.getState().giftCards.find((c) => c.id === detailCard.id);
-    if (updated) setDetailCard(updated);
-    setIsEditing(false);
+    setCreateOpen(false);
+    resetCreateForm();
   };
 
   const handleRedeem = () => {
     if (!detailCard) return;
-    const val = parseFloat(redeemAmount);
-    if (!val || val <= 0 || val > detailCard.balance) return;
-    redeemGiftCard(detailCard.id, val, workspaceId ?? undefined);
-    const updated = useGiftCardStore.getState().giftCards.find((c) => c.id === detailCard.id);
-    if (updated) setDetailCard(updated);
-    setRedeemAmount("");
+    const amount = Number(redeemAmount);
+    if (!amount || amount <= 0) {
+      toast("Please enter a valid amount", "error");
+      return;
+    }
+    if (amount > detailCard.remainingBalance) {
+      toast("Amount exceeds remaining balance", "error");
+      return;
+    }
+    const result = redeemCard(detailCard.code, amount);
+    if (result.success) {
+      setRedeemAmount("");
+      if (result.remaining <= 0) {
+        setDetailCardId(null);
+      }
+    }
   };
 
-  const handleDelete = () => {
-    if (!detailCard) return;
-    deleteGiftCard(detailCard.id, workspaceId ?? undefined);
-    setDetailOpen(false);
-    setDetailCard(null);
+  const copyCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    toast("Gift card code copied");
   };
 
-  const columns: Column<GiftCard>[] = [
-    {
-      key: "code",
-      label: "Code",
-      sortable: true,
-      render: (c) => (
-        <span className="font-mono text-[13px] bg-surface px-2 py-0.5 rounded">
-          {c.code}
-        </span>
-      ),
-    },
-    {
-      key: "amount",
-      label: "Amount",
-      sortable: true,
-      render: (c) => `$${c.amount.toFixed(2)}`,
-    },
-    {
-      key: "balance",
-      label: "Balance",
-      sortable: true,
-      render: (c) => `$${c.balance.toFixed(2)}`,
-    },
-    {
-      key: "purchasedBy",
-      label: "Purchased By",
-      sortable: true,
-      render: (c) => c.purchasedBy || "\u2014",
-    },
-    {
-      key: "status",
-      label: "Status",
-      sortable: true,
-      render: (c) => (
-        <span
-          className={`text-xs px-2 py-0.5 rounded-full font-medium capitalize ${STATUS_BADGE[c.status]}`}
-        >
-          {c.status}
-        </span>
-      ),
-    },
-  ];
-
-  const inputClass =
-    "w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30";
+  // --- Render ---
 
   return (
     <div>
       <PageHeader
         title="Gift Cards"
-        description={`${giftCards.length} gift card${giftCards.length !== 1 ? "s" : ""}`}
+        description="Create and manage gift cards for your clients."
         actions={
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => setFormOpen(true)}
-          >
-            <Plus className="w-4 h-4" /> New Gift Card
+          <Button size="sm" onClick={() => setCreateOpen(true)}>
+            <Plus className="w-4 h-4 mr-1.5" /> Create Gift Card
           </Button>
         }
       />
 
-      {giftCards.length === 0 ? (
-        <EmptyState
-          icon={<CreditCard className="w-10 h-10" />}
-          title="No gift cards yet"
-          description="Create and manage gift cards for your clients. Track balances and redemptions in one place."
-          setupSteps={[
-            {
-              label: "Create your first gift card",
-              description: "Set an amount, add a recipient, and start selling",
-              action: () => setFormOpen(true),
-            },
-          ]}
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <SummaryCard
+          icon={<CreditCard className="w-5 h-5" />}
+          label="Total Active"
+          value={String(activeCards.length)}
+          color="text-emerald-500"
         />
-      ) : (
-        <DataTable<GiftCard>
-          storageKey="magic-crm-giftcards-columns"
-          columns={columns}
-          data={giftCards}
-          keyExtractor={(c) => c.id}
-          onRowClick={openDetail}
+        <SummaryCard
+          icon={<DollarSign className="w-5 h-5" />}
+          label="Total Value"
+          value={formatCurrency(totalActiveValue)}
+          color="text-blue-500"
         />
+        <SummaryCard
+          icon={<CheckCircle2 className="w-5 h-5" />}
+          label="Redeemed"
+          value={String(redeemedCards.length)}
+          color="text-violet-500"
+        />
+      </div>
+
+      {/* Filters */}
+      {cards.length > 0 && (
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Search by code, name, or email..."
+          />
+          <div className="flex gap-1">
+            {STATUS_FILTERS.map((f) => (
+              <button
+                key={f.value}
+                onClick={() => setStatusFilter(f.value)}
+                className={`px-3 py-1.5 rounded-full text-[12px] font-medium transition-colors cursor-pointer ${
+                  statusFilter === f.value
+                    ? "bg-foreground text-background"
+                    : "bg-surface text-text-secondary hover:text-foreground"
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </div>
       )}
 
-      {/* Create Gift Card SlideOver */}
+      {/* Gift Cards List */}
+      {cards.length === 0 ? (
+        <EmptyState
+          icon={<Ticket className="w-6 h-6" />}
+          title="No gift cards yet"
+          description="Create your first gift card to get started."
+          actionLabel="Create Gift Card"
+          onAction={() => setCreateOpen(true)}
+        />
+      ) : filteredCards.length === 0 ? (
+        <div className="bg-card-bg border border-border-light rounded-2xl p-12 text-center">
+          <p className="text-[14px] text-text-tertiary">No gift cards match your search.</p>
+        </div>
+      ) : (
+        <div className="bg-card-bg border border-border-light rounded-xl overflow-hidden">
+          {/* Table Header */}
+          <div className="hidden sm:grid sm:grid-cols-[1fr_100px_100px_100px_1fr_120px] gap-4 px-5 py-3 border-b border-border-light bg-surface/50">
+            <span className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider">Code</span>
+            <span className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider">Amount</span>
+            <span className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider">Balance</span>
+            <span className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider">Status</span>
+            <span className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider">Purchaser</span>
+            <span className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider">Date</span>
+          </div>
+
+          {/* Rows */}
+          <div className="divide-y divide-border-light">
+            {filteredCards.map((card) => (
+              <div
+                key={card.id}
+                onClick={() => {
+                  setDetailCardId(card.id);
+                  setRedeemAmount("");
+                }}
+                className="grid grid-cols-1 sm:grid-cols-[1fr_100px_100px_100px_1fr_120px] gap-2 sm:gap-4 px-5 py-4 hover:bg-surface/30 transition-colors cursor-pointer group"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-[14px] font-mono font-semibold text-foreground tracking-wide">
+                    {card.code}
+                  </span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      copyCode(card.code);
+                    }}
+                    className="p-1 rounded text-text-tertiary hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <span className="text-[13px] font-medium text-foreground">
+                  {formatCurrency(card.originalAmount)}
+                </span>
+                <span className="text-[13px] font-medium text-foreground">
+                  {formatCurrency(card.remainingBalance)}
+                </span>
+                <div>
+                  <StatusBadge status={card.status} />
+                </div>
+                <span className="text-[13px] text-text-secondary truncate">
+                  {card.purchaserName || "---"}
+                </span>
+                <span className="text-[12px] text-text-tertiary">
+                  {formatDate(card.createdAt)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Create Gift Card SlideOver ── */}
       <SlideOver
-        open={formOpen}
+        open={createOpen}
         onClose={() => {
-          resetForm();
-          setFormOpen(false);
+          setCreateOpen(false);
+          resetCreateForm();
         }}
-        title="New Gift Card"
+        title="Create Gift Card"
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <FormField label="Amount" required error={errors.amount}>
-            <input
-              type="number"
-              min="1"
-              step="0.01"
-              value={amount}
-              onChange={(e) => { setAmount(e.target.value); if (errors.amount) setErrors((prev) => { const next = { ...prev }; delete next.amount; return next; }); }}
-              placeholder="e.g. 50.00"
-              className={inputClass}
-            />
-          </FormField>
+        <div className="space-y-6">
+          {/* Amount */}
           <div>
-            <label className="block text-[13px] font-medium text-foreground mb-1.5">
-              Purchased By
+            <label className="block text-[13px] font-medium text-foreground mb-2">
+              Amount <span className="text-red-500">*</span>
             </label>
-            <input
-              type="text"
-              value={purchasedBy}
-              onChange={(e) => setPurchasedBy(e.target.value)}
-              placeholder="Client name"
-              className={inputClass}
-            />
+            <div className="flex gap-2 mb-3">
+              {PRESET_AMOUNTS.map((amt) => (
+                <button
+                  key={amt}
+                  onClick={() => {
+                    setSelectedPreset(amt);
+                    setCustomAmount("");
+                  }}
+                  className={`flex-1 py-2.5 rounded-xl text-[14px] font-semibold transition-all cursor-pointer ${
+                    selectedPreset === amt
+                      ? "bg-foreground text-background"
+                      : "bg-surface text-text-secondary hover:text-foreground border border-border-light"
+                  }`}
+                >
+                  ${amt}
+                </button>
+              ))}
+            </div>
+            <div className="relative">
+              <DollarSign className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
+              <input
+                type="number"
+                value={customAmount}
+                onChange={(e) => {
+                  setCustomAmount(e.target.value);
+                  setSelectedPreset(null);
+                }}
+                placeholder="Custom amount"
+                min={1}
+                className="w-full pl-9 pr-4 py-2.5 bg-card-bg border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-foreground/10"
+              />
+            </div>
           </div>
+
+          {/* Purchaser */}
           <div>
-            <label className="block text-[13px] font-medium text-foreground mb-1.5">
-              Recipient Name
-            </label>
-            <input
-              type="text"
-              value={recipientName}
-              onChange={(e) => setRecipientName(e.target.value)}
-              placeholder="Who is this for?"
-              className={inputClass}
-            />
+            <h3 className="text-[13px] font-semibold text-foreground mb-3">Purchaser Details</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-semibold text-text-tertiary uppercase tracking-wider mb-1">
+                  Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  value={purchaserName}
+                  onChange={(e) => setPurchaserName(e.target.value)}
+                  placeholder="Full name"
+                  className="w-full px-3 py-2.5 bg-card-bg border border-border-light rounded-lg text-[14px] text-foreground outline-none focus:ring-2 focus:ring-foreground/10"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-text-tertiary uppercase tracking-wider mb-1">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={purchaserEmail}
+                  onChange={(e) => setPurchaserEmail(e.target.value)}
+                  placeholder="email@example.com"
+                  className="w-full px-3 py-2.5 bg-card-bg border border-border-light rounded-lg text-[14px] text-foreground outline-none focus:ring-2 focus:ring-foreground/10"
+                />
+              </div>
+            </div>
           </div>
+
+          {/* Recipient (optional) */}
           <div>
-            <label className="block text-[13px] font-medium text-foreground mb-1.5">
-              Recipient Email
-            </label>
-            <input
-              type="email"
-              value={recipientEmail}
-              onChange={(e) => setRecipientEmail(e.target.value)}
-              placeholder="recipient@email.com"
-              className={inputClass}
-            />
+            <h3 className="text-[13px] font-semibold text-foreground mb-1">Recipient Details</h3>
+            <p className="text-[11px] text-text-tertiary mb-3">Optional -- leave blank if same as purchaser</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-semibold text-text-tertiary uppercase tracking-wider mb-1">
+                  Name
+                </label>
+                <input
+                  value={recipientName}
+                  onChange={(e) => setRecipientName(e.target.value)}
+                  placeholder="Recipient name"
+                  className="w-full px-3 py-2.5 bg-card-bg border border-border-light rounded-lg text-[14px] text-foreground outline-none focus:ring-2 focus:ring-foreground/10"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-text-tertiary uppercase tracking-wider mb-1">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={recipientEmail}
+                  onChange={(e) => setRecipientEmail(e.target.value)}
+                  placeholder="Recipient email"
+                  className="w-full px-3 py-2.5 bg-card-bg border border-border-light rounded-lg text-[14px] text-foreground outline-none focus:ring-2 focus:ring-foreground/10"
+                />
+              </div>
+            </div>
           </div>
+
+          {/* Expiry */}
           <div>
             <label className="block text-[13px] font-medium text-foreground mb-1.5">
               Expiry Date
             </label>
+            <p className="text-[11px] text-text-tertiary mb-2">Optional -- card never expires if left blank</p>
             <input
               type="date"
-              value={expiresAt}
-              onChange={(e) => setExpiresAt(e.target.value)}
-              className={inputClass}
+              value={expiryDate}
+              onChange={(e) => setExpiryDate(e.target.value)}
+              className="w-full px-3 py-2.5 bg-card-bg border border-border-light rounded-lg text-[14px] text-foreground outline-none focus:ring-2 focus:ring-foreground/10"
             />
           </div>
-          <div className="pt-2">
-            <Button type="submit" loading={saving} className="w-full">
-              Create Gift Card
+
+          {/* Actions */}
+          <div className="flex justify-end gap-2 pt-4 border-t border-border-light">
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setCreateOpen(false);
+                resetCreateForm();
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleCreate}>
+              <Ticket className="w-4 h-4 mr-1.5" /> Create Gift Card
             </Button>
           </div>
-        </form>
+        </div>
       </SlideOver>
 
-      {/* Detail / Edit / Redeem SlideOver */}
+      {/* ── Gift Card Detail SlideOver ── */}
       <SlideOver
-        open={detailOpen}
-        onClose={() => {
-          setDetailOpen(false);
-          setDetailCard(null);
-          setIsEditing(false);
-        }}
-        title={detailCard ? `Gift Card ${detailCard.code}` : "Gift Card"}
+        open={!!detailCard}
+        onClose={() => setDetailCardId(null)}
+        title="Gift Card Details"
       >
         {detailCard && (
-          <div className="space-y-5">
-            {/* Card summary */}
-            <div className="bg-surface rounded-xl border border-border-light p-4 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-text-tertiary uppercase tracking-wider font-semibold">Code</span>
-                <span className="font-mono text-sm text-foreground">{detailCard.code}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-text-tertiary uppercase tracking-wider font-semibold">Amount</span>
-                <span className="text-sm text-foreground">${detailCard.amount.toFixed(2)}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-text-tertiary uppercase tracking-wider font-semibold">Balance</span>
-                <span className="text-sm font-semibold text-foreground">${detailCard.balance.toFixed(2)}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-text-tertiary uppercase tracking-wider font-semibold">Status</span>
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium capitalize ${STATUS_BADGE[detailCard.status]}`}>
-                  {detailCard.status}
+          <div className="space-y-6">
+            {/* Code */}
+            <div className="bg-surface rounded-xl p-5 text-center">
+              <p className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider mb-2">Gift Card Code</p>
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-2xl font-mono font-bold text-foreground tracking-widest">
+                  {detailCard.code}
                 </span>
+                <button
+                  onClick={() => copyCode(detailCard.code)}
+                  className="p-2 rounded-lg hover:bg-card-bg text-text-secondary cursor-pointer"
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-text-tertiary uppercase tracking-wider font-semibold">Created</span>
-                <span className="text-[13px] text-text-secondary">
-                  {new Date(detailCard.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
-                </span>
+              <div className="mt-3">
+                <StatusBadge status={detailCard.status} />
               </div>
             </div>
 
-            {/* Editable fields */}
-            {isEditing ? (
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-[13px] font-medium text-foreground mb-1.5">Purchased By</label>
-                  <input type="text" value={editPurchasedBy} onChange={(e) => setEditPurchasedBy(e.target.value)} placeholder="Client name" className={inputClass} />
-                </div>
-                <div>
-                  <label className="block text-[13px] font-medium text-foreground mb-1.5">Recipient Name</label>
-                  <input type="text" value={editRecipientName} onChange={(e) => setEditRecipientName(e.target.value)} placeholder="Who is this for?" className={inputClass} />
-                </div>
-                <div>
-                  <label className="block text-[13px] font-medium text-foreground mb-1.5">Recipient Email</label>
-                  <input type="email" value={editRecipientEmail} onChange={(e) => setEditRecipientEmail(e.target.value)} placeholder="recipient@email.com" className={inputClass} />
-                </div>
-                <div>
-                  <label className="block text-[13px] font-medium text-foreground mb-1.5">Expiry Date</label>
-                  <input type="date" value={editExpiresAt} onChange={(e) => setEditExpiresAt(e.target.value)} className={inputClass} />
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="ghost" onClick={() => setIsEditing(false)} className="flex-1">Cancel</Button>
-                  <Button onClick={handleSaveEdit} className="flex-1">Save Changes</Button>
-                </div>
+            {/* Financial Summary */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-surface rounded-xl p-4">
+                <p className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider mb-1">Original Amount</p>
+                <p className="text-xl font-bold text-foreground">{formatCurrency(detailCard.originalAmount)}</p>
               </div>
-            ) : (
-              <div className="space-y-2">
-                <div className="bg-surface rounded-xl border border-border-light p-4 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-text-tertiary uppercase tracking-wider font-semibold">Purchased By</span>
-                    <span className="text-[13px] text-foreground">{detailCard.purchasedBy || "\u2014"}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-text-tertiary uppercase tracking-wider font-semibold">Recipient</span>
-                    <span className="text-[13px] text-foreground">{detailCard.recipientName || "\u2014"}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-text-tertiary uppercase tracking-wider font-semibold">Email</span>
-                    <span className="text-[13px] text-foreground">{detailCard.recipientEmail || "\u2014"}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-text-tertiary uppercase tracking-wider font-semibold">Expires</span>
-                    <span className="text-[13px] text-foreground">
-                      {detailCard.expiresAt
-                        ? new Date(detailCard.expiresAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
-                        : "No expiry"}
-                    </span>
-                  </div>
-                </div>
-                <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)} className="w-full">
-                  Edit Details
-                </Button>
+              <div className="bg-surface rounded-xl p-4">
+                <p className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider mb-1">Remaining</p>
+                <p className={`text-xl font-bold ${detailCard.remainingBalance > 0 ? "text-emerald-600" : "text-text-tertiary"}`}>
+                  {formatCurrency(detailCard.remainingBalance)}
+                </p>
               </div>
-            )}
+            </div>
 
-            {/* Redeem section */}
+            {/* Details */}
+            <div className="space-y-3">
+              <DetailRow label="Purchaser" value={detailCard.purchaserName || "---"} />
+              {detailCard.purchaserEmail && (
+                <DetailRow label="Purchaser Email" value={detailCard.purchaserEmail} />
+              )}
+              {detailCard.recipientName && (
+                <DetailRow label="Recipient" value={detailCard.recipientName} />
+              )}
+              {detailCard.recipientEmail && (
+                <DetailRow label="Recipient Email" value={detailCard.recipientEmail} />
+              )}
+              <DetailRow label="Created" value={formatDate(detailCard.createdAt)} />
+              {detailCard.expiresAt && (
+                <DetailRow label="Expires" value={formatDate(detailCard.expiresAt)} />
+              )}
+              <DetailRow label="Last Updated" value={formatDate(detailCard.updatedAt)} />
+            </div>
+
+            {/* Redeem Section */}
             {detailCard.status === "active" && (
-              <div className="bg-surface rounded-xl border border-border-light p-4 space-y-3">
-                <h4 className="text-[13px] font-semibold text-foreground">Redeem</h4>
+              <div className="border-t border-border-light pt-5">
+                <h3 className="text-[13px] font-semibold text-foreground mb-3">Redeem</h3>
                 <div className="flex gap-2">
-                  <input
-                    type="number"
-                    min="0.01"
-                    max={detailCard.balance}
-                    step="0.01"
-                    value={redeemAmount}
-                    onChange={(e) => setRedeemAmount(e.target.value)}
-                    placeholder={`Max $${detailCard.balance.toFixed(2)}`}
-                    className={inputClass}
-                  />
-                  <Button
-                    onClick={handleRedeem}
-                    disabled={!redeemAmount || parseFloat(redeemAmount) <= 0 || parseFloat(redeemAmount) > detailCard.balance}
-                  >
+                  <div className="relative flex-1">
+                    <DollarSign className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
+                    <input
+                      type="number"
+                      value={redeemAmount}
+                      onChange={(e) => setRedeemAmount(e.target.value)}
+                      placeholder={`Max ${formatCurrency(detailCard.remainingBalance)}`}
+                      min={0.01}
+                      max={detailCard.remainingBalance}
+                      step={0.01}
+                      className="w-full pl-9 pr-4 py-2.5 bg-card-bg border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-foreground/10"
+                    />
+                  </div>
+                  <Button onClick={handleRedeem} size="md">
                     Redeem
                   </Button>
                 </div>
+                <p className="text-[11px] text-text-tertiary mt-2">
+                  Enter the amount to redeem from this gift card.
+                </p>
               </div>
             )}
-
-            {/* Delete */}
-            <div className="pt-2 border-t border-border-light">
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={() => setConfirmDeleteOpen(true)}
-                className="w-full"
-              >
-                Delete Gift Card
-              </Button>
-            </div>
           </div>
         )}
       </SlideOver>
+    </div>
+  );
+}
 
-      {/* Delete confirmation */}
-      <ConfirmDialog
-        open={confirmDeleteOpen}
-        onClose={() => setConfirmDeleteOpen(false)}
-        onConfirm={handleDelete}
-        title="Delete Gift Card"
-        message={`Are you sure you want to delete gift card ${detailCard?.code || ""}? This action cannot be undone.`}
-        confirmLabel="Delete"
-        variant="danger"
-      />
+// ── Helper Components ──
+
+function SummaryCard({
+  icon,
+  label,
+  value,
+  color,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  color: string;
+}) {
+  return (
+    <div className="bg-card-bg border border-border-light rounded-xl p-5">
+      <div className="flex items-center gap-3">
+        <div className={`w-10 h-10 rounded-xl bg-surface flex items-center justify-center ${color}`}>
+          {icon}
+        </div>
+        <div>
+          <p className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider">{label}</p>
+          <p className="text-xl font-bold text-foreground">{value}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between py-2">
+      <span className="text-[12px] font-medium text-text-tertiary">{label}</span>
+      <span className="text-[13px] font-medium text-foreground">{value}</span>
     </div>
   );
 }

@@ -73,7 +73,7 @@ export function TeamMemberPicker({ value, onChange, label = "Assign to" }: TeamM
             </div>
             <span className="text-xs text-text-secondary">
               {member.name}
-              {member.title && <span className="text-text-tertiary"> &middot; {member.title}</span>}
+              {member.role && <span className="text-text-tertiary"> &middot; {member.role}</span>}
             </span>
           </div>
         );

@@ -3,7 +3,7 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
-import { ChevronUp, ChevronDown, Plus, X, Check, Trash2, SlidersHorizontal } from "lucide-react";
+import { ChevronUp, ChevronDown, Plus, X, Check, Trash2, SlidersHorizontal, GripVertical } from "lucide-react";
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -393,11 +393,70 @@ export function DataTable<T>({ columns, data, onRowClick, keyExtractor, storageK
   const hasColumnPicker = !!storageKey;
   const enableCustomColumns = !!onUpdateCustomData && !!getCustomData;
 
-  // Filter built-in columns by visibility
+  // Column order (drag-to-reorder)
+  const [columnOrder, setColumnOrder] = useState<string[]>(() => {
+    if (!storageKey) return columns.map(c => c.key);
+    try {
+      const stored = localStorage.getItem(`${storageKey}-order`);
+      if (stored) {
+        const parsed = JSON.parse(stored) as string[];
+        // Merge: keep stored order for columns that still exist, append new ones
+        const allKeys = new Set(columns.map(c => c.key));
+        const ordered = parsed.filter(k => allKeys.has(k));
+        columns.forEach(c => { if (!ordered.includes(c.key)) ordered.push(c.key); });
+        return ordered;
+      }
+    } catch { /* ignore */ }
+    return columns.map(c => c.key);
+  });
+
+  const saveColumnOrder = useCallback((order: string[]) => {
+    setColumnOrder(order);
+    if (storageKey) {
+      try { localStorage.setItem(`${storageKey}-order`, JSON.stringify(order)); } catch { /* ignore */ }
+    }
+  }, [storageKey]);
+
+  // Drag state for column reorder
+  const [dragColKey, setDragColKey] = useState<string | null>(null);
+  const [dragOverKey, setDragOverKey] = useState<string | null>(null);
+
+  const handleColDragStart = useCallback((key: string) => {
+    setDragColKey(key);
+  }, []);
+
+  const handleColDragOver = useCallback((e: React.DragEvent, key: string) => {
+    e.preventDefault();
+    if (key !== dragColKey) setDragOverKey(key);
+  }, [dragColKey]);
+
+  const handleColDrop = useCallback((targetKey: string) => {
+    if (!dragColKey || dragColKey === targetKey) { setDragColKey(null); setDragOverKey(null); return; }
+    const order = [...columnOrder];
+    const fromIdx = order.indexOf(dragColKey);
+    const toIdx = order.indexOf(targetKey);
+    if (fromIdx === -1 || toIdx === -1) { setDragColKey(null); setDragOverKey(null); return; }
+    order.splice(fromIdx, 1);
+    order.splice(toIdx, 0, dragColKey);
+    saveColumnOrder(order);
+    setDragColKey(null);
+    setDragOverKey(null);
+  }, [dragColKey, columnOrder, saveColumnOrder]);
+
+  const handleColDragEnd = useCallback(() => {
+    setDragColKey(null);
+    setDragOverKey(null);
+  }, []);
+
+  // Filter built-in columns by visibility, then apply column order
   const visibleBuiltInColumns = useMemo(() => {
-    if (!hasColumnPicker) return columns;
-    return columns.filter(c => visibleKeys.includes(c.key));
-  }, [columns, visibleKeys, hasColumnPicker]);
+    const visible = hasColumnPicker ? columns.filter(c => visibleKeys.includes(c.key)) : columns;
+    return [...visible].sort((a, b) => {
+      const ai = columnOrder.indexOf(a.key);
+      const bi = columnOrder.indexOf(b.key);
+      return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+    });
+  }, [columns, visibleKeys, hasColumnPicker, columnOrder]);
 
   // Filter custom columns by visibility
   const visibleCustomColumns = useMemo(() => {
@@ -548,23 +607,14 @@ export function DataTable<T>({ columns, data, onRowClick, keyExtractor, storageK
                   key={col.key}
                   scope="col"
                   aria-sort={sortKey === col.key ? (sortDir === "asc" ? "ascending" : "descending") : undefined}
-                  className={`text-left text-xs font-semibold text-text-secondary uppercase tracking-wider px-4 py-3 group/header ${
-                    col.sortable ? "cursor-pointer select-none hover:text-foreground hover:bg-surface transition-colors" : ""
+                  className={`text-left text-[11px] font-semibold text-text-secondary uppercase tracking-wider px-5 py-4 group/header transition-all ${
+                    col.sortable ? "cursor-pointer select-none hover:text-foreground hover:bg-surface" : ""
                   }`}
                   style={col.minWidth ? { minWidth: col.minWidth } : undefined}
                   onClick={() => col.sortable && handleSort(col.key)}
                 >
                   <div className="flex items-center gap-1.5 w-full">
                     <span>{col.label}</span>
-                    {hasColumnPicker && isRemovable(col) && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleToggleColumn(col.key); }}
-                        className="opacity-0 group-hover/header:opacity-100 text-text-tertiary hover:text-foreground transition-all cursor-pointer"
-                        title={`Hide ${col.label}`}
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    )}
                     {col.sortable && (
                       <div className="ml-auto">
                         {sortKey === col.key ? (
@@ -654,7 +704,7 @@ export function DataTable<T>({ columns, data, onRowClick, keyExtractor, storageK
                 >
                   {/* Built-in columns */}
                   {visibleBuiltInColumns.map((col) => (
-                    <td key={col.key} className="px-4 py-3.5 text-[13px] text-foreground">
+                    <td key={col.key} className="px-5 py-5 text-[14px] text-foreground">
                       {col.render
                         ? col.render(item)
                         : String((item as Record<string, unknown>)[col.key] ?? "")}
@@ -663,7 +713,7 @@ export function DataTable<T>({ columns, data, onRowClick, keyExtractor, storageK
 
                   {/* Custom columns */}
                   {visibleCustomColumns.map((col) => (
-                    <td key={col.id} className="px-4 py-3.5 text-[13px] text-foreground">
+                    <td key={col.id} className="px-5 py-5 text-[14px] text-foreground">
                       {renderCustomCell(item, col)}
                     </td>
                   ))}

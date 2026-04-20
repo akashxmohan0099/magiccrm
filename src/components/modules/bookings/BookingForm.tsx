@@ -1,13 +1,11 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { AlertTriangle } from "lucide-react";
 import { useBookingsStore } from "@/store/bookings";
 import { useClientsStore } from "@/store/clients";
 import { useServicesStore } from "@/store/services";
 import { Booking, BookingStatus } from "@/types/models";
 import { useVocabulary } from "@/hooks/useVocabulary";
-import { useIndustryConfig } from "@/hooks/useIndustryConfig";
 import { SlideOver } from "@/components/ui/SlideOver";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { FormField } from "@/components/ui/FormField";
@@ -15,15 +13,9 @@ import { SelectField } from "@/components/ui/SelectField";
 import { DateField } from "@/components/ui/DateField";
 import { TextArea } from "@/components/ui/TextArea";
 import { Button } from "@/components/ui/Button";
-import type { ServiceVariant } from "@/types/industry-config";
-import { ServicePicker } from "./ServicePicker";
-import { FeatureSection } from "@/components/modules/FeatureSection";
-import { SatisfactionPrompt } from "./SatisfactionPrompt";
-import { StarRating } from "@/components/ui/StarRating";
 import { TeamMemberPicker } from "@/components/ui/TeamMemberPicker";
 import { useModuleEnabled } from "@/hooks/useFeature";
 import { useAuth } from "@/hooks/useAuth";
-import { CustomFieldsSection } from "@/components/modules/shared/CustomFieldsSection";
 
 interface BookingFormProps {
   open: boolean;
@@ -31,12 +23,10 @@ interface BookingFormProps {
   booking?: Booking;
   defaultDate?: string;
   prefill?: {
-    title?: string;
     clientId?: string;
-    startTime?: string;
-    endTime?: string;
+    startAt?: string;
+    endAt?: string;
     serviceId?: string;
-    serviceName?: string;
   };
 }
 
@@ -45,48 +35,33 @@ const statusOptions = [
   { value: "confirmed", label: "Confirmed" },
   { value: "completed", label: "Completed" },
   { value: "cancelled", label: "Cancelled" },
-];
-
-const recurringOptions = [
-  { value: "none", label: "None" },
-  { value: "weekly", label: "Weekly" },
-  { value: "biweekly", label: "Biweekly" },
-  { value: "monthly", label: "Monthly" },
+  { value: "no_show", label: "No Show" },
 ];
 
 const emptyForm = {
-  title: "",
   clientId: "",
   date: "",
-  startTime: "09:00",
-  endTime: "10:00",
+  startAt: "09:00",
+  endAt: "10:00",
   status: "pending" as BookingStatus,
   notes: "",
-  recurring: "none",
+  serviceId: "",
 };
 
 export function BookingForm({ open, onClose, booking, defaultDate, prefill }: BookingFormProps) {
-  const { addBooking, updateBooking, deleteBooking, hasConflict, cancellationPolicy } = useBookingsStore();
+  const { addBooking, updateBooking, deleteBooking } = useBookingsStore();
   const { clients } = useClientsStore();
-  const { services: storeServices } = useServicesStore();
+  const { services } = useServicesStore();
   const { workspaceId } = useAuth();
   const vocab = useVocabulary();
-  const config = useIndustryConfig();
   const teamEnabled = useModuleEnabled("team");
-  const isServiceMenu = config.bookingMode.defaultMode === "service-menu";
-  const isRecurringLesson = config.bookingMode.defaultMode === "recurring-lesson";
-  const isDateExclusive = config.bookingMode.defaultMode === "date-exclusive";
   const [form, setForm] = useState(emptyForm);
   const [assignedToId, setAssignedToId] = useState<string | undefined>(undefined);
-  const [assignedToName, setAssignedToName] = useState<string | undefined>(undefined);
-  const [selectedService, setSelectedService] = useState<{ id: string; name: string; duration: number; price: number } | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
-  const [policyConsent, setPolicyConsent] = useState(false);
   const [newClientName, setNewClientName] = useState("");
   const [newClientEmail, setNewClientEmail] = useState("");
-  const [customData, setCustomData] = useState<Record<string, unknown>>({});
 
   const clientOptions = useMemo(
     () => [
@@ -97,76 +72,64 @@ export function BookingForm({ open, onClose, booking, defaultDate, prefill }: Bo
     [clients]
   );
 
+  const selectedService = useMemo(() => {
+    if (!form.serviceId) return undefined;
+    return services.find((s) => s.id === form.serviceId);
+  }, [services, form.serviceId]);
+
+  // Format startAt/endAt: extract HH:MM from ISO or use as-is if already HH:MM
+  const toTimeString = (val: string) => {
+    if (val.includes("T")) {
+      const d = new Date(val);
+      return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+    }
+    return val;
+  };
+
   useEffect(() => {
     if (open) {
       if (booking) {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setForm({
-          title: booking.title,
           clientId: booking.clientId ?? "",
           date: booking.date,
-          startTime: booking.startTime,
-          endTime: booking.endTime,
+          startAt: toTimeString(booking.startAt),
+          endAt: toTimeString(booking.endAt),
           status: booking.status,
           notes: booking.notes,
-          recurring: booking.recurring ?? "none",
+          serviceId: booking.serviceId ?? "",
         });
         setAssignedToId(booking.assignedToId);
-        setAssignedToName(booking.assignedToName);
       } else {
         setForm({
           ...emptyForm,
           date: defaultDate ?? "",
-          recurring: isRecurringLesson ? "weekly" : "none",
           ...(prefill && {
-            title: prefill.title ?? "",
             clientId: prefill.clientId ?? "",
-            startTime: prefill.startTime ?? "09:00",
-            endTime: prefill.endTime ?? "10:00",
+            startAt: prefill.startAt ? toTimeString(prefill.startAt) : "09:00",
+            endAt: prefill.endAt ? toTimeString(prefill.endAt) : "10:00",
+            serviceId: prefill.serviceId ?? "",
           }),
         });
         setAssignedToId(undefined);
-        setAssignedToName(undefined);
       }
       setErrors({});
-      // Pre-select service from store if editing a booking or prefill has serviceId
-      const preSelectId = booking?.serviceId ?? prefill?.serviceId;
-      if (preSelectId) {
-        const svc = storeServices.find((s) => s.id === preSelectId);
-        if (svc) {
-          setSelectedService({ id: svc.id, name: booking?.serviceName ?? svc.name, duration: svc.duration, price: booking?.price ?? svc.price });
-        } else {
-          setSelectedService(booking ? { id: preSelectId, name: booking.serviceName ?? "", duration: booking.duration ?? 0, price: booking.price ?? 0 } : null);
-        }
-      } else {
-        setSelectedService(null);
-      }
-      setPolicyConsent(!!booking?.cancellationPolicyConsent?.accepted);
       setNewClientName("");
       setNewClientEmail("");
-      setCustomData((booking as unknown as Record<string, unknown>)?.customData as Record<string, unknown> ?? {});
     }
   }, [open, booking, defaultDate, prefill]);
 
-  const conflictDetected = useMemo(() => {
-    if (!form.date || !form.startTime || !form.endTime) return false;
-    return hasConflict(form.date, form.startTime, form.endTime, booking?.id);
-  }, [form.date, form.startTime, form.endTime, booking?.id, hasConflict]);
-
   const validate = () => {
     const errs: Record<string, string> = {};
-    if (!form.title.trim()) errs.title = "Title is required";
     if (!form.date) errs.date = "Date is required";
     if (form.clientId === "__new__") {
       if (!newClientName.trim()) errs.newClientName = "Client name is required";
       if (!newClientEmail.trim()) errs.newClientEmail = "Client email is required";
     }
-    if (!isDateExclusive) {
-      if (!form.startTime) errs.startTime = "Start time is required";
-      if (!form.endTime) errs.endTime = "End time is required";
-      if (form.startTime && form.endTime && form.startTime >= form.endTime) {
-        errs.endTime = "End time must be after start time";
-      }
+    if (!form.startAt) errs.startAt = "Start time is required";
+    if (!form.endAt) errs.endAt = "End time is required";
+    if (form.startAt && form.endAt && form.startAt >= form.endAt) {
+      errs.endAt = "End time must be after start time";
     }
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -186,48 +149,27 @@ export function BookingForm({ open, onClose, booking, defaultDate, prefill }: Bo
         name: newClientName.trim(),
         email: newClientEmail.trim(),
         phone: "",
-        tags: [],
         notes: "",
-        status: "active",
-      }, workspaceId ?? undefined);
+      } as Omit<typeof newClient, "id" | "createdAt" | "updatedAt">, workspaceId ?? undefined);
       resolvedClientId = newClient.id;
     }
 
-    const data: Record<string, unknown> = {
-      title: form.title.trim(),
-      clientId: resolvedClientId,
+    const data = {
+      workspaceId: workspaceId || "",
+      clientId: resolvedClientId || "",
+      serviceId: form.serviceId || undefined,
+      assignedToId: assignedToId || undefined,
       date: form.date,
-      startTime: isDateExclusive ? "00:00" : form.startTime,
-      endTime: isDateExclusive ? "23:59" : form.endTime,
+      startAt: form.startAt,
+      endAt: form.endAt,
       status: form.status,
       notes: form.notes.trim(),
-      recurring: form.recurring === "none" ? undefined : (form.recurring as Booking["recurring"]),
-      assignedToId: assignedToId || undefined,
-      assignedToName: assignedToName || undefined,
     };
-
-    if (selectedService) {
-      data.serviceId = selectedService.id;
-      data.serviceName = selectedService.name;
-      data.price = selectedService.price;
-      data.duration = selectedService.duration;
-    }
-
-    if (policyConsent && cancellationPolicy) {
-      data.cancellationPolicyConsent = {
-        accepted: true,
-        acceptedAt: new Date().toISOString(),
-      };
-    }
-
-    if (Object.keys(customData).length > 0) {
-      data.customData = customData;
-    }
 
     if (booking) {
       updateBooking(booking.id, data as Partial<Booking>, workspaceId ?? undefined);
     } else {
-      addBooking(data as unknown as Omit<Booking, "id" | "createdAt" | "updatedAt">, workspaceId ?? undefined);
+      addBooking(data as Omit<Booking, "id" | "createdAt" | "updatedAt">, workspaceId ?? undefined);
     }
 
     onClose();
@@ -244,6 +186,23 @@ export function BookingForm({ open, onClose, booking, defaultDate, prefill }: Bo
   const set = (key: string, value: string) =>
     setForm((f) => ({ ...f, [key]: value }));
 
+  const handleServiceChange = (serviceId: string) => {
+    set("serviceId", serviceId);
+    const svc = services.find((s) => s.id === serviceId);
+    if (svc) {
+      // Auto-calculate end time from service duration
+      const startMinutes = parseInt(form.startAt.split(":")[0]) * 60 + parseInt(form.startAt.split(":")[1]);
+      const endMinutes = startMinutes + svc.duration;
+      const endHours = String(Math.floor(endMinutes / 60)).padStart(2, "0");
+      const endMins = String(endMinutes % 60).padStart(2, "0");
+      setForm((f) => ({
+        ...f,
+        serviceId,
+        endAt: `${endHours}:${endMins}`,
+      }));
+    }
+  };
+
   return (
     <SlideOver
       open={open}
@@ -251,55 +210,16 @@ export function BookingForm({ open, onClose, booking, defaultDate, prefill }: Bo
       title={booking ? `Edit ${vocab.booking}` : vocab.addBooking}
     >
       <form onSubmit={handleSubmit} className="space-y-5">
-        {/* Service Picker for service-menu mode */}
-        {(isServiceMenu || isRecurringLesson) && !booking && config.bookingMode.defaultServices && config.bookingMode.defaultServices.length > 0 && (
-          <ServicePicker
-            services={config.bookingMode.defaultServices}
-            onSelect={(service, variant?: ServiceVariant) => {
-              const duration = variant ? variant.duration : service.duration;
-              const price = variant ? variant.price : service.price;
-              const label = variant ? `${service.name} (${variant.label})` : service.name;
-              const startMinutes = parseInt(form.startTime.split(":")[0]) * 60 + parseInt(form.startTime.split(":")[1]);
-              const endMinutes = startMinutes + duration;
-              const endHours = String(Math.floor(endMinutes / 60)).padStart(2, "0");
-              const endMins = String(endMinutes % 60).padStart(2, "0");
-              setForm((f) => ({
-                ...f,
-                title: label,
-                endTime: `${endHours}:${endMins}`,
-              }));
-              // Store service metadata for the booking record
-              setSelectedService({ id: service.id, name: label, duration, price });
-            }}
-          />
-        )}
-
-        {/* Service dropdown from services store */}
-        {storeServices.length > 0 && (
+        {/* Service dropdown */}
+        {services.length > 0 && (
           <FormField label="Service">
             <select
-              value={selectedService?.id ?? ""}
-              onChange={(e) => {
-                const svc = storeServices.find((s) => s.id === e.target.value);
-                if (svc) {
-                  setSelectedService({ id: svc.id, name: svc.name, duration: svc.duration, price: svc.price });
-                  const startMinutes = parseInt(form.startTime.split(":")[0]) * 60 + parseInt(form.startTime.split(":")[1]);
-                  const endMinutes = startMinutes + svc.duration;
-                  const endHours = String(Math.floor(endMinutes / 60)).padStart(2, "0");
-                  const endMins = String(endMinutes % 60).padStart(2, "0");
-                  setForm((f) => ({
-                    ...f,
-                    title: f.title || svc.name,
-                    endTime: `${endHours}:${endMins}`,
-                  }));
-                } else {
-                  setSelectedService(null);
-                }
-              }}
+              value={form.serviceId}
+              onChange={(e) => handleServiceChange(e.target.value)}
               className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
             >
               <option value="">Select a service (optional)</option>
-              {storeServices.map((svc) => (
+              {services.map((svc) => (
                 <option key={svc.id} value={svc.id}>
                   {svc.name} — ${svc.price} ({svc.duration}min)
                 </option>
@@ -308,15 +228,12 @@ export function BookingForm({ open, onClose, booking, defaultDate, prefill }: Bo
           </FormField>
         )}
 
-        <FormField label="Title" required error={errors.title}>
-          <input
-            type="text"
-            value={form.title}
-            onChange={(e) => set("title", e.target.value)}
-            className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
-            placeholder={`${vocab.booking} title`}
-          />
-        </FormField>
+        {/* Selected service info */}
+        {selectedService && (
+          <div className="text-xs text-text-secondary bg-surface rounded-lg px-3 py-2 border border-border-light">
+            {selectedService.name} — ${selectedService.price} ({selectedService.duration}min)
+          </div>
+        )}
 
         <FormField label={vocab.client}>
           <SelectField
@@ -352,9 +269,8 @@ export function BookingForm({ open, onClose, booking, defaultDate, prefill }: Bo
         {teamEnabled && (
           <TeamMemberPicker
             value={assignedToId}
-            onChange={(id, name) => {
+            onChange={(id, _name) => {
               setAssignedToId(id);
-              setAssignedToName(name);
             }}
           />
         )}
@@ -367,52 +283,31 @@ export function BookingForm({ open, onClose, booking, defaultDate, prefill }: Bo
           />
         </FormField>
 
-        {!isDateExclusive && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <FormField label="Start Time" required error={errors.startTime}>
-              <input
-                type="time"
-                value={form.startTime}
-                onChange={(e) => set("startTime", e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
-              />
-            </FormField>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <FormField label="Start Time" required error={errors.startAt}>
+            <input
+              type="time"
+              value={form.startAt}
+              onChange={(e) => set("startAt", e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
+            />
+          </FormField>
 
-            <FormField label="End Time" required error={errors.endTime}>
-              <input
-                type="time"
-                value={form.endTime}
-                onChange={(e) => set("endTime", e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
-              />
-            </FormField>
-          </div>
-        )}
-
-        {isDateExclusive && (
-          <p className="text-xs text-text-tertiary">This is a full-day {vocab.booking.toLowerCase()}. No specific time required.</p>
-        )}
-
-        {conflictDetected && (
-          <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
-            <AlertTriangle className="w-4 h-4 shrink-0" />
-            <span>This time slot conflicts with an existing booking.</span>
-          </div>
-        )}
+          <FormField label="End Time" required error={errors.endAt}>
+            <input
+              type="time"
+              value={form.endAt}
+              onChange={(e) => set("endAt", e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
+            />
+          </FormField>
+        </div>
 
         <FormField label="Status">
           <SelectField
             options={statusOptions}
             value={form.status}
             onChange={(e) => set("status", e.target.value)}
-          />
-        </FormField>
-
-        <FormField label="Recurring">
-          <SelectField
-            options={recurringOptions}
-            value={form.recurring}
-            onChange={(e) => set("recurring", e.target.value)}
           />
         </FormField>
 
@@ -424,63 +319,6 @@ export function BookingForm({ open, onClose, booking, defaultDate, prefill }: Bo
             rows={3}
           />
         </FormField>
-
-        <FeatureSection moduleId="bookings-calendar" featureId="cancellation-policy" featureLabel="Cancellation Policy">
-          {cancellationPolicy ? (
-            <div className="space-y-2">
-              <div className="p-3 bg-surface rounded-lg border border-border-light">
-                <p className="text-xs text-text-secondary whitespace-pre-wrap">{cancellationPolicy}</p>
-              </div>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={policyConsent}
-                  onChange={(e) => setPolicyConsent(e.target.checked)}
-                  className="rounded"
-                />
-                <span className="text-[13px] text-foreground">Client agrees to cancellation policy</span>
-              </label>
-              {booking?.cancellationPolicyConsent?.accepted && (
-                <p className="text-[11px] text-green-600">
-                  Accepted on {new Date(booking.cancellationPolicyConsent.acceptedAt).toLocaleString()}
-                </p>
-              )}
-            </div>
-          ) : (
-            <p className="text-xs text-text-tertiary">No cancellation policy set. Add one from the Scheduling page settings.</p>
-          )}
-        </FeatureSection>
-
-        <FeatureSection moduleId="bookings-calendar" featureId="satisfaction-rating" featureLabel="Post-Service Rating">
-          {booking && booking.status === "completed" && !booking.satisfactionRating && (
-            <SatisfactionPrompt booking={booking} />
-          )}
-          {booking && booking.satisfactionRating && (
-            <div className="p-3 bg-green-50 border border-green-200 rounded-xl space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="text-[13px] font-medium text-green-900">Client Rating</span>
-                <StarRating value={booking.satisfactionRating} readOnly size="sm" />
-              </div>
-              {booking.satisfactionFeedback && (
-                <p className="text-xs text-green-800">{booking.satisfactionFeedback}</p>
-              )}
-              {booking.ratedAt && (
-                <p className="text-[11px] text-green-600">Rated on {new Date(booking.ratedAt).toLocaleString()}</p>
-              )}
-            </div>
-          )}
-        </FeatureSection>
-        {/* Persona custom fields */}
-        {(config.customFields?.bookings ?? []).length > 0 && (
-          <div className="border-t border-border-light pt-5 mt-2">
-            <p className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-3">Additional Details</p>
-            <CustomFieldsSection
-              fields={config.customFields?.bookings ?? []}
-              values={customData}
-              onChange={setCustomData}
-            />
-          </div>
-        )}
 
         <div className="flex justify-between pt-4 border-t border-border-light">
           <div>
@@ -506,7 +344,7 @@ export function BookingForm({ open, onClose, booking, defaultDate, prefill }: Bo
         onClose={() => setDeleteConfirmOpen(false)}
         onConfirm={handleDelete}
         title={`Delete ${vocab.booking}`}
-        message={`Are you sure you want to delete "${booking?.title}"? This action cannot be undone.`}
+        message={`Are you sure you want to delete this booking? This action cannot be undone.`}
       />
     </SlideOver>
   );

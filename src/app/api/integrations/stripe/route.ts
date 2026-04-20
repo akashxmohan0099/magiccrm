@@ -18,8 +18,8 @@ export async function POST(req: NextRequest) {
     }
 
     const { data: invoice, error: invoiceError } = await supabase
-      .from("invoices")
-      .select("id, number, workspace_id, client_id, status")
+      .from("payment_documents")
+      .select("id, document_number, workspace_id, client_id, status")
       .eq("id", invoiceId)
       .maybeSingle();
 
@@ -53,9 +53,9 @@ export async function POST(req: NextRequest) {
     }
 
     const { data: lineItems, error: lineItemError } = await supabase
-      .from("invoice_line_items")
-      .select("quantity, unit_price, discount")
-      .eq("invoice_id", invoice.id);
+      .from("payment_line_items")
+      .select("quantity, unit_price")
+      .eq("payment_document_id", invoice.id);
 
     if (lineItemError) {
       console.error("[Stripe API] line-item lookup failed:", lineItemError);
@@ -65,8 +65,7 @@ export async function POST(req: NextRequest) {
     const amount = (lineItems ?? []).reduce((sum, item) => {
       const quantity = Number(item.quantity ?? 0);
       const unitPrice = Number(item.unit_price ?? 0);
-      const discount = Number(item.discount ?? 0);
-      return sum + quantity * unitPrice - discount;
+      return sum + quantity * unitPrice;
     }, 0);
 
     if (!Number.isFinite(amount) || amount <= 0) {
@@ -99,12 +98,12 @@ export async function POST(req: NextRequest) {
     const session = await createInvoicePaymentSession({
       invoiceId: invoice.id,
       workspaceId: invoice.workspace_id,
-      invoiceNumber: invoice.number,
+      invoiceNumber: invoice.document_number,
       amount: Math.round(amount * 100),
       currency: typeof currency === "string" && currency ? currency : "aud",
       customerEmail,
-      successUrl: `${origin}/dashboard/invoicing?payment=success&invoice=${invoice.id}`,
-      cancelUrl: `${origin}/dashboard/invoicing?payment=cancelled&invoice=${invoice.id}`,
+      successUrl: `${origin}/dashboard/payments?payment=success&invoice=${invoice.id}`,
+      cancelUrl: `${origin}/dashboard/payments?payment=cancelled&invoice=${invoice.id}`,
     });
 
     return NextResponse.json({ url: session.url, sessionId: session.id });

@@ -1,7 +1,29 @@
+import { createHash } from "node:crypto";
 import type { NextConfig } from "next";
 
+const themeBootstrapScript = `(function(){try{if(!/^\\/dashboard/.test(location.pathname))return;var t=localStorage.getItem("magic-theme")||"light";if(t==="dark"||(t==="system"&&window.matchMedia("(prefers-color-scheme:dark)").matches))document.documentElement.classList.add("dark")}catch(e){}})()`;
+const themeScriptHash = createHash("sha256").update(themeBootstrapScript).digest("base64");
+
 const nextConfig: NextConfig = {
+  skipTrailingSlashRedirect: true,
+  async rewrites() {
+    return [
+      {
+        source: "/ingest/static/:path*",
+        destination: "https://us-assets.i.posthog.com/static/:path*",
+      },
+      {
+        source: "/ingest/:path*",
+        destination: "https://us.i.posthog.com/:path*",
+      },
+    ];
+  },
   async headers() {
+    const isDevelopment = process.env.NODE_ENV === "development";
+    const scriptSrc = isDevelopment
+      ? ["'self'", "https://js.stripe.com", "'unsafe-inline'", "'unsafe-eval'"].join(" ")
+      : ["'self'", `'sha256-${themeScriptHash}'`, "https://js.stripe.com"].join(" ");
+
     return [
       {
         source: "/(.*)",
@@ -14,7 +36,7 @@ const nextConfig: NextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com",
+              `script-src ${scriptSrc}`,
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: blob: https:",

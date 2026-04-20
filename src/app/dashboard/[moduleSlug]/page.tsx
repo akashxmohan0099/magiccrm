@@ -2,67 +2,156 @@
 
 import { use } from "react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getModuleBySlug } from "@/lib/module-registry";
-import { useModuleEnabled } from "@/hooks/useFeature";
 import { PageTransition } from "@/components/ui/PageTransition";
-import { Sparkles } from "lucide-react";
+import { ADDON_MODULES } from "@/lib/addon-modules";
+import { useSettingsStore } from "@/store/settings";
 
-const MODULE_COMPONENTS: Record<string, React.ComponentType> = {
-  "client-database": dynamic(() => import("@/components/modules/clients/ClientsPage").then(m => ({ default: m.ClientsPage }))),
-  "leads-pipeline": dynamic(() => import("@/components/modules/leads/LeadsPage").then(m => ({ default: m.LeadsPage }))),
-  "communication": dynamic(() => import("@/components/modules/communication/CommunicationPage").then(m => ({ default: m.CommunicationPage }))),
-  "bookings-calendar": dynamic(() => import("@/components/modules/bookings/BookingsPage").then(m => ({ default: m.BookingsPage }))),
-  "services": dynamic(() => import("@/components/modules/services/ServicesPage").then(m => ({ default: m.ServicesPage }))),
-  "quotes-invoicing": dynamic(() => import("@/components/modules/invoicing/InvoicingPage").then(m => ({ default: m.InvoicingPage }))),
-  "jobs-projects": dynamic(() => import("@/components/modules/jobs/JobsPage").then(m => ({ default: m.JobsPage }))),
-  "marketing": dynamic(() => import("@/components/modules/marketing/MarketingPage").then(m => ({ default: m.MarketingPage }))),
-  "support": dynamic(() => import("@/components/modules/support/SupportPage").then(m => ({ default: m.SupportPage }))),
-  "documents": dynamic(() => import("@/components/modules/documents/DocumentsPage").then(m => ({ default: m.DocumentsPage }))),
-  "automations": dynamic(() => import("@/components/modules/automations/AutomationsPage").then(m => ({ default: m.AutomationsPage }))),
-  "reporting": dynamic(() => import("@/components/modules/reporting/ReportingPage").then(m => ({ default: m.ReportingPage }))),
-  "team": dynamic(() => import("@/components/modules/team/TeamPage").then(m => ({ default: m.TeamPage }))),
-  "soap-notes": dynamic(() => import("@/components/modules/soap-notes/SOAPNotesPage").then(m => ({ default: m.SOAPNotesPage }))),
-  "intake-forms": dynamic(() => import("@/components/modules/intake-forms/IntakeFormsPage").then(m => ({ default: m.IntakeFormsPage }))),
-  "memberships": dynamic(() => import("@/components/modules/memberships/MembershipsPage").then(m => ({ default: m.MembershipsPage }))),
-  "before-after": dynamic(() => import("@/components/modules/before-after/BeforeAfterPage").then(m => ({ default: m.BeforeAfterPage }))),
-  "win-back": dynamic(() => import("@/components/modules/win-back/WinBackPage").then(m => ({ default: m.WinBackPage }))),
-  "ai-insights": dynamic(() => import("@/components/modules/ai-insights/AIInsightsPage").then(m => ({ default: m.AIInsightsPage }))),
-  "loyalty": dynamic(() => import("@/components/modules/loyalty/LoyaltyPage").then(m => ({ default: m.LoyaltyPage }))),
-  "storefront": dynamic(() => import("@/components/modules/storefront/StorefrontPage").then(m => ({ default: m.StorefrontPage }))),
-  "client-portal": dynamic(() => import("@/components/modules/client-portal/ClientPortalPage").then(m => ({ default: m.ClientPortalPage }))),
-  "notes-docs": dynamic(() => import("@/components/modules/notes-docs/NotesDocsPage").then(m => ({ default: m.NotesDocsPage }))),
-  "gift-cards": dynamic(() => import("@/components/modules/gift-cards/GiftCardsPage").then(m => ({ default: m.GiftCardsPage }))),
-  "class-timetable": dynamic(() => import("@/components/modules/class-timetable/ClassTimetablePage").then(m => ({ default: m.ClassTimetablePage }))),
-  "vendor-management": dynamic(() => import("@/components/modules/vendor-management/VendorManagementPage").then(m => ({ default: m.VendorManagementPage }))),
-  "proposals": dynamic(() => import("@/components/modules/proposals/ProposalsPage").then(m => ({ default: m.ProposalsPage }))),
-  "waitlist-manager": dynamic(() => import("@/components/modules/waitlist-manager/WaitlistManagerPage").then(m => ({ default: m.WaitlistManagerPage }))),
+const TAB_COMPONENTS: Record<string, React.ComponentType> = {
+  // Core modules
+  communications: dynamic(() =>
+    import("@/components/modules/communication/CommunicationPage").then((m) => ({
+      default: m.CommunicationPage,
+    }))
+  ),
+  communication: dynamic(() =>
+    import("@/components/modules/communication/CommunicationPage").then((m) => ({
+      default: m.CommunicationPage,
+    }))
+  ),
+  inquiries: dynamic(() =>
+    import("@/components/modules/inquiries/InquiriesPage").then((m) => ({
+      default: m.InquiriesPage,
+    }))
+  ),
+  leads: dynamic(() =>
+    import("@/components/modules/inquiries/InquiriesPage").then((m) => ({
+      default: m.InquiriesPage,
+    }))
+  ),
+  bookings: dynamic(() =>
+    import("@/components/modules/bookings/BookingsPage").then((m) => ({
+      default: m.BookingsPage,
+    }))
+  ),
+  calendar: dynamic(() =>
+    import("@/components/modules/calendar/CalendarPage").then((m) => ({
+      default: m.CalendarPage,
+    }))
+  ),
+  clients: dynamic(() =>
+    import("@/components/modules/clients/ClientsPage").then((m) => ({
+      default: m.ClientsPage,
+    }))
+  ),
+  payments: dynamic(() =>
+    import("@/components/modules/payments/PaymentsPage").then((m) => ({
+      default: m.PaymentsPage,
+    }))
+  ),
+  invoicing: dynamic(() =>
+    import("@/components/modules/payments/PaymentsPage").then((m) => ({
+      default: m.PaymentsPage,
+    }))
+  ),
+  services: dynamic(() =>
+    import("@/components/modules/services/ServicesPage").then((m) => ({
+      default: m.ServicesPage,
+    }))
+  ),
+  forms: dynamic(() =>
+    import("@/components/modules/forms/FormsPage").then((m) => ({
+      default: m.FormsPage,
+    }))
+  ),
+  automations: dynamic(() =>
+    import("@/components/modules/automations/AutomationsPage").then((m) => ({
+      default: m.AutomationsPage,
+    }))
+  ),
+  teams: dynamic(() =>
+    import("@/components/modules/teams/TeamsPage").then((m) => ({
+      default: m.TeamsPage,
+    }))
+  ),
+  // Addon modules
+  marketing: dynamic(() =>
+    import("@/components/modules/marketing/MarketingPage").then((m) => ({
+      default: m.MarketingPage,
+    }))
+  ),
+  "win-back": dynamic(() =>
+    import("@/components/modules/win-back/WinBackPage").then((m) => ({
+      default: m.WinBackPage,
+    }))
+  ),
+  analytics: dynamic(() =>
+    import("@/components/modules/analytics/AnalyticsPage").then((m) => ({
+      default: m.AnalyticsPage,
+    }))
+  ),
+  "gift-cards": dynamic(() =>
+    import("@/components/modules/gift-cards/GiftCardsPage").then((m) => ({
+      default: m.GiftCardsPage,
+    }))
+  ),
+  loyalty: dynamic(() =>
+    import("@/components/modules/loyalty/LoyaltyPage").then((m) => ({
+      default: m.LoyaltyPage,
+    }))
+  ),
+  "ai-insights": dynamic(() =>
+    import("@/components/modules/ai-insights/AIInsightsPage").then((m) => ({
+      default: m.AIInsightsPage,
+    }))
+  ),
+  proposals: dynamic(() =>
+    import("@/components/modules/proposals/ProposalsPage").then((m) => ({
+      default: m.ProposalsPage,
+    }))
+  ),
+  memberships: dynamic(() =>
+    import("@/components/modules/memberships/MembershipsPage").then((m) => ({
+      default: m.MembershipsPage,
+    }))
+  ),
+  documents: dynamic(() =>
+    import("@/components/modules/documents/DocumentsPage").then((m) => ({
+      default: m.DocumentsPage,
+    }))
+  ),
 };
 
-export default function ModulePage({ params }: { params: Promise<{ moduleSlug: string }> }) {
+export default function TabPage({
+  params,
+}: {
+  params: Promise<{ moduleSlug: string }>;
+}) {
   const { moduleSlug } = use(params);
-  const mod = getModuleBySlug(moduleSlug);
-  const isModuleEnabled = useModuleEnabled(mod?.id ?? "__missing__");
+  const enabledAddons = useSettingsStore((s) => s.enabledAddons);
+  const addon = ADDON_MODULES.find((item) => item.route === moduleSlug);
+  const Component = TAB_COMPONENTS[moduleSlug];
 
-  if (!mod) notFound();
-  if (!isModuleEnabled) notFound();
-
-  if (mod.status === "beta") {
+  if (!Component) notFound();
+  if (addon && !enabledAddons.includes(addon.id)) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] px-6 text-center">
-        <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-5">
-          <Sparkles className="w-7 h-7 text-primary" />
+      <PageTransition>
+        <div className="max-w-lg rounded-2xl border border-border-light bg-card-bg p-8">
+          <h1 className="text-xl font-bold text-foreground">{addon.name} is turned off</h1>
+          <p className="mt-2 text-sm text-text-secondary">
+            Enable this add-on from Modules before you can use it in the dashboard.
+          </p>
+          <Link
+            href="/dashboard/addons"
+            className="mt-5 inline-flex items-center rounded-xl bg-foreground px-4 py-2 text-sm font-medium text-background transition-opacity hover:opacity-90"
+          >
+            Manage Modules
+          </Link>
         </div>
-        <h2 className="text-[22px] font-bold text-foreground mb-2">Coming Soon</h2>
-        <p className="text-sm text-text-secondary max-w-sm leading-relaxed">
-          {mod.name} is currently in development and will be available in an upcoming release.
-        </p>
-      </div>
+      </PageTransition>
     );
   }
-
-  const Component = MODULE_COMPONENTS[mod.id];
-  if (!Component) notFound();
 
   return (
     <PageTransition>

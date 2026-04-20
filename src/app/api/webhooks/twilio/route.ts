@@ -36,6 +36,7 @@ export async function POST(req: NextRequest) {
     const from = formData.get("From") as string;
     const body = formData.get("Body") as string;
     const messageSid = formData.get("MessageSid") as string;
+    const to = formData.get("To") as string;
 
     if (!from || !body) {
       return new NextResponse(
@@ -48,94 +49,119 @@ export async function POST(req: NextRequest) {
 
     // Normalize phone: strip non-digits except leading +
     const normalizedPhone = from.replace(/[^\d+]/g, "");
+    const phoneFilter = `contact_phone.eq.${normalizedPhone},contact_phone.eq.${from}`;
 
-    // Find client by phone number across all workspaces
-    const { data: client } = await supabase
-      .from("clients")
-      .select("id, workspace_id, name")
-      .or(`phone.eq.${normalizedPhone},phone.eq.${from}`)
-      .limit(1)
-      .single();
+    const { data: existingConversations } = await supabase
+      .from("conversations")
+      .select("id, workspace_id, client_id, contact_name, unread_count")
+      .eq("channel", "sms")
+      .or(phoneFilter)
+      .limit(3);
 
-    if (!client) {
-      console.warn(`[Twilio] Inbound SMS from unknown number: ${from}`);
-      // Still return 200 so Twilio doesn't retry
+    let conversationId: string | null = null;
+    let workspaceId: string | null = null;
+    let clientId: string | null = null;
+    let clientName = from;
+    let unreadCount = 0;
+
+    if (existingConversations && existingConversations.length === 1) {
+      const existingConversation = existingConversations[0];
+      conversationId = existingConversation.id;
+      workspaceId = existingConversation.workspace_id;
+      clientId = existingConversation.client_id;
+      clientName = existingConversation.contact_name || from;
+      unreadCount = Number(existingConversation.unread_count ?? 0);
+    } else {
+      const { data: matchedClients } = await supabase
+        .from("clients")
+        .select("id, workspace_id, name")
+        .or(`phone.eq.${normalizedPhone},phone.eq.${from}`)
+        .limit(3);
+
+      if (!matchedClients || matchedClients.length === 0) {
+        console.warn(`[Twilio] Inbound SMS from unknown number: ${from}`);
+        return new NextResponse(
+          '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
+          { headers: { "Content-Type": "text/xml" } }
+        );
+      }
+
+      if (matchedClients.length !== 1) {
+        console.warn(`[Twilio] Ambiguous inbound SMS from ${from}; refusing to route across workspaces.`);
+        return new NextResponse(
+          '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
+          { headers: { "Content-Type": "text/xml" } }
+        );
+      }
+
+      const matchedClient = matchedClients[0];
+      workspaceId = matchedClient.workspace_id;
+      clientId = matchedClient.id;
+      clientName = matchedClient.name || from;
+    }
+
+    if (!workspaceId) {
+      console.warn(`[Twilio] Unable to resolve workspace for inbound SMS from ${from} to ${to}`);
       return new NextResponse(
         '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
         { headers: { "Content-Type": "text/xml" } }
       );
     }
 
-    // Find or create a conversation for this client + SMS channel
-    const { data: existingConvo } = await supabase
-      .from("conversations")
-      .select("id")
-      .eq("workspace_id", client.workspace_id)
-      .eq("client_id", client.id)
-      .eq("channel", "sms")
-      .limit(1)
-      .single();
-
-    let conversationId: string;
-
-    if (existingConvo) {
-      conversationId = existingConvo.id;
-      // Update conversation with latest message
+    if (conversationId) {
       await supabase
         .from("conversations")
         .update({
-          last_message: body.slice(0, 200),
           last_message_at: new Date().toISOString(),
-          unread: true,
+          unread_count: unreadCount + 1,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", conversationId);
+        .eq("id", conversationId)
+        .eq("workspace_id", workspaceId);
     } else {
-      // Create new conversation
-      const { data: newConvo, error: convoErr } = await supabase
+      const { data: newConversation, error: convoErr } = await supabase
         .from("conversations")
         .insert({
-          workspace_id: client.workspace_id,
-          client_id: client.id,
-          client_name: client.name || from,
+          workspace_id: workspaceId,
+          client_id: clientId,
+          contact_name: clientName,
+          contact_phone: normalizedPhone || from,
           channel: "sms",
-          subject: `SMS from ${client.name || from}`,
-          last_message: body.slice(0, 200),
           last_message_at: new Date().toISOString(),
-          unread: true,
+          unread_count: 1,
+          updated_at: new Date().toISOString(),
         })
         .select("id")
         .single();
 
-      if (convoErr || !newConvo) {
+      if (convoErr || !newConversation) {
         console.error("[Twilio] Failed to create conversation:", convoErr?.message);
         return new NextResponse(
           '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
           { headers: { "Content-Type": "text/xml" } }
         );
       }
-      conversationId = newConvo.id;
+
+      conversationId = newConversation.id;
     }
 
     // Store the message
     await supabase.from("messages").insert({
-      workspace_id: client.workspace_id,
+      workspace_id: workspaceId,
       conversation_id: conversationId,
-      sender_type: "client",
-      sender_name: client.name || from,
+      sender: "client",
       content: body,
-      channel: "sms",
-      external_id: messageSid,
+      external_message_id: messageSid,
       created_at: new Date().toISOString(),
     });
 
     // Log activity
     await supabase.from("activity_log").insert({
-      workspace_id: client.workspace_id,
-      action: "create",
+      workspace_id: workspaceId,
+      type: "create",
       entity_type: "messages",
       entity_id: conversationId,
-      description: `SMS received from ${client.name || from}`,
+      description: `SMS received from ${clientName}`,
     });
 
     console.log(`[Twilio] Inbound SMS from ${from} stored in conversation ${conversationId}`);

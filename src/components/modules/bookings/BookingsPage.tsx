@@ -1,54 +1,79 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { Plus, List, CalendarDays, Calendar } from "lucide-react";
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Plus, Calendar } from "lucide-react";
 import { useBookingsStore } from "@/store/bookings";
 import { useClientsStore } from "@/store/clients";
-import { Booking } from "@/types/models";
-import { useVocabulary } from "@/hooks/useVocabulary";
+import { useServicesStore } from "@/store/services";
+import { Booking, BookingStatus } from "@/types/models";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { useModuleSchema } from "@/hooks/useModuleSchema";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { DataTable, Column } from "@/components/ui/DataTable";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Button } from "@/components/ui/Button";
-import { FeatureSection } from "@/components/modules/FeatureSection";
 import { BookingForm } from "./BookingForm";
 import { BookingDetail } from "./BookingDetail";
-import { CalendarView } from "./CalendarView";
-import { AvailabilitySettings } from "./AvailabilitySettings";
-import { BookingPagePreview } from "./BookingPagePreview";
-import { RebookingPrompts } from "./RebookingPrompts";
-import { WaitlistPanel } from "./WaitlistPanel";
-import { TextArea } from "@/components/ui/TextArea";
 import { ViewToggle } from "@/components/ui/ViewToggle";
 import { useTeamStore } from "@/store/team";
-import { useModuleEnabled } from "@/hooks/useFeature";
 import { useAuth } from "@/hooks/useAuth";
 
-type ViewMode = "list" | "calendar";
+const STATUS_OPTIONS: { value: BookingStatus; label: string }[] = [
+  { value: "confirmed", label: "Confirmed" },
+  { value: "pending", label: "Pending" },
+  { value: "completed", label: "Completed" },
+  { value: "cancelled", label: "Cancelled" },
+  { value: "no_show", label: "No Show" },
+];
 
 export function BookingsPage() {
-  const { bookings, deleteBooking: _deleteBooking, cancellationPolicy, setCancellationPolicy } = useBookingsStore();
+  const { bookings, updateBooking } = useBookingsStore();
   const { clients } = useClientsStore();
+  const { services } = useServicesStore();
   const { members } = useTeamStore();
   const { workspaceId } = useAuth();
-  const teamEnabled = useModuleEnabled("team");
-  const vocab = useVocabulary();
-  const ms = useModuleSchema("bookings-calendar");
-  const [view, setView] = useState<ViewMode>("calendar");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [search, setSearch] = useState("");
   const [teamView, setTeamView] = useState<"my" | "team">("team");
   const [formOpen, setFormOpen] = useState(false);
   const [editingBooking, setEditingBooking] = useState<Booking | undefined>(undefined);
-  const [defaultDate, setDefaultDate] = useState<string | undefined>(undefined);
   const [detailBookingId, setDetailBookingId] = useState<string | null>(null);
-  const [_defaultStartTime, setDefaultStartTime] = useState<string | undefined>(undefined);
-  const [_defaultEndTime, setDefaultEndTime] = useState<string | undefined>(undefined);
-  const [waitlistDate, setWaitlistDate] = useState(() => new Date().toISOString().split("T")[0]);
 
-  // For "My" view: use the first owner/member as "current user" (placeholder until auth)
+  const clearQueryParams = useCallback((keys: string[]) => {
+    const next = new URLSearchParams(searchParams.toString());
+    keys.forEach((key) => next.delete(key));
+    const query = next.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  }, [pathname, router, searchParams]);
+
+  useEffect(() => {
+    const action = searchParams.get("action");
+    if (action === "add" && !formOpen) {
+      const timeout = window.setTimeout(() => {
+        setEditingBooking(undefined);
+        setFormOpen(true);
+      }, 0);
+      clearQueryParams(["action"]);
+      return () => window.clearTimeout(timeout);
+    }
+
+    const bookingId = searchParams.get("booking");
+    if (
+      bookingId &&
+      bookingId !== detailBookingId &&
+      bookings.some((booking) => booking.id === bookingId)
+    ) {
+      const timeout = window.setTimeout(() => {
+        setDetailBookingId(bookingId);
+      }, 0);
+      clearQueryParams(["booking"]);
+      return () => window.clearTimeout(timeout);
+    }
+  }, [bookings, clearQueryParams, detailBookingId, formOpen, searchParams]);
+
   const currentUserId = useMemo(() => {
     const owner = members.find((m) => m.role === "owner");
     return owner?.id ?? members[0]?.id;
@@ -56,64 +81,144 @@ export function BookingsPage() {
 
   const clientMap = useMemo(() => {
     const map: Record<string, string> = {};
-    clients.forEach((c) => {
-      map[c.id] = c.name;
-    });
+    clients.forEach((c) => { map[c.id] = c.name; });
     return map;
   }, [clients]);
 
+  const serviceMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    services.forEach((s) => { map[s.id] = s.name; });
+    return map;
+  }, [services]);
+
+  const memberMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    members.forEach((m) => { map[m.id] = m.name; });
+    return map;
+  }, [members]);
+
+  const formatTime = (isoOrTime: string) => {
+    if (isoOrTime.includes("T")) {
+      return new Date(isoOrTime).toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" });
+    }
+    return isoOrTime;
+  };
+
+  const handleStatusChange = useCallback((bookingId: string, newStatus: BookingStatus) => {
+    updateBooking(bookingId, { status: newStatus }, workspaceId || undefined);
+  }, [updateBooking, workspaceId]);
+
+  const handleAssigneeChange = useCallback((bookingId: string, memberId: string) => {
+    updateBooking(bookingId, { assignedToId: memberId || undefined }, workspaceId || undefined);
+  }, [updateBooking, workspaceId]);
+
+  const handleServiceChange = useCallback((bookingId: string, serviceId: string) => {
+    updateBooking(bookingId, { serviceId: serviceId || undefined }, workspaceId || undefined);
+  }, [updateBooking, workspaceId]);
+
+  const handleDateChange = useCallback((bookingId: string, newDate: string) => {
+    if (!newDate) return;
+    const booking = bookings.find((b) => b.id === bookingId);
+    if (!booking) return;
+    // Shift start/end times to the new date
+    const oldStart = new Date(booking.startAt);
+    const oldEnd = new Date(booking.endAt);
+    const [year, month, day] = newDate.split("-").map(Number);
+    const newStart = new Date(oldStart);
+    newStart.setFullYear(year, month - 1, day);
+    const newEnd = new Date(oldEnd);
+    newEnd.setFullYear(year, month - 1, day);
+    updateBooking(bookingId, { date: newDate, startAt: newStart.toISOString(), endAt: newEnd.toISOString() }, workspaceId || undefined);
+  }, [updateBooking, workspaceId, bookings]);
+
   const filtered = useMemo(() => {
     let result = bookings;
-
-    // Apply "My" view filter
     if (teamView === "my" && currentUserId) {
       result = result.filter((b) => b.assignedToId === currentUserId);
     }
-
-    if (!search.trim()) return result;
-    const q = search.toLowerCase();
-    return result.filter(
-      (b) =>
-        b.title.toLowerCase().includes(q) ||
-        (b.clientId && clientMap[b.clientId]?.toLowerCase().includes(q))
-    );
-  }, [bookings, search, clientMap, teamView, currentUserId]);
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter((b) => {
+        const serviceName = b.serviceId ? serviceMap[b.serviceId] : "";
+        const clientName = b.clientId ? clientMap[b.clientId] : "";
+        return serviceName.toLowerCase().includes(q) || clientName.toLowerCase().includes(q) || b.notes?.toLowerCase().includes(q);
+      });
+    }
+    return [...result].sort((a, b) => b.date.localeCompare(a.date) || b.startAt.localeCompare(a.startAt));
+  }, [bookings, search, clientMap, serviceMap, teamView, currentUserId]);
 
   const columns: Column<Booking>[] = [
-    { key: "title", label: "Title", sortable: true },
+    {
+      key: "serviceId" as keyof Booking,
+      label: "Service",
+      sortable: false,
+      render: (b) => (
+        <InlineSelect
+          value={b.serviceId || ""}
+          options={services.map((s) => ({ value: s.id, label: s.name }))}
+          onChange={(v) => handleServiceChange(b.id, v)}
+          placeholder="Select service"
+        />
+      ),
+    },
     {
       key: "clientId",
       label: "Client",
-      sortable: true,
-      render: (b) => (b.clientId ? clientMap[b.clientId] ?? "—" : "—"),
+      sortable: false,
+      render: (b) => (
+        <span className="text-[13px] text-foreground">
+          {b.clientId ? clientMap[b.clientId] ?? "—" : "—"}
+        </span>
+      ),
     },
     {
       key: "date",
       label: "Date",
-      sortable: true,
-      render: (b) => new Date(b.date + "T00:00:00").toLocaleDateString(),
-    },
-    {
-      key: "startTime",
-      label: "Time",
-      sortable: true,
-      render: (b) => `${b.startTime} – ${b.endTime}`,
-    },
-    {
-      key: "assignedToName" as keyof Booking,
-      label: "Assigned To",
-      sortable: true,
+      sortable: false,
       render: (b) => (
-        <span className="text-text-secondary text-xs">
-          {b.assignedToName ?? "\u2014"}
+        <input
+          type="date"
+          value={b.date}
+          onChange={(e) => handleDateChange(b.id, e.target.value)}
+          onClick={(e) => e.stopPropagation()}
+          className="text-[13px] text-foreground bg-transparent border-none outline-none cursor-pointer hover:text-primary transition-colors"
+        />
+      ),
+    },
+    {
+      key: "startAt",
+      label: "Time",
+      sortable: false,
+      render: (b) => (
+        <span className="text-[13px] text-text-secondary">
+          {formatTime(b.startAt)} – {formatTime(b.endAt)}
         </span>
+      ),
+    },
+    {
+      key: "assignedToId" as keyof Booking,
+      label: "Assigned To",
+      sortable: false,
+      render: (b) => (
+        <InlineSelect
+          value={b.assignedToId || ""}
+          options={members.map((m) => ({ value: m.id, label: m.name }))}
+          onChange={(v) => handleAssigneeChange(b.id, v)}
+          placeholder="Unassigned"
+        />
       ),
     },
     {
       key: "status",
       label: "Status",
-      sortable: true,
-      render: (b) => <StatusBadge status={b.status} />,
+      sortable: false,
+      render: (b) => (
+        <InlineStatusSelect
+          value={b.status}
+          options={STATUS_OPTIONS}
+          onChange={(v) => handleStatusChange(b.id, v)}
+        />
+      ),
     },
   ];
 
@@ -123,89 +228,37 @@ export function BookingsPage() {
 
   const handleAdd = () => {
     setEditingBooking(undefined);
-    setDefaultDate(undefined);
-    setFormOpen(true);
-  };
-
-  const handleDateSelect = (date: string) => {
-    setEditingBooking(undefined);
-    setDefaultDate(date);
-    setDefaultStartTime(undefined);
-    setDefaultEndTime(undefined);
-    setWaitlistDate(date);
-    setFormOpen(true);
-  };
-
-  const handleTimeSelect = (date: string, startTime: string, endTime: string) => {
-    setEditingBooking(undefined);
-    setDefaultDate(date);
-    setDefaultStartTime(startTime);
-    setDefaultEndTime(endTime);
     setFormOpen(true);
   };
 
   return (
     <div>
       <PageHeader
-        title={ms.label || "Appointments"}
-        description="Schedule appointments and manage your calendar."
+        title="Bookings"
+        description="All confirmed and upcoming appointments."
         actions={
           <Button variant="primary" size="sm" onClick={handleAdd}>
             <Plus className="w-4 h-4 mr-1.5" />
-            {ms.primaryAction || vocab.addBooking}
+            New Booking
           </Button>
         }
       />
 
-      <div className="flex items-center gap-3 mb-6">
-        <SearchInput
-          value={search}
-          onChange={setSearch}
-          placeholder={`Search ${vocab.bookings.toLowerCase()}...`}
-        />
-        {teamEnabled && members.length > 0 && (
-          <ViewToggle
-            view={teamView}
-            onChange={setTeamView}
-            moduleLabel={vocab.bookings}
-          />
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-6">
+        <SearchInput value={search} onChange={setSearch} placeholder="Search bookings..." />
+        {members.length > 1 && (
+          <ViewToggle view={teamView} onChange={setTeamView} moduleLabel="Bookings" />
         )}
-        <div className="flex items-center bg-surface rounded-lg p-1 border border-border-light">
-          <button
-            onClick={() => setView("list")}
-            className={`p-1.5 rounded-md transition-colors cursor-pointer ${
-              view === "list"
-                ? "bg-card-bg text-foreground shadow-sm"
-                : "text-text-secondary hover:text-foreground"
-            }`}
-          >
-            <List className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setView("calendar")}
-            className={`p-1.5 rounded-md transition-colors cursor-pointer ${
-              view === "calendar"
-                ? "bg-card-bg text-foreground shadow-sm"
-                : "text-text-secondary hover:text-foreground"
-            }`}
-          >
-            <CalendarDays className="w-4 h-4" />
-          </button>
-        </div>
       </div>
-
-      {/* Contextual setup — removed, uses EmptyState setupSteps pattern below */}
 
       {bookings.length === 0 ? (
         <EmptyState
           icon={<Calendar className="w-10 h-10" />}
-          title={`No ${vocab.bookings.toLowerCase()} yet`}
-          description={`Set up your scheduling first, then start taking ${vocab.bookings.toLowerCase()}.`}
-          setupSteps={[
-            { label: `Create your first ${vocab.booking.toLowerCase()}`, description: "Or wait for clients to book you", action: handleAdd },
-          ]}
+          title="No bookings yet"
+          description="Create your first booking or wait for clients to book online."
+          setupSteps={[{ label: "Create your first booking", description: "Or wait for clients to book you", action: handleAdd }]}
         />
-      ) : view === "list" ? (
+      ) : (
         <div className="bg-card-bg rounded-xl border border-border-light overflow-hidden">
           <DataTable<Booking>
             storageKey="magic-crm-bookings-columns"
@@ -215,47 +268,6 @@ export function BookingsPage() {
             onRowClick={handleRowClick}
           />
         </div>
-      ) : (
-        <CalendarView
-          bookings={filtered}
-          onDateSelect={handleDateSelect}
-          onBookingClick={handleRowClick}
-          onTimeSelect={handleTimeSelect}
-        />
-      )}
-
-      {bookings.length > 0 && (
-        <>
-          <AvailabilitySettings />
-
-          <WaitlistPanel selectedDate={waitlistDate} />
-
-          <FeatureSection moduleId="bookings-calendar" featureId="cancellation-policy" featureLabel="Cancellation Policy">
-            <div className="mt-4 bg-card-bg rounded-xl border border-border-light p-5">
-              <h3 className="text-[13px] font-semibold text-text-tertiary uppercase tracking-wider mb-3">Cancellation Policy</h3>
-              <p className="text-[11px] text-text-tertiary mb-2">Set your cancellation policy text. Clients will be asked to consent when booking.</p>
-              <TextArea
-                value={cancellationPolicy}
-                onChange={(e) => setCancellationPolicy(e.target.value, workspaceId ?? undefined)}
-                placeholder="Enter your cancellation policy here, e.g. Cancellations must be made at least 24 hours in advance..."
-                rows={4}
-              />
-            </div>
-          </FeatureSection>
-
-          <FeatureSection moduleId="bookings-calendar" featureId="team-calendar" featureLabel="Team Calendar">
-            <div className="mt-4 p-4 bg-surface/50 rounded-xl border border-border-light">
-              <p className="text-[13px] font-medium text-foreground">Team Calendar View</p>
-              <p className="text-[11px] text-text-tertiary">See all team members&apos; schedules side by side. Filter by team member from the calendar header.</p>
-            </div>
-          </FeatureSection>
-
-          <FeatureSection moduleId="bookings-calendar" featureId="booking-page">
-            <BookingPagePreview />
-          </FeatureSection>
-
-          <RebookingPrompts />
-        </>
       )}
 
       <BookingDetail
@@ -265,21 +277,80 @@ export function BookingsPage() {
         onEdit={(booking) => {
           setDetailBookingId(null);
           setEditingBooking(booking);
-          setDefaultDate(undefined);
           setFormOpen(true);
         }}
       />
 
       <BookingForm
         open={formOpen}
-        onClose={() => {
-          setFormOpen(false);
-          setEditingBooking(undefined);
-          setDefaultDate(undefined);
-        }}
+        onClose={() => { setFormOpen(false); setEditingBooking(undefined); }}
         booking={editingBooking}
-        defaultDate={defaultDate}
       />
+    </div>
+  );
+}
+
+// ── Inline editable components ────────────────────────────────
+
+function InlineSelect({
+  value,
+  options,
+  onChange,
+  placeholder,
+}: {
+  value: string;
+  options: { value: string; label: string }[];
+  onChange: (value: string) => void;
+  placeholder?: string;
+}) {
+  const label = options.find((o) => o.value === value)?.label || placeholder || "—";
+
+  return (
+    <select
+      value={value}
+      onChange={(e) => { e.stopPropagation(); onChange(e.target.value); }}
+      onClick={(e) => e.stopPropagation()}
+      className="text-[13px] text-foreground bg-transparent border-none outline-none cursor-pointer hover:text-primary transition-colors appearance-none pr-4 max-w-[160px] truncate"
+      style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 0 center" }}
+    >
+      {placeholder && <option value="">{placeholder}</option>}
+      {options.map((opt) => (
+        <option key={opt.value} value={opt.value}>{opt.label}</option>
+      ))}
+    </select>
+  );
+}
+
+function InlineStatusSelect({
+  value,
+  options,
+  onChange,
+}: {
+  value: BookingStatus;
+  options: { value: BookingStatus; label: string }[];
+  onChange: (value: BookingStatus) => void;
+}) {
+  const STATUS_DOT_COLORS: Record<BookingStatus, string> = {
+    confirmed: "bg-emerald-500",
+    pending: "bg-amber-500",
+    completed: "bg-blue-500",
+    cancelled: "bg-red-500",
+    no_show: "bg-red-500",
+  };
+
+  return (
+    <div className="relative inline-flex items-center" onClick={(e) => e.stopPropagation()}>
+      <span className={`w-2 h-2 rounded-full mr-1.5 flex-shrink-0 ${STATUS_DOT_COLORS[value] || "bg-gray-400"}`} />
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value as BookingStatus)}
+        className="text-[12px] font-semibold text-foreground bg-transparent border-none outline-none cursor-pointer appearance-none pr-4"
+        style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 0 center" }}
+      >
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value}>{opt.label}</option>
+        ))}
+      </select>
     </div>
   );
 }

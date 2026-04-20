@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Tabs } from "@/components/ui/Tabs";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { GeneralSettings } from "@/components/modules/settings/GeneralSettings";
-import { ModuleSettings } from "@/components/modules/settings/ModuleSettings";
+import { ModulesSettings } from "@/components/modules/settings/ModulesSettings";
 import { DataManagement } from "@/components/modules/settings/DataManagement";
 import { IntegrationSettings } from "@/components/modules/settings/IntegrationSettings";
 import { BillingSettings } from "@/components/modules/settings/BillingSettings";
@@ -27,7 +27,7 @@ export default function SettingsPage() {
 
       {activeTab === "general" && <GeneralSettings />}
       {activeTab === "billing" && <BillingSettings />}
-      {activeTab === "modules" && <ModuleSettings />}
+      {activeTab === "modules" && <ModulesSettings />}
       {activeTab === "data" && <DataManagement />}
       {activeTab === "integrations" && <IntegrationSettings />}
     </div>

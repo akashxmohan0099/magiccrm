@@ -10,42 +10,37 @@ import {
   Plus,
   LayoutDashboard,
   Calendar,
-  Receipt,
+  MessageSquare,
   Inbox,
-  FolderKanban,
-  Megaphone,
-  Headphones,
-  FileText,
-  MessageCircle,
   CreditCard,
+  Megaphone,
+  Wrench,
+  FileText,
   Zap,
-  BarChart3,
+  UsersRound,
   Settings,
   CornerDownLeft,
   ArrowUp,
   ArrowDown,
 } from "lucide-react";
 import { useClientsStore } from "@/store/clients";
-import { useEnabledModules } from "@/hooks/useFeature";
-import { useVocabulary } from "@/hooks/useVocabulary";
-import { getModuleDisplayName } from "@/lib/module-registry";
-import type { ModuleDefinition } from "@/lib/module-registry";
+import { useSettingsStore } from "@/store/settings";
 
-// ── Icon map for module icons ─────────────────────────────────
-const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
-  Users,
-  Calendar,
-  Receipt,
-  Inbox,
-  FolderKanban,
-  Megaphone,
-  Headphones,
-  FileText,
-  MessageCircle,
-  CreditCard,
-  Zap,
-  BarChart3,
-};
+// ── Hardcoded navigation items matching the 12 tabs ──────────
+const NAV_ITEMS = [
+  { id: "communications", label: "Communications", slug: "communications", icon: MessageSquare, keywords: "messages email sms chat" },
+  { id: "inquiries", label: "Inquiries", slug: "inquiries", icon: Inbox, keywords: "leads prospects pipeline" },
+  { id: "bookings", label: "Bookings", slug: "bookings", icon: Calendar, keywords: "appointments schedule calendar" },
+  { id: "calendar", label: "Calendar", slug: "calendar", icon: Calendar, keywords: "schedule dates events" },
+  { id: "clients", label: "Clients", slug: "clients", icon: Users, keywords: "customers contacts people" },
+  { id: "payments", label: "Payments", slug: "payments", icon: CreditCard, keywords: "invoices billing money transactions" },
+  { id: "marketing", label: "Marketing", slug: "marketing", icon: Megaphone, keywords: "campaigns promotions outreach" },
+  { id: "services", label: "Services", slug: "services", icon: Wrench, keywords: "offerings products menu" },
+  { id: "forms", label: "Forms", slug: "forms", icon: FileText, keywords: "intake consultation questionnaire" },
+  { id: "automations", label: "Automations", slug: "automations", icon: Zap, keywords: "workflows triggers rules" },
+  { id: "teams", label: "Teams", slug: "teams", icon: UsersRound, keywords: "staff members roles" },
+  { id: "settings", label: "Settings", slug: "settings", icon: Settings, keywords: "preferences configuration account" },
+] as const;
 
 // ── Types ─────────────────────────────────────────────────────
 interface CommandItem {
@@ -65,9 +60,9 @@ export function CommandPalette() {
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
-  const enabledModules = useEnabledModules();
-  const vocab = useVocabulary();
   const clients = useClientsStore((s) => s.clients);
+  const teamSize = useSettingsStore((s) => s.settings?.teamSize);
+  const showTeams = teamSize ? teamSize !== "solo" : true;
 
   // ── Open / Close ──────────────────────────────────────────
   const openPalette = useCallback(() => {
@@ -101,7 +96,6 @@ export function CommandPalette() {
   // ── Focus input on open ───────────────────────────────────
   useEffect(() => {
     if (open) {
-      // Small delay to let AnimatePresence mount the DOM
       requestAnimationFrame(() => {
         inputRef.current?.focus();
       });
@@ -131,80 +125,50 @@ export function CommandPalette() {
       },
     ];
 
-    enabledModules.forEach((mod: ModuleDefinition) => {
+    for (const nav of NAV_ITEMS) {
+      if (!showTeams && nav.id === "teams") continue;
       items.push({
-        id: `nav-${mod.slug}`,
-        label: getModuleDisplayName(mod, vocab),
+        id: `nav-${nav.id}`,
+        label: nav.label,
         category: "Navigation",
-        icon: ICON_MAP[mod.icon] || LayoutDashboard,
-        onSelect: () => router.push(`/dashboard/${mod.slug}`),
-        keywords: mod.description,
+        icon: nav.icon,
+        onSelect: () => router.push(`/dashboard/${nav.slug}`),
+        keywords: nav.keywords,
       });
-    });
-
-    items.push({
-      id: "nav-settings",
-      label: "Settings",
-      category: "Navigation",
-      icon: Settings,
-      onSelect: () => router.push("/dashboard/settings"),
-      keywords: "preferences configuration account",
-    });
+    }
 
     return items;
-  }, [enabledModules, router]);
+  }, [router, showTeams]);
 
   // ── Build action commands ─────────────────────────────────
   const actionCommands = useMemo((): CommandItem[] => {
-    const moduleSlugs = new Set(enabledModules.map((m) => m.slug));
-    const items: CommandItem[] = [];
-
-    if (moduleSlugs.has("clients")) {
-      items.push({
+    return [
+      {
         id: "action-add-client",
-        label: vocab.addClient,
+        label: "Add Client",
         category: "Actions",
         icon: Plus,
         onSelect: () => router.push("/dashboard/clients?action=add"),
         keywords: "new customer contact create",
-      });
-    }
-
-    if (moduleSlugs.has("invoicing")) {
-      items.push({
-        id: "action-create-invoice",
-        label: vocab.addInvoice,
-        category: "Actions",
-        icon: Plus,
-        onSelect: () => router.push("/dashboard/invoicing?action=add"),
-        keywords: "new bill quote receipt",
-      });
-    }
-
-    if (moduleSlugs.has("bookings")) {
-      items.push({
+      },
+      {
         id: "action-new-booking",
-        label: vocab.addBooking,
+        label: "New Booking",
         category: "Actions",
         icon: Plus,
         onSelect: () => router.push("/dashboard/bookings?action=add"),
         keywords: "schedule appointment calendar create",
-      });
-    }
-
-    if (moduleSlugs.has("leads")) {
-      items.push({
-        id: "action-add-lead",
-        label: vocab.addLead,
+      },
+      {
+        id: "action-new-payment",
+        label: "Record Payment",
         category: "Actions",
         icon: Plus,
-        onSelect: () => router.push("/dashboard/leads?action=add"),
-        keywords: "new prospect pipeline opportunity create",
-      });
-    }
-
-    return items;
-  }, [enabledModules, router]);
+        onSelect: () => router.push("/dashboard/payments?action=add"),
+        keywords: "new invoice bill receipt",
+      },
+    ];
+  }, [router]);
 
   // ── Build client search results ───────────────────────────
   const clientCommands = useMemo((): CommandItem[] => {
@@ -214,8 +178,7 @@ export function CommandPalette() {
       .filter(
         (c) =>
           c.name.toLowerCase().includes(q) ||
-          c.email.toLowerCase().includes(q) ||
-          c.company?.toLowerCase().includes(q)
+          c.email.toLowerCase().includes(q)
       )
       .slice(0, 5)
       .map((c) => ({
@@ -223,8 +186,8 @@ export function CommandPalette() {
         label: c.name,
         category: "Clients" as const,
         icon: Users,
-        onSelect: () => router.push(`/dashboard/clients/${c.id}`),
-        keywords: `${c.email} ${c.company || ""}`,
+        onSelect: () => router.push(`/dashboard/clients?client=${c.id}`),
+        keywords: c.email,
       }));
   }, [query, clients, router]);
 
@@ -234,7 +197,6 @@ export function CommandPalette() {
     const allItems = [...navigationCommands, ...actionCommands, ...clientCommands];
 
     if (!q) {
-      // When no query, show navigation + actions (no client search)
       return [...navigationCommands, ...actionCommands];
     }
 

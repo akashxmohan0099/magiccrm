@@ -1,21 +1,15 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { useOnboardingStore } from "@/store/onboarding";
 import { useClientsStore } from "@/store/clients";
 import { useBookingsStore } from "@/store/bookings";
-import { useInvoicesStore } from "@/store/invoices";
-import { useJobsStore } from "@/store/jobs";
-import { useLeadsStore } from "@/store/leads";
+import { useSettingsStore } from "@/store/settings";
 
 // All critical stores that must hydrate before rendering
 const CRITICAL_STORES = [
-  useOnboardingStore,
   useClientsStore,
   useBookingsStore,
-  useInvoicesStore,
-  useJobsStore,
-  useLeadsStore,
+  useSettingsStore,
 ];
 
 let forceHydrated = false;

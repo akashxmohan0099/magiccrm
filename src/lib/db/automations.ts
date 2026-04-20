@@ -1,39 +1,51 @@
 import { createClient } from "@/lib/supabase";
-import type { AutomationRule, RecurringTaskTemplate } from "@/types/models";
+import type { AutomationRule, AutomationType, AutomationChannel } from "@/types/models";
 
 // ---------------------------------------------------------------------------
 // snake_case <-> camelCase mapping
 // ---------------------------------------------------------------------------
 
-export function mapRuleFromDB(row: Record<string, unknown>): AutomationRule {
+/** Convert a Supabase row (snake_case) to a frontend AutomationRule (camelCase). */
+export function mapAutomationRuleFromDB(row: Record<string, unknown>): AutomationRule {
   return {
     id: row.id as string,
-    name: row.name as string,
-    trigger: row.trigger as AutomationRule["trigger"],
-    action: row.action as AutomationRule["action"],
-    actionConfig: (row.action_config as Record<string, string>) || {},
+    workspaceId: row.workspace_id as string,
+    type: row.type as AutomationType,
     enabled: row.enabled as boolean,
+    channel: row.channel as AutomationChannel,
+    messageTemplate: row.message_template as string,
+    timingValue: (row.timing_value as number) ?? undefined,
+    timingUnit: (row.timing_unit as 'minutes' | 'hours' | 'days') || undefined,
     createdAt: row.created_at as string,
+    updatedAt: row.updated_at as string,
   };
 }
 
-export function mapTemplateFromDB(row: Record<string, unknown>): RecurringTaskTemplate {
-  return {
-    id: row.id as string,
-    name: row.name as string,
-    description: (row.description as string) || "",
-    frequency: row.frequency as RecurringTaskTemplate["frequency"],
-    category: row.category as string,
-    taskTitle: row.task_title as string,
-    isBuiltIn: row.is_built_in as boolean,
-    createdAt: row.created_at as string,
-  };
+/** Convert a frontend AutomationRule (camelCase) to a Supabase-ready object (snake_case). */
+function mapAutomationRuleToDB(
+  workspaceId: string,
+  data: Record<string, unknown>
+): Record<string, unknown> {
+  const row: Record<string, unknown> = { workspace_id: workspaceId };
+
+  if (data.id !== undefined) row.id = data.id;
+  if (data.type !== undefined) row.type = data.type;
+  if (data.enabled !== undefined) row.enabled = data.enabled;
+  if (data.channel !== undefined) row.channel = data.channel;
+  if (data.messageTemplate !== undefined) row.message_template = data.messageTemplate;
+  if (data.timingValue !== undefined) row.timing_value = data.timingValue ?? null;
+  if (data.timingUnit !== undefined) row.timing_unit = data.timingUnit || null;
+  if (data.createdAt !== undefined) row.created_at = data.createdAt;
+  if (data.updatedAt !== undefined) row.updated_at = data.updatedAt;
+
+  return row;
 }
 
 // ---------------------------------------------------------------------------
-// Automation Rules CRUD
+// CRUD operations
 // ---------------------------------------------------------------------------
 
+/** Fetch all automation rules for a workspace. */
 export async function fetchAutomationRules(workspaceId: string) {
   const supabase = createClient();
   const { data, error } = await supabase
@@ -43,39 +55,36 @@ export async function fetchAutomationRules(workspaceId: string) {
     .order("created_at", { ascending: false });
 
   if (error) throw error;
-  return data;
+  return (data ?? []).map(mapAutomationRuleFromDB);
 }
 
-export async function dbCreateRule(workspaceId: string, rule: AutomationRule) {
-  const supabase = createClient();
-  const { error } = await supabase.from("automation_rules").insert({
-    id: rule.id,
-    workspace_id: workspaceId,
-    name: rule.name,
-    trigger: rule.trigger,
-    action: rule.action,
-    action_config: rule.actionConfig,
-    enabled: rule.enabled,
-    created_at: rule.createdAt,
-  });
-
-  if (error) throw error;
-}
-
-export async function dbUpdateRule(
+/** Insert a new automation rule row. */
+export async function dbCreateAutomationRule(
   workspaceId: string,
-  id: string,
-  updates: Partial<AutomationRule>
+  data: Record<string, unknown>
 ) {
   const supabase = createClient();
-  const row: Record<string, unknown> = {};
+  const row = mapAutomationRuleToDB(workspaceId, data);
 
-  if (updates.name !== undefined) row.name = updates.name;
-  if (updates.trigger !== undefined) row.trigger = updates.trigger;
-  if (updates.action !== undefined) row.action = updates.action;
-  if (updates.actionConfig !== undefined) row.action_config = updates.actionConfig;
-  if (updates.enabled !== undefined) row.enabled = updates.enabled;
-  row.updated_at = new Date().toISOString();
+  const { data: created, error } = await supabase
+    .from("automation_rules")
+    .insert(row)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return mapAutomationRuleFromDB(created);
+}
+
+/** Update an existing automation rule row. Only sends fields that are provided. */
+export async function dbUpdateAutomationRule(
+  workspaceId: string,
+  id: string,
+  data: Record<string, unknown>
+) {
+  const supabase = createClient();
+  const row = mapAutomationRuleToDB(workspaceId, data);
+  delete row.workspace_id;
 
   const { error } = await supabase
     .from("automation_rules")
@@ -86,108 +95,14 @@ export async function dbUpdateRule(
   if (error) throw error;
 }
 
-export async function dbDeleteRule(workspaceId: string, id: string) {
+/** Delete an automation rule row. */
+export async function dbDeleteAutomationRule(workspaceId: string, id: string) {
   const supabase = createClient();
   const { error } = await supabase
     .from("automation_rules")
     .delete()
     .eq("id", id)
     .eq("workspace_id", workspaceId);
-
-  if (error) throw error;
-}
-
-export async function dbUpsertRules(workspaceId: string, rules: AutomationRule[]) {
-  if (rules.length === 0) return;
-
-  const supabase = createClient();
-  const rows = rules.map((r) => ({
-    id: r.id,
-    workspace_id: workspaceId,
-    name: r.name,
-    trigger: r.trigger,
-    action: r.action,
-    action_config: r.actionConfig,
-    enabled: r.enabled,
-    created_at: r.createdAt,
-  }));
-
-  const { error } = await supabase
-    .from("automation_rules")
-    .upsert(rows, { onConflict: "id" });
-
-  if (error) throw error;
-}
-
-// ---------------------------------------------------------------------------
-// Recurring Templates CRUD
-// ---------------------------------------------------------------------------
-
-export async function fetchRecurringTemplates(workspaceId: string) {
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .from("recurring_templates")
-    .select("*")
-    .eq("workspace_id", workspaceId)
-    .order("created_at", { ascending: false });
-
-  if (error) throw error;
-  return data;
-}
-
-export async function dbCreateTemplate(
-  workspaceId: string,
-  template: RecurringTaskTemplate
-) {
-  const supabase = createClient();
-  const { error } = await supabase.from("recurring_templates").insert({
-    id: template.id,
-    workspace_id: workspaceId,
-    name: template.name,
-    description: template.description,
-    frequency: template.frequency,
-    category: template.category,
-    task_title: template.taskTitle,
-    is_built_in: template.isBuiltIn,
-    created_at: template.createdAt,
-  });
-
-  if (error) throw error;
-}
-
-export async function dbDeleteTemplate(workspaceId: string, id: string) {
-  const supabase = createClient();
-  const { error } = await supabase
-    .from("recurring_templates")
-    .delete()
-    .eq("id", id)
-    .eq("workspace_id", workspaceId);
-
-  if (error) throw error;
-}
-
-export async function dbUpsertTemplates(
-  workspaceId: string,
-  templates: RecurringTaskTemplate[]
-) {
-  if (templates.length === 0) return;
-
-  const supabase = createClient();
-  const rows = templates.map((t) => ({
-    id: t.id,
-    workspace_id: workspaceId,
-    name: t.name,
-    description: t.description,
-    frequency: t.frequency,
-    category: t.category,
-    task_title: t.taskTitle,
-    is_built_in: t.isBuiltIn,
-    created_at: t.createdAt,
-  }));
-
-  const { error } = await supabase
-    .from("recurring_templates")
-    .upsert(rows, { onConflict: "id" });
 
   if (error) throw error;
 }

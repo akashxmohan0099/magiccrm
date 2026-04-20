@@ -1,34 +1,49 @@
 "use client";
 
-import { useState } from "react";
-import { ExternalLink, Copy, Check, Clock, ArrowUpRight } from "lucide-react";
-import { useBookingsStore } from "@/store/bookings";
+import { useState, useMemo } from "react";
+import { ExternalLink, Copy, Check, Clock, ArrowUpRight, Code2 } from "lucide-react";
 import { useServicesStore } from "@/store/services";
-import { useAuth } from "@/hooks/useAuth";
-import { useOnboardingStore } from "@/store/onboarding";
+import { useSettingsStore } from "@/store/settings";
 import { Button } from "@/components/ui/Button";
 
 const MOCK_SLOTS = ["9:00 AM", "10:00 AM", "11:00 AM", "1:00 PM", "2:00 PM", "3:00 PM"];
 
 export function BookingPagePreview() {
-  const { availability } = useBookingsStore();
   const { services } = useServicesStore();
-  const { workspaceId } = useAuth();
-  const businessName = useOnboardingStore((s) => s.businessContext.businessName);
+  const settings = useSettingsStore((s) => s.settings);
+  const businessName = settings?.businessName || "";
+  const workingHours = settings?.workingHours ?? {};
   const [copied, setCopied] = useState(false);
+  const [embedCopied, setEmbedCopied] = useState(false);
+  const [showEmbed, setShowEmbed] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
 
-  const enabledDays = availability.filter((s) => s.enabled).length;
+  const enabledDays = useMemo(() => Object.keys(workingHours).length, [workingHours]);
   const origin = typeof window !== "undefined" ? window.location.origin : "";
-  const bookingUrl = `${origin}/book/${workspaceId || "preview"}`;
+  const bookingSlug = settings?.bookingPageSlug?.trim();
+  const bookingUrl = bookingSlug ? `${origin}/book/${bookingSlug}` : "";
+  const embedUrl = bookingSlug ? `${origin}/embed/book/${bookingSlug}` : "";
+
+  const embedSnippet = embedUrl
+    ? `<!-- Magic Booking Widget -->\n<div id="magic-booking"></div>\n<script>\n(function(){\n  var d=document,f=d.createElement("iframe");\n  f.src="${embedUrl}";\n  f.style.cssText="width:100%;border:none;min-height:600px;";\n  f.allow="payment";\n  f.title="Book an appointment";\n  window.addEventListener("message",function(e){\n    if(e.data&&e.data.type==="magic-embed-resize")f.style.height=e.data.height+"px";\n  });\n  d.getElementById("magic-booking").appendChild(f);\n})();\n</script>`
+    : "";
 
   const handleCopyLink = () => {
+    if (!bookingUrl) return;
     navigator.clipboard.writeText(bookingUrl).catch(() => {});
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleCopyEmbed = () => {
+    if (!embedSnippet) return;
+    navigator.clipboard.writeText(embedSnippet).catch(() => {});
+    setEmbedCopied(true);
+    setTimeout(() => setEmbedCopied(false), 2000);
+  };
+
   const handleOpenBookingPage = () => {
+    if (!bookingUrl) return;
     window.open(bookingUrl, "_blank");
   };
 
@@ -42,11 +57,15 @@ export function BookingPagePreview() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="secondary" size="sm" onClick={handleOpenBookingPage}>
+          <Button variant="secondary" size="sm" onClick={() => setShowEmbed(!showEmbed)} disabled={!bookingUrl}>
+            <Code2 className="w-3.5 h-3.5 mr-1.5" />
+            Embed
+          </Button>
+          <Button variant="secondary" size="sm" onClick={handleOpenBookingPage} disabled={!bookingUrl}>
             <ArrowUpRight className="w-3.5 h-3.5 mr-1.5" />
             Open
           </Button>
-          <Button variant="secondary" size="sm" onClick={handleCopyLink}>
+          <Button variant="secondary" size="sm" onClick={handleCopyLink} disabled={!bookingUrl}>
             {copied ? (
               <>
                 <Check className="w-3.5 h-3.5 mr-1.5" />
@@ -64,8 +83,41 @@ export function BookingPagePreview() {
 
       {/* Booking URL display */}
       <div className="bg-surface rounded-lg border border-border-light px-3 py-2 mb-4">
-        <code className="text-xs text-text-secondary break-all">{bookingUrl}</code>
+        <code className="text-xs text-text-secondary break-all">
+          {bookingUrl || "Set a booking page slug in Settings to publish your booking page."}
+        </code>
       </div>
+
+      {/* Embed code snippet */}
+      {showEmbed && bookingUrl && (
+        <div className="mb-4 space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium text-foreground">Embed on your website</p>
+            <Button variant="secondary" size="sm" onClick={handleCopyEmbed}>
+              {embedCopied ? (
+                <>
+                  <Check className="w-3.5 h-3.5 mr-1.5" />
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3.5 h-3.5 mr-1.5" />
+                  Copy snippet
+                </>
+              )}
+            </Button>
+          </div>
+          <div className="bg-gray-900 rounded-lg p-3 overflow-x-auto">
+            <pre className="text-[11px] text-green-400 whitespace-pre font-mono leading-relaxed">
+              {embedSnippet}
+            </pre>
+          </div>
+          <p className="text-[11px] text-text-tertiary">
+            Paste this code into your website&apos;s HTML where you want the booking form to appear.
+            The widget auto-resizes to fit its content.
+          </p>
+        </div>
+      )}
 
       {/* Service count info */}
       {services.length > 0 && (

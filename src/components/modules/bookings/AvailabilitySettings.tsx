@@ -1,33 +1,67 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useBookingsStore } from "@/store/bookings";
-import { AvailabilitySlot } from "@/types/models";
+import { useState, useEffect, useMemo } from "react";
+import { useTeamStore } from "@/store/team";
+import { useSettingsStore } from "@/store/settings";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/Button";
-import { FeatureSection } from "@/components/modules/FeatureSection";
 
-const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const DAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+const DAY_LABELS: Record<string, string> = {
+  mon: "Monday",
+  tue: "Tuesday",
+  wed: "Wednesday",
+  thu: "Thursday",
+  fri: "Friday",
+  sat: "Saturday",
+  sun: "Sunday",
+};
+
+interface WorkingHoursSlot {
+  day: string;
+  enabled: boolean;
+  start: string;
+  end: string;
+}
 
 export function AvailabilitySettings() {
-  const { availability, setAvailability, bufferMinutes: storedBuffer, cancelNotice: storedCancel } = useBookingsStore();
-  const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
+  const { members, updateMember } = useTeamStore();
+  const { settings, updateSettings } = useSettingsStore();
+  const { workspaceId } = useAuth();
+
+  // Use workspace-level working hours as default
+  const workspaceHours = settings?.workingHours ?? {};
+
+  // Find the current user (owner) to edit their working hours
+  const currentMember = useMemo(() => {
+    return members.find((m) => m.role === "owner") ?? members[0];
+  }, [members]);
+
+  const sourceHours = currentMember?.workingHours ?? workspaceHours;
+
+  const [slots, setSlots] = useState<WorkingHoursSlot[]>([]);
   const [saved, setSaved] = useState(false);
-  const [bufferMinutes, setBufferMinutes] = useState("0");
-  const [cancelNotice, setCancelNotice] = useState("0");
+  const [editMode, setEditMode] = useState<"workspace" | "member">(
+    currentMember ? "member" : "workspace"
+  );
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSlots(availability.map((s) => ({ ...s })));
-  }, [availability]);
+    const hours = editMode === "member" && currentMember
+      ? currentMember.workingHours
+      : workspaceHours;
 
-  useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setBufferMinutes(String(storedBuffer ?? 0));
-     
-    setCancelNotice(String(storedCancel ?? 0));
-  }, [storedBuffer, storedCancel]);
+    setSlots(
+      DAY_KEYS.map((day) => ({
+        day,
+        enabled: !!hours[day],
+        start: hours[day]?.start ?? "09:00",
+        end: hours[day]?.end ?? "17:00",
+      }))
+    );
+  }, [currentMember, workspaceHours, editMode]);
 
-  const updateSlot = (day: number, field: keyof AvailabilitySlot, value: string | boolean) => {
+  const updateSlot = (day: string, field: keyof WorkingHoursSlot, value: string | boolean) => {
     setSlots((prev) =>
       prev.map((s) => (s.day === day ? { ...s, [field]: value } : s))
     );
@@ -35,29 +69,60 @@ export function AvailabilitySettings() {
   };
 
   const handleSave = () => {
-    setAvailability(slots, {
-      bufferMinutes: Number(bufferMinutes),
-      cancelNotice: Number(cancelNotice),
-    });
+    const newHours: Record<string, { start: string; end: string }> = {};
+    for (const slot of slots) {
+      if (slot.enabled) {
+        newHours[slot.day] = { start: slot.start, end: slot.end };
+      }
+    }
+
+    if (editMode === "member" && currentMember) {
+      updateMember(currentMember.id, { workingHours: newHours }, workspaceId ?? undefined);
+    } else {
+      updateSettings({ workingHours: newHours }, workspaceId ?? undefined);
+    }
+
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
 
-  // Sort by Monday-first display: 1,2,3,4,5,6,0
-  const sortedSlots = [...slots].sort((a, b) => {
-    const order = [1, 2, 3, 4, 5, 6, 0];
-    return order.indexOf(a.day) - order.indexOf(b.day);
-  });
-
   return (
     <div className="mt-8 bg-card-bg rounded-xl border border-border-light p-5">
-      <h3 className="text-sm font-semibold text-foreground mb-1">Availability Settings</h3>
+      <div className="flex items-center justify-between mb-1">
+        <h3 className="text-sm font-semibold text-foreground">Availability Settings</h3>
+        {currentMember && (
+          <div className="flex items-center bg-surface rounded-lg p-0.5 border border-border-light">
+            <button
+              onClick={() => setEditMode("workspace")}
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                editMode === "workspace"
+                  ? "bg-card-bg text-foreground shadow-sm"
+                  : "text-text-secondary hover:text-foreground"
+              }`}
+            >
+              Workspace
+            </button>
+            <button
+              onClick={() => setEditMode("member")}
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                editMode === "member"
+                  ? "bg-card-bg text-foreground shadow-sm"
+                  : "text-text-secondary hover:text-foreground"
+              }`}
+            >
+              {currentMember.name || "My Hours"}
+            </button>
+          </div>
+        )}
+      </div>
       <p className="text-xs text-text-secondary mb-5">
-        Set your weekly availability to let clients know when you are open for bookings.
+        {editMode === "workspace"
+          ? "Set your default weekly availability for the workspace."
+          : `Set working hours for ${currentMember?.name || "yourself"}.`}
       </p>
 
       <div className="space-y-3">
-        {sortedSlots.map((slot) => (
+        {slots.map((slot) => (
           <div
             key={slot.day}
             className="flex items-center gap-4 px-3 py-2.5 rounded-lg border border-border-light"
@@ -83,56 +148,28 @@ export function AvailabilitySettings() {
                 slot.enabled ? "text-foreground" : "text-text-secondary"
               }`}
             >
-              {DAY_NAMES[slot.day]}
+              {DAY_LABELS[slot.day]}
             </span>
 
             {/* Time inputs */}
             <input
               type="time"
-              value={slot.startTime}
-              onChange={(e) => updateSlot(slot.day, "startTime", e.target.value)}
+              value={slot.start}
+              onChange={(e) => updateSlot(slot.day, "start", e.target.value)}
               disabled={!slot.enabled}
               className="px-2 py-1 rounded-md border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-foreground/40 disabled:opacity-40"
             />
             <span className="text-xs text-text-secondary">to</span>
             <input
               type="time"
-              value={slot.endTime}
-              onChange={(e) => updateSlot(slot.day, "endTime", e.target.value)}
+              value={slot.end}
+              onChange={(e) => updateSlot(slot.day, "end", e.target.value)}
               disabled={!slot.enabled}
               className="px-2 py-1 rounded-md border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-foreground/40 disabled:opacity-40"
             />
           </div>
         ))}
       </div>
-
-      <FeatureSection moduleId="bookings-calendar" featureId="buffer-time" featureLabel="Buffer Time">
-        <div className="mt-4">
-          <label className="block text-[13px] font-medium text-foreground mb-1.5">Buffer between appointments</label>
-          <select value={bufferMinutes} onChange={(e) => setBufferMinutes(e.target.value)} className="px-3 py-2 rounded-lg border border-border-light bg-surface text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-foreground/40">
-            <option value="0">No buffer</option>
-            <option value="5">5 minutes</option>
-            <option value="10">10 minutes</option>
-            <option value="15">15 minutes</option>
-            <option value="30">30 minutes</option>
-          </select>
-        </div>
-      </FeatureSection>
-
-      <FeatureSection moduleId="bookings-calendar" featureId="cancellation-policy" featureLabel="Cancellation Policy">
-        <div className="mt-4">
-          <label className="block text-[13px] font-medium text-foreground mb-1.5">Minimum notice for cancellation</label>
-          <select value={cancelNotice} onChange={(e) => setCancelNotice(e.target.value)} className="w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm">
-            <option value="0">No restriction</option>
-            <option value="2">2 hours</option>
-            <option value="4">4 hours</option>
-            <option value="12">12 hours</option>
-            <option value="24">24 hours</option>
-            <option value="48">48 hours</option>
-          </select>
-          <p className="text-[11px] text-text-tertiary mt-1">Clients who cancel after this window will be flagged.</p>
-        </div>
-      </FeatureSection>
 
       <div className="flex items-center gap-3 mt-5">
         <Button variant="primary" size="sm" onClick={handleSave}>

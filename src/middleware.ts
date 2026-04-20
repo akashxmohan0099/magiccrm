@@ -4,12 +4,26 @@ import { NextResponse, type NextRequest } from "next/server";
 /**
  * Public route prefixes that don't require authentication.
  */
-const PUBLIC_ROUTES = ["/", "/login", "/signup", "/onboarding", "/onboarding-test", "/proposal", "/api", "/auth", "/terms", "/privacy", "/dev", "/forgot-password", "/reset-password", "/book", "/lead-form", "/pay", "/portal", "/storefront"];
+const PUBLIC_ROUTES = ["/", "/login", "/signup", "/onboarding", "/proposal", "/api", "/auth", "/terms", "/privacy", "/forgot-password", "/reset-password", "/book", "/inquiry", "/lead-form", "/pay", "/portal", "/storefront", "/embed"];
+
+// Dev-only public routes — only accessible in development
+const DEV_PUBLIC_ROUTES = ["/dev", "/onboarding-test"];
 
 function isPublicRoute(pathname: string) {
   if (pathname === "/") return true;
-  return PUBLIC_ROUTES.some(
+  const allRoutes = process.env.NODE_ENV === "development"
+    ? [...PUBLIC_ROUTES, ...DEV_PUBLIC_ROUTES]
+    : PUBLIC_ROUTES;
+  return allRoutes.some(
     (route) => route !== "/" && (pathname === route || pathname.startsWith(route + "/"))
+  );
+}
+
+function isE2EDemoRequest(request: NextRequest) {
+  return (
+    process.env.NODE_ENV === "development" &&
+    request.nextUrl.pathname.startsWith("/dashboard") &&
+    request.cookies.get("magic-e2e-demo")?.value === "1"
   );
 }
 
@@ -50,7 +64,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // If user is NOT authenticated and trying to access a protected route → redirect to login
-  if (!user && !isPublicRoute(pathname)) {
+  if (!user && !isPublicRoute(pathname) && !isE2EDemoRequest(request)) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("redirect", pathname);
@@ -74,6 +88,12 @@ export async function middleware(request: NextRequest) {
       redirectResponse.cookies.set(cookie.name, cookie.value, cookie);
     });
     return redirectResponse;
+  }
+
+  // Allow iframe embedding for /embed routes (remove X-Frame-Options restriction)
+  if (pathname.startsWith("/embed")) {
+    supabaseResponse.headers.delete("X-Frame-Options");
+    supabaseResponse.headers.set("Content-Security-Policy", "frame-ancestors *");
   }
 
   return supabaseResponse;

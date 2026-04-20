@@ -1,51 +1,29 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { Booking, AvailabilitySlot } from "@/types/models";
+import type { Booking } from "@/types/models";
 import { generateId } from "@/lib/id";
-import { logActivity } from "@/lib/activity-logger";
 import { toast } from "@/components/ui/Toast";
-import { validateClientRef } from "@/lib/validate-refs";
-import { validateBooking, sanitize } from "@/lib/validation";
-import { useWaitlistStore } from "@/store/waitlist";
 import {
   fetchBookings,
   dbCreateBooking,
   dbUpdateBooking,
   dbDeleteBooking,
-  dbUpsertBookings,
-  mapBookingFromDB,
-  fetchBookingSettings,
-  saveBookingSettings,
 } from "@/lib/db/bookings";
-
-const DEFAULT_AVAILABILITY: AvailabilitySlot[] = [
-  { day: 1, startTime: "09:00", endTime: "17:00", enabled: true },
-  { day: 2, startTime: "09:00", endTime: "17:00", enabled: true },
-  { day: 3, startTime: "09:00", endTime: "17:00", enabled: true },
-  { day: 4, startTime: "09:00", endTime: "17:00", enabled: true },
-  { day: 5, startTime: "09:00", endTime: "17:00", enabled: true },
-  { day: 6, startTime: "09:00", endTime: "12:00", enabled: false },
-  { day: 0, startTime: "09:00", endTime: "12:00", enabled: false },
-];
+import { fireAutomationForBooking } from "@/lib/automation-trigger";
 
 interface BookingsStore {
   bookings: Booking[];
-  availability: AvailabilitySlot[];
-  cancellationPolicy: string;
-  bufferMinutes: number;
-  cancelNotice: number;
-
-  addBooking: (data: Omit<Booking, "id" | "createdAt" | "updatedAt">, workspaceId?: string) => Booking | null;
-  updateBooking: (id: string, data: Partial<Booking>, workspaceId?: string) => void;
+  addBooking: (
+    data: Omit<Booking, "id" | "createdAt" | "updatedAt">,
+    workspaceId?: string
+  ) => Booking;
+  updateBooking: (
+    id: string,
+    data: Partial<Booking>,
+    workspaceId?: string
+  ) => void;
   deleteBooking: (id: string, workspaceId?: string) => void;
-  setAvailability: (slots: AvailabilitySlot[], extras?: { bufferMinutes?: number; cancelNotice?: number }, workspaceId?: string) => void;
-  setCancellationPolicy: (text: string, workspaceId?: string) => void;
-  rateBooking: (id: string, rating: number, feedback?: string, workspaceId?: string) => void;
   getBookingsForDate: (date: string) => Booking[];
-  hasConflict: (date: string, startTime: string, endTime: string, excludeId?: string) => boolean;
-
-  // Supabase sync
-  syncToSupabase: (workspaceId: string) => Promise<void>;
   loadFromSupabase: (workspaceId: string) => Promise<void>;
 }
 
@@ -53,250 +31,69 @@ export const useBookingsStore = create<BookingsStore>()(
   persist(
     (set, get) => ({
       bookings: [],
-      availability: DEFAULT_AVAILABILITY,
-      cancellationPolicy: "",
-      bufferMinutes: 0,
-      cancelNotice: 0,
 
-      addBooking: (data, workspaceId?) => {
-        // Validate client reference
-        if (!validateClientRef(data.clientId)) {
-          toast("Cannot create booking: client not found", "error");
-          return null;
-        }
-
-        // Validate booking data
-        const validation = validateBooking(data);
-        if (!validation.valid) {
-          toast(validation.errors[0], "error");
-          return null;
-        }
-
-        // Check for time conflicts before creating
-        if (get().hasConflict(data.date, data.startTime, data.endTime)) {
-          toast("Cannot create booking: time conflict with existing booking", "error");
-          return null;
-        }
-
+      addBooking: (data, workspaceId) => {
         const now = new Date().toISOString();
         const booking: Booking = {
-          ...data,
-          title: sanitize(data.title, 200),
-          notes: sanitize(data.notes, 5000),
           id: generateId(),
+          ...data,
           createdAt: now,
           updatedAt: now,
         };
-        set((s) => ({ bookings: [...s.bookings, booking] }));
-        logActivity("create", "bookings", `Booked "${booking.title}" on ${booking.date}`);
-        toast(`Created booking "${booking.title}"`);
-
-        // Sync to Supabase if workspaceId available
+        set((s) => ({ bookings: [booking, ...s.bookings] }));
+        toast("Booking created");
         if (workspaceId) {
-          const snapshot = get().bookings;
-          dbCreateBooking(workspaceId, booking).catch((err) => {
-            set({ bookings: snapshot.filter((b) => b.id !== booking.id) });
-            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving booking" }));
-          });
+          dbCreateBooking(
+            workspaceId,
+            booking as unknown as Record<string, unknown>
+          ).catch(console.error);
         }
-
         return booking;
       },
 
-      updateBooking: (id, data, workspaceId?) => {
-        const existing = get().bookings.find((b) => b.id === id);
-        const updatedData = { ...data, updatedAt: new Date().toISOString() };
+      updateBooking: (id, data, workspaceId) => {
+        const now = new Date().toISOString();
+        const prev = get().bookings.find((b) => b.id === id);
         set((s) => ({
           bookings: s.bookings.map((b) =>
-            b.id === id ? { ...b, ...updatedData } : b
+            b.id === id ? { ...b, ...data, updatedAt: now } : b
           ),
         }));
-        logActivity("update", "bookings", "Updated booking");
-        toast("Booking updated");
-        // Notify waitlist when a booking is cancelled
-        if (data.status === "cancelled" && existing && existing.status !== "cancelled") {
-          useWaitlistStore.getState().checkAndNotify(existing.date, existing.startTime, existing.endTime);
+        if (workspaceId) {
+          dbUpdateBooking(
+            workspaceId,
+            id,
+            data as Record<string, unknown>
+          ).catch(console.error);
         }
 
-        // Sync to Supabase if workspaceId available
-        if (workspaceId) {
-          // Include the date so the db layer can build TIMESTAMPTZ from startTime/endTime
-          const dbUpdates = { ...updatedData };
-          if ((data.startTime || data.endTime) && !data.date && existing) {
-            (dbUpdates as Record<string, unknown>).date = existing.date;
-          }
-          dbUpdateBooking(workspaceId, id, dbUpdates).catch((err) => {
-            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving booking" }));
-          });
+        // Fire event-driven automations on status transitions.
+        if (prev && data.status && data.status !== prev.status) {
+          fireAutomationForBooking(prev, data.status);
         }
       },
 
-      deleteBooking: (id, workspaceId?) => {
-        const booking = get().bookings.find((b) => b.id === id);
+      deleteBooking: (id, workspaceId) => {
         set((s) => ({ bookings: s.bookings.filter((b) => b.id !== id) }));
-        if (booking) {
-          logActivity("delete", "bookings", `Cancelled booking "${booking.title}"`);
-          toast(`Booking "${booking.title}" deleted`, "info");
-          // Notify waitlist when a booking is deleted
-          useWaitlistStore.getState().checkAndNotify(booking.date, booking.startTime, booking.endTime);
-
-          // Sync to Supabase if workspaceId available
-          if (workspaceId) {
-            dbDeleteBooking(workspaceId, id).catch((err) => {
-              import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "deleting booking" }));
-            });
-          }
-        }
-      },
-
-      setAvailability: (slots, extras?, workspaceId?) => {
-        set({
-          availability: slots,
-          ...(extras?.bufferMinutes !== undefined && { bufferMinutes: extras.bufferMinutes }),
-          ...(extras?.cancelNotice !== undefined && { cancelNotice: extras.cancelNotice }),
-        });
-
-        // Sync to Supabase if workspaceId available
+        toast("Booking deleted");
         if (workspaceId) {
-          const { cancellationPolicy } = get();
-          saveBookingSettings(workspaceId, {
-            availability: slots,
-            cancellationPolicy,
-          }).catch((err) => {
-            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving booking" }));
-          });
+          dbDeleteBooking(workspaceId, id).catch(console.error);
         }
       },
 
-      setCancellationPolicy: (text, workspaceId?) => {
-        set({ cancellationPolicy: text });
-
-        // Sync to Supabase if workspaceId available
-        if (workspaceId) {
-          const { availability } = get();
-          saveBookingSettings(workspaceId, {
-            availability,
-            cancellationPolicy: text,
-          }).catch((err) => {
-            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving booking" }));
-          });
-        }
+      getBookingsForDate: (date) => {
+        return get().bookings.filter((b) => b.date === date);
       },
 
-      rateBooking: (id, rating, feedback, workspaceId?) => {
-        const ratingData = {
-          satisfactionRating: rating,
-          satisfactionFeedback: feedback,
-          ratedAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        set((s) => ({
-          bookings: s.bookings.map((b) =>
-            b.id === id
-              ? {
-                  ...b,
-                  satisfactionRating: rating,
-                  satisfactionFeedback: feedback ?? b.satisfactionFeedback,
-                  ratedAt: ratingData.ratedAt,
-                  updatedAt: ratingData.updatedAt,
-                }
-              : b
-          ),
-        }));
-        toast("Rating submitted");
-
-        // Sync to Supabase if workspaceId available
-        if (workspaceId) {
-          dbUpdateBooking(workspaceId, id, ratingData).catch((err) => {
-            import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "saving booking" }));
-          });
-        }
-      },
-
-      getBookingsForDate: (date) =>
-        get().bookings.filter((b) => b.date === date && b.status !== "cancelled"),
-
-      hasConflict: (date, startTime, endTime, excludeId) => {
-        return get().bookings.some(
-          (b) =>
-            b.id !== excludeId &&
-            b.date === date &&
-            b.status !== "cancelled" &&
-            b.startTime < endTime &&
-            b.endTime > startTime
-        );
-      },
-
-      // ---------------------------------------------------------------
-      // Supabase sync
-      // ---------------------------------------------------------------
-
-      syncToSupabase: async (workspaceId: string) => {
+      loadFromSupabase: async (workspaceId) => {
         try {
-          const { bookings, availability, cancellationPolicy } = get();
-          await Promise.all([
-            dbUpsertBookings(workspaceId, bookings),
-            saveBookingSettings(workspaceId, { availability, cancellationPolicy }),
-          ]);
+          const bookings = await fetchBookings(workspaceId);
+          set({ bookings });
         } catch (err) {
-          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing bookings" }));
-        }
-      },
-
-      loadFromSupabase: async (workspaceId: string) => {
-        try {
-          const [rows, settings] = await Promise.all([
-            fetchBookings(workspaceId),
-            fetchBookingSettings(workspaceId),
-          ]);
-
-          const updates: Partial<BookingsStore> = {};
-
-          updates.bookings = (rows ?? []).map((row: Record<string, unknown>) =>
-            mapBookingFromDB(row)
-          );
-
-          if (settings) {
-            if (settings.availability && settings.availability.length > 0) {
-              updates.availability = settings.availability;
-            }
-            if (settings.cancellationPolicy !== undefined) {
-              updates.cancellationPolicy = settings.cancellationPolicy;
-            }
-          }
-
-          set(updates);
-        } catch (err) {
-          import("@/lib/sync-error-handler").then(m => m.handleSyncError(err, { context: "syncing bookings" }));
+          console.debug("[store] loadFromSupabase skipped:", err);
         }
       },
     }),
-    {
-      name: "magic-crm-bookings",
-      version: 3,
-      migrate: (persisted: unknown, version: number) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        let state = persisted as Record<string, any>;
-        if (version < 2) {
-          state = {
-            ...state,
-            bookings: (state.bookings ?? []).map((b: Record<string, unknown>) => ({
-              ...b,
-              serviceId: b.serviceId,
-              serviceName: b.serviceName,
-              price: b.price,
-              duration: b.duration,
-            })),
-          };
-        }
-        if (version < 3) {
-          state = {
-            ...state,
-            cancellationPolicy: state.cancellationPolicy ?? "",
-          };
-        }
-        return state;
-      },
-    }
+    { name: "magic-crm-bookings", version: 2 }
   )
 );

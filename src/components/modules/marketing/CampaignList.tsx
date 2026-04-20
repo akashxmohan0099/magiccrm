@@ -23,7 +23,7 @@ export function CampaignList({ onEdit }: CampaignListProps) {
     return campaigns.filter(
       (c) =>
         c.name.toLowerCase().includes(q) ||
-        c.type.toLowerCase().includes(q) ||
+        c.channel.toLowerCase().includes(q) ||
         c.status.toLowerCase().includes(q)
     );
   }, [campaigns, search]);
@@ -31,11 +31,13 @@ export function CampaignList({ onEdit }: CampaignListProps) {
   const columns: Column<Campaign>[] = [
     { key: "name", label: "Name", sortable: true },
     {
-      key: "type",
-      label: "Type",
+      key: "channel",
+      label: "Channel",
       sortable: true,
       render: (c) => (
-        <span className="capitalize text-sm text-text-secondary">{c.type}</span>
+        <span className="capitalize text-sm text-text-secondary">
+          {c.channel === "both" ? "Email + SMS" : c.channel}
+        </span>
       ),
     },
     {
@@ -43,6 +45,41 @@ export function CampaignList({ onEdit }: CampaignListProps) {
       label: "Status",
       sortable: true,
       render: (c) => <StatusBadge status={c.status} />,
+    },
+    {
+      key: "sentCount",
+      label: "Sent",
+      sortable: true,
+      render: (c) =>
+        c.sentCount > 0 ? (
+          <span className="text-sm text-foreground">{c.sentCount.toLocaleString()}</span>
+        ) : (
+          <span className="text-sm text-text-tertiary">{"\u2014"}</span>
+        ),
+    },
+    {
+      key: "openCount",
+      label: "Open Rate",
+      sortable: true,
+      render: (c) =>
+        c.sentCount > 0 ? (
+          <span className="text-sm text-foreground">
+            {((c.openCount / c.sentCount) * 100).toFixed(1)}%
+          </span>
+        ) : (
+          <span className="text-sm text-text-tertiary">{"\u2014"}</span>
+        ),
+    },
+    {
+      key: "clickCount",
+      label: "Clicks",
+      sortable: true,
+      render: (c) =>
+        c.sentCount > 0 ? (
+          <span className="text-sm text-foreground">{c.clickCount.toLocaleString()}</span>
+        ) : (
+          <span className="text-sm text-text-tertiary">{"\u2014"}</span>
+        ),
     },
     {
       key: "scheduledAt",
