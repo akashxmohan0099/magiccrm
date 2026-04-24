@@ -82,6 +82,715 @@
 .bgCocoa   { background: #3a2418; }
 .bgPaper   { background: #f4f1ea; border: 1px solid #e6e1d4; }
 
+/* Image-filled cell: the background image is applied inline via
+   `style={{ backgroundImage: "url(…)" }}`; this class just sets the
+   sizing/positioning so the image fills the cell. */
+.cell.imgTile {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* Client card tile — CRM's core primitive: a compact client snapshot
+   (avatar, tags, last/next visit, lifetime stats). Absolutely
+   positioned so the content can't affect the cell's frame. */
+.cell.clientTile {
+  background: linear-gradient(160deg, #ffffff 0%, #fafaf6 100%);
+  border: 1px solid var(--border-light, #efefef);
+  position: relative;
+  overflow: hidden;
+  pointer-events: none;
+}
+.clientTileInner {
+  position: absolute;
+  inset: 8% 8%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 1;
+}
+.clientTileHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.clientAvatar {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #EC4899 0%, #F472B6 100%);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 8px -2px rgba(236, 72, 153, 0.35);
+}
+.clientIdentity {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 3px;
+}
+.clientName {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--foreground);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+.clientTags {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.clientTag,
+.clientTagRegular {
+  font-size: 9px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 999px;
+  letter-spacing: 0.02em;
+}
+.clientTag {
+  color: #6b7280;
+  background: rgba(15, 23, 42, 0.05);
+  border: 1px solid rgba(15, 23, 42, 0.05);
+}
+.clientTagRegular {
+  color: var(--primary, #10B981);
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.22);
+}
+.clientRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 6px 0;
+  border-top: 1px solid rgba(15, 23, 42, 0.05);
+  min-width: 0;
+}
+.clientRowLabel {
+  font-size: 10px;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  flex: 0 0 auto;
+}
+.clientRowValue,
+.clientRowValueAccent {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--foreground);
+  letter-spacing: -0.005em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.clientRowValueAccent {
+  color: var(--primary, #10B981);
+}
+.clientFooter {
+  margin-top: auto;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(15, 23, 42, 0.05);
+}
+.clientFooterItem {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.clientFooterLabel {
+  font-size: 9px;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.clientFooterValue {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--foreground);
+  letter-spacing: -0.01em;
+  font-feature-settings: "tnum";
+}
+
+/* AI snippet tile — tiny chat vignette (badge + thread + input). Cell
+   frame is pure flex; everything inside is absolute so it can't push
+   the grid. Dark ink background with a soft green wash so the feature
+   reads as "AI" without shouting. */
+.cell.aiTile {
+  background: #0a0a0a;
+  position: relative;
+  overflow: hidden;
+  pointer-events: none;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+.cell.aiTile::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(124, 254, 157, 0.14) 0%, transparent 55%),
+    radial-gradient(circle at 90% 100%, rgba(139, 92, 246, 0.12) 0%, transparent 55%);
+  pointer-events: none;
+}
+.aiTileInner {
+  position: absolute;
+  inset: 12% 8% 10% 8%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 1;
+}
+.aiTileHead {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.aiTileBadge {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: var(--logo-green, #7CFE9D);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 10px -2px rgba(124, 254, 157, 0.45);
+}
+/* White inset square — mirrors the Magic nav logo so the AI tile is
+   clearly "Magic AI" without needing any generic bot iconography. */
+.aiTileBadgeInset {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2.5px;
+  background: var(--card-bg, #ffffff);
+}
+.aiTileTitles {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.aiTileName {
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+.aiTileSub {
+  font-size: 9px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1.2;
+  margin-top: 1px;
+}
+.aiTileThread {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+  justify-content: center;
+}
+.aiTileUserMsg {
+  align-self: flex-end;
+  max-width: 82%;
+  padding: 7px 10px;
+  border-radius: 10px 10px 3px 10px;
+  background: #ffffff;
+  color: #0a0a0a;
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: -0.005em;
+}
+.aiTileAiMsg {
+  align-self: flex-start;
+  max-width: 88%;
+  padding: 7px 10px;
+  border-radius: 10px 10px 10px 3px;
+  background: rgba(124, 254, 157, 0.14);
+  border: 1px solid rgba(124, 254, 157, 0.22);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: -0.005em;
+}
+.aiTileInput {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 10px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+}
+.aiTileCursor {
+  display: inline-block;
+  width: 1.5px;
+  height: 11px;
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 1px;
+  animation: aiTileCursorBlink 0.9s steps(2, start) infinite;
+}
+@keyframes aiTileCursorBlink {
+  0%, 50% { opacity: 1; }
+  50.01%, 100% { opacity: 0; }
+}
+
+/* Reminder tile — a miniature "auto reminders" checklist. Three rows
+   tick in one after another on a loop, covering the no-show-prevention
+   story the rest of the grid doesn't surface. Pure CSS animation; each
+   row's --d offsets the same fill keyframes so the ticks cascade. */
+.cell.reminderTile {
+  background:
+    radial-gradient(circle at 85% 0%, rgba(124, 254, 157, 0.22) 0%, transparent 55%),
+    linear-gradient(180deg, #fafdfb 0%, #f1f6f3 100%);
+  position: relative;
+  overflow: hidden;
+  pointer-events: none;
+  border: 1px solid rgba(10, 30, 20, 0.06);
+}
+.reminderTileInner {
+  position: absolute;
+  inset: 11% 9% 10% 9%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 1;
+}
+.reminderTileHead {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.reminderTileBadge {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: var(--logo-green, #7CFE9D);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #0a2d17;
+  box-shadow: 0 3px 10px -2px rgba(124, 254, 157, 0.5);
+}
+.reminderTileTitles {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.reminderTileName {
+  font-size: 12px;
+  font-weight: 700;
+  color: #0a1a12;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+.reminderTileSub {
+  font-size: 9px;
+  font-weight: 500;
+  color: rgba(10, 30, 20, 0.5);
+  line-height: 1.2;
+  margin-top: 1px;
+}
+.reminderTileList {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 9px;
+  min-height: 0;
+}
+.reminderRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+}
+.reminderTick {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1.5px solid rgba(10, 30, 20, 0.18);
+  color: transparent;
+  animation: reminderTickFill 4s ease-in-out infinite;
+  animation-delay: var(--d, 0s);
+}
+@keyframes reminderTickFill {
+  0%, 6% {
+    background: transparent;
+    border-color: rgba(10, 30, 20, 0.18);
+    color: transparent;
+    transform: scale(0.85);
+  }
+  14%, 86% {
+    background: var(--logo-green, #7CFE9D);
+    border-color: var(--logo-green, #7CFE9D);
+    color: #063018;
+    transform: scale(1);
+  }
+  94%, 100% {
+    background: transparent;
+    border-color: rgba(10, 30, 20, 0.18);
+    color: transparent;
+    transform: scale(0.85);
+  }
+}
+.reminderCopy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 1px;
+}
+.reminderWhen {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #0a1a12;
+  letter-spacing: -0.005em;
+  line-height: 1.15;
+}
+.reminderWhat {
+  font-size: 9.5px;
+  font-weight: 500;
+  color: rgba(10, 30, 20, 0.55);
+  line-height: 1.25;
+  letter-spacing: -0.003em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Quote tile — editorial benefit line on a warm bone canvas. A
+   single marker stroke scratches "Chase" out on a loop and the word
+   fades as if crossed off a to-do list. Pure CSS animation. */
+.cell.quoteTile {
+  background: #ece0c9;
+  position: relative;
+  overflow: hidden;
+  pointer-events: none;
+}
+.quoteTileInner {
+  position: absolute;
+  inset: 14% 8% 14% 9%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  z-index: 1;
+}
+.quoteLine {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #1a1410;
+  line-height: 1.02;
+  font-family: inherit;
+}
+.quoteDot {
+  color: var(--logo-green, #7CFE9D);
+  text-shadow: 0 1px 6px rgba(124, 254, 157, 0.45);
+}
+.quoteStrike {
+  position: relative;
+  display: inline-block;
+  color: #1a1410;
+  animation: quoteStrikeFade 4s ease-in-out infinite;
+}
+.quoteStrike::after {
+  content: "";
+  position: absolute;
+  left: -3%;
+  top: 52%;
+  height: 3px;
+  width: 0;
+  background: #1a1410;
+  border-radius: 2px;
+  transform: rotate(-2deg);
+  pointer-events: none;
+  animation: quoteScratch 4s ease-in-out infinite;
+}
+@keyframes quoteScratch {
+  0%, 18% { width: 0; opacity: 1; }
+  38%, 82% { width: 108%; opacity: 1; }
+  92% { width: 108%; opacity: 0; }
+  92.01%, 100% { width: 0; opacity: 0; }
+}
+@keyframes quoteStrikeFade {
+  0%, 18% { color: #1a1410; }
+  40%, 85% { color: rgba(26, 20, 16, 0.4); }
+  92%, 100% { color: #1a1410; }
+}
+
+/* Green-tinted quote tile — reuses the addon tile's gradient formula
+   (see .cell.addonTile) with the Magic logo green as the tint, so
+   this text tile sits in the same visual family as the purple
+   Proposals and pink Gift Cards tiles on the grid. A live green
+   underline draws under a key word on a loop. */
+.cell.quoteTileWarm {
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--logo-green, #7CFE9D) 14%, #ffffff) 0%,
+    color-mix(in srgb, var(--logo-green, #7CFE9D) 4%, #ffffff) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--logo-green, #7CFE9D) 18%, transparent);
+  position: relative;
+  overflow: hidden;
+  pointer-events: none;
+}
+.quoteLineWarm {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #1a1410;
+  line-height: 1.02;
+  font-family: inherit;
+}
+.quoteUnderline {
+  position: relative;
+  display: inline-block;
+}
+.quoteUnderline::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -3px;
+  height: 3px;
+  width: 0;
+  background: var(--logo-green, #7CFE9D);
+  border-radius: 2px;
+  animation: quoteUnderlineDraw 3.6s ease-in-out infinite;
+}
+@keyframes quoteUnderlineDraw {
+  0%, 10% { width: 0; opacity: 1; }
+  35%, 80% { width: 100%; opacity: 1; }
+  90% { width: 100%; opacity: 0; }
+  90.01%, 100% { width: 0; opacity: 0; }
+}
+
+/* Dark quote tile — platform foreground (near-black) with near-white
+   type, a single word softly pulsing to hint at after-hours
+   automation. Same ink tone as the AI tile so the dark tiles read as
+   a consistent family. */
+.cell.quoteTileDark {
+  background: #0A0A0A;
+  position: relative;
+  overflow: hidden;
+  pointer-events: none;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+.quoteLineLight {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #EDEDED;
+  line-height: 1.02;
+  font-family: inherit;
+}
+.quotePulse {
+  display: inline-block;
+  color: #EDEDED;
+  animation: quotePulseGlow 2.2s ease-in-out infinite;
+}
+@keyframes quotePulseGlow {
+  0%, 100% {
+    color: rgba(237, 237, 237, 0.55);
+    text-shadow: none;
+  }
+  50% {
+    color: #ffffff;
+    text-shadow:
+      0 0 12px rgba(124, 254, 157, 0.55),
+      0 0 22px rgba(124, 254, 157, 0.25);
+  }
+}
+
+/* Addon tile — embeds the EXACT addon card markup from the landing
+   page's addons section inside a masonry cell. The cell itself has a
+   tinted gradient backdrop that matches the addon's accent colour, and
+   the real addon card sits centered on top. Absolute positioning +
+   a transform on the inner wrapper keep the card fully inside the
+   cell's flex-driven frame without distorting the grid. */
+.cell.addonTile {
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--addon-grad, #7C3AED) 10%, #ffffff) 0%,
+    color-mix(in srgb, var(--addon-grad, #7C3AED) 3%, #ffffff) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--addon-grad, #7C3AED) 16%, transparent);
+  overflow: hidden;
+  position: relative;
+  pointer-events: none;
+}
+.addonTileInner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 320px;
+  height: auto;
+  /* The real addon card is designed for a ~320px column on the landing
+     page. We shrink-to-fit with a scale that keeps the card readable in
+     the smaller masonry cell. */
+  transform: translate(-50%, -50%) scale(0.78);
+  transform-origin: center center;
+  display: flex;
+}
+
+/* "Pick your speciality" tile — a masonry cell that hosts the live mini
+   version of the slide-1 composition. The 3 sub-artboards are each
+   aspect 1:1 with height=100% of the container, so natural composition
+   width is roughly 3× the cell height. We reduce the gap, then scale the
+   whole magicGroup down to ~35% so the 3-card row fits side-to-side with
+   comfortable margin inside the cell. */
+.cell.magicTile {
+  background: color-mix(in srgb, var(--accent, #EC4899) 8%, #ffffff);
+  border: 1px solid color-mix(in srgb, var(--accent, #EC4899) 18%, transparent);
+  overflow: hidden;
+  pointer-events: none;
+  position: relative;
+}
+.magicTileInner {
+  position: absolute;
+  inset: 3%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.magicTileInner > .artboard.magicGroup {
+  gap: 10px;
+  width: auto;
+  height: 100%;
+  aspect-ratio: auto;
+  transform: scale(0.55);
+  transform-origin: center center;
+}
+.magicTileInner > .artboard.magicGroup > .artboard {
+  flex: 0 0 auto;
+  height: 100%;
+  aspect-ratio: 1 / 1;
+}
+/* In the tile, show only the first two cards (persona picker + quick
+   setup) so the composition fills the cell at a readable size. The
+   workspace artboard and connecting line are hidden — they'd push the
+   mini into unreadable tiny territory. */
+.magicTileInner .magicWs,
+.magicTileInner .magicConnectTrack {
+  display: none;
+}
+
+/* "Speaks your language" tile — mini version of slide 2 (persona list
+   + calendar + services card) plus the caption, placed INSIDE the
+   Mustard masonry cell without changing its flex-driven frame. Inner
+   content is absolutely positioned so it can never push the cell
+   larger than its original ar43 footprint. */
+.cell.lingoTile {
+  background: #fafaf6;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+  pointer-events: none;
+  position: relative;
+}
+.lingoTileInner {
+  position: absolute;
+  top: 6%;
+  left: 3%;
+  right: 3%;
+  bottom: 22%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lingoTileInner > .artboard.lingoGroup {
+  gap: 8px;
+  width: auto;
+  height: 100%;
+  transform: scale(0.34);
+  transform-origin: center center;
+}
+.lingoTileCap {
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  bottom: 6%;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--foreground);
+  text-align: center;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* "One magical inbox" tile — mini slide 3 (apps → Magic Inbox feed)
+   with its caption, inside the col-4 row-3 masonry cell. Absolutely
+   positioned so it never pushes the cell's flex-driven frame. */
+.cell.unifyTile {
+  background: #fafaf6;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+  pointer-events: none;
+  position: relative;
+}
+.unifyTileInner {
+  position: absolute;
+  top: 4%;
+  left: 4%;
+  right: 4%;
+  bottom: 26%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* The unifyBoard is natively wide (aspect ~1.9:1). Scaling it more
+   aggressively lets it use the tile's full width while staying inside
+   the available vertical band. */
+.unifyTileInner > .artboard.unifyBoard {
+  width: auto;
+  height: 100%;
+  aspect-ratio: 1.9 / 1;
+  transform: scale(0.72);
+  transform-origin: center center;
+}
+.unifyTileCap {
+  position: absolute;
+  left: 5%;
+  right: 5%;
+  bottom: 6%;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--foreground);
+  text-align: center;
+  line-height: 1.3;
+  /* Allow the caption to wrap onto two lines so we can fit the
+     accent phrase without squeezing font size. */
+  white-space: normal;
+  word-break: normal;
+}
+
 /* Selected cell — the Showreel artboard. Stays 4:5 portrait throughout;
    no stretching. Light clean background. */
 .cell.sel {

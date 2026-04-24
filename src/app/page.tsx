@@ -4,20 +4,22 @@ import { useState, useRef, useEffect } from "react";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import {
   ArrowRight, Check, Star,
-  Zap, Crown, Camera, FileInput,
-  ClipboardList, Gift, UserCheck, Store, Lightbulb, Puzzle, Sparkles, NotebookPen,
-  Ticket, CalendarRange, Building2, ScrollText, ListOrdered, BrainCircuit, TrendingUp,
-  Scissors, Paintbrush, Eye,
-  Users, Calendar, Receipt, MessageCircle, Inbox, BarChart3,
-  Bell, Send, Bot,
+  Crown, Camera, FileInput,
+  ClipboardList, Gift, UserCheck, Store, Lightbulb, NotebookPen,
+  Ticket, CalendarRange, Building2, ScrollText, ListOrdered,
+  Users, Calendar, Receipt, MessageCircle, BarChart3,
+  Send, Bot,
 } from "lucide-react";
 import Link from "next/link";
 import { CinematicDemo } from "@/components/landing/CinematicDemo";
 import { RevealText } from "@/components/landing/RevealText";
 import { ScrollMechanic } from "@/components/landing/ScrollMechanic";
 import { SiteHeader } from "@/components/landing/SiteHeader";
+import { PricingSection } from "@/components/landing/PricingSection";
+import { ComparisonSection } from "@/components/landing/ComparisonSection";
+import { SiteFooter } from "@/components/landing/SiteFooter";
 import {
-  sectionHeadingVariants, sectionTransition, viewportConfig, ctaPulseVariants,
+  sectionHeadingVariants, sectionTransition, viewportConfig,
   COMPARISON_PERSONAS, ADDON_PERSONAS, ADDON_BORDER_COLORS,
 } from "./landing-data";
 
@@ -54,13 +56,21 @@ const ADDONS_DATA: { name: string; icon: LucideIcon; color: string; gradient: st
     preview: <div className="space-y-1.5">{[{ name: "Emma R.", d: "Lash Fill", s: "Waiting", sc: "bg-amber-50 text-amber-700" }, { name: "Tom K.", d: "2:00 PM slot", s: "Notified \u2713", sc: "bg-blue-50 text-blue-600" }].map(w => <div key={w.name} className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-background/80"><div><p className="text-[11px] font-semibold text-foreground">{w.name}</p><p className="text-[9px] text-text-tertiary">{w.d}</p></div><span className={`text-[9px] px-2 py-0.5 rounded-full font-semibold ${w.sc}`}>{w.s}</span></div>)}<div className="px-3 py-2 rounded-lg bg-teal-50/50 border border-teal-100"><p className="text-[10px] text-teal-700 font-medium">Spot opened! Auto-notified 2 clients</p></div></div> },
 ];
 
+const FEATURED_ADDONS = ["Proposals", "Win-Back", "Waitlist"];
+
 function AddonsGrid({ viewportConfig }: { viewportConfig: { once: boolean; margin: string } }) {
   const [filter, setFilter] = useState<string>("All");
   const [expanded, setExpanded] = useState(false);
 
-  const filtered = filter === "All" ? ADDONS_DATA : ADDONS_DATA.filter((a) => a.personas.includes(filter));
-  const visible = expanded ? filtered : filtered.slice(0, 6);
-  const hasMore = filtered.length > 6;
+  const baseList = filter === "All" ? ADDONS_DATA : ADDONS_DATA.filter((a) => a.personas.includes(filter));
+  const filtered = filter === "All"
+    ? [
+        ...FEATURED_ADDONS.map((n) => baseList.find((a) => a.name === n)).filter((a): a is typeof ADDONS_DATA[number] => Boolean(a)),
+        ...baseList.filter((a) => !FEATURED_ADDONS.includes(a.name)),
+      ]
+    : baseList;
+  const visible = expanded ? filtered : filtered.slice(0, 3);
+  const hasMore = filtered.length > 3;
 
   // Reset expanded when filter changes
   const handleFilter = (p: string) => {
@@ -462,14 +472,14 @@ function AIChatDemo() {
       </div>
 
       <div className="relative max-w-6xl mx-auto px-4 sm:px-6">
-        <div className="text-center mb-8 sm:mb-10">
+        <div className="text-center mb-10 sm:mb-14">
           <motion.h2
             variants={sectionHeadingVariants}
             initial="hidden"
             whileInView="visible"
             viewport={viewportConfig}
             transition={sectionTransition}
-            className="text-[1.75rem] sm:text-[2.25rem] font-bold text-foreground leading-tight mb-3"
+            className="text-[2rem] sm:text-[2.75rem] font-bold text-foreground leading-[1.08] mb-4 tracking-tight"
           >
             Just ask your <span className="text-primary">AI</span>. Magic handles it.
           </motion.h2>
@@ -478,9 +488,9 @@ function AIChatDemo() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={viewportConfig}
             transition={{ delay: 0.1, ...sectionTransition }}
-            className="text-text-secondary text-[15px] max-w-xl mx-auto"
+            className="text-text-secondary text-[15px] sm:text-[16px] max-w-xl mx-auto leading-relaxed"
           >
-            Send invoices, check your bookings, pull up a client card, or check your rebooking rate. Type it like you&apos;d say it.
+            Send invoices, check bookings, pull up a client card, or review rebooking. Type it like you&apos;d say it.
           </motion.p>
         </div>
 
@@ -490,21 +500,22 @@ function AIChatDemo() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={viewportConfig}
           transition={{ delay: 0.15, duration: 0.5 }}
-          className="flex justify-center gap-2 mb-5 overflow-x-auto scrollbar-hide pb-1"
+          className="flex justify-center gap-2 mb-8 overflow-x-auto scrollbar-hide pb-1"
         >
           {AI_CHAT_CONVERSATIONS.map((c, i) => {
             const Icon = c.icon;
+            const active = activeConvo === i;
             return (
               <button
                 key={c.label}
                 onClick={() => setActiveConvo(i)}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-medium whitespace-nowrap transition-all duration-300 cursor-pointer ${
-                  activeConvo === i
-                    ? "bg-foreground text-background shadow-md"
-                    : "bg-surface border border-border-light text-text-secondary hover:text-foreground hover:border-foreground/20"
+                className={`relative flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-full text-[13px] font-semibold whitespace-nowrap transition-all duration-300 cursor-pointer ${
+                  active
+                    ? "bg-foreground text-background shadow-[0_6px_20px_-6px_rgba(10,10,10,0.4)]"
+                    : "bg-card-bg border border-border-light text-text-secondary hover:text-foreground hover:border-foreground/25 hover:-translate-y-0.5"
                 }`}
               >
-                <Icon className="w-3.5 h-3.5 flex-shrink-0" />
+                <Icon className={`w-4 h-4 flex-shrink-0 ${active ? "" : "text-text-tertiary"}`} />
                 {c.label}
               </button>
             );
@@ -512,9 +523,9 @@ function AIChatDemo() {
         </motion.div>
 
         {/* Chat + flanking insight notes */}
-        <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,620px)_minmax(0,1fr)] gap-6 lg:gap-10 items-center">
+        <div className="grid lg:grid-cols-[minmax(200px,1fr)_minmax(0,680px)_minmax(200px,1fr)] gap-8 lg:gap-12 items-center">
           {/* Left insight notes — desktop only */}
-          <div className="hidden lg:flex flex-col gap-8">
+          <div className="hidden lg:flex flex-col gap-10">
             {[
               { title: "Reads your workspace", desc: "Every client, booking, and payment — already loaded. No prompts to engineer." },
               { title: "Speaks beauty & wellness", desc: "Lash fills, brow tints, regrowth cycles. The vocab is built in." },
@@ -525,10 +536,13 @@ function AIChatDemo() {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={viewportConfig}
                 transition={{ delay: 0.3 + i * 0.08, duration: 0.5 }}
-                className="border-l-2 border-primary/40 pl-4"
+                className="relative pl-5"
               >
+                <span className="absolute left-0 top-1 w-2.5 h-2.5 rounded-full bg-primary/15 border border-primary/40 flex items-center justify-center">
+                  <span className="w-1 h-1 rounded-full bg-primary" />
+                </span>
                 <p className="text-[14px] font-bold text-foreground mb-1.5 tracking-tight">{note.title}</p>
-                <p className="text-[12px] text-text-secondary leading-relaxed">{note.desc}</p>
+                <p className="text-[12.5px] text-text-secondary leading-relaxed">{note.desc}</p>
               </motion.div>
             ))}
           </div>
@@ -539,29 +553,29 @@ function AIChatDemo() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={viewportConfig}
             transition={{ delay: 0.2, duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
-            className="relative w-full max-w-2xl mx-auto"
+            className="relative w-full"
           >
             {/* Glow behind card */}
-            <div className="absolute -inset-4 rounded-3xl opacity-[0.07] blur-2xl pointer-events-none" style={{ background: "linear-gradient(135deg, var(--logo-green), #8B5CF6)" }} />
+            <div className="absolute -inset-6 rounded-[32px] opacity-[0.09] blur-3xl pointer-events-none" style={{ background: "linear-gradient(135deg, var(--logo-green), #8B5CF6)" }} />
 
-            <div className="relative bg-background rounded-2xl border border-border-light overflow-hidden shadow-xl">
+            <div className="relative bg-background rounded-[20px] border border-border-light overflow-hidden shadow-[0_24px_60px_-20px_rgba(10,10,10,0.18),0_8px_20px_-8px_rgba(10,10,10,0.08)]">
             {/* Title bar */}
-            <div className="flex items-center gap-2.5 px-4 py-2.5 border-b border-border-light bg-surface/40">
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center shadow-sm" style={{ backgroundColor: "var(--logo-green)" }}>
-                <Bot className="w-3.5 h-3.5 text-white" />
+            <div className="flex items-center gap-3 px-5 py-3.5 border-b border-border-light bg-gradient-to-b from-surface/60 to-surface/20">
+              <div className="w-8 h-8 rounded-[9px] flex items-center justify-center shadow-[0_4px_12px_-3px_rgba(124,254,157,0.5)]" style={{ backgroundColor: "var(--logo-green)" }}>
+                <Bot className="w-4 h-4 text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-semibold text-foreground">Magic AI</p>
-                <p className="text-[10px] text-text-tertiary truncate">Reads and writes across your workspace</p>
+                <p className="text-[13.5px] font-bold text-foreground tracking-tight">Magic AI</p>
+                <p className="text-[11px] text-text-tertiary truncate">Reads and writes across your workspace</p>
               </div>
-              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-100 flex-shrink-0">
-                <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[9px] text-emerald-700 font-semibold">Online</span>
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-100 flex-shrink-0">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[10px] text-emerald-700 font-semibold">Online</span>
               </div>
             </div>
 
             {/* Messages */}
-            <div ref={messagesContainerRef} className="px-4 py-4 h-[340px] sm:h-[360px] overflow-y-auto">
+            <div ref={messagesContainerRef} className="px-5 py-5 h-[360px] sm:h-[400px] overflow-y-auto">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={activeConvo}
@@ -581,18 +595,18 @@ function AIChatDemo() {
                           className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                         >
                           {msg.role === "ai" && (
-                            <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-1 shadow-sm" style={{ backgroundColor: "var(--logo-green)" }}>
+                            <div className="w-8 h-8 rounded-[9px] flex items-center justify-center flex-shrink-0 mt-0.5 shadow-[0_3px_10px_-2px_rgba(124,254,157,0.5)]" style={{ backgroundColor: "var(--logo-green)" }}>
                               <div className="w-2.5 h-2.5 bg-white rounded-[3px]" />
                             </div>
                           )}
                           <div
-                            className={`max-w-[82%] sm:max-w-[75%] rounded-2xl px-4 py-3 ${
+                            className={`max-w-[82%] sm:max-w-[78%] rounded-2xl px-4 py-3 ${
                               msg.role === "user"
-                                ? "bg-foreground text-background rounded-br-md shadow-md"
-                                : "bg-surface/60 border border-border-light text-foreground rounded-bl-md"
+                                ? "bg-foreground text-background rounded-br-md shadow-[0_6px_16px_-4px_rgba(10,10,10,0.25)]"
+                                : "bg-primary/[0.06] border border-primary/15 text-foreground rounded-bl-md"
                             }`}
                           >
-                            <p className="text-[13px] leading-relaxed">{msg.text}</p>
+                            <p className="text-[13.5px] leading-relaxed">{msg.text}</p>
                             {msg.card && msg.card}
                           </div>
                         </motion.div>
@@ -607,14 +621,14 @@ function AIChatDemo() {
                       animate={{ opacity: 1 }}
                       className="flex gap-3 justify-start"
                     >
-                      <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-1 shadow-sm" style={{ backgroundColor: "var(--logo-green)" }}>
+                      <div className="w-8 h-8 rounded-[9px] flex items-center justify-center flex-shrink-0 mt-0.5 shadow-[0_3px_10px_-2px_rgba(124,254,157,0.5)]" style={{ backgroundColor: "var(--logo-green)" }}>
                         <div className="w-2.5 h-2.5 bg-white rounded-[3px]" />
                       </div>
-                      <div className="bg-surface/60 border border-border-light rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-1.5">
+                      <div className="bg-primary/[0.06] border border-primary/15 rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-1.5">
                         {[0, 1, 2].map((d) => (
                           <motion.div
                             key={d}
-                            className="w-1.5 h-1.5 rounded-full bg-text-tertiary"
+                            className="w-1.5 h-1.5 rounded-full bg-primary/60"
                             animate={{ opacity: [0.3, 1, 0.3] }}
                             transition={{ duration: 1, repeat: Infinity, delay: d * 0.2 }}
                           />
@@ -627,11 +641,18 @@ function AIChatDemo() {
             </div>
 
             {/* Input bar */}
-            <div className="px-4 pb-3 pt-2 border-t border-border-light">
-              <div className="flex items-center gap-2 px-3 py-2.5 bg-surface rounded-xl border border-border-light mt-1.5">
-                <span className="text-[12px] text-text-tertiary flex-1">Ask Magic anything about your business…</span>
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm" style={{ backgroundColor: "var(--logo-green)" }}>
-                  <Send className="w-3.5 h-3.5 text-white" />
+            <div className="px-5 pb-4 pt-3 border-t border-border-light bg-gradient-to-b from-transparent to-surface/30">
+              <div className="flex items-center gap-2.5 px-4 py-3 bg-card-bg rounded-xl border border-border-light shadow-sm">
+                <span className="text-[13px] text-text-tertiary flex-1 flex items-center gap-1.5">
+                  Ask Magic anything about your business…
+                  <motion.span
+                    className="inline-block w-[2px] h-3.5 bg-text-tertiary/70 rounded-sm"
+                    animate={{ opacity: [1, 0] }}
+                    transition={{ duration: 0.9, repeat: Infinity }}
+                  />
+                </span>
+                <div className="w-8 h-8 rounded-[9px] flex items-center justify-center flex-shrink-0 shadow-[0_3px_10px_-2px_rgba(124,254,157,0.5)]" style={{ backgroundColor: "var(--logo-green)" }}>
+                  <Send className="w-4 h-4 text-white" />
                 </div>
               </div>
             </div>
@@ -639,7 +660,7 @@ function AIChatDemo() {
           </motion.div>
 
           {/* Right insight notes — desktop only */}
-          <div className="hidden lg:flex flex-col gap-8">
+          <div className="hidden lg:flex flex-col gap-10">
             {[
               { title: "Takes real actions", desc: "Not just answers — sends invoices, books appointments, drafts campaigns." },
               { title: "Always asks first", desc: "Every change shows a draft. Nothing sends until you confirm." },
@@ -650,10 +671,13 @@ function AIChatDemo() {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={viewportConfig}
                 transition={{ delay: 0.3 + i * 0.08, duration: 0.5 }}
-                className="border-r-2 border-primary/40 pr-4 text-right"
+                className="relative pr-5 text-right"
               >
+                <span className="absolute right-0 top-1 w-2.5 h-2.5 rounded-full bg-primary/15 border border-primary/40 flex items-center justify-center">
+                  <span className="w-1 h-1 rounded-full bg-primary" />
+                </span>
                 <p className="text-[14px] font-bold text-foreground mb-1.5 tracking-tight">{note.title}</p>
-                <p className="text-[12px] text-text-secondary leading-relaxed">{note.desc}</p>
+                <p className="text-[12.5px] text-text-secondary leading-relaxed">{note.desc}</p>
               </motion.div>
             ))}
           </div>
@@ -700,9 +724,6 @@ export default function LandingPage() {
   const heroOpacity = useTransform(heroProgress, [0, 0.7, 1], [1, 0.8, 0]);
   const heroScale = useTransform(heroProgress, [0, 1], [1, 0.97]);
 
-  // Pricing: monthly vs annual billing
-  const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly");
-
   return (
     <div className="min-h-screen bg-background grid-pattern noise-bg">
       {/* Scroll progress indicator */}
@@ -719,7 +740,7 @@ export default function LandingPage() {
       <SiteHeader />
 
       {/* Hero */}
-      <section ref={heroRef} className="max-w-4xl mx-auto px-4 sm:px-6 pt-16 sm:pt-24 pb-12 sm:pb-16 text-center relative overflow-hidden">
+      <section ref={heroRef} className="max-w-5xl mx-auto px-4 sm:px-6 pt-28 sm:pt-36 pb-20 sm:pb-28 text-center relative overflow-hidden">
 
         <motion.div
           style={{ y: heroY, opacity: heroOpacity, scale: heroScale, willChange: "transform, opacity" }}
@@ -738,7 +759,7 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
-            className="text-[2.25rem] sm:text-[3.5rem] md:text-[4rem] font-bold mb-6 leading-[1.05]"
+            className="text-[2.25rem] sm:text-[3.5rem] md:text-[4.25rem] font-bold mb-6 leading-[1.05]"
           >
             <span className="gradient-text">Grow your beauty business.</span><br />
             <span className="text-text-secondary">Not your admin.</span>
@@ -748,9 +769,9 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15, duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
-            className="text-[15px] sm:text-[17px] text-text-secondary mb-8 sm:mb-10 max-w-xl mx-auto leading-relaxed"
+            className="text-[15px] sm:text-[17px] text-text-secondary mb-10 sm:mb-12 max-w-2xl mx-auto leading-relaxed"
           >
-            Magic replaces Fresha, Timely, and the spreadsheet you hate. Bookings, clients, payments, and smart reminders — built for hair, lash, nail, and spa businesses in Australia.
+            Bookings, clients, payments, and smart reminders — built for hair, lash, nail, and spa businesses in Australia.
           </motion.p>
 
           <motion.div
@@ -760,13 +781,13 @@ export default function LandingPage() {
             className="flex flex-col items-center gap-4"
           >
             <Link
-              href="/onboarding"
+              href="/waitlist"
               className="inline-flex items-center justify-center gap-2.5 rounded-full bg-foreground px-10 py-3.5 text-[15px] font-semibold tracking-[-0.01em] text-background transition-opacity hover:opacity-90"
             >
-              Start free trial <ArrowRight className="w-5 h-5" />
+              Join the waitlist <ArrowRight className="w-5 h-5" />
             </Link>
             <p className="text-sm text-text-tertiary">
-              Set up in 60 seconds. No credit card needed.
+              Be first in line when we open seats.
             </p>
           </motion.div>
         </motion.div>
@@ -779,37 +800,7 @@ export default function LandingPage() {
       {/* Scroll mechanic — Pinterest grid → zoom → horizontal pan */}
       <ScrollMechanic />
 
-      {/* Trust bar */}
-      <motion.section
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={viewportConfig}
-        transition={{ duration: 0.5 }}
-        className="pb-10 sm:pb-14"
-      >
-        <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          <div className="flex flex-wrap justify-center gap-3 sm:gap-5">
-            {[
-              "No per-staff fees",
-              "14-day free trial",
-              "No booking commissions",
-              "Built for Australian beauty & wellness",
-            ].map((signal, i) => (
-              <motion.div
-                key={signal}
-                initial={{ opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={viewportConfig}
-                transition={{ delay: 0.1 + i * 0.06, duration: 0.4 }}
-                className="flex items-center gap-2 px-4 py-2 bg-surface border border-border-light rounded-full"
-              >
-                <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-                <span className="text-[13px] font-medium text-foreground">{signal}</span>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </motion.section>
+      {/* Trust bar archived to src/archive/TrustBar.tsx */}
 
       {/* Cinematic Demo */}
       <CinematicDemo />
@@ -827,9 +818,6 @@ export default function LandingPage() {
       >
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-12">
-            <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={viewportConfig} transition={{ duration: 0.4 }} className="inline-flex items-center gap-2 px-3.5 py-1 bg-surface border border-border-light rounded-full text-[11px] font-medium text-text-secondary mb-5">
-              <Sparkles className="w-3 h-3" /> Beauty &amp; wellness, not generic software
-            </motion.div>
             <motion.h2
               variants={sectionHeadingVariants}
               initial="hidden"
@@ -856,9 +844,6 @@ export default function LandingPage() {
       >
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-12 sm:mb-16">
-            <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={viewportConfig} transition={{ duration: 0.4 }} className="inline-flex items-center gap-2 px-3.5 py-1 bg-surface border border-border-light rounded-full text-[11px] font-medium text-text-secondary mb-5">
-              <Puzzle className="w-3 h-3" /> Install anytime
-            </motion.div>
             <motion.h2
               variants={sectionHeadingVariants}
               initial="hidden"
@@ -884,432 +869,14 @@ export default function LandingPage() {
         </div>
       </motion.section>
 
-      {/* Why not the others */}
-      <motion.section
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={viewportConfig}
-        transition={{ duration: 0.5 }}
-        className="py-12 sm:py-20"
-      >
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={viewportConfig} transition={{ duration: 0.4 }} className="inline-flex items-center gap-2 px-3.5 py-1 bg-surface border border-border-light rounded-full text-[11px] font-medium text-text-secondary mb-5">
-              <TrendingUp className="w-3 h-3" /> How Magic stacks up
-            </motion.div>
-            <motion.h2
-              variants={sectionHeadingVariants}
-              initial="hidden"
-              whileInView="visible"
-              viewport={viewportConfig}
-              transition={sectionTransition}
-              className="text-[1.75rem] sm:text-[2.25rem] font-bold text-foreground leading-tight mb-3"
-            >
-              Why switch from Fresha or Timely?
-            </motion.h2>
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={viewportConfig}
-              transition={{ delay: 0.1, ...sectionTransition }}
-              className="text-text-secondary text-[15px] leading-relaxed"
-            >
-              Flat pricing, no per-staff fees, and AI that actually helps you rebook.
-            </motion.p>
-          </div>
-
-          {/* Visual comparison table */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={viewportConfig}
-            transition={{ duration: 0.5 }}
-            className="bg-card-bg rounded-2xl border border-border-light overflow-hidden"
-          >
-            {/* Column headers */}
-            <div className="grid grid-cols-[1.3fr_1fr_1fr_1fr] sm:grid-cols-[1.4fr_1fr_1fr_1fr] gap-0 border-b border-border-light">
-              <div className="px-2.5 sm:px-5 py-4 sm:py-5 flex items-end">
-                <p className="text-[10px] sm:text-[11px] text-text-tertiary uppercase tracking-wider font-semibold">Feature</p>
-              </div>
-              <div className="bg-primary/5 border-x border-primary/20 px-2 sm:px-5 py-4 sm:py-5 text-center">
-                <div className="flex items-center justify-center gap-1 sm:gap-1.5">
-                  <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-[4px] flex items-center justify-center" style={{ backgroundColor: "var(--logo-green)" }}>
-                    <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 bg-card-bg rounded-[1px]" />
-                  </div>
-                  <span className="text-[12px] sm:text-[14px] font-bold text-primary">Magic</span>
-                </div>
-              </div>
-              <div className="px-2 sm:px-5 py-4 sm:py-5 text-center">
-                <span className="text-[11px] sm:text-[13px] font-semibold text-text-secondary">Fresha</span>
-              </div>
-              <div className="px-2 sm:px-5 py-4 sm:py-5 text-center">
-                <span className="text-[11px] sm:text-[13px] font-semibold text-text-secondary">Timely</span>
-              </div>
-            </div>
-
-            {/* Section: Pricing */}
-            <div className="grid grid-cols-[1.3fr_1fr_1fr_1fr] sm:grid-cols-[1.4fr_1fr_1fr_1fr] bg-surface/50 border-b border-border-light">
-              <div className="col-span-4 px-3 sm:px-5 py-2">
-                <p className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider">Pricing</p>
-              </div>
-            </div>
-
-            {/* Rows */}
-            {([
-              { kind: "row", icon: Receipt,      feature: "Pricing model",     sub: null,                   magic: { text: "Flat monthly", tone: "win" },  fresha: { text: "Per staff", tone: "loss" }, timely: { text: "Per staff", tone: "loss" } },
-              { kind: "row", icon: Users,        feature: "Solo operator",     sub: null,                   magic: { text: "A$29/mo",     tone: "win" },  fresha: { text: "A$45/mo",   tone: "neutral" }, timely: { text: "A$42/mo",  tone: "neutral" } },
-              { kind: "row", icon: Users,        feature: "5-person team",     sub: null,                   magic: { text: "A$59/mo",     tone: "win" },  fresha: { text: "A$165/mo",  tone: "loss" },    timely: { text: "A$210/mo", tone: "loss" } },
-              { kind: "divider", label: "Core features" },
-              { kind: "row", icon: Calendar,     feature: "Online booking",    sub: null,                   magic: { text: "check",        tone: "win" },  fresha: { text: "check",     tone: "neutral" }, timely: { text: "check",    tone: "neutral" } },
-              { kind: "row", icon: Bell,         feature: "Reminders",         sub: null,                   magic: { text: "Email + SMS",  tone: "win" },  fresha: { text: "Email + SMS", tone: "neutral" }, timely: { text: "Email + SMS", tone: "neutral" } },
-              { kind: "row", icon: Zap,          feature: "Smart rebooking",   sub: "AI nudges overdue clients",    magic: { text: "check",        tone: "win" },  fresha: { text: "cross",     tone: "loss" },    timely: { text: "cross",    tone: "loss" } },
-              { kind: "row", icon: BrainCircuit, feature: "AI insights",       sub: "No-shows, gaps, revenue",       magic: { text: "check",        tone: "win" },  fresha: { text: "cross",     tone: "loss" },    timely: { text: "cross",    tone: "loss" } },
-              { kind: "row", icon: Bot,          feature: "AI assistant",      sub: "Chat that reads & writes data", magic: { text: "check",        tone: "win" },  fresha: { text: "cross",     tone: "loss" },    timely: { text: "cross",    tone: "loss" } },
-              { kind: "divider", label: "Specialty features" },
-              { kind: "row", icon: ScrollText,   feature: "Wedding proposals", sub: "Makeup artists",             magic: { text: "check",        tone: "win" },  fresha: { text: "cross",     tone: "loss" },    timely: { text: "cross",    tone: "loss" } },
-              { kind: "row", icon: ClipboardList, feature: "Treatment notes",  sub: "Skin clinics",               magic: { text: "check",        tone: "win" },  fresha: { text: "cross",     tone: "loss" },    timely: { text: "cross",    tone: "loss" } },
-              { kind: "row", icon: Camera,       feature: "Before & after photos", sub: "Lash & nail",             magic: { text: "check",        tone: "win" },  fresha: { text: "cross",     tone: "loss" },    timely: { text: "cross",    tone: "loss" } },
-              { kind: "row", icon: Crown,        feature: "Memberships",       sub: "Spas & wellness",            magic: { text: "check",        tone: "win" },  fresha: { text: "check",     tone: "neutral" }, timely: { text: "cross",    tone: "loss" } },
-              { kind: "row", icon: Ticket,       feature: "Gift cards",        sub: null,                         magic: { text: "check",        tone: "win" },  fresha: { text: "check",     tone: "neutral" }, timely: { text: "check",    tone: "neutral" } },
-            ] as const).map((item, i) => {
-              if (item.kind === "divider") {
-                return (
-                  <div key={i} className="grid grid-cols-[1.3fr_1fr_1fr_1fr] sm:grid-cols-[1.4fr_1fr_1fr_1fr] bg-surface/50 border-b border-border-light">
-                    <div className="col-span-4 px-3 sm:px-5 py-2">
-                      <p className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider">{item.label}</p>
-                    </div>
-                  </div>
-                );
-              }
-
-              const RowIcon = item.icon;
-              const renderCell = (cell: { text: string; tone: string }, isMagic: boolean) => {
-                if (cell.text === "check") {
-                  return isMagic
-                    ? <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center"><Check className="w-3.5 h-3.5 text-white" strokeWidth={3} /></div>
-                    : <div className="w-6 h-6 rounded-full bg-text-tertiary/15 flex items-center justify-center"><Check className="w-3.5 h-3.5 text-text-secondary" strokeWidth={2.5} /></div>;
-                }
-                if (cell.text === "cross") {
-                  return <div className="w-6 h-6 rounded-full bg-red-50 flex items-center justify-center"><span className="text-red-400 text-[13px] font-bold leading-none">✕</span></div>;
-                }
-                return (
-                  <span className={`text-[11px] sm:text-[13px] text-center leading-tight ${isMagic ? "text-primary font-bold" : cell.tone === "loss" ? "text-red-500/80" : "text-text-secondary"}`}>
-                    {cell.text}
-                  </span>
-                );
-              };
-
-              return (
-                <div
-                  key={i}
-                  className="grid grid-cols-[1.3fr_1fr_1fr_1fr] sm:grid-cols-[1.4fr_1fr_1fr_1fr] items-center border-b border-border-light last:border-b-0"
-                >
-                  <div className="px-2.5 sm:px-5 py-3 flex items-center gap-2 sm:gap-3 min-w-0">
-                    <div className="hidden sm:flex w-7 h-7 rounded-lg bg-foreground/5 items-center justify-center flex-shrink-0">
-                      <RowIcon className="w-3.5 h-3.5 text-text-secondary" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[12px] sm:text-[13px] font-medium text-foreground leading-tight sm:truncate">{item.feature}</p>
-                      {item.sub && <p className="text-[10px] sm:text-[11px] text-text-tertiary leading-tight mt-0.5 sm:truncate">{item.sub}</p>}
-                    </div>
-                  </div>
-                  <div className="px-1.5 sm:px-5 py-3 bg-primary/5 border-x border-primary/20 flex items-center justify-center min-w-0">
-                    {renderCell(item.magic, true)}
-                  </div>
-                  <div className="px-1.5 sm:px-5 py-3 flex items-center justify-center min-w-0">
-                    {renderCell(item.fresha, false)}
-                  </div>
-                  <div className="px-1.5 sm:px-5 py-3 flex items-center justify-center min-w-0">
-                    {renderCell(item.timely, false)}
-                  </div>
-                </div>
-              );
-            })}
-
-            {/* Footer — time + money saved */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 border-t-2 border-primary/20 bg-primary/5">
-              <div className="px-6 py-5 flex items-center gap-3 border-b sm:border-b-0 sm:border-r border-primary/20">
-                <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center flex-shrink-0">
-                  <Zap className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-[11px] text-text-tertiary uppercase tracking-wider font-semibold">Admin time saved</p>
-                  <p className="text-[20px] font-bold text-primary leading-tight">~6 hrs / week</p>
-                </div>
-              </div>
-              <div className="px-6 py-5 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center flex-shrink-0">
-                  <TrendingUp className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-[11px] text-text-tertiary uppercase tracking-wider font-semibold">Money saved</p>
-                  <p className="text-[20px] font-bold text-primary leading-tight">A$150 / month</p>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-          <p className="text-[11px] text-text-tertiary text-center mt-3">Based on published pricing · 2026 · AUD</p>
-        </div>
-      </motion.section>
+      {/* Why switch from Fresha/Timely */}
+      <ComparisonSection />
 
       {/* Pricing */}
-      <motion.section
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={viewportConfig}
-        transition={{ duration: 0.5 }}
-        className="py-12 sm:py-20 bg-card-bg"
-      >
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
-          <motion.h2
-            variants={sectionHeadingVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={viewportConfig}
-            transition={sectionTransition}
-            className="text-[1.75rem] sm:text-[2.25rem] font-bold text-foreground mb-3 leading-tight"
-          >
-            Flat pricing. No per-staff fees. Ever.
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={viewportConfig}
-            transition={{ delay: 0.1, ...sectionTransition }}
-            className="text-text-secondary mb-8 text-[15px]"
-          >
-            14-day free trial on every plan. No credit card required.
-          </motion.p>
+      <PricingSection />
 
-          {/* Billing cycle toggle */}
-          <div className="inline-flex items-center p-1 bg-surface border border-border-light rounded-full mb-10">
-            <button
-              onClick={() => setBillingCycle("monthly")}
-              className={`px-4 py-1.5 rounded-full text-[13px] font-semibold transition-all cursor-pointer ${
-                billingCycle === "monthly"
-                  ? "bg-foreground text-background"
-                  : "text-text-secondary hover:text-foreground"
-              }`}
-            >
-              Monthly
-            </button>
-            <button
-              onClick={() => setBillingCycle("annual")}
-              className={`px-4 py-1.5 rounded-full text-[13px] font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                billingCycle === "annual"
-                  ? "bg-foreground text-background"
-                  : "text-text-secondary hover:text-foreground"
-              }`}
-            >
-              Annual
-              <span
-                className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                  billingCycle === "annual" ? "bg-primary text-white" : "bg-primary/15 text-primary"
-                }`}
-              >
-                SAVE 20%
-              </span>
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {[
-              {
-                name: "Starter",
-                monthly: 29,
-                annual: 24,
-                annualTotal: 288,
-                desc: "For solo operators getting organised.",
-                features: ["1 team member", "Clients, bookings, calendar", "Invoicing & payments", "Online booking page", "Email reminders"],
-                highlighted: false,
-              },
-              {
-                name: "Growth",
-                monthly: 59,
-                annual: 49,
-                annualTotal: 588,
-                desc: "For growing salons that need automation.",
-                features: ["Up to 5 team members", "Everything in Starter", "Automations & workflows", "SMS reminders & campaigns", "Business Insights", "CSV import / export", "Embeddable booking widget"],
-                highlighted: true,
-              },
-              {
-                name: "Scale",
-                monthly: 99,
-                annual: 79,
-                annualTotal: 948,
-                desc: "For multi-location or high-volume businesses.",
-                features: ["Unlimited team members", "Everything in Growth", "Client portal", "Proposals & e-signatures", "Memberships & packages", "Marketing campaigns", "Gift cards & loyalty", "Priority support"],
-                highlighted: false,
-              },
-            ].map((tier, idx) => {
-              const displayPrice = billingCycle === "annual" ? tier.annual : tier.monthly;
-              return (
-                <motion.div
-                  key={tier.name}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={viewportConfig}
-                  transition={{ delay: idx * 0.08, duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
-                  className={`rounded-2xl border p-6 sm:p-7 text-left flex flex-col ${
-                    tier.highlighted
-                      ? "border-foreground/20 shadow-xl scale-[1.03] -translate-y-1 bg-card-bg relative"
-                      : "border-border-light bg-card-bg"
-                  }`}
-                >
-                  {tier.highlighted && (
-                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-[11px] font-semibold bg-foreground text-background px-3 py-1 rounded-full">
-                      Most popular
-                    </span>
-                  )}
-                  <div className="mb-1">
-                    <h3 className="text-[15px] font-bold text-foreground">{tier.name}</h3>
-                    <p className="text-[12px] text-text-secondary mt-0.5">{tier.desc}</p>
-                  </div>
-                  <div className="my-4">
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-[36px] font-bold text-foreground tabular-nums">A${displayPrice}</span>
-                      <span className="text-text-secondary text-[14px]">/month</span>
-                    </div>
-                    <p className="text-[12px] text-text-tertiary mt-1 h-4">
-                      {billingCycle === "annual" ? `Billed A$${tier.annualTotal}/year` : "\u00A0"}
-                    </p>
-                  </div>
-                  <div className="space-y-2.5 mb-6 flex-1">
-                    {tier.features.map((f, i) => (
-                      <div key={i} className="flex items-center gap-2.5">
-                        <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-                        <span className="text-[13px] text-foreground">{f}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <Link
-                    href="/onboarding"
-                    className={`inline-flex w-full items-center justify-center gap-2 rounded-full px-6 py-3 text-[14px] font-semibold tracking-[-0.01em] transition-all ${
-                      tier.highlighted
-                        ? "bg-foreground text-background hover:opacity-90 cta-glow"
-                        : "bg-surface text-foreground hover:bg-foreground hover:text-background border border-border-light"
-                    }`}
-                  >
-                    Start free trial <ArrowRight className="w-4 h-4" />
-                  </Link>
-                </motion.div>
-              );
-            })}
-          </div>
-          <p className="text-[12px] text-text-secondary mt-6 font-medium">
-            A 5-person salon on Fresha: A$165/mo. On Timely: A$210/mo. On Magic: A$59/mo. All prices in AUD.
-          </p>
-          <p className="text-[11px] text-text-tertiary mt-2">
-            All prices in AUD. {billingCycle === "annual" ? "Billed annually. Cancel anytime." : "Billed monthly. Switch to annual to save 20%."}
-          </p>
-        </div>
-      </motion.section>
-
-      {/* Closing section */}
-      <footer className="relative overflow-hidden" style={{ backgroundColor: "#0e0e0e" }}>
-        {/* Ambient glow behind CTA */}
-        <div className="absolute top-[-100px] left-1/2 -translate-x-1/2 w-[600px] h-[500px] pointer-events-none" style={{ background: "radial-gradient(ellipse at center, rgba(124,254,157,0.06), transparent 65%)" }} />
-
-        {/* CTA */}
-        <div className="relative max-w-3xl mx-auto px-4 sm:px-6 pt-20 pb-16 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={viewportConfig}
-            transition={{ duration: 0.5 }}
-            className="mb-5"
-          >
-            <span className="text-[13px] font-medium" style={{ color: "var(--logo-green)" }}>Built for beauty professionals</span>
-          </motion.div>
-          <motion.h2
-            variants={sectionHeadingVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={viewportConfig}
-            transition={sectionTransition}
-            className="text-[1.75rem] sm:text-[2.5rem] font-bold mb-5 leading-[1.1]"
-            style={{ color: "#fff" }}
-          >
-            Stop juggling apps.<br />Start growing your business.
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={viewportConfig}
-            transition={{ delay: 0.1, ...sectionTransition }}
-            className="mb-10 text-[15px] max-w-md mx-auto"
-            style={{ color: "#888" }}
-          >
-            Everything your beauty business needs. One login. One price. No per-staff surprises.
-          </motion.p>
-          <motion.div variants={ctaPulseVariants} initial="hidden" whileInView="visible" viewport={viewportConfig}>
-            <Link
-              href="/onboarding"
-              className="inline-flex items-center justify-center gap-2.5 rounded-full bg-primary px-10 py-3.5 text-[15px] font-semibold tracking-[-0.01em] text-foreground transition-colors hover:bg-primary-hover cta-glow"
-            >
-              Start free trial <ArrowRight className="w-5 h-5" />
-            </Link>
-          </motion.div>
-        </div>
-
-        {/* AI capabilities strip */}
-        <div className="relative max-w-5xl mx-auto px-6 pb-8">
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={viewportConfig}
-            transition={{ duration: 0.6 }}
-            className="border-t border-white/[0.06] pt-10 pb-8"
-          >
-            {/* AI feature pills */}
-            <div className="flex flex-wrap items-center justify-center gap-3 mb-6">
-              {[
-                { icon: Send, label: "Send invoices" },
-                { icon: Calendar, label: "Check availability" },
-                { icon: Users, label: "Look up clients" },
-                { icon: BarChart3, label: "Get insights" },
-                { icon: Bell, label: "Manage bookings" },
-                { icon: Sparkles, label: "Smart nudges" },
-              ].map((item, i) => (
-                <motion.div
-                  key={item.label}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={viewportConfig}
-                  transition={{ delay: 0.1 + i * 0.06, duration: 0.3 }}
-                  className="flex items-center gap-2 px-3.5 py-2 rounded-lg border"
-                  style={{ backgroundColor: "rgba(255,255,255,0.03)", borderColor: "rgba(255,255,255,0.08)" }}
-                >
-                  <item.icon className="w-3.5 h-3.5" style={{ color: "var(--logo-green)" }} />
-                  <span className="text-[13px] font-medium" style={{ color: "#ccc" }}>{item.label}</span>
-                </motion.div>
-              ))}
-            </div>
-
-            <p className="text-center text-[15px] mb-1.5" style={{ color: "#777" }}>
-              AI that knows your clients, your bookings, and your services — not a generic chatbot.
-            </p>
-            <p className="text-center text-[15px]" style={{ color: "#777" }}>
-              Type what you need. <span className="font-semibold" style={{ color: "var(--logo-green)" }}>Magic handles the rest</span>.
-            </p>
-          </motion.div>
-
-          {/* Bottom bar */}
-          <div className="border-t border-white/[0.06] py-6 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ backgroundColor: "var(--logo-green)" }}>
-                <div className="w-2.5 h-2.5 bg-card-bg rounded-sm" />
-              </div>
-              <span className="text-sm font-semibold" style={{ color: "#777" }}>Magic</span>
-            </div>
-            <div className="flex items-center gap-4">
-              <Link href="/privacy" className="text-xs hover:underline" style={{ color: "#555" }}>Privacy</Link>
-              <Link href="/terms" className="text-xs hover:underline" style={{ color: "#555" }}>Terms</Link>
-              <span className="text-xs" style={{ color: "#555" }}>&copy; {new Date().getFullYear()} Magic</span>
-            </div>
-          </div>
-        </div>
-      </footer>
+      {/* Closing + footer */}
+      <SiteFooter />
     </div>
   );
 }

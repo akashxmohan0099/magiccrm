@@ -410,7 +410,6 @@ const CUSTOMIZE_TICK_MS = 3500;
 
 // ── Persona presets for the feature customize demo ──
 const FEATURE_PERSONAS = [
-  { label: "All", modules: MODULES.map((m) => m.name) },
   { label: "Lash Tech", modules: ["Clients", "Messages", "Scheduling", "Products", "Marketing", "Automations", "Reporting"] },
   { label: "Hair Stylist", modules: ["Clients", "Messages", "Scheduling", "Products", "Billing", "Marketing", "Team", "Automations", "Reporting"] },
   { label: "Nail Tech", modules: ["Clients", "Messages", "Scheduling", "Products", "Billing", "Marketing", "Client Portal", "Automations", "Reporting"] },

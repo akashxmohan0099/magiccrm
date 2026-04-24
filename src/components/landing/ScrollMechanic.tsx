@@ -15,6 +15,9 @@ import {
   Sparkles,
   Bell,
   Clock,
+  ScrollText,
+  Ticket,
+  Check,
   type LucideIcon,
 } from "lucide-react";
 import { GmailLogo, OutlookLogo, InstagramLogo, WhatsAppLogo, FormsLogo } from "./brandLogos";
@@ -510,6 +513,280 @@ export function ScrollMechanic() {
     };
   }, []);
 
+  // The "one magical inbox" composition (5 app icons → connecting
+  // arrows → Magic Inbox card with message feed) is rendered in two
+  // places: inside the 4-col 3-row masonry tile during the pop phase,
+  // and in slide 3 during horizontal pan.
+  const renderUnifyGroup = () => (
+    <div className={`${styles.artboard} ${styles.abXwide} ${styles.unifyBoard}`}>
+      <div className={styles.unifyStream}>
+        <span className={styles.unifyStreamLabel}>YOUR APPS</span>
+        <div className={styles.unifyStreamRows}>
+          {[GmailLogo, OutlookLogo, InstagramLogo, WhatsAppLogo, FormsLogo].map((Logo, i) => (
+            <div key={i} className={styles.unifyStreamRow}>
+              <span className={styles.unifyAppChip}>
+                <Logo className={styles.unifyAppLogo} />
+              </span>
+              <span className={styles.unifyAppLine} />
+              <span className={styles.unifyAppArrow} />
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className={styles.unifyInbox}>
+        <div className={styles.unifyInboxHead}>
+          <span className={styles.unifyInboxHub}>
+            <MessageCircle className={styles.unifyInboxHubIcon} strokeWidth={2.2} />
+          </span>
+          <div className={styles.unifyInboxTitles}>
+            <span className={styles.unifyInboxTitle}>Magic Inbox</span>
+            <span className={styles.unifyInboxSub}>Every enquiry, one place</span>
+          </div>
+        </div>
+        <div className={styles.unifyFeed}>
+          {[
+            { Logo: InstagramLogo, name: "Sarah K.", msg: "hey! can u do my daughter’s makeup for her formal?" },
+            { Logo: WhatsAppLogo,  name: "Mia L.",   msg: "hiii any spots sat for a lash fill? 🙏" },
+            { Logo: GmailLogo,     name: "Jordan B.", msg: "Hi, looking to book a bridal trial for June — are you free?" },
+          ].map((r, i) => (
+            <div key={i} className={styles.unifyFeedRow}>
+              <span className={styles.unifyFeedIcon}>
+                <r.Logo className={styles.unifyFeedIconLogo} />
+              </span>
+              <span className={styles.unifyFeedName}>{r.name}</span>
+              <span className={styles.unifyFeedMsg}>{r.msg}</span>
+              <span className={styles.unifyFeedDot} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  // The "speaks your language" composition (persona list + calendar +
+  // services menu) is rendered in two places: inside the bottom-left
+  // masonry tile during the pop phase, and in slide 2 during horizontal
+  // pan. Extracted so both stay in sync.
+  const renderLingoGroup = () => (
+    <div className={`${styles.artboard} ${styles.lingoGroup}`}>
+      <div className={styles.lingoPersonas}>
+        {SPECIALTIES.map((s, i) => {
+          const isActive = i === activeSpec;
+          return (
+            <button
+              key={s.name}
+              type="button"
+              className={`${styles.lingoPersona}${isActive ? ` ${styles.lingoPersonaActive}` : ""}`}
+              onMouseEnter={() => { setSpecHover(i); bumpCooldown(); }}
+              onMouseLeave={() => { setSpecHover(null); bumpCooldown(); }}
+              onClick={() => { setSpecLock((prev) => (prev === i ? null : i)); bumpCooldown(); }}
+              style={isActive ? { color: PERSONA_ACCENT[activeSpec] } : undefined}
+            >
+              {s.name}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className={styles.lingoCal}>
+        <div className="w-full max-w-[280px] bg-card-bg rounded-2xl border border-border-light px-5 pt-5 pb-8 shadow-sm relative overflow-hidden flex flex-col" style={{ minHeight: 305, height: 305 }}>
+          <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/[0.03] to-transparent" />
+          <div key={`cal-${activeSpec}`} className={`relative ${styles.lingoCalFade}`}>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">Today</p>
+              <span className="text-[10px] font-medium text-text-tertiary">April 4</span>
+            </div>
+            <div className="space-y-1.5 mb-3">
+              {PERSONA_CALENDAR[activeSpec].slots.map((slot) => (
+                <div key={slot.time} className="flex items-center gap-2.5">
+                  <span className="text-[10px] font-mono text-text-tertiary w-8 flex-shrink-0">{slot.time}</span>
+                  {slot.name ? (
+                    <div
+                      className="flex-1 px-2.5 py-2 rounded-lg border-l-2"
+                      style={{ backgroundColor: slot.color + "08", borderColor: slot.color }}
+                    >
+                      <p className="text-[11px] font-semibold text-foreground">{slot.name}</p>
+                      <p className="text-[9px] text-text-tertiary">{slot.service}</p>
+                    </div>
+                  ) : (
+                    <div className="flex-1 px-2.5 py-2 rounded-lg border border-dashed border-border-light">
+                      <p className="text-[10px] text-text-tertiary">Available</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div key={`notif-${activeSpec}`} className={`bg-foreground text-background rounded-xl px-3.5 py-3 shadow-xl ${styles.lingoCalNotifIn}`}>
+              <div className="flex items-start gap-2.5">
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: PERSONA_ACCENT[activeSpec] }}>
+                  <Bell className="w-3.5 h-3.5 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] font-bold">New booking!</p>
+                  <p className="text-[10px] opacity-70">{PERSONA_CALENDAR[activeSpec].notif.name} booked {PERSONA_CALENDAR[activeSpec].notif.service}</p>
+                  <div className="flex items-center gap-1.5 mt-1.5">
+                    <Clock className="w-2.5 h-2.5 opacity-50" />
+                    <span className="text-[9px] opacity-50">11:47 PM — while you were closed</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className={styles.lingoMenu}>
+        <div className="w-full max-w-[280px] bg-card-bg rounded-2xl border border-border-light px-5 pt-5 pb-8 shadow-sm relative overflow-hidden flex flex-col" style={{ minHeight: 305, height: 305 }}>
+          <div key={`menu-${activeSpec}`} className={`relative flex flex-col h-full ${styles.lingoCalFade}`}>
+            <div className="flex items-center justify-between pb-3 mb-3 border-b border-border-light">
+              <p className="text-[10px] font-semibold text-text-tertiary uppercase tracking-[0.18em]">Services</p>
+              <span
+                className="text-[9px] font-bold uppercase tracking-[0.08em] px-2 py-[3px] rounded-full"
+                style={{
+                  color: PERSONA_ACCENT[activeSpec],
+                  backgroundColor: PERSONA_ACCENT[activeSpec] + "18",
+                  boxShadow: `inset 0 0 0 1px ${PERSONA_ACCENT[activeSpec]}33`,
+                }}
+              >
+                {SPECIALTIES[activeSpec].name}
+              </span>
+            </div>
+            <div className="flex-1 flex flex-col justify-between">
+              {PERSONA_SERVICES[activeSpec].map((s, i) => (
+                <div
+                  key={`${activeSpec}-${i}`}
+                  className={`flex items-center gap-2.5 py-[5px] ${i < PERSONA_SERVICES[activeSpec].length - 1 ? "border-b border-border-light" : ""}`}
+                >
+                  <span className="text-[11px] font-semibold text-foreground flex-1 truncate">{s.name}</span>
+                  <span className="text-[9px] text-text-tertiary font-medium">{s.meta}</span>
+                  <span className="text-[11px] font-bold text-foreground tabular-nums">{s.price}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // The "pick your speciality" composition (3 artboards + connecting line)
+  // is rendered in two places: inside the top-right masonry tile during
+  // the pop phase, and in slide 1 during horizontal pan. Extracted so both
+  // stay in sync and share the same scripted animation state.
+  const renderMagicGroup = () => (
+    <div className={`${styles.artboard} ${styles.magicGroup}`}>
+      <div className={styles.magicConnectTrack} aria-hidden="true">
+        <div className={styles.magicConnectFill} />
+      </div>
+      <div className={`${styles.artboard} ${styles.magicSpec}`}>
+        <span className={styles.magicSpecLabel}>WHAT DO YOU DO?</span>
+        <div className={styles.magicSpecGrid}>
+          {SPECIALTIES.map((s, i) => {
+            const isActive = specSelected && i === activeSpec;
+            const Icon = s.Icon;
+            return (
+              <button
+                key={s.name}
+                type="button"
+                className={`${styles.magicSpecTile}${isActive ? ` ${styles.magicSpecTileActive}` : ""}`}
+                onMouseEnter={() => { setSpecHover(i); bumpCooldown(); }}
+                onMouseLeave={() => { setSpecHover(null); bumpCooldown(); }}
+                onClick={() => { setSpecLock((prev) => (prev === i ? null : i)); bumpCooldown(); }}
+              >
+                {isActive && (
+                  <span className={styles.magicSpecCheck}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  </span>
+                )}
+                <Icon className={styles.magicSpecIcon} strokeWidth={1.8} />
+                <span className={styles.magicSpecName}>{s.name}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className={`${styles.artboard} ${styles.magicQuestions}`}>
+        <div className={styles.magicQuestHead}>
+          <span className={styles.magicQuestLabel}>QUICK SETUP</span>
+          <div className={styles.magicQuestProgress}>
+            {[0, 1, 2, 3, 4].map((d) => (
+              <span
+                key={d}
+                className={`${styles.magicQuestDot}${d <= 1 ? ` ${styles.magicQuestDotActive}` : ""}`}
+              />
+            ))}
+          </div>
+        </div>
+        <div className={styles.magicQuestItem}>
+          <div className={styles.magicQuestText}>{PERSONA_QUESTIONS[activeSpec][0]}</div>
+          <div className={styles.magicQuestAnswers}>
+            <span className={`${styles.magicQuestBtn}${q1 === "yes" ? ` ${styles.magicQuestBtnOn}` : ""}`}>Yes</span>
+            <span className={`${styles.magicQuestBtn}${q1 === "no" ? ` ${styles.magicQuestBtnOn}` : ""}`}>No</span>
+          </div>
+        </div>
+        <div className={styles.magicQuestItem}>
+          <div className={styles.magicQuestText}>{PERSONA_QUESTIONS[activeSpec][1]}</div>
+          <div className={styles.magicQuestAnswers}>
+            <span className={`${styles.magicQuestBtn}${q2 === "yes" ? ` ${styles.magicQuestBtnOn}` : ""}`}>Yes</span>
+            <span className={`${styles.magicQuestBtn}${q2 === "no" ? ` ${styles.magicQuestBtnOn}` : ""}`}>No</span>
+          </div>
+        </div>
+      </div>
+
+      <div className={`${styles.artboard} ${styles.magicWs}`}>
+        <div className={styles.magicWsSidebar}>
+          <div className={styles.magicWsBrand}>
+            <div className={styles.magicWsBrandDot} />
+            <div className={styles.magicWsBrandSkel} />
+          </div>
+          <div className={styles.magicWsNav}>
+            {navList.map((n, i) => {
+              const isActive = i === activeNav;
+              const isAddon = "isAddon" in n && n.isAddon;
+              return (
+                <button
+                  key={isAddon ? `addon-${activeSpec}` : n.name}
+                  type="button"
+                  className={
+                    `${styles.magicWsNavItem}` +
+                    (isActive ? ` ${styles.magicWsNavItemActive}` : "") +
+                    (isAddon ? ` ${styles.magicWsNavItemAddon}` : "")
+                  }
+                  onMouseEnter={() => setNavHover(i)}
+                  onMouseLeave={() => setNavHover(null)}
+                  onClick={() => setNavLock((prev) => (prev === i ? null : i))}
+                >
+                  <svg className={styles.magicWsNavIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    {n.path}
+                  </svg>
+                  <span>{n.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <div className={styles.magicWsMain}>
+          <div className={styles.magicWsHeader}>
+            <div className={styles.magicWsHeaderSkel} />
+            <div className={styles.magicWsHeaderPill} />
+          </div>
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className={styles.magicWsRow}
+              style={{ animationDelay: `${i * 0.15}s` }}
+            >
+              <div className={styles.magicWsAvatar} />
+              <div className={styles.magicWsRowSkel} />
+              <div className={styles.magicWsPill} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <>
       {/* ============== THE MECHANIC ============== */}
@@ -521,19 +798,140 @@ export function ScrollMechanic() {
               {/* Every column's H-ratios sum to 3.0 → flat tops AND flat bottoms */}
 
               <div className={styles.mcol}>
-                <div className={`${styles.cell} ${styles.ar45} ${styles.bgRed}`} />
-                <div className={`${styles.cell} ${styles.ar11} ${styles.bgInk}`} />
-                <div className={`${styles.cell} ${styles.ar43} ${styles.bgMustard}`} />
+                {/* Top-left: makeup-brushes editorial image */}
+                <div
+                  className={`${styles.cell} ${styles.ar45} ${styles.imgTile}`}
+                  style={{ backgroundImage: "url(/landing/tile-makeup.webp)" }}
+                />
+                {/* Col 1 row 2: Proposals addon — exact card markup from the
+                    addons section of the landing page, embedded inside a
+                    tile with a gradient backdrop. */}
+                <div
+                  className={`${styles.cell} ${styles.ar11} ${styles.addonTile}`}
+                  style={{ ["--addon-grad" as string]: "#7C3AED" }}
+                >
+                  <div className={styles.addonTileInner}>
+                    <div className="w-full h-full relative bg-card-bg rounded-2xl border border-border-light overflow-hidden">
+                      <div
+                        className="absolute top-0 left-0 right-0 h-32 opacity-[0.06]"
+                        style={{ background: "linear-gradient(to bottom, #7C3AED, transparent)" }}
+                      />
+                      <div className="relative px-5 pt-5 pb-3">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ backgroundColor: "#7C3AED18" }}>
+                          <ScrollText className="w-5 h-5" style={{ color: "#7C3AED" }} />
+                        </div>
+                        <h3 className="text-[15px] font-bold text-foreground">Proposals</h3>
+                        <p className="text-xs text-text-secondary mt-1">Branded proposal pages with interactive pricing and e-signature.</p>
+                      </div>
+                      <div className="relative px-5 pb-3">
+                        <div className="space-y-1.5">
+                          {[
+                            { id: "PROP-001", title: "Bridal Package", s: "Sent", amt: "A$650", sc: "bg-blue-50 text-blue-600" },
+                            { id: "PROP-002", title: "Lash Package", s: "Viewed", amt: "A$350", sc: "bg-amber-50 text-amber-700" },
+                            { id: "PROP-003", title: "Wedding Party", s: "Accepted ✓", amt: "A$1,200", sc: "bg-emerald-50 text-emerald-700" },
+                          ].map((p) => (
+                            <div key={p.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-background/80">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[9px] font-mono text-text-tertiary">{p.id}</span>
+                                <span className="text-[11px] font-semibold text-foreground">{p.title}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className={`text-[8px] px-1.5 py-0.5 rounded-full font-semibold ${p.sc}`}>{p.s}</span>
+                                <span className="text-[11px] font-bold text-foreground">{p.amt}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="relative px-5 pb-4">
+                        <div className="flex flex-wrap gap-1">
+                          {["Makeup Artist"].map((p) => (
+                            <span key={p} className="text-[9px] px-1.5 py-0.5 bg-surface border border-border-light rounded-full text-text-tertiary font-medium">{p}</span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {/* Bottom-left tile: live "speaks your language" preview.
+                    Same composition + scripted sequence as slide 2, scaled
+                    to fit inside the masonry cell with its caption below. */}
+                <div className={`${styles.cell} ${styles.ar43} ${styles.lingoTile}`}>
+                  <div className={styles.lingoTileInner}>
+                    {renderLingoGroup()}
+                  </div>
+                  <div className={styles.lingoTileCap}>
+                    One platform — <span className={styles.slideCapAccent}>speaks your language.</span>
+                  </div>
+                </div>
               </div>
 
               <div className={styles.mcol}>
-                <div className={`${styles.cell} ${styles.ar11} ${styles.bgCream}`} />
-                <div className={`${styles.cell} ${styles.ar43} ${styles.bgTeal}`} />
-                <div className={`${styles.cell} ${styles.ar45} ${styles.bgPeach}`} />
+                {/* Col 2 row 1: client card — compact snapshot of a single
+                    client (avatar + tags + last/next visit + lifetime). The
+                    CRM's core primitive, missing from the rest of the grid. */}
+                <div className={`${styles.cell} ${styles.ar11} ${styles.clientTile}`}>
+                  <div className={styles.clientTileInner}>
+                    <div className={styles.clientTileHeader}>
+                      <div className={styles.clientAvatar}>SM</div>
+                      <div className={styles.clientIdentity}>
+                        <span className={styles.clientName}>Sarah M.</span>
+                        <div className={styles.clientTags}>
+                          <span className={styles.clientTagRegular}>Regular</span>
+                          <span className={styles.clientTag}>Lash</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className={styles.clientRow}>
+                      <span className={styles.clientRowLabel}>Last visit</span>
+                      <span className={styles.clientRowValue}>14 Apr · Brow lamination</span>
+                    </div>
+                    <div className={styles.clientRow}>
+                      <span className={styles.clientRowLabel}>Next appt</span>
+                      <span className={styles.clientRowValueAccent}>28 Apr · Lash Fill</span>
+                    </div>
+                    <div className={styles.clientFooter}>
+                      <div className={styles.clientFooterItem}>
+                        <span className={styles.clientFooterLabel}>Visits</span>
+                        <span className={styles.clientFooterValue}>12</span>
+                      </div>
+                      <div className={styles.clientFooterItem}>
+                        <span className={styles.clientFooterLabel}>Lifetime</span>
+                        <span className={styles.clientFooterValue}>A$1,240</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {/* Col 2 row 2: peace-of-mind benefit line. "11pm" softly
+                    pulses like a clock digit to hint at after-hours
+                    automation without needing a metric. */}
+                <div className={`${styles.cell} ${styles.ar43} ${styles.quoteTileDark}`}>
+                  <div className={styles.quoteTileInner}>
+                    <span className={styles.quoteLineLight}>Nothing slips.</span>
+                    <span className={styles.quoteLineLight}>
+                      Not even at <span className={styles.quotePulse}>11pm</span>.
+                    </span>
+                  </div>
+                </div>
+                {/* Col 2 row 3: nail-art close-up editorial (local asset). */}
+                <div
+                  className={`${styles.cell} ${styles.ar45} ${styles.imgTile}`}
+                  style={{ backgroundImage: "url(/landing/tile-nails.webp)" }}
+                />
               </div>
 
               <div className={styles.mcol}>
-                <div className={`${styles.cell} ${styles.ar43} ${styles.bgTerra}`} />
+                {/* Col 3 row 1: benefit line above the Showreel artboard.
+                    A green underline draws under "craft" on loop — small
+                    live detail without distracting from the Showreel. */}
+                <div className={`${styles.cell} ${styles.ar43} ${styles.quoteTileWarm}`}>
+                  <div className={styles.quoteTileInner}>
+                    <span className={styles.quoteLineWarm}>
+                      More <span className={styles.quoteUnderline}>craft</span>.
+                    </span>
+                    <span className={styles.quoteLineWarm}>Less keyboard.</span>
+                  </div>
+                </div>
 
                 {/* center card IS the first artboard (zooms in) */}
                 <div ref={selRef} className={`${styles.cell} ${styles.sel} ${styles.ar45}`}>
@@ -579,25 +977,192 @@ export function ScrollMechanic() {
                   </div>
                 </div>
 
-                <div className={`${styles.cell} ${styles.ar11} ${styles.bgCocoa}`} />
+                {/* Col 3 row 3: live "one magical inbox" preview. Same
+                    composition + caption as slide 3, squeezed into the
+                    cell without changing its flex-driven frame. */}
+                <div className={`${styles.cell} ${styles.ar11} ${styles.unifyTile}`}>
+                  <div className={styles.unifyTileInner}>
+                    {renderUnifyGroup()}
+                  </div>
+                  <div className={styles.unifyTileCap}>
+                    Every DM, email and form — <span className={styles.slideCapAccent}>one magical inbox.</span>
+                  </div>
+                </div>
               </div>
 
               <div className={styles.mcol}>
-                <div className={`${styles.cell} ${styles.ar45} ${styles.bgSun}`} />
-                <div className={`${styles.cell} ${styles.ar43} ${styles.bgMaroon}`} />
-                <div className={`${styles.cell} ${styles.ar11} ${styles.bgMint}`} />
+                {/* Col 4, row 1: hair-salon action editorial. Balances the
+                    still-life / portrait photos already on the grid with a
+                    real hands-on craft shot. */}
+                <div
+                  className={`${styles.cell} ${styles.ar45} ${styles.imgTile}`}
+                  style={{ backgroundImage: "url(/landing/tile-salon.webp)" }}
+                />
+                {/* Col 4, row 2: AI snippet — tiny chat vignette showing
+                    Magic AI handling a real task. Sits in the center of
+                    the grid, short-wide aspect fits a 1-2 message thread. */}
+                <div className={`${styles.cell} ${styles.ar43} ${styles.aiTile}`}>
+                  <div className={styles.aiTileInner}>
+                    <div className={styles.aiTileHead}>
+                      <span className={styles.aiTileBadge} aria-label="Magic">
+                        <span className={styles.aiTileBadgeInset} />
+                      </span>
+                      <div className={styles.aiTileTitles}>
+                        <span className={styles.aiTileName}>Magic AI</span>
+                        <span className={styles.aiTileSub}>Reads &amp; writes across your workspace</span>
+                      </div>
+                    </div>
+                    <div className={styles.aiTileThread}>
+                      <div className={styles.aiTileUserMsg}>
+                        Send Sarah her invoice for today&rsquo;s lash fill
+                      </div>
+                      <div className={styles.aiTileAiMsg}>
+                        Done — A$120 invoice sent via SMS and email.
+                      </div>
+                    </div>
+                    <div className={styles.aiTileInput}>
+                      <span>Ask Magic anything…</span>
+                      <span className={styles.aiTileCursor} />
+                    </div>
+                  </div>
+                </div>
+                {/* Col 4, row 3: aesthetic editorial (spa / wellness). */}
+                <div
+                  className={`${styles.cell} ${styles.ar11} ${styles.imgTile}`}
+                  style={{ backgroundImage: "url(/landing/tile-spa.webp)" }}
+                />
               </div>
 
               <div className={styles.mcol}>
-                <div className={`${styles.cell} ${styles.ar11} ${styles.bgStone}`} />
-                <div className={`${styles.cell} ${styles.ar45} ${styles.bgForest}`} />
-                <div className={`${styles.cell} ${styles.ar43} ${styles.bgSky}`} />
+                {/* Col 5 row 1: Gift Cards addon — exact card markup from
+                    the addons section of the landing page, embedded inside
+                    a tile with a gradient backdrop. */}
+                <div
+                  className={`${styles.cell} ${styles.ar11} ${styles.addonTile}`}
+                  style={{ ["--addon-grad" as string]: "#EC4899" }}
+                >
+                  <div className={styles.addonTileInner}>
+                    <div className="w-full h-full relative bg-card-bg rounded-2xl border border-border-light overflow-hidden">
+                      <div
+                        className="absolute top-0 left-0 right-0 h-32 opacity-[0.06]"
+                        style={{ background: "linear-gradient(to bottom, #EC4899, transparent)" }}
+                      />
+                      <div className="relative px-5 pt-5 pb-3">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ backgroundColor: "#EC489918" }}>
+                          <Ticket className="w-5 h-5" style={{ color: "#EC4899" }} />
+                        </div>
+                        <h3 className="text-[15px] font-bold text-foreground">Gift Cards</h3>
+                        <p className="text-xs text-text-secondary mt-1">Create, sell, and track digital gift vouchers. A revenue channel that markets itself.</p>
+                      </div>
+                      <div className="relative px-5 pb-3">
+                        <div className="space-y-1.5">
+                          {[
+                            { code: "GIFT-7X4K", val: "A$100", s: "Active", sc: "bg-emerald-50 text-emerald-700" },
+                            { code: "GIFT-R9BW", val: "A$25", s: "Partial", sc: "bg-amber-50 text-amber-700" },
+                            { code: "GIFT-5FHQ", val: "A$0", s: "Redeemed", sc: "bg-gray-100 text-gray-500" },
+                          ].map((r) => (
+                            <div key={r.code} className="flex justify-between items-center px-3 py-2 rounded-lg bg-background/80">
+                              <span className="text-[11px] text-text-secondary font-mono">{r.code}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[11px] font-semibold text-foreground">{r.val}</span>
+                                <span className={`text-[8px] font-semibold px-1.5 py-0.5 rounded-full ${r.sc}`}>{r.s}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="relative px-5 pb-4">
+                        <div className="flex flex-wrap gap-1">
+                          {["Hair Salon", "Lash Tech", "Nail Tech", "Spa Owner"].map((p) => (
+                            <span key={p} className="text-[9px] px-1.5 py-0.5 bg-surface border border-border-light rounded-full text-text-tertiary font-medium">{p}</span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {/* Col 5 row 2: aesthetic editorial image (local asset). */}
+                <div
+                  className={`${styles.cell} ${styles.ar45} ${styles.imgTile}`}
+                  style={{ backgroundImage: "url(/landing/tile-hair.webp)" }}
+                />
+                {/* Col 5 row 3: editorial text tile — benefit line. The word
+                    "Chase" is struck through (you stop chasing) and the dot
+                    after "more" lights up green. */}
+                <div className={`${styles.cell} ${styles.ar43} ${styles.quoteTile}`}>
+                  <div className={styles.quoteTileInner}>
+                    <span className={styles.quoteLine}>
+                      Book more<span className={styles.quoteDot}>.</span>
+                    </span>
+                    <span className={styles.quoteLine}>
+                      <span className={styles.quoteStrike}>Chase</span> less.
+                    </span>
+                  </div>
+                </div>
               </div>
 
               <div className={styles.mcol}>
-                <div className={`${styles.cell} ${styles.ar43} ${styles.bgLilac}`} />
-                <div className={`${styles.cell} ${styles.ar11} ${styles.bgOlive}`} />
-                <div className={`${styles.cell} ${styles.ar45} ${styles.bgPaper}`} />
+                {/* Top-right tile: live "pick your speciality" preview.
+                    Same composition + scripted sequence as slide 1, scaled
+                    to fit inside the masonry cell. */}
+                <div
+                  className={`${styles.cell} ${styles.ar43} ${styles.magicTile}`}
+                  style={{ ["--line-fill" as string]: lineFill, ["--accent" as string]: PERSONA_ACCENT[activeSpec] }}
+                >
+                  <div className={styles.magicTileInner}>
+                    {renderMagicGroup()}
+                  </div>
+                </div>
+                {/* Col 6 row 2: animated reminder checklist — three automated
+                    SMS steps tick in one after another, loop forever. Covers
+                    the no-show-prevention feature not shown elsewhere. */}
+                <div className={`${styles.cell} ${styles.ar11} ${styles.reminderTile}`}>
+                  <div className={styles.reminderTileInner}>
+                    <div className={styles.reminderTileHead}>
+                      <span className={styles.reminderTileBadge} aria-hidden="true">
+                        <Bell className="w-3 h-3" strokeWidth={2.5} />
+                      </span>
+                      <div className={styles.reminderTileTitles}>
+                        <span className={styles.reminderTileName}>Auto reminders</span>
+                        <span className={styles.reminderTileSub}>Sent while you sleep</span>
+                      </div>
+                    </div>
+                    <div className={styles.reminderTileList}>
+                      <div className={styles.reminderRow} style={{ ["--d" as string]: "0s" }}>
+                        <span className={styles.reminderTick} aria-hidden="true">
+                          <Check className="w-2.5 h-2.5" strokeWidth={3.5} />
+                        </span>
+                        <div className={styles.reminderCopy}>
+                          <span className={styles.reminderWhen}>24h before</span>
+                          <span className={styles.reminderWhat}>“See you tomorrow at 2pm ✂️”</span>
+                        </div>
+                      </div>
+                      <div className={styles.reminderRow} style={{ ["--d" as string]: "0.5s" }}>
+                        <span className={styles.reminderTick} aria-hidden="true">
+                          <Check className="w-2.5 h-2.5" strokeWidth={3.5} />
+                        </span>
+                        <div className={styles.reminderCopy}>
+                          <span className={styles.reminderWhen}>2h before</span>
+                          <span className={styles.reminderWhat}>Confirm · Reschedule link</span>
+                        </div>
+                      </div>
+                      <div className={styles.reminderRow} style={{ ["--d" as string]: "1s" }}>
+                        <span className={styles.reminderTick} aria-hidden="true">
+                          <Check className="w-2.5 h-2.5" strokeWidth={3.5} />
+                        </span>
+                        <div className={styles.reminderCopy}>
+                          <span className={styles.reminderWhen}>After visit</span>
+                          <span className={styles.reminderWhat}>Review + rebook nudge</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {/* Bottom-right: beauty editorial image (girl with magazine) */}
+                <div
+                  className={`${styles.cell} ${styles.ar45} ${styles.imgTile}`}
+                  style={{ backgroundImage: "url(https://images.unsplash.com/photo-1522337094846-8a818192de1f?auto=format&fit=crop&w=900&q=80)" }}
+                />
               </div>
             </div>
 
@@ -612,119 +1177,7 @@ export function ScrollMechanic() {
                   className={styles.slideBoards}
                   style={{ ["--line-fill" as string]: lineFill }}
                 >
-                  <div className={`${styles.artboard} ${styles.magicGroup}`}>
-                    {/* Connecting line that fills 0% → 50% → 100% as the
-                        sequence progresses through the three cards. */}
-                    <div className={styles.magicConnectTrack} aria-hidden="true">
-                      <div className={styles.magicConnectFill} />
-                    </div>
-                    <div className={`${styles.artboard} ${styles.magicSpec}`}>
-                    <span className={styles.magicSpecLabel}>WHAT DO YOU DO?</span>
-                    <div className={styles.magicSpecGrid}>
-                      {SPECIALTIES.map((s, i) => {
-                        const isActive = specSelected && i === activeSpec;
-                        const Icon = s.Icon;
-                        return (
-                          <button
-                            key={s.name}
-                            type="button"
-                            className={`${styles.magicSpecTile}${isActive ? ` ${styles.magicSpecTileActive}` : ""}`}
-                            onMouseEnter={() => { setSpecHover(i); bumpCooldown(); }}
-                            onMouseLeave={() => { setSpecHover(null); bumpCooldown(); }}
-                            onClick={() => { setSpecLock((prev) => (prev === i ? null : i)); bumpCooldown(); }}
-                          >
-                            {isActive && (
-                              <span className={styles.magicSpecCheck}>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                              </span>
-                            )}
-                            <Icon className={styles.magicSpecIcon} strokeWidth={1.8} />
-                            <span className={styles.magicSpecName}>{s.name}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div className={`${styles.artboard} ${styles.magicQuestions}`}>
-                    <div className={styles.magicQuestHead}>
-                      <span className={styles.magicQuestLabel}>QUICK SETUP</span>
-                      <div className={styles.magicQuestProgress}>
-                        {[0, 1, 2, 3, 4].map((d) => (
-                          <span
-                            key={d}
-                            className={`${styles.magicQuestDot}${d <= 1 ? ` ${styles.magicQuestDotActive}` : ""}`}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                    <div className={styles.magicQuestItem}>
-                      <div className={styles.magicQuestText}>{PERSONA_QUESTIONS[activeSpec][0]}</div>
-                      <div className={styles.magicQuestAnswers}>
-                        <span className={`${styles.magicQuestBtn}${q1 === "yes" ? ` ${styles.magicQuestBtnOn}` : ""}`}>Yes</span>
-                        <span className={`${styles.magicQuestBtn}${q1 === "no" ? ` ${styles.magicQuestBtnOn}` : ""}`}>No</span>
-                      </div>
-                    </div>
-                    <div className={styles.magicQuestItem}>
-                      <div className={styles.magicQuestText}>{PERSONA_QUESTIONS[activeSpec][1]}</div>
-                      <div className={styles.magicQuestAnswers}>
-                        <span className={`${styles.magicQuestBtn}${q2 === "yes" ? ` ${styles.magicQuestBtnOn}` : ""}`}>Yes</span>
-                        <span className={`${styles.magicQuestBtn}${q2 === "no" ? ` ${styles.magicQuestBtnOn}` : ""}`}>No</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className={`${styles.artboard} ${styles.magicWs}`}>
-                    <div className={styles.magicWsSidebar}>
-                      <div className={styles.magicWsBrand}>
-                        <div className={styles.magicWsBrandDot} />
-                        <div className={styles.magicWsBrandSkel} />
-                      </div>
-                      <div className={styles.magicWsNav}>
-                        {navList.map((n, i) => {
-                          const isActive = i === activeNav;
-                          const isAddon = "isAddon" in n && n.isAddon;
-                          return (
-                            <button
-                              key={isAddon ? `addon-${activeSpec}` : n.name}
-                              type="button"
-                              className={
-                                `${styles.magicWsNavItem}` +
-                                (isActive ? ` ${styles.magicWsNavItemActive}` : "") +
-                                (isAddon ? ` ${styles.magicWsNavItemAddon}` : "")
-                              }
-                              onMouseEnter={() => setNavHover(i)}
-                              onMouseLeave={() => setNavHover(null)}
-                              onClick={() => setNavLock((prev) => (prev === i ? null : i))}
-                            >
-                              <svg className={styles.magicWsNavIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                {n.path}
-                              </svg>
-                              <span>{n.name}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                    <div className={styles.magicWsMain}>
-                      <div className={styles.magicWsHeader}>
-                        <div className={styles.magicWsHeaderSkel} />
-                        <div className={styles.magicWsHeaderPill} />
-                      </div>
-                      {[0, 1, 2].map((i) => (
-                        <div
-                          key={i}
-                          className={styles.magicWsRow}
-                          style={{ animationDelay: `${i * 0.15}s` }}
-                        >
-                          <div className={styles.magicWsAvatar} />
-                          <div className={styles.magicWsRowSkel} />
-                          <div className={styles.magicWsPill} />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  </div>
+                  {renderMagicGroup()}
                 </div>
                 <div className={styles.slideCap}>
                   Just pick your speciality, answer a few questions — <span className={styles.slideCapAccent}>get a workspace around how you work.</span>
@@ -736,113 +1189,7 @@ export function ScrollMechanic() {
                   as a single stop and lands it dead-centered in the viewport. */}
               <div className={`${styles.slide} ${styles.lingoSlide}`}>
                 <div className={styles.slideBoards}>
-                  <div className={`${styles.artboard} ${styles.lingoGroup}`}>
-                    {/* Persona list — active persona is highlighted; the cards
-                        reflect the same active persona. */}
-                    <div className={styles.lingoPersonas}>
-                      {SPECIALTIES.map((s, i) => {
-                        const isActive = i === activeSpec;
-                        return (
-                          <button
-                            key={s.name}
-                            type="button"
-                            className={`${styles.lingoPersona}${isActive ? ` ${styles.lingoPersonaActive}` : ""}`}
-                            onMouseEnter={() => { setSpecHover(i); bumpCooldown(); }}
-                            onMouseLeave={() => { setSpecHover(null); bumpCooldown(); }}
-                            onClick={() => { setSpecLock((prev) => (prev === i ? null : i)); bumpCooldown(); }}
-                            style={isActive ? { color: PERSONA_ACCENT[activeSpec] } : undefined}
-                          >
-                            {s.name}
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {/* Today's calendar — uses the exact "Today" card markup from
-                        the build-journey section in page.tsx so it reads as the
-                        same component. */}
-                    <div className={styles.lingoCal}>
-                      <div className="w-full max-w-[280px] bg-card-bg rounded-2xl border border-border-light px-5 pt-5 pb-8 shadow-sm relative overflow-hidden flex flex-col" style={{ minHeight: 305, height: 305 }}>
-                      <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/[0.03] to-transparent" />
-                      <div key={`cal-${activeSpec}`} className={`relative ${styles.lingoCalFade}`}>
-                        <div className="flex items-center justify-between mb-3">
-                          <p className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">Today</p>
-                          <span className="text-[10px] font-medium text-text-tertiary">April 4</span>
-                        </div>
-                        <div className="space-y-1.5 mb-3">
-                          {PERSONA_CALENDAR[activeSpec].slots.map((slot) => (
-                            <div key={slot.time} className="flex items-center gap-2.5">
-                              <span className="text-[10px] font-mono text-text-tertiary w-8 flex-shrink-0">{slot.time}</span>
-                              {slot.name ? (
-                                <div
-                                  className="flex-1 px-2.5 py-2 rounded-lg border-l-2"
-                                  style={{ backgroundColor: slot.color + "08", borderColor: slot.color }}
-                                >
-                                  <p className="text-[11px] font-semibold text-foreground">{slot.name}</p>
-                                  <p className="text-[9px] text-text-tertiary">{slot.service}</p>
-                                </div>
-                              ) : (
-                                <div className="flex-1 px-2.5 py-2 rounded-lg border border-dashed border-border-light">
-                                  <p className="text-[10px] text-text-tertiary">Available</p>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                        <div key={`notif-${activeSpec}`} className={`bg-foreground text-background rounded-xl px-3.5 py-3 shadow-xl ${styles.lingoCalNotifIn}`}>
-                          <div className="flex items-start gap-2.5">
-                            <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: PERSONA_ACCENT[activeSpec] }}>
-                              <Bell className="w-3.5 h-3.5 text-white" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-[11px] font-bold">New booking!</p>
-                              <p className="text-[10px] opacity-70">{PERSONA_CALENDAR[activeSpec].notif.name} booked {PERSONA_CALENDAR[activeSpec].notif.service}</p>
-                              <div className="flex items-center gap-1.5 mt-1.5">
-                                <Clock className="w-2.5 h-2.5 opacity-50" />
-                                <span className="text-[9px] opacity-50">11:47 PM — while you were closed</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    </div>
-
-                    {/* Services menu with persona-specific offerings and prices.
-                        Uses the same card shell as the calendar so the two
-                        tabs have identical dimensions. */}
-                    <div className={styles.lingoMenu}>
-                      <div className="w-full max-w-[280px] bg-card-bg rounded-2xl border border-border-light px-5 pt-5 pb-8 shadow-sm relative overflow-hidden flex flex-col" style={{ minHeight: 305, height: 305 }}>
-                      <div key={`menu-${activeSpec}`} className={`relative flex flex-col h-full ${styles.lingoCalFade}`}>
-                        <div className="flex items-center justify-between pb-3 mb-3 border-b border-border-light">
-                          <p className="text-[10px] font-semibold text-text-tertiary uppercase tracking-[0.18em]">Services</p>
-                          <span
-                            className="text-[9px] font-bold uppercase tracking-[0.08em] px-2 py-[3px] rounded-full"
-                            style={{
-                              color: PERSONA_ACCENT[activeSpec],
-                              backgroundColor: PERSONA_ACCENT[activeSpec] + "18",
-                              boxShadow: `inset 0 0 0 1px ${PERSONA_ACCENT[activeSpec]}33`,
-                            }}
-                          >
-                            {SPECIALTIES[activeSpec].name}
-                          </span>
-                        </div>
-                        <div className="flex-1 flex flex-col justify-between">
-                          {PERSONA_SERVICES[activeSpec].map((s, i) => (
-                            <div
-                              key={`${activeSpec}-${i}`}
-                              className={`flex items-center gap-2.5 py-[5px] ${i < PERSONA_SERVICES[activeSpec].length - 1 ? "border-b border-border-light" : ""}`}
-                            >
-                              <span className="text-[11px] font-semibold text-foreground flex-1 truncate">{s.name}</span>
-                              <span className="text-[9px] text-text-tertiary font-medium">{s.meta}</span>
-                              <span className="text-[11px] font-bold text-foreground tabular-nums">{s.price}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                      </div>
-                    </div>
-                  </div>
+                  {renderLingoGroup()}
                 </div>
                 <div className={styles.slideCap}>
                   One platform — <span className={styles.slideCapAccent}>speaks your language.</span>
@@ -852,49 +1199,7 @@ export function ScrollMechanic() {
               {/* SLIDE 3: scale across channels */}
               <div className={styles.slide}>
                 <div className={styles.slideBoards}>
-                  <div className={`${styles.artboard} ${styles.abXwide} ${styles.unifyBoard}`}>
-                    <div className={styles.unifyStream}>
-                      <span className={styles.unifyStreamLabel}>YOUR APPS</span>
-                      <div className={styles.unifyStreamRows}>
-                        {[GmailLogo, OutlookLogo, InstagramLogo, WhatsAppLogo, FormsLogo].map((Logo, i) => (
-                          <div key={i} className={styles.unifyStreamRow}>
-                            <span className={styles.unifyAppChip}>
-                              <Logo className={styles.unifyAppLogo} />
-                            </span>
-                            <span className={styles.unifyAppLine} />
-                            <span className={styles.unifyAppArrow} />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <div className={styles.unifyInbox}>
-                      <div className={styles.unifyInboxHead}>
-                        <span className={styles.unifyInboxHub}>
-                          <MessageCircle className={styles.unifyInboxHubIcon} strokeWidth={2.2} />
-                        </span>
-                        <div className={styles.unifyInboxTitles}>
-                          <span className={styles.unifyInboxTitle}>Magic Inbox</span>
-                          <span className={styles.unifyInboxSub}>Every enquiry, one place</span>
-                        </div>
-                      </div>
-                      <div className={styles.unifyFeed}>
-                        {[
-                          { Logo: InstagramLogo, name: "Sarah K.", msg: "hey! can u do my daughter’s makeup for her formal?" },
-                          { Logo: WhatsAppLogo,  name: "Mia L.",   msg: "hiii any spots sat for a lash fill? 🙏" },
-                          { Logo: GmailLogo,     name: "Jordan B.", msg: "Hi, looking to book a bridal trial for June — are you free?" },
-                        ].map((r, i) => (
-                          <div key={i} className={styles.unifyFeedRow}>
-                            <span className={styles.unifyFeedIcon}>
-                              <r.Logo className={styles.unifyFeedIconLogo} />
-                            </span>
-                            <span className={styles.unifyFeedName}>{r.name}</span>
-                            <span className={styles.unifyFeedMsg}>{r.msg}</span>
-                            <span className={styles.unifyFeedDot} />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
+                  {renderUnifyGroup()}
                 </div>
                 <div className={styles.slideCap}>
                   Every DM, email and form — <span className={styles.slideCapAccent}>one magical inbox.</span>
@@ -913,14 +1218,13 @@ export function ScrollMechanic() {
                         {
                           title: "One inbox",
                           desc: "Every DM, email and form — in one place.",
-                          // Makeup editorial
-                          img: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=80",
+                          img: "/landing/feature-oneinbox.webp",
                         },
                         {
                           title: "Smart bookings",
                           desc: "Calendar, deposits and reminders — clients book themselves.",
-                          // Beauty portrait — close-up editorial
-                          img: "https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?auto=format&fit=crop&w=900&q=80",
+                          // Makeup editorial (previously used for One inbox)
+                          img: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=80",
                         },
                         {
                           title: "Regulars rebook",
@@ -1104,8 +1408,8 @@ export function ScrollMechanic() {
         <div className={styles.mSection}>
           <div className={styles.mFeatureGrid}>
             {[
-              { title: "One inbox", desc: "Every DM, email and form — in one place.", img: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=80" },
-              { title: "Smart bookings", desc: "Calendar, deposits and reminders — clients book themselves.", img: "https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?auto=format&fit=crop&w=900&q=80" },
+              { title: "One inbox", desc: "Every DM, email and form — in one place.", img: "/landing/feature-oneinbox.webp" },
+              { title: "Smart bookings", desc: "Calendar, deposits and reminders — clients book themselves.", img: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=80" },
               { title: "Regulars rebook", desc: "Campaigns, nudges and birthdays — on autopilot.", img: "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&w=900&q=80" },
               { title: "Get paid fast", desc: "Deposits, quotes and invoices — Stripe-powered.", img: "https://images.unsplash.com/photo-1522337094846-8a818192de1f?auto=format&fit=crop&w=900&q=80" },
               { title: "Grow smarter", desc: "Quiet days, top clients and revenue — at a glance.", img: "https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=900&q=80" },
