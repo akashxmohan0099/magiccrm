@@ -762,7 +762,7 @@ export function ScrollMechanic() {
                         the build-journey section in page.tsx so it reads as the
                         same component. */}
                     <div className={styles.lingoCal}>
-                      <div className={`${styles.lingoCalInner} bg-card-bg rounded-2xl border border-border-light px-5 pt-5 pb-8 shadow-sm relative overflow-hidden flex flex-col`}>
+                      <div className="w-full max-w-[280px] bg-card-bg rounded-2xl border border-border-light px-5 pt-5 pb-8 shadow-sm relative overflow-hidden flex flex-col" style={{ minHeight: 305, height: 305 }}>
                       <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/[0.03] to-transparent" />
                       <div key={`cal-${activeSpec}`} className={`relative ${styles.lingoCalFade}`}>
                         <div className="flex items-center justify-between mb-3">
@@ -812,7 +812,7 @@ export function ScrollMechanic() {
                         Uses the same card shell as the calendar so the two
                         tabs have identical dimensions. */}
                     <div className={styles.lingoMenu}>
-                      <div className={`${styles.lingoMenuInner} bg-card-bg rounded-2xl border border-border-light px-5 pt-5 pb-8 shadow-sm relative overflow-hidden flex flex-col`}>
+                      <div className="w-full max-w-[280px] bg-card-bg rounded-2xl border border-border-light px-5 pt-5 pb-8 shadow-sm relative overflow-hidden flex flex-col" style={{ minHeight: 305, height: 305 }}>
                       <div key={`menu-${activeSpec}`} className={`relative flex flex-col h-full ${styles.lingoCalFade}`}>
                         <div className="flex items-center justify-between pb-3 mb-3 border-b border-border-light">
                           <p className="text-[10px] font-semibold text-text-tertiary uppercase tracking-[0.18em]">Services</p>

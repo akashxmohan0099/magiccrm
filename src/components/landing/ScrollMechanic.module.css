@@ -1,13 +1,7 @@
 /* ---------- SCROLL STAGE ---------- */
-/* --ui-scale drives the "zoom out" behavior as viewport shrinks: everything
-   with a fixed-pixel size multiplies by this factor so the whole
-   composition keeps its proportions instead of reflowing. 1440px is the
-   design width; we shrink uniformly down to ~0.63 at 900px (just above the
-   mobile breakpoint), and allow a slight scale-up on large monitors. */
 .scrollTrack {
   position: relative;
   height: 850vh;
-  --ui-scale: clamp(0.63, calc(100vw / 1440), 1.1);
 }
 .stickyStage {
   position: sticky;
@@ -167,7 +161,7 @@
 
 .introQuestion {
   margin: 0;
-  font-size: calc(26px * var(--ui-scale));
+  font-size: 26px;
   font-weight: 700;
   letter-spacing: -0.03em;
   line-height: 1.05;
@@ -176,7 +170,7 @@
 
 .introAnswer {
   margin: 0 0 16% 0;
-  font-size: calc(17px * var(--ui-scale));
+  font-size: 17px;
   font-weight: 700;
   letter-spacing: -0.03em;
   line-height: 1.1;
@@ -219,9 +213,9 @@
 }
 .introBadge {
   flex: 0 0 auto;
-  width: calc(38px * var(--ui-scale));
-  height: calc(38px * var(--ui-scale));
-  border-radius: calc(10px * var(--ui-scale));
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
   background: var(--logo-green, #7CFE9D);
   display: inline-flex;
   align-items: center;
@@ -235,14 +229,14 @@
 }
 .introBadgeInset {
   display: block;
-  width: calc(16px * var(--ui-scale));
-  height: calc(16px * var(--ui-scale));
-  border-radius: calc(4px * var(--ui-scale));
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
   background: var(--card-bg, #ffffff);
 }
 .introBrandName {
   display: inline-block;
-  font-size: calc(46px * var(--ui-scale));
+  font-size: 46px;
   font-weight: 700;
   letter-spacing: -0.04em;
   line-height: 1;
@@ -573,20 +567,11 @@
    must produce the same card dimensions). */
 .lingoCal,
 .lingoMenu {
-  flex: 0 0 calc(280px * var(--ui-scale));
-  width: calc(280px * var(--ui-scale));
+  flex: 0 0 280px;
+  width: 280px;
   display: flex;
   align-items: center;
   justify-content: center;
-}
-/* Inner card matches the outer flex track and takes its height from the
-   shared card-height variable so both cards always end up identical. */
-.lingoCalInner,
-.lingoMenuInner {
-  width: 100%;
-  max-width: calc(280px * var(--ui-scale));
-  height: calc(305px * var(--ui-scale));
-  min-height: calc(305px * var(--ui-scale));
 }
 .lingoCalFade {
   animation: lingoCalFadeIn 320ms ease-out both;
@@ -609,17 +594,17 @@
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
-  gap: calc(10px * var(--ui-scale));
+  gap: 10px;
   align-items: flex-start;
   align-self: center;
-  padding-right: calc(4px * var(--ui-scale));
+  padding-right: 4px;
 }
 .lingoPersona {
   font-family: inherit;
   background: transparent;
   border: 0;
-  padding: calc(2px * var(--ui-scale)) 0;
-  font-size: calc(15px * var(--ui-scale));
+  padding: 2px 0;
+  font-size: 15px;
   font-weight: 500;
   letter-spacing: -0.01em;
   color: #c9c6be;
@@ -878,7 +863,7 @@
 .featureGrid {
   display: flex;
   align-items: stretch;
-  gap: calc(16px * var(--ui-scale));
+  gap: 16px;
 }
 
 /* Image-backed card — stock photo fills the card, a dark gradient overlay
@@ -886,9 +871,9 @@
    the minimal, editorial feel of the rest of the site. */
 .featureCard {
   position: relative;
-  width: calc(210px * var(--ui-scale));
-  height: calc(320px * var(--ui-scale));
-  border-radius: calc(20px * var(--ui-scale));
+  width: 210px;
+  height: 320px;
+  border-radius: 20px;
   overflow: hidden;
   background-color: #0a0a0a;
   background-size: cover;
@@ -908,23 +893,23 @@
 }
 .featureCardContent {
   position: absolute;
-  left: calc(22px * var(--ui-scale));
-  right: calc(22px * var(--ui-scale));
-  bottom: calc(22px * var(--ui-scale));
+  left: 22px;
+  right: 22px;
+  bottom: 22px;
   display: flex;
   flex-direction: column;
-  gap: calc(6px * var(--ui-scale));
+  gap: 6px;
   z-index: 1;
 }
 .featureCardTitle {
-  font-size: calc(22px * var(--ui-scale));
+  font-size: 22px;
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.1;
   color: #ffffff;
 }
 .featureCardDesc {
-  font-size: calc(12.5px * var(--ui-scale));
+  font-size: 12.5px;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.82);
   line-height: 1.45;
