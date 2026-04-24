@@ -32,12 +32,9 @@
 }
 
 /* ---------- MASONRY (Pinterest-style, fills stage) ---------- */
-/* Horizontal inset is a bit wider than the vertical one so the 6-column
-   grid reads slightly narrower than the stage — each cell lands around
-   10% narrower than a full-bleed layout would give. */
 .grid {
   position: absolute;
-  inset: 18px 5vw;
+  inset: 18px;
   display: flex;
   gap: 12px;
   align-items: stretch;
