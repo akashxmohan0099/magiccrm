@@ -1,6 +1,6 @@
 "use client";
 
-import { Mail, Instagram, Facebook, MessageCircle, Inbox, Phone } from "lucide-react";
+import { Mail, Inbox, Phone } from "lucide-react";
 import { Channel } from "@/types/models";
 
 interface ChannelFilterProps {

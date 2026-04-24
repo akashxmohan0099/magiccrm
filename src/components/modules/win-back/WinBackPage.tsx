@@ -1,6 +1,6 @@
 "use client";
 import { useState, useMemo } from "react";
-import { UserCheck, Send, MessageCircle, X, Clock, DollarSign, Calendar } from "lucide-react";
+import { UserCheck, Send, MessageCircle, Clock, DollarSign, Calendar } from "lucide-react";
 import { useClientsStore } from "@/store/clients";
 import { useBookingsStore } from "@/store/bookings";
 import { useServicesStore } from "@/store/services";

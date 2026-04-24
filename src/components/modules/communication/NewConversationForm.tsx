@@ -5,7 +5,7 @@ import { Mail, Search, User, AtSign, Phone } from "lucide-react";
 import { useCommunicationStore } from "@/store/communication";
 import { useClientsStore } from "@/store/clients";
 import { useAuth } from "@/hooks/useAuth";
-import { Channel, Conversation } from "@/types/models";
+import { Conversation } from "@/types/models";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 

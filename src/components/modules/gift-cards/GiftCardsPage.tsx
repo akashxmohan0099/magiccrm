@@ -10,7 +10,7 @@ import {
   Copy,
 } from "lucide-react";
 import { useGiftCardStore } from "@/store/gift-cards";
-import { GiftCard, GiftCardStatus } from "@/types/models";
+import { GiftCardStatus } from "@/types/models";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { SearchInput } from "@/components/ui/SearchInput";

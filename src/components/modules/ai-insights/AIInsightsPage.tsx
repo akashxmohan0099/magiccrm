@@ -10,7 +10,6 @@ import { useClientsStore } from "@/store/clients";
 import { usePaymentsStore } from "@/store/payments";
 import { useServicesStore } from "@/store/services";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { Button } from "@/components/ui/Button";
 import Link from "next/link";
 
 type InsightType = "scheduling" | "client" | "revenue" | "campaign";

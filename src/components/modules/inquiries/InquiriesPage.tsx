@@ -12,7 +12,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { DataTable, Column } from "@/components/ui/DataTable";
+import { Column } from "@/components/ui/DataTable";
 import { SlideOver } from "@/components/ui/SlideOver";
 import { toast } from "@/components/ui/Toast";
 import { BookingForm } from "@/components/modules/bookings/BookingForm";

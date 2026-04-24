@@ -11,7 +11,6 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { DataTable, Column } from "@/components/ui/DataTable";
-import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Button } from "@/components/ui/Button";
 import { BookingForm } from "./BookingForm";
 import { BookingDetail } from "./BookingDetail";

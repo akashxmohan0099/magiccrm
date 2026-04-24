@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
-import { Upload, FileSpreadsheet, ArrowRight, ArrowLeft, Check, AlertTriangle, X } from "lucide-react";
+import { Upload, FileSpreadsheet, ArrowRight, ArrowLeft, Check, AlertTriangle } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import {

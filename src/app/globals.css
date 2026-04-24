@@ -1,7 +1,9 @@
 @import "tailwindcss";
 
 html, body {
-  overflow-x: hidden;
+  /* `clip` avoids the new scrolling container that `hidden` creates,
+     which breaks `position: sticky` on descendants. */
+  overflow-x: clip;
 }
 
 :root {

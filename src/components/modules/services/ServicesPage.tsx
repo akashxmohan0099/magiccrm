@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus, Clock, DollarSign, Trash2, ChevronDown, ChevronRight, Pencil, X, Check, FolderPlus, Eye, ImagePlus, Upload } from "lucide-react";
+import { Plus, Clock, DollarSign, Trash2, ChevronDown, ChevronRight, Pencil, X, Check, FolderPlus, ImagePlus, Upload } from "lucide-react";
 import { useServicesStore } from "@/store/services";
 import { useAuth } from "@/hooks/useAuth";
 import { Service } from "@/types/models";

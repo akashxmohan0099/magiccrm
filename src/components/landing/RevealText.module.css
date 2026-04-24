@@ -1,0 +1,48 @@
+.track {
+  position: relative;
+  height: 300vh;
+  background: var(--background);
+}
+
+.sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 clamp(24px, 8vw, 140px);
+  background: var(--background);
+}
+
+.text {
+  font-size: clamp(31px, 4.4vw, 62px);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+  max-width: 980px;
+  margin: 0 auto;
+  text-align: center;
+  color: var(--foreground);
+}
+
+.w {
+  color: var(--foreground);
+  opacity: 0.14;
+  display: inline-block;
+  transform: translateY(8px);
+  transition: opacity 0.25s ease, color 0.25s ease, transform 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.w.on {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.w.wGreen.on {
+  color: var(--primary);
+}
+
+@media (max-width: 768px) {
+  .track { height: 260vh; }
+}

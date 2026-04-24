@@ -1,0 +1,1345 @@
+/* ---------- SCROLL STAGE ---------- */
+.scrollTrack {
+  position: relative;
+  height: 850vh;
+}
+.stickyStage {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--background);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Stage is sized to the viewport; JS scales it from ~0.78 → 0.90 during
+   the pop phase (editor-card pops up and grows), and the zoom phase
+   overlaps so the grid never fully fills the viewport before zooming in. */
+.stage {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background: var(--background);
+  border-radius: 18px;
+  box-shadow:
+    0 36px 90px rgba(0, 0, 0, 0.18),
+    0 12px 30px rgba(0, 0, 0, 0.08),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+  will-change: transform, border-radius, box-shadow;
+  transform-origin: 50% 50%;
+}
+
+/* ---------- MASONRY (Pinterest-style, fills stage) ---------- */
+.grid {
+  position: absolute;
+  inset: 18px;
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+}
+.mcol {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+.cell {
+  width: 100%;
+  border-radius: 10px;
+  will-change: opacity, transform;
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
+  flex: 1 1 0;
+}
+/* card height weights — columns all sum to 3.0 so tops+bottoms align */
+.ar34 { flex-grow: 1.333; }
+.ar11 { flex-grow: 1.0; }
+.ar45 { flex-grow: 1.25; }
+.ar54 { flex-grow: 0.8; }
+.ar43 { flex-grow: 0.75; }
+.ar35 { flex-grow: 1.667; }
+
+/* solid-color palette for masonry cards */
+.bgRed     { background: #d92e1f; }
+.bgInk     { background: #0f0f0f; }
+.bgCream   { background: #efe6d4; }
+.bgPeach   { background: #f5b693; }
+.bgTerra   { background: #c45a3b; }
+.bgMustard { background: #e6b33c; }
+.bgSun     { background: #ffd23d; }
+.bgOlive   { background: #6b7a34; }
+.bgTeal    { background: #0f3d3a; }
+.bgForest  { background: #0e2b1e; }
+.bgMaroon  { background: #7a1d14; }
+.bgLilac   { background: #c9b6ff; }
+.bgSky     { background: #a7c7e7; }
+.bgMint    { background: #b8d8c4; }
+.bgStone   { background: #d5cfc2; }
+.bgCocoa   { background: #3a2418; }
+.bgPaper   { background: #f4f1ea; border: 1px solid #e6e1d4; }
+
+/* Selected cell — the Showreel artboard. Stays 4:5 portrait throughout;
+   no stretching. Light clean background. */
+.cell.sel {
+  background: var(--background);
+  color: #0a0a0a;
+  overflow: hidden;
+}
+/* separate ring element so we can fade its opacity during zoom */
+.ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 3px #6a5afb;
+  pointer-events: none;
+  will-change: opacity;
+  z-index: 3;
+}
+.cell.sel .innerTile {
+  flex: 0 0 auto;
+  width: 26%;
+  aspect-ratio: 1 / 1;
+  border-radius: 6px;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.16);
+}
+
+/* Soft ambient glow — very subtle, just gives the card warmth. */
+.introSpot {
+  position: absolute;
+  left: 50%;
+  top: 60%;
+  width: 110%;
+  aspect-ratio: 1 / 1;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    circle,
+    rgba(124, 254, 157, 0.18) 0%,
+    rgba(52, 211, 153, 0.08) 40%,
+    transparent 70%
+  );
+  filter: blur(18px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Slow continuous breath on the ambient glow so the card feels alive. */
+.introSpot {
+  animation: introSpotBreath 5s ease-in-out infinite;
+}
+@keyframes introSpotBreath {
+  0%, 100% { filter: blur(18px) brightness(1);   }
+  50%      { filter: blur(22px) brightness(1.1); }
+}
+
+/* Four frames slide horizontally across the card. Each frame carries a
+   --f index (0-3); slide-p advances 0→3 with the scroll. A frame is
+   centered when slide-p equals its index, offscreen left when slide-p
+   is larger, offscreen right when smaller. Pure horizontal slide. */
+.introFrame {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  padding: 10% 9%;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  transform: translateX(
+    calc((var(--f, 0) - var(--intro-slide-p, 0)) * 110%)
+  );
+  will-change: transform;
+}
+.introFrameContent {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.introQuestion {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  color: #0a0a0a;
+}
+
+.introAnswer {
+  margin: 0 0 16% 0;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: #0a0a0a;
+}
+
+/* Frame 4 only — opacity and transform driven directly by JS ref in
+   update(). The slide brings in "Change the way you work." first (the
+   conversational beat), then the badge + Magic wordmark fade in on top. */
+.introReveal {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+  opacity: 0;
+  transform: translateY(14px);
+  will-change: opacity, transform;
+}
+.introKicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: #737373;
+}
+.introKickerMark {
+  color: #34D399;
+  font-size: 10px;
+  line-height: 1;
+}
+
+/* Real MAGIC brand lockup — matches the nav logo: green badge + "Magic" text */
+.introLockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.introBadge {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--logo-green, #7CFE9D);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 14px rgba(124, 254, 157, 0.35), inset 0 0 0 1px rgba(0, 0, 0, 0.03);
+  animation: introBadgeBreath 3.6s ease-in-out infinite;
+}
+@keyframes introBadgeBreath {
+  0%, 100% { box-shadow: 0 6px 14px rgba(124, 254, 157, 0.35), inset 0 0 0 1px rgba(0, 0, 0, 0.03); }
+  50%      { box-shadow: 0 8px 22px rgba(124, 254, 157, 0.55), inset 0 0 0 1px rgba(0, 0, 0, 0.03); }
+}
+.introBadgeInset {
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  background: var(--card-bg, #ffffff);
+}
+.introBrandName {
+  display: inline-block;
+  font-size: 46px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: #0a0a0a;
+}
+
+/* artboard label sits just above each artboard */
+.artboardLabel {
+  position: absolute;
+  top: -22px;
+  left: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: #8b5cf6;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+}
+
+/* Extra artboards to the right of the grid on the same horizontal strip. */
+.extra {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 0;
+  display: flex;
+  align-items: stretch;
+  gap: 12vw;
+  padding-left: 8vw;
+  padding-right: 10vw;
+  opacity: 0;
+  will-change: opacity;
+}
+.slide {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2.6vh;
+  height: 100%;
+  margin-right: 6vw;
+}
+.slide:last-child { margin-right: 0; }
+.slideBoards {
+  flex: 0 0 78%;
+  height: 78%;
+  display: flex;
+  align-items: center;
+  gap: 3.5vw;
+  min-height: 0;
+}
+.slideCap {
+  flex: 0 0 auto;
+  font-size: 2.6vh;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.18;
+  color: var(--foreground);
+  max-width: none;
+  white-space: nowrap;
+}
+.slideCapAccent {
+  color: var(--primary);
+}
+.artboard {
+  position: relative;
+  flex: 0 0 auto;
+  aspect-ratio: 1 / 1;
+  height: 100%;
+  border-radius: 10px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+}
+.artboard.abWide { aspect-ratio: 3 / 2; }
+.artboard.abXwide { aspect-ratio: 1.9 / 1; overflow: visible; }
+.artboard.abXwide > .inner { overflow: hidden; border-radius: 10px; }
+
+.artboard .label {
+  position: absolute;
+  top: -22px;
+  left: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: #8b5cf6;
+  white-space: nowrap;
+}
+
+/* ---- text inside artboards (scales with stage transform) ---- */
+.abBig {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  font-size: 34px;
+  line-height: 1;
+  text-transform: uppercase;
+}
+.abBig.dark { color: #0a0a0a; }
+
+/* tag pill (top-left inside card) */
+.tag {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  font-size: 8px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #fff;
+  line-height: 1;
+}
+.tag .tagDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fff;
+}
+.tagPink { background: #ff4f89; }
+.tagPurple { background: #6a5afb; }
+.tagYellow { background: #ffe94a; color: #0a0a0a; }
+.tagYellow .tagDot { background: #0a0a0a; }
+
+.yelFrame {
+  position: absolute;
+  top: 22%;
+  left: 14%;
+  width: 72%;
+  height: 56%;
+  border: 3px solid #ffe94a;
+  border-radius: 6px;
+  pointer-events: none;
+}
+
+.yelDot {
+  position: absolute;
+  top: 32%;
+  left: 38%;
+  width: 24%;
+  aspect-ratio: 1 / 1;
+  background: #ffe94a;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0a0a0a;
+  font-weight: 900;
+  font-size: 26px;
+}
+
+/* mini cards inside "Upcoming ads" artboard */
+.miniRow {
+  position: absolute;
+  inset: 10% 6%;
+  display: flex;
+  align-items: center;
+  gap: 4%;
+}
+.mini {
+  flex: 1 1 0;
+  height: 100%;
+  border-radius: 6px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+  padding: 8px;
+  color: #fff;
+  font-weight: 800;
+  font-size: 10px;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+}
+.mini.m1 { background: #7a3bff; }
+.mini.m2 { background: #ff5b3a; }
+.mini.m3 { background: #ff3b2f; }
+.mini.m4 { background: #0a1f12; color: #d8ffb8; }
+
+.abNewText {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  color: #0a0a0a;
+  font-size: 36%;
+  line-height: 1;
+}
+.abArrow {
+  position: absolute;
+  top: 8%;
+  right: 8%;
+  width: 14%;
+  aspect-ratio: 1 / 1;
+  background: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 60%;
+  color: #0a0a0a;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
+}
+.ctaRow3 {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6%;
+}
+.ctaBtn {
+  width: 14%;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  color: #0a0a0a;
+  font-weight: 700;
+  font-size: 90%;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.14);
+}
+.ctaBtn.on { background: #ffe94a; }
+
+/* tile palette */
+.tBlk   { background: #0a0a0a; }
+.tRed   { background: #ff3b2f; }
+.tBlue  { background: #1fb6ff; }
+.tGrad1 { background: linear-gradient(135deg, #b898ff, #6a5afb); }
+.tYel   { background: #ffe94a; }
+.tGrn   { background: #32e36a; }
+.tGrad2 { background: linear-gradient(135deg, #ff5b8a, #ff9a5a); }
+.tWht   { background: #ffffff; border: 1px solid #eaeaea; }
+
+/* ---------- SLIDE 2: speaks your language (calendar + services) ---------- */
+/* Calendar card mirrors the "Today" design from page.tsx's BuildJourney —
+   white rounded-2xl card, soft emerald top gradient, colored-accent booking
+   blocks, dark notification toast that springs in on persona change.
+   Aspect is 2:3 portrait so the notif + 3 slots all fit comfortably. */
+/* Slide 2 ("speaks your language") renders a pair of small native-sized
+   cards. The stage zoom multiplies everything ~2x, so we compensate with a
+   scale on the boards to land close to the page.tsx native render size. */
+.lingoSlide {
+  align-items: center;
+}
+.lingoSlide .slideBoards {
+  transform: scale(0.79);
+  transform-origin: center center;
+}
+.lingoSlide .slideCap {
+  text-align: center;
+}
+
+/* Slide 1 ("get a workspace around how you work") — compact three-board
+   layout matched in spirit to the build-journey steps in page.tsx. The
+   three cards are wrapped in a single .artboard so the pan treats the
+   whole group as one centered stop. */
+.magicSlide {
+  align-items: center;
+}
+.magicSlide .slideBoards {
+  transform: scale(0.86);
+  transform-origin: center center;
+  position: relative;
+}
+.magicSlide .slideCap {
+  text-align: center;
+}
+.artboard.magicGroup {
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+  overflow: visible;
+  aspect-ratio: auto;
+  height: 100%;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3.5vw;
+  position: relative;
+}
+
+/* Connecting line behind the three cards. Fills 0% → 50% → 100% as the
+   scripted sequence advances (driven by --line-fill set on .slideBoards). */
+.magicConnectTrack {
+  position: absolute;
+  top: 50%;
+  left: 8%;
+  right: 8%;
+  height: 2px;
+  transform: translateY(-50%);
+  background: rgba(15, 23, 42, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+  z-index: 0;
+  pointer-events: none;
+}
+.magicConnectFill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  background: linear-gradient(
+    90deg,
+    var(--accent, #EC4899) 0%,
+    #8B5CF6 55%,
+    #10B981 100%
+  );
+  transform-origin: left center;
+  transform: scaleX(var(--line-fill, 0));
+  transition: transform 700ms cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+/* Fixed-size wrappers so both cards are visually identical regardless of
+   the active persona's content length (short names vs. long package names
+   must produce the same card dimensions). */
+.lingoCal,
+.lingoMenu {
+  flex: 0 0 280px;
+  width: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lingoCalFade {
+  animation: lingoCalFadeIn 320ms ease-out both;
+}
+@keyframes lingoCalFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.lingoCalNotifIn {
+  animation: lingoCalNotifPop 520ms cubic-bezier(0.34, 1.56, 0.64, 1) 140ms both;
+}
+@keyframes lingoCalNotifPop {
+  0%   { opacity: 0; transform: translateY(15px) scale(0.95); }
+  100% { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+/* Vertical persona list to the left of the two cards. Active persona is
+   highlighted in the persona's accent color; others are muted. */
+.lingoPersonas {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+  align-self: center;
+  padding-right: 4px;
+}
+.lingoPersona {
+  font-family: inherit;
+  background: transparent;
+  border: 0;
+  padding: 2px 0;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: #c9c6be;
+  cursor: pointer;
+  transition: color 220ms ease, font-weight 220ms ease, transform 220ms ease;
+  line-height: 1.1;
+}
+.lingoPersona:hover {
+  color: #737373;
+}
+.lingoPersonaActive {
+  font-weight: 700;
+  transform: translateX(2px);
+}
+
+/* Slide 2's single artboard wraps the persona list + calendar + services in
+   one unit. As a single artboard, the pan treats the whole group as one
+   center stop and lands it dead-centered in the viewport. */
+.artboard.lingoGroup {
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+  overflow: visible;
+  aspect-ratio: auto;
+  height: 100%;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3.2vw;
+}
+
+/* ---------- SLIDE 3: unified-inbox comms board ---------- */
+/* Apps on the left flow (visually, via flex-sibling lines) into the Magic Inbox. */
+.artboard.unifyBoard {
+  position: relative;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06), inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+  display: flex;
+  align-items: stretch;
+  padding: 3% 3.5%;
+  gap: 0;
+}
+.unifyStream {
+  flex: 0 0 28%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+.unifyStreamLabel {
+  flex: 0 0 auto;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #9ca3af;
+  text-transform: uppercase;
+  margin-bottom: 3%;
+}
+.unifyStreamRows {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-rows: repeat(5, 1fr);
+  row-gap: 2%;
+  min-height: 0;
+}
+.unifyStreamRow {
+  display: flex;
+  align-items: center;
+  min-height: 0;
+  min-width: 0;
+  gap: 0;
+}
+.unifyAppChip {
+  flex: 0 0 auto;
+  aspect-ratio: 1 / 1;
+  height: 84%;
+  background: #ffffff;
+  border-radius: 22%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.09), inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  min-height: 0;
+  position: relative;
+  z-index: 1;
+}
+.unifyAppLogo {
+  width: 72%;
+  height: 72%;
+}
+.unifyAppLine {
+  flex: 1 1 auto;
+  height: 1.5px;
+  background: color-mix(in srgb, var(--primary) 32%, transparent);
+  min-width: 0;
+}
+.unifyAppArrow {
+  flex: 0 0 auto;
+  width: 0;
+  height: 0;
+  border-top: 3px solid transparent;
+  border-bottom: 3px solid transparent;
+  border-left: 5px solid color-mix(in srgb, var(--primary) 55%, transparent);
+  margin-right: 4%;
+}
+.unifyInbox {
+  flex: 1 1 auto;
+  position: relative;
+  z-index: 1;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--primary) 4%, #ffffff) 0%,
+    color-mix(in srgb, var(--primary) 12%, #ffffff) 100%
+  );
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 16%, transparent);
+  padding: 3% 3.5%;
+  display: flex;
+  flex-direction: column;
+  gap: 4%;
+  min-width: 0;
+}
+.unifyInboxHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 3%;
+  border-bottom: 1px solid color-mix(in srgb, var(--primary) 18%, transparent);
+}
+.unifyInboxHub {
+  flex: 0 0 auto;
+  width: 7%;
+  aspect-ratio: 1 / 1;
+  background: var(--primary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--primary) 30%, transparent);
+}
+.unifyInboxHubIcon {
+  width: 58%;
+  height: 58%;
+}
+.unifyInboxTitles {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+.unifyInboxTitle {
+  font-size: 12px;
+  font-weight: 700;
+  color: #111827;
+}
+.unifyInboxSub {
+  font-size: 9.5px;
+  color: #6b7280;
+}
+.unifyFeed {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  gap: 2.5%;
+}
+.unifyFeedRow {
+  display: flex;
+  align-items: center;
+  gap: 3%;
+  padding: 2% 2.5%;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04), inset 0 0 0 1px rgba(0, 0, 0, 0.03);
+  min-height: 0;
+}
+.unifyFeedIcon {
+  flex: 0 0 auto;
+  width: 6%;
+  aspect-ratio: 1 / 1;
+  border-radius: 22%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.unifyFeedIconLogo {
+  width: 100%;
+  height: 100%;
+}
+.unifyFeedName {
+  flex: 0 0 auto;
+  font-size: 10px;
+  font-weight: 600;
+  color: #111827;
+}
+.unifyFeedSkel {
+  flex: 1 1 auto;
+  height: 6px;
+  border-radius: 3px;
+  background: #e5e7eb;
+}
+.unifyFeedMsg {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 9px;
+  color: #6b7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.unifyFeedDot {
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent);
+}
+@keyframes feedRowIn {
+  0%   { opacity: 0; transform: translateX(-8px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+/* ---------- Slide 4: feature highlights — 5 compact cards in a row ---------- */
+/* The featureBoard wrapper is a transparent pan anchor; the grid and cards
+   are sized explicitly so the composition stays balanced across viewports. */
+.featureSlide {
+  align-items: center;
+}
+.featureSlide .slideBoards {
+  transform: scale(0.82);
+  transform-origin: center center;
+}
+.featureSlide .slideCap {
+  text-align: center;
+}
+
+.artboard.featureBoard {
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+  overflow: visible;
+  aspect-ratio: auto;
+  height: 100%;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.featureGrid {
+  display: flex;
+  align-items: stretch;
+  gap: 16px;
+}
+
+/* Image-backed card — stock photo fills the card, a dark gradient overlay
+   sits on top, and white title + description live near the bottom. Matches
+   the minimal, editorial feel of the rest of the site. */
+.featureCard {
+  position: relative;
+  width: 210px;
+  height: 320px;
+  border-radius: 20px;
+  overflow: hidden;
+  background-color: #0a0a0a;
+  background-size: cover;
+  background-position: center;
+  box-shadow: 0 12px 34px rgba(10, 10, 10, 0.14), inset 0 0 0 1px rgba(10, 10, 10, 0.06);
+}
+.featureCardOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(10, 10, 10, 0) 30%,
+    rgba(10, 10, 10, 0.55) 65%,
+    rgba(10, 10, 10, 0.88) 100%
+  );
+  pointer-events: none;
+}
+.featureCardContent {
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  bottom: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 1;
+}
+.featureCardTitle {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: #ffffff;
+}
+.featureCardDesc {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.82);
+  line-height: 1.45;
+}
+
+/* Magic specialty picker artboard */
+.magicSpec {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent, #EC4899) 3%, #ffffff) 0%,
+    color-mix(in srgb, var(--accent, #EC4899) 16%, #ffffff) 100%
+  );
+  padding: 5% 6%;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06), inset 0 0 0 1px rgba(0, 0, 0, 0.03);
+  transition: background 400ms ease;
+}
+.magicSpecLabel {
+  font-size: 10px;
+  font-weight: 700;
+  color: #a1a1a1;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.magicSpecGrid {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 6%;
+}
+.magicSpecTile {
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 14px;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8%;
+  color: #c9c6cc;
+  position: relative;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  transition: transform 220ms cubic-bezier(0.2, 0.7, 0.2, 1),
+              background 220ms ease,
+              border-color 220ms ease,
+              box-shadow 220ms ease,
+              color 220ms ease;
+}
+.magicSpecTile:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.85);
+  color: #8a8690;
+}
+.magicSpecTileActive,
+.magicSpecTile.magicSpecTileActive:hover {
+  background: #ffffff;
+  color: var(--accent, #EC4899);
+  border: 2px solid var(--accent, #EC4899);
+  box-shadow: 0 14px 30px color-mix(in srgb, var(--accent, #EC4899) 28%, transparent),
+              0 4px 10px color-mix(in srgb, var(--accent, #EC4899) 14%, transparent);
+  transform: translateY(-3px) scale(1.06);
+  z-index: 1;
+}
+.magicSpecIcon {
+  width: 32%;
+  height: 32%;
+}
+.magicSpecName {
+  font-size: 11px;
+  font-weight: 600;
+  color: inherit;
+}
+.magicSpecTileActive .magicSpecName {
+  color: #0a0a0a;
+}
+.magicSpecCheck {
+  position: absolute;
+  top: -8%;
+  right: -8%;
+  width: 22%;
+  aspect-ratio: 1 / 1;
+  background: var(--accent, #EC4899);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--accent, #EC4899) 40%, transparent);
+  animation: magicCheckIn 360ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes magicCheckIn {
+  0%   { transform: scale(0);   opacity: 0; }
+  60%  { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1);   opacity: 1; }
+}
+.magicSpecCheck svg {
+  width: 60%;
+  height: 60%;
+}
+
+/* Magic quick-setup questions artboard — shares the specialty-picker style */
+.magicQuestions {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent, #EC4899) 3%, #ffffff) 0%,
+    color-mix(in srgb, var(--accent, #EC4899) 16%, #ffffff) 100%
+  );
+  padding: 5% 6%;
+  display: flex;
+  flex-direction: column;
+  gap: 6%;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06), inset 0 0 0 1px rgba(0, 0, 0, 0.03);
+  transition: background 400ms ease;
+}
+.magicQuestHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6%;
+  margin-bottom: 2%;
+}
+.magicQuestLabel {
+  font-size: 10px;
+  font-weight: 700;
+  color: #a1a1a1;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.magicQuestProgress {
+  display: flex;
+  gap: 4px;
+}
+.magicQuestDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.08);
+  transition: background 200ms ease;
+}
+.magicQuestDotActive { background: var(--accent, #EC4899); }
+
+.magicQuestItem {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.magicQuestText {
+  font-size: 12px;
+  font-weight: 600;
+  color: #0a0a0a;
+  letter-spacing: -0.01em;
+}
+.magicQuestAnswers {
+  display: flex;
+  gap: 10px;
+}
+.magicQuestBtn {
+  flex: 1 1 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 0;
+  border-radius: 14px;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  background: rgba(255, 255, 255, 0.55);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  color: #c9c6cc;
+  position: relative;
+  transition: transform 220ms cubic-bezier(0.2, 0.7, 0.2, 1),
+              background 220ms ease,
+              border-color 220ms ease,
+              box-shadow 220ms ease,
+              color 220ms ease;
+}
+.magicQuestBtn:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.85);
+  color: #8a8690;
+}
+.magicQuestBtnOn,
+.magicQuestBtn.magicQuestBtnOn:hover {
+  background: #ffffff;
+  color: var(--accent, #EC4899);
+  border: 2px solid var(--accent, #EC4899);
+  box-shadow: 0 14px 30px color-mix(in srgb, var(--accent, #EC4899) 28%, transparent),
+              0 4px 10px color-mix(in srgb, var(--accent, #EC4899) 14%, transparent);
+  transform: translateY(-3px) scale(1.03);
+  z-index: 1;
+}
+
+/* Magic workspace artboard */
+.magicWs {
+  background: #ffffff;
+  display: flex;
+  overflow: hidden;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06), inset 0 0 0 1px rgba(0, 0, 0, 0.03);
+}
+.magicWsSidebar {
+  flex: 0 0 44%;
+  background: #fafafa;
+  border-right: 1px solid #efefef;
+  padding: 5% 4%;
+  display: flex;
+  flex-direction: column;
+  gap: 6%;
+}
+.magicWsBrand {
+  display: flex;
+  align-items: center;
+  gap: 8%;
+  padding: 0 4%;
+}
+.magicWsBrandDot {
+  width: 18%;
+  aspect-ratio: 1 / 1;
+  background: color-mix(in srgb, var(--accent, #EC4899) 28%, #ffffff);
+  border-radius: 4px;
+  flex-shrink: 0;
+  transition: background 300ms ease;
+}
+.magicWsBrandSkel {
+  flex: 1 1 auto;
+  height: 8px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #eeeeee 0%, #f8f8f8 50%, #eeeeee 100%);
+  background-size: 200% 100%;
+  animation: magicShimmer 1.8s ease-in-out infinite;
+}
+@keyframes magicShimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.magicWsNav {
+  display: flex;
+  flex-direction: column;
+  gap: 2%;
+}
+.magicWsNavItem {
+  display: flex;
+  align-items: center;
+  gap: 7%;
+  padding: 5% 7%;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #6b7280;
+  white-space: nowrap;
+  overflow: hidden;
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 200ms ease, color 200ms ease, transform 200ms ease;
+}
+.magicWsNavItem > span {
+  overflow: hidden;
+  text-overflow: clip;
+}
+.magicWsNavItem:hover {
+  background: #f3f3f3;
+  color: #0a0a0a;
+  transform: translateX(2px);
+}
+.magicWsNavItemActive,
+.magicWsNavItem.magicWsNavItemActive:hover {
+  background: color-mix(in srgb, var(--accent, #EC4899) 14%, transparent);
+  color: var(--accent, #EC4899);
+  font-weight: 600;
+  transform: none;
+  transition: background 300ms ease, color 300ms ease;
+}
+.magicWsNavItemAddon {
+  animation: magicAddonIn 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes magicAddonIn {
+  0%   { opacity: 0; transform: translateX(-6px); }
+  60%  { opacity: 1; }
+  100% { opacity: 1; transform: translateX(0); }
+}
+.magicWsNavIcon {
+  width: 14%;
+  aspect-ratio: 1 / 1;
+  flex-shrink: 0;
+}
+.magicWsMain {
+  flex: 1 1 auto;
+  padding: 5% 5%;
+  display: flex;
+  flex-direction: column;
+  gap: 5%;
+}
+.magicWsHeader {
+  display: flex;
+  align-items: center;
+  gap: 4%;
+  margin-bottom: 3%;
+}
+.magicWsHeaderSkel {
+  flex: 1 1 auto;
+  height: 10px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #eeeeee 0%, #f8f8f8 50%, #eeeeee 100%);
+  background-size: 200% 100%;
+  animation: magicShimmer 1.8s ease-in-out infinite;
+}
+.magicWsHeaderPill {
+  width: 22%;
+  height: 14px;
+  background: #0a0a0a;
+  border-radius: 999px;
+}
+.magicWsRow {
+  display: flex;
+  align-items: center;
+  gap: 4%;
+  opacity: 0;
+  transform: translateX(-8px);
+  animation: magicRowIn 520ms cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+}
+@keyframes magicRowIn {
+  to { opacity: 1; transform: translateX(0); }
+}
+.magicWsAvatar {
+  width: 9%;
+  aspect-ratio: 1 / 1;
+  background: #e5e5e5;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.magicWsRowSkel {
+  flex: 1 1 auto;
+  height: 8px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #ececec 0%, #f5f5f5 50%, #ececec 100%);
+  background-size: 200% 100%;
+  animation: magicShimmer 1.8s ease-in-out infinite;
+}
+.magicWsPill {
+  width: 22%;
+  height: 14px;
+  background: #c9f2da;
+  border-radius: 999px;
+  animation: magicPillPulse 2.4s ease-in-out infinite;
+}
+.magicWsRow:nth-child(2) .magicWsPill { animation-delay: 0.3s; }
+.magicWsRow:nth-child(3) .magicWsPill { animation-delay: 0.6s; }
+@keyframes magicPillPulse {
+  0%, 100% { background: #c9f2da; transform: scaleX(1); }
+  50%      { background: #a6e7bf; transform: scaleX(1.04); }
+}
+
+/* ---------- MOBILE: horizontal pan (replaces zoom mechanic) ---------- */
+.mobileMech { display: none; }
+.mobileHeading {
+  font-size: clamp(32px, 8vw, 44px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  text-align: center;
+  margin: 0 auto;
+  padding: 80px 24px 24px;
+  max-width: 560px;
+  color: var(--foreground);
+}
+.mobileTrack {
+  position: relative;
+  height: 320vh;
+}
+.mobileSticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  background: var(--background);
+}
+.mobilePan {
+  display: flex;
+  gap: 5vw;
+  padding: 0 8vw;
+  will-change: transform;
+}
+.mSlide {
+  flex: 0 0 78vw;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.mBoard {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: clamp(44px, 10vw, 72px);
+  letter-spacing: -0.04em;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  position: relative;
+}
+.mDark { background: #0a0a0a; color: #fff; }
+.mBlue { background: #8ad4ff; color: #0a0a0a; }
+.mPaper {
+  background: #f4f1ea;
+  color: #0a0a0a;
+  border: 1px solid #e6e1d4;
+  font-size: clamp(18px, 4vw, 24px);
+  padding: 20px;
+}
+.mCap {
+  font-size: clamp(15px, 4vw, 18px);
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--foreground);
+  letter-spacing: -0.01em;
+}
+
+@media (max-width: 768px) {
+  .scrollTrack { display: none; }
+  .mobileMech { display: block; }
+}

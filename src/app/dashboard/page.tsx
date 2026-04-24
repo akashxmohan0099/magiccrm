@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Calendar, MessageCircle, Inbox, TrendingUp, Plus,
@@ -67,6 +67,10 @@ export default function DashboardPage() {
 
   const [range, setRange] = useState<DateRange>("30d");
   const [checklistStorageVersion, setChecklistStorageVersion] = useState(0);
+
+  useEffect(() => {
+    document.title = "Dashboard · Magic";
+  }, []);
 
   const clientMap = useMemo(() => new Map(clients.map((c) => [c.id, c])), [clients]);
   const serviceMap = useMemo(() => new Map(services.map((s) => [s.id, s])), [services]);
@@ -160,9 +164,9 @@ export default function DashboardPage() {
       {/* Header with date range */}
       <motion.div initial={{ y: 6 }} animate={{ y: 0 }} className="flex items-start justify-between mb-6">
         <div>
-          <h2 className="text-[24px] font-bold tracking-tight">
+          <h1 className="text-[24px] font-bold tracking-tight">
             {getGreeting()}, <span className="gradient-text">{businessName}</span>
-          </h2>
+          </h1>
           <p className="text-text-secondary text-[14px] mt-0.5">
             Here&apos;s your overview.
           </p>

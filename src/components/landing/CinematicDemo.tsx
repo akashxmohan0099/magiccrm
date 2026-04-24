@@ -127,7 +127,7 @@ export function ModulePickerDemo() {
 
     const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [paused, activePreset]);
 
   const toggleModule = (name: string) => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { BarChart3, TrendingUp, Users, Calendar, DollarSign, Clock } from "lucide-react";
+import { TrendingUp, Users, Calendar, DollarSign } from "lucide-react";
 import { useBookingsStore } from "@/store/bookings";
 import { useClientsStore } from "@/store/clients";
 import { usePaymentsStore } from "@/store/payments";

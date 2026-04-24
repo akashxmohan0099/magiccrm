@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 /**
  * Public route prefixes that don't require authentication.
  */
-const PUBLIC_ROUTES = ["/", "/login", "/signup", "/onboarding", "/proposal", "/api", "/auth", "/terms", "/privacy", "/forgot-password", "/reset-password", "/book", "/inquiry", "/lead-form", "/pay", "/portal", "/storefront", "/embed"];
+const PUBLIC_ROUTES = ["/", "/login", "/signup", "/onboarding", "/proposal", "/api", "/auth", "/terms", "/privacy", "/forgot-password", "/reset-password", "/book", "/inquiry", "/lead-form", "/pay", "/portal", "/storefront", "/embed", "/ingest"];
 
 // Dev-only public routes — only accessible in development
 const DEV_PUBLIC_ROUTES = ["/dev", "/onboarding-test"];
@@ -27,7 +27,7 @@ function isE2EDemoRequest(request: NextRequest) {
   );
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -58,7 +58,7 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   if (authError && process.env.NODE_ENV === "development") {
-    console.error("[middleware] getUser error:", authError.message);
+    console.error("[proxy] getUser error:", authError.message);
   }
 
   const { pathname } = request.nextUrl;

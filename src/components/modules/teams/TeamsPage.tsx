@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { UsersRound, Plus, Mail, Phone, Calendar, Clock, DollarSign, Trash2 } from "lucide-react";
+import { UsersRound, Plus, Mail, Phone, Calendar, Clock, Trash2 } from "lucide-react";
 import { useTeamStore } from "@/store/team";
 import { useBookingsStore } from "@/store/bookings";
 import { usePaymentsStore } from "@/store/payments";

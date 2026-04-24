@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { CinematicDemo } from "@/components/landing/CinematicDemo";
+import { RevealText } from "@/components/landing/RevealText";
+import { ScrollMechanic } from "@/components/landing/ScrollMechanic";
 import {
   sectionHeadingVariants, sectionTransition, viewportConfig, ctaPulseVariants,
   COMPARISON_PERSONAS, ADDON_PERSONAS, ADDON_BORDER_COLORS,
@@ -383,22 +385,30 @@ const AI_CHAT_CONVERSATIONS: { label: string; icon: typeof Receipt; messages: Ch
 
 function AIChatDemo() {
   const [activeConvo, setActiveConvo] = useState(0);
-  const [visibleMessages, setVisibleMessages] = useState(0);
+  const [animatedCount, setAnimatedCount] = useState(0);
+  const [animatingConvo, setAnimatingConvo] = useState(0);
   const [completedConvos, setCompletedConvos] = useState<Set<number>>(new Set());
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const convo = AI_CHAT_CONVERSATIONS[activeConvo];
+  const isCompleted = completedConvos.has(activeConvo);
+
+  // Reset the animation counter during render when we switch to a
+  // not-yet-completed conversation. This avoids a setState-in-effect.
+  if (!isCompleted && animatingConvo !== activeConvo) {
+    setAnimatingConvo(activeConvo);
+    setAnimatedCount(0);
+  }
+
+  const visibleMessages = isCompleted
+    ? convo.messages.length
+    : animatingConvo === activeConvo
+    ? animatedCount
+    : 0;
 
   useEffect(() => {
-    // If this conversation has already played once, render it in full
-    // immediately — no re-animation.
-    if (completedConvos.has(activeConvo)) {
-      setVisibleMessages(convo.messages.length);
-      const el = messagesContainerRef.current;
-      if (el) el.scrollTop = el.scrollHeight;
-      return;
-    }
+    // Already-played conversations render in full; no animation needed.
+    if (isCompleted) return;
 
-    setVisibleMessages(0);
     if (messagesContainerRef.current) messagesContainerRef.current.scrollTop = 0;
 
     // Pace the reveal: give AI responses a longer "typing" window and
@@ -416,7 +426,7 @@ function AIChatDemo() {
     });
 
     const timers: ReturnType<typeof setTimeout>[] = delays.map((delay, i) =>
-      setTimeout(() => setVisibleMessages(i + 1), delay)
+      setTimeout(() => setAnimatedCount(i + 1), delay)
     );
     // Mark this conversation as played once the last message is visible.
     const finalIdx = activeConvo;
@@ -427,7 +437,7 @@ function AIChatDemo() {
       )
     );
     return () => timers.forEach(clearTimeout);
-  }, [activeConvo, completedConvos, convo.messages]);
+  }, [activeConvo, isCompleted, convo.messages]);
 
   // Auto-scroll chat container to bottom as new messages appear
   useEffect(() => {
@@ -1188,6 +1198,12 @@ export default function LandingPage() {
         </motion.div>
 
       </section>
+
+      {/* Reveal text — scroll-driven word fade-in */}
+      <RevealText />
+
+      {/* Scroll mechanic — Pinterest grid → zoom → horizontal pan */}
+      <ScrollMechanic />
 
       {/* Trust bar */}
       <motion.section

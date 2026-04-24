@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
 import {
   BarChart3, Megaphone, Ticket, Gift, Lightbulb, UserCheck,
   ScrollText, Crown, FileSignature, Puzzle, Check, TrendingUp,
@@ -217,6 +217,10 @@ export default function AddonsPage() {
   const { enabledAddons, toggleAddon } = useSettingsStore();
   const { workspaceId } = useAuth();
   const enabledCount = enabledAddons.length;
+
+  useEffect(() => {
+    document.title = "Modules · Magic";
+  }, []);
 
   return (
     <div>

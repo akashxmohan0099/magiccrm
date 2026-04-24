@@ -460,9 +460,9 @@ function SidebarContent({
           <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ backgroundColor: "var(--logo-green)" }}>
             <div className="w-3 h-3 bg-card-bg rounded-[3px]" />
           </div>
-          <h1 className="font-bold text-foreground text-[14px] tracking-tight leading-tight">
+          <span className="font-bold text-foreground text-[14px] tracking-tight leading-tight">
             {businessName}
-          </h1>
+          </span>
         </Link>
       </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
 import { motion } from "framer-motion";
 
 interface PageHeaderProps {
@@ -10,6 +10,10 @@ interface PageHeaderProps {
 }
 
 export function PageHeader({ title, description, actions }: PageHeaderProps) {
+  useEffect(() => {
+    document.title = `${title} · Magic`;
+  }, [title]);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: -8 }}

@@ -3,7 +3,7 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
-import { ChevronUp, ChevronDown, Plus, X, Check, Trash2, SlidersHorizontal, GripVertical } from "lucide-react";
+import { ChevronUp, ChevronDown, Plus, X, Check, Trash2, SlidersHorizontal } from "lucide-react";
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -391,72 +391,11 @@ export function DataTable<T>({ columns, data, onRowClick, keyExtractor, storageK
   });
 
   const hasColumnPicker = !!storageKey;
-  const enableCustomColumns = !!onUpdateCustomData && !!getCustomData;
 
-  // Column order (drag-to-reorder)
-  const [columnOrder, setColumnOrder] = useState<string[]>(() => {
-    if (!storageKey) return columns.map(c => c.key);
-    try {
-      const stored = localStorage.getItem(`${storageKey}-order`);
-      if (stored) {
-        const parsed = JSON.parse(stored) as string[];
-        // Merge: keep stored order for columns that still exist, append new ones
-        const allKeys = new Set(columns.map(c => c.key));
-        const ordered = parsed.filter(k => allKeys.has(k));
-        columns.forEach(c => { if (!ordered.includes(c.key)) ordered.push(c.key); });
-        return ordered;
-      }
-    } catch { /* ignore */ }
-    return columns.map(c => c.key);
-  });
-
-  const saveColumnOrder = useCallback((order: string[]) => {
-    setColumnOrder(order);
-    if (storageKey) {
-      try { localStorage.setItem(`${storageKey}-order`, JSON.stringify(order)); } catch { /* ignore */ }
-    }
-  }, [storageKey]);
-
-  // Drag state for column reorder
-  const [dragColKey, setDragColKey] = useState<string | null>(null);
-  const [dragOverKey, setDragOverKey] = useState<string | null>(null);
-
-  const handleColDragStart = useCallback((key: string) => {
-    setDragColKey(key);
-  }, []);
-
-  const handleColDragOver = useCallback((e: React.DragEvent, key: string) => {
-    e.preventDefault();
-    if (key !== dragColKey) setDragOverKey(key);
-  }, [dragColKey]);
-
-  const handleColDrop = useCallback((targetKey: string) => {
-    if (!dragColKey || dragColKey === targetKey) { setDragColKey(null); setDragOverKey(null); return; }
-    const order = [...columnOrder];
-    const fromIdx = order.indexOf(dragColKey);
-    const toIdx = order.indexOf(targetKey);
-    if (fromIdx === -1 || toIdx === -1) { setDragColKey(null); setDragOverKey(null); return; }
-    order.splice(fromIdx, 1);
-    order.splice(toIdx, 0, dragColKey);
-    saveColumnOrder(order);
-    setDragColKey(null);
-    setDragOverKey(null);
-  }, [dragColKey, columnOrder, saveColumnOrder]);
-
-  const handleColDragEnd = useCallback(() => {
-    setDragColKey(null);
-    setDragOverKey(null);
-  }, []);
-
-  // Filter built-in columns by visibility, then apply column order
+  // Filter built-in columns by visibility
   const visibleBuiltInColumns = useMemo(() => {
-    const visible = hasColumnPicker ? columns.filter(c => visibleKeys.includes(c.key)) : columns;
-    return [...visible].sort((a, b) => {
-      const ai = columnOrder.indexOf(a.key);
-      const bi = columnOrder.indexOf(b.key);
-      return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
-    });
-  }, [columns, visibleKeys, hasColumnPicker, columnOrder]);
+    return hasColumnPicker ? columns.filter(c => visibleKeys.includes(c.key)) : columns;
+  }, [columns, visibleKeys, hasColumnPicker]);
 
   // Filter custom columns by visibility
   const visibleCustomColumns = useMemo(() => {
@@ -585,15 +524,6 @@ export function DataTable<T>({ columns, data, onRowClick, keyExtractor, storageK
           />
         );
     }
-  };
-
-  // Determine if a built-in column is removable
-  const isRemovable = (col: Column<T>) => {
-    if (col.removable === false) return false;
-    if (!columns.some(c => c.removable === false)) {
-      return col.key !== columns[0]?.key;
-    }
-    return true;
   };
 
   return (

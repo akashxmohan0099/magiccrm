@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { Plus, MessageSquare, Bell, Mail, MessageCircle, Instagram } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { Plus, MessageSquare } from "lucide-react";
 import { useCommunicationStore } from "@/store/communication";
 import { useAuth } from "@/hooks/useAuth";
 import { Channel, Conversation } from "@/types/models";
-import { PageHeader } from "@/components/ui/PageHeader";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { Button } from "@/components/ui/Button";
 import { ConversationList } from "./ConversationList";
@@ -21,6 +20,10 @@ export function CommunicationPage() {
   const [search, setSearch] = useState("");
   const [channelFilter, setChannelFilter] = useState<Channel | "all">("all");
   const [newConvoOpen, setNewConvoOpen] = useState(false);
+
+  useEffect(() => {
+    document.title = "Messages · Magic";
+  }, []);
 
   const filtered = useMemo(() => {
     let result = conversations;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { FileText, Plus, Globe, Code, Eye, Calendar, Inbox, ToggleLeft, ToggleRight, Pencil, Trash2, Copy, Check, X, GripVertical } from "lucide-react";
+import { FileText, Plus, Globe, Code, Eye, Calendar, Inbox, ToggleLeft, ToggleRight, Pencil, Trash2, Copy, Check, GripVertical } from "lucide-react";
 import { useFormsStore } from "@/store/forms";
 import { useInquiriesStore } from "@/store/inquiries";
 import { Form, FormFieldConfig } from "@/types/models";
