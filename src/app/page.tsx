@@ -15,6 +15,7 @@ import Link from "next/link";
 import { CinematicDemo } from "@/components/landing/CinematicDemo";
 import { RevealText } from "@/components/landing/RevealText";
 import { ScrollMechanic } from "@/components/landing/ScrollMechanic";
+import { SiteHeader } from "@/components/landing/SiteHeader";
 import {
   sectionHeadingVariants, sectionTransition, viewportConfig, ctaPulseVariants,
   COMPARISON_PERSONAS, ADDON_PERSONAS, ADDON_BORDER_COLORS,
@@ -715,25 +716,7 @@ export default function LandingPage() {
       />
 
       {/* Nav */}
-      <nav className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: "var(--logo-green)" }}>
-            <div className="w-3.5 h-3.5 bg-card-bg rounded-sm" />
-          </div>
-          <span className="font-bold text-foreground text-[15px] tracking-tight">Magic</span>
-        </div>
-        <div className="flex items-center gap-6">
-          <Link href="/login" className="text-[13px] text-text-secondary hover:text-foreground transition-colors font-medium">
-            Log in
-          </Link>
-          <Link
-            href="/onboarding"
-            className="inline-flex items-center justify-center rounded-full bg-foreground px-5 py-2 text-[13px] font-semibold tracking-[-0.01em] text-background transition-opacity hover:opacity-90"
-          >
-            Start free
-          </Link>
-        </div>
-      </nav>
+      <SiteHeader />
 
       {/* Hero */}
       <section ref={heroRef} className="max-w-4xl mx-auto px-4 sm:px-6 pt-16 sm:pt-24 pb-12 sm:pb-16 text-center relative overflow-hidden">
