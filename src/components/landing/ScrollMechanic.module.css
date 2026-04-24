@@ -839,8 +839,12 @@
 .featureSlide {
   align-items: center;
 }
+/* Slide 4 has 5 image cards — the widest composition of the whole
+   mechanic. At 1600px+ viewports the design sits at 0.82, matching the
+   other slides' visual weight. Below that, the scale shrinks linearly so
+   the feature grid always fits inside the viewport without cropping. */
 .featureSlide .slideBoards {
-  transform: scale(0.82);
+  transform: scale(clamp(0.52, calc(0.82 * 100vw / 1600), 0.82));
   transform-origin: center center;
 }
 .featureSlide .slideCap {
