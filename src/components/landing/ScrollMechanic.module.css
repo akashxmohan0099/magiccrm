@@ -839,14 +839,16 @@
 .featureSlide {
   align-items: center;
 }
-/* Slide 4's 5-card composition is DOM-wide ~1114px. At its design scale
-   (0.82) the stage's own popS*zoomS (~1.5x) magnifies it to ~1380px. We
-   clamp the transform scale to ~ viewport/1700 so the composition always
-   leaves comfortable margin inside the viewport — never cropping the
-   outer cards regardless of how narrow the window gets before the mobile
-   breakpoint takes over. */
+/* Slide 4's 5-card composition should occupy the SAME fraction of the
+   viewport at every desktop width — otherwise at narrower widths the
+   cards appear "zoomed in" even when they technically still fit. The
+   design scale (0.82) at vw=1920 gives a visual width ~71% of viewport.
+   Dividing 100vw by ~2340 preserves that ratio at every width, so cards
+   shrink proportionally as the window narrows instead of sticking at the
+   design scale until they overflow. Floor at 0.4 for the final slivers
+   just above the 900px mobile breakpoint. */
 .featureSlide .slideBoards {
-  transform: scale(clamp(0.44, calc(100vw / 1700), 0.82));
+  transform: scale(clamp(0.4, calc(100vw / 2340), 0.82));
   transform-origin: center center;
 }
 .featureSlide .slideCap {
