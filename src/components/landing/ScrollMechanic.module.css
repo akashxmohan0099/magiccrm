@@ -843,12 +843,13 @@
    viewport at every desktop width — otherwise at narrower widths the
    cards appear "zoomed in" even when they technically still fit. The
    design scale (0.82) at vw=1920 gives a visual width ~71% of viewport.
-   Dividing 100vw by ~2340 preserves that ratio at every width, so cards
+   Dividing 100vw by 2340px preserves that ratio at every width, so cards
    shrink proportionally as the window narrows instead of sticking at the
-   design scale until they overflow. Floor at 0.4 for the final slivers
-   just above the 900px mobile breakpoint. */
+   design scale until they overflow. The `/2340px` (length÷length) is
+   important — it yields a unitless number so scale() accepts it;
+   `/2340` on its own returns a length and silently breaks the transform. */
 .featureSlide .slideBoards {
-  transform: scale(clamp(0.4, calc(100vw / 2340), 0.82));
+  transform: scale(clamp(0.4, calc(100vw / 2340px), 0.82));
   transform-origin: center center;
 }
 .featureSlide .slideCap {
