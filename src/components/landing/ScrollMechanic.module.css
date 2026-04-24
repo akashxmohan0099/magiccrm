@@ -1,7 +1,13 @@
 /* ---------- SCROLL STAGE ---------- */
+/* --ui-scale drives the "zoom out" behavior as viewport shrinks: everything
+   with a fixed-pixel size multiplies by this factor so the whole
+   composition keeps its proportions instead of reflowing. 1440px is the
+   design width; we shrink uniformly down to ~0.63 at 900px (just above the
+   mobile breakpoint), and allow a slight scale-up on large monitors. */
 .scrollTrack {
   position: relative;
   height: 850vh;
+  --ui-scale: clamp(0.63, calc(100vw / 1440), 1.1);
 }
 .stickyStage {
   position: sticky;
@@ -161,7 +167,7 @@
 
 .introQuestion {
   margin: 0;
-  font-size: 26px;
+  font-size: calc(26px * var(--ui-scale));
   font-weight: 700;
   letter-spacing: -0.03em;
   line-height: 1.05;
@@ -170,7 +176,7 @@
 
 .introAnswer {
   margin: 0 0 16% 0;
-  font-size: 17px;
+  font-size: calc(17px * var(--ui-scale));
   font-weight: 700;
   letter-spacing: -0.03em;
   line-height: 1.1;
@@ -213,9 +219,9 @@
 }
 .introBadge {
   flex: 0 0 auto;
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
+  width: calc(38px * var(--ui-scale));
+  height: calc(38px * var(--ui-scale));
+  border-radius: calc(10px * var(--ui-scale));
   background: var(--logo-green, #7CFE9D);
   display: inline-flex;
   align-items: center;
@@ -229,14 +235,14 @@
 }
 .introBadgeInset {
   display: block;
-  width: 16px;
-  height: 16px;
-  border-radius: 4px;
+  width: calc(16px * var(--ui-scale));
+  height: calc(16px * var(--ui-scale));
+  border-radius: calc(4px * var(--ui-scale));
   background: var(--card-bg, #ffffff);
 }
 .introBrandName {
   display: inline-block;
-  font-size: 46px;
+  font-size: calc(46px * var(--ui-scale));
   font-weight: 700;
   letter-spacing: -0.04em;
   line-height: 1;
@@ -567,11 +573,20 @@
    must produce the same card dimensions). */
 .lingoCal,
 .lingoMenu {
-  flex: 0 0 280px;
-  width: 280px;
+  flex: 0 0 calc(280px * var(--ui-scale));
+  width: calc(280px * var(--ui-scale));
   display: flex;
   align-items: center;
   justify-content: center;
+}
+/* Inner card matches the outer flex track and takes its height from the
+   shared card-height variable so both cards always end up identical. */
+.lingoCalInner,
+.lingoMenuInner {
+  width: 100%;
+  max-width: calc(280px * var(--ui-scale));
+  height: calc(305px * var(--ui-scale));
+  min-height: calc(305px * var(--ui-scale));
 }
 .lingoCalFade {
   animation: lingoCalFadeIn 320ms ease-out both;
@@ -594,17 +609,17 @@
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: calc(10px * var(--ui-scale));
   align-items: flex-start;
   align-self: center;
-  padding-right: 4px;
+  padding-right: calc(4px * var(--ui-scale));
 }
 .lingoPersona {
   font-family: inherit;
   background: transparent;
   border: 0;
-  padding: 2px 0;
-  font-size: 15px;
+  padding: calc(2px * var(--ui-scale)) 0;
+  font-size: calc(15px * var(--ui-scale));
   font-weight: 500;
   letter-spacing: -0.01em;
   color: #c9c6be;
@@ -863,7 +878,7 @@
 .featureGrid {
   display: flex;
   align-items: stretch;
-  gap: 16px;
+  gap: calc(16px * var(--ui-scale));
 }
 
 /* Image-backed card — stock photo fills the card, a dark gradient overlay
@@ -871,9 +886,9 @@
    the minimal, editorial feel of the rest of the site. */
 .featureCard {
   position: relative;
-  width: 210px;
-  height: 320px;
-  border-radius: 20px;
+  width: calc(210px * var(--ui-scale));
+  height: calc(320px * var(--ui-scale));
+  border-radius: calc(20px * var(--ui-scale));
   overflow: hidden;
   background-color: #0a0a0a;
   background-size: cover;
@@ -893,23 +908,23 @@
 }
 .featureCardContent {
   position: absolute;
-  left: 22px;
-  right: 22px;
-  bottom: 22px;
+  left: calc(22px * var(--ui-scale));
+  right: calc(22px * var(--ui-scale));
+  bottom: calc(22px * var(--ui-scale));
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: calc(6px * var(--ui-scale));
   z-index: 1;
 }
 .featureCardTitle {
-  font-size: 22px;
+  font-size: calc(22px * var(--ui-scale));
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.1;
   color: #ffffff;
 }
 .featureCardDesc {
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--ui-scale));
   font-weight: 500;
   color: rgba(255, 255, 255, 0.82);
   line-height: 1.45;
@@ -1270,76 +1285,261 @@
   50%      { background: #a6e7bf; transform: scaleX(1.04); }
 }
 
-/* ---------- MOBILE: horizontal pan (replaces zoom mechanic) ---------- */
-.mobileMech { display: none; }
-.mobileHeading {
-  font-size: clamp(32px, 8vw, 44px);
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1.05;
-  text-align: center;
+/* ---------- MOBILE: vertical-stacked sections ---------- */
+/* Hidden on desktop; revealed at ≤900px where the zoom mechanic is hidden. */
+.mobileStack {
+  display: none;
+  padding: 24px 20px 64px;
+  max-width: 520px;
   margin: 0 auto;
-  padding: 80px 24px 24px;
-  max-width: 560px;
-  color: var(--foreground);
+  box-sizing: border-box;
 }
-.mobileTrack {
-  position: relative;
-  height: 320vh;
-}
-.mobileSticky {
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  background: var(--background);
-}
-.mobilePan {
-  display: flex;
-  gap: 5vw;
-  padding: 0 8vw;
-  will-change: transform;
-}
-.mSlide {
-  flex: 0 0 78vw;
+.mSection {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
+  padding: 48px 0;
+  align-items: stretch;
 }
-.mBoard {
-  width: 100%;
-  aspect-ratio: 4 / 5;
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 900;
-  font-size: clamp(44px, 10vw, 72px);
-  letter-spacing: -0.04em;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
-  overflow: hidden;
-  position: relative;
-}
-.mDark { background: #0a0a0a; color: #fff; }
-.mBlue { background: #8ad4ff; color: #0a0a0a; }
-.mPaper {
-  background: #f4f1ea;
-  color: #0a0a0a;
-  border: 1px solid #e6e1d4;
-  font-size: clamp(18px, 4vw, 24px);
-  padding: 20px;
-}
-.mCap {
-  font-size: clamp(15px, 4vw, 18px);
-  font-weight: 700;
+.mCaption {
+  font-size: clamp(18px, 4.6vw, 22px);
+  font-weight: 600;
+  letter-spacing: -0.015em;
   line-height: 1.25;
   color: var(--foreground);
-  letter-spacing: -0.01em;
+  margin: 0;
+}
+.mCaptionAccent {
+  color: var(--primary);
+}
+.mEyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: #9ca3af;
+  text-transform: uppercase;
+  margin: 0;
 }
 
-@media (max-width: 768px) {
+/* 1. Hero */
+.mHero {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 32px 0;
+}
+.mHeroStatement {
+  font-size: clamp(26px, 7vw, 32px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin: 0;
+  color: var(--foreground);
+}
+.mHeroReveal {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+.mHeroKicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: #737373;
+}
+.mHeroKickerMark { color: #34D399; font-size: 12px; line-height: 1; }
+.mHeroLockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+.mHeroBadge {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--logo-green, #7CFE9D);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 16px rgba(124, 254, 157, 0.35), inset 0 0 0 1px rgba(0, 0, 0, 0.03);
+}
+.mHeroBadgeInset {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  background: var(--card-bg, #ffffff);
+  display: block;
+}
+.mHeroBrandName {
+  font-size: clamp(40px, 11vw, 54px);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: var(--foreground);
+}
+
+/* 2. Specialty picker grid */
+.mSpecGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.mSpecTile {
+  font-family: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 18px 8px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  color: #9ca3af;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 220ms ease, color 220ms ease, border-color 220ms ease, transform 220ms ease;
+}
+.mSpecTile:hover {
+  background: #ffffff;
+}
+.mSpecTileActive {
+  background: #ffffff;
+  color: var(--accent, #0a0a0a);
+  border: 2px solid var(--accent, #0a0a0a);
+  transform: translateY(-2px);
+}
+.mSpecIcon { width: 22px; height: 22px; }
+
+/* 3. Calendar card wrapper for mobile */
+.mCard {
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--border-light, #efefef);
+  border-radius: 18px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  padding: 22px 20px 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 4. Unified inbox */
+.mInbox {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--primary) 4%, #ffffff) 0%, color-mix(in srgb, var(--primary) 10%, #ffffff) 100%);
+  border: 1px solid color-mix(in srgb, var(--primary) 16%, transparent);
+  border-radius: 18px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.mInboxHead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--primary) 14%, transparent);
+}
+.mInboxHub {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--primary, #10B981);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+.mInboxHubIcon { width: 20px; height: 20px; color: #ffffff; }
+.mInboxTitles { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.mInboxTitle { font-size: 15px; font-weight: 700; color: var(--foreground); letter-spacing: -0.01em; }
+.mInboxSub { font-size: 12px; color: #6b7280; }
+.mInboxRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-radius: 12px;
+  padding: 12px;
+}
+.mInboxIcon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  flex: 0 0 auto;
+  overflow: hidden;
+}
+.mInboxIconLogo { width: 22px; height: 22px; }
+.mInboxBody { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
+.mInboxName { font-size: 13px; font-weight: 700; color: var(--foreground); }
+.mInboxMsg { font-size: 12px; color: #6b7280; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 5. Feature image cards — stacked vertically */
+.mFeatureGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+.mFeatureCard {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  max-height: 380px;
+  border-radius: 18px;
+  overflow: hidden;
+  background-color: #0a0a0a;
+  background-size: cover;
+  background-position: center;
+  box-shadow: 0 10px 26px rgba(10, 10, 10, 0.12);
+}
+.mFeatureOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(10, 10, 10, 0) 30%,
+    rgba(10, 10, 10, 0.55) 65%,
+    rgba(10, 10, 10, 0.88) 100%
+  );
+  pointer-events: none;
+}
+.mFeatureContent {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 1;
+}
+.mFeatureTitle {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: #ffffff;
+}
+.mFeatureDesc {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.82);
+  line-height: 1.4;
+}
+
+@media (max-width: 900px) {
   .scrollTrack { display: none; }
-  .mobileMech { display: block; }
+  .mobileStack { display: block; }
 }

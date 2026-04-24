@@ -302,8 +302,6 @@ export function ScrollMechanic() {
   const selRingRef = useRef<HTMLDivElement>(null);
   const magicRevealRef = useRef<HTMLDivElement>(null);
   const extraRef = useRef<HTMLDivElement>(null);
-  const mobileTrackRef = useRef<HTMLDivElement>(null);
-  const mobilePanRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const track = trackRef.current;
@@ -314,8 +312,6 @@ export function ScrollMechanic() {
     const selRing = selRingRef.current;
     const magicReveal = magicRevealRef.current;
     const extra = extraRef.current;
-    const mobileTrack = mobileTrackRef.current;
-    const mobilePan = mobilePanRef.current;
     if (!track || !stage || !grid || !sel || !selLabel || !selRing || !extra) return;
 
     // Only count top-level artboards (direct children of each slide's
@@ -483,23 +479,11 @@ export function ScrollMechanic() {
       }
     };
 
-    const isMobile = () => window.innerWidth <= 768;
-    const updateMobilePan = () => {
-      if (!isMobile() || !mobileTrack || !mobilePan) return;
-      const rect = mobileTrack.getBoundingClientRect();
-      const scrollable = mobileTrack.offsetHeight - window.innerHeight;
-      const p = scrollable > 0 ? clamp(-rect.top / scrollable, 0, 1) : 0;
-      const totalWidth = mobilePan.scrollWidth;
-      const maxMove = Math.max(0, totalWidth - window.innerWidth);
-      mobilePan.style.transform = `translateX(${-(maxMove * p)}px)`;
-    };
-
     let ticking = false;
     const onScroll = () => {
       if (!ticking) {
         requestAnimationFrame(() => {
           update();
-          updateMobilePan();
           ticking = false;
         });
         ticking = true;
@@ -508,7 +492,6 @@ export function ScrollMechanic() {
     const onResize = () => {
       M = measure();
       update();
-      updateMobilePan();
     };
 
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -518,7 +501,6 @@ export function ScrollMechanic() {
     requestAnimationFrame(() => {
       M = measure();
       update();
-      updateMobilePan();
     });
 
     return () => {
@@ -780,7 +762,7 @@ export function ScrollMechanic() {
                         the build-journey section in page.tsx so it reads as the
                         same component. */}
                     <div className={styles.lingoCal}>
-                      <div className="w-full max-w-[280px] bg-card-bg rounded-2xl border border-border-light px-5 pt-5 pb-8 shadow-sm relative overflow-hidden flex flex-col" style={{ minHeight: 305, height: 305 }}>
+                      <div className={`${styles.lingoCalInner} bg-card-bg rounded-2xl border border-border-light px-5 pt-5 pb-8 shadow-sm relative overflow-hidden flex flex-col`}>
                       <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/[0.03] to-transparent" />
                       <div key={`cal-${activeSpec}`} className={`relative ${styles.lingoCalFade}`}>
                         <div className="flex items-center justify-between mb-3">
@@ -830,7 +812,7 @@ export function ScrollMechanic() {
                         Uses the same card shell as the calendar so the two
                         tabs have identical dimensions. */}
                     <div className={styles.lingoMenu}>
-                      <div className="w-full max-w-[280px] bg-card-bg rounded-2xl border border-border-light px-5 pt-5 pb-8 shadow-sm relative overflow-hidden flex flex-col" style={{ minHeight: 305, height: 305 }}>
+                      <div className={`${styles.lingoMenuInner} bg-card-bg rounded-2xl border border-border-light px-5 pt-5 pb-8 shadow-sm relative overflow-hidden flex flex-col`}>
                       <div key={`menu-${activeSpec}`} className={`relative flex flex-col h-full ${styles.lingoCalFade}`}>
                         <div className="flex items-center justify-between pb-3 mb-3 border-b border-border-light">
                           <p className="text-[10px] font-semibold text-text-tertiary uppercase tracking-[0.18em]">Services</p>
@@ -983,32 +965,167 @@ export function ScrollMechanic() {
         </div>
       </div>
 
-      {/* ============== MOBILE: simpler horizontal pan ============== */}
-      <section className={styles.mobileMech}>
-        <h2 className={styles.mobileHeading}>Built for every canvas</h2>
-        <div ref={mobileTrackRef} className={styles.mobileTrack}>
-          <div className={styles.mobileSticky}>
-            <div ref={mobilePanRef} className={styles.mobilePan}>
-              <div className={styles.mSlide}>
-                <div className={`${styles.mBoard} ${styles.mDark}`}>JUMP</div>
-                <div className={styles.mCap}>
-                  Jump into a familiar interface and get your first animation ready in minutes.
-                </div>
+      {/* ============== MOBILE: vertical-stacked sections ============== */}
+      <section className={styles.mobileStack}>
+        {/* Mobile 1 — hero: same final reveal as desktop Frame 4 */}
+        <div className={styles.mSection}>
+          <div className={styles.mHero}>
+            <p className={styles.mHeroStatement}>Change the way you work.</p>
+            <div className={styles.mHeroReveal}>
+              <span className={styles.mHeroKicker}>
+                <span className={styles.mHeroKickerMark}>✦</span>
+                Here&apos;s
+              </span>
+              <div className={styles.mHeroLockup}>
+                <span className={styles.mHeroBadge} aria-hidden="true">
+                  <span className={styles.mHeroBadgeInset} />
+                </span>
+                <span className={styles.mHeroBrandName}>Magic</span>
               </div>
-              <div className={styles.mSlide}>
-                <div className={`${styles.mBoard} ${styles.mBlue}`}>new ↗</div>
-                <div className={styles.mCap}>
-                  Scale your animations for marketing, ads, brand, and product on an infinite canvas.
+            </div>
+          </div>
+          <p className={styles.mCaption}>
+            Your beauty business — on autopilot.
+          </p>
+        </div>
+
+        {/* Mobile 2 — persona picker + services menu for the active persona */}
+        <div
+          className={styles.mSection}
+          style={{ ["--accent" as string]: PERSONA_ACCENT[activeSpec] }}
+        >
+          <p className={styles.mEyebrow}>WHAT DO YOU DO?</p>
+          <div className={styles.mSpecGrid}>
+            {SPECIALTIES.map((s, i) => {
+              const isActive = specSelected && i === activeSpec;
+              const Icon = s.Icon;
+              return (
+                <button
+                  key={s.name}
+                  type="button"
+                  className={`${styles.mSpecTile}${isActive ? ` ${styles.mSpecTileActive}` : ""}`}
+                  onMouseEnter={() => { setSpecHover(i); bumpCooldown(); }}
+                  onMouseLeave={() => { setSpecHover(null); bumpCooldown(); }}
+                  onClick={() => { setSpecLock((prev) => (prev === i ? null : i)); bumpCooldown(); }}
+                >
+                  <Icon className={styles.mSpecIcon} strokeWidth={1.8} />
+                  <span>{s.name}</span>
+                </button>
+              );
+            })}
+          </div>
+          <p className={styles.mCaption}>
+            Just pick your speciality — <span className={styles.mCaptionAccent}>get a workspace around how you work.</span>
+          </p>
+        </div>
+
+        {/* Mobile 3 — today's calendar card */}
+        <div className={styles.mSection}>
+          <div key={`m-cal-${activeSpec}`} className={`${styles.mCard} ${styles.lingoCalFade}`}>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider">Today</p>
+              <span className="text-[11px] font-medium text-text-tertiary">April 4</span>
+            </div>
+            <div className="space-y-2 mb-3">
+              {PERSONA_CALENDAR[activeSpec].slots.map((slot) => (
+                <div key={slot.time} className="flex items-center gap-3">
+                  <span className="text-[11px] font-mono text-text-tertiary w-10 flex-shrink-0">{slot.time}</span>
+                  {slot.name ? (
+                    <div
+                      className="flex-1 px-3 py-2.5 rounded-lg border-l-2"
+                      style={{ backgroundColor: slot.color + "08", borderColor: slot.color }}
+                    >
+                      <p className="text-[13px] font-semibold text-foreground">{slot.name}</p>
+                      <p className="text-[11px] text-text-tertiary">{slot.service}</p>
+                    </div>
+                  ) : (
+                    <div className="flex-1 px-3 py-2.5 rounded-lg border border-dashed border-border-light">
+                      <p className="text-[12px] text-text-tertiary">Available</p>
+                    </div>
+                  )}
                 </div>
-              </div>
-              <div className={styles.mSlide}>
-                <div className={`${styles.mBoard} ${styles.mPaper}`}>The whole business</div>
-                <div className={styles.mCap}>
-                  You didn&rsquo;t get into beauty to do admin — we&rsquo;ll handle the rest.
+              ))}
+            </div>
+            <div key={`m-notif-${activeSpec}`} className={`bg-foreground text-background rounded-xl px-4 py-3 shadow-xl ${styles.lingoCalNotifIn}`}>
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: PERSONA_ACCENT[activeSpec] }}>
+                  <Bell className="w-4 h-4 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[12px] font-bold">New booking!</p>
+                  <p className="text-[11px] opacity-70">{PERSONA_CALENDAR[activeSpec].notif.name} booked {PERSONA_CALENDAR[activeSpec].notif.service}</p>
+                  <div className="flex items-center gap-1.5 mt-1.5">
+                    <Clock className="w-3 h-3 opacity-50" />
+                    <span className="text-[10px] opacity-50">11:47 PM — while you were closed</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
+          <p className={styles.mCaption}>
+            One platform — <span className={styles.mCaptionAccent}>speaks your language.</span>
+          </p>
+        </div>
+
+        {/* Mobile 4 — unified inbox */}
+        <div className={styles.mSection}>
+          <div className={styles.mInbox}>
+            <div className={styles.mInboxHead}>
+              <span className={styles.mInboxHub}>
+                <MessageCircle className={styles.mInboxHubIcon} strokeWidth={2.2} />
+              </span>
+              <div className={styles.mInboxTitles}>
+                <span className={styles.mInboxTitle}>Magic Inbox</span>
+                <span className={styles.mInboxSub}>Every enquiry, one place</span>
+              </div>
+            </div>
+            {[
+              { Logo: InstagramLogo, name: "Sarah K.", msg: "hey! can u do my daughter's makeup for her formal?" },
+              { Logo: WhatsAppLogo,  name: "Mia L.",   msg: "hiii any spots sat for a lash fill?" },
+              { Logo: GmailLogo,     name: "Jordan B.", msg: "Hi, looking to book a bridal trial for June — are you free?" },
+            ].map((r, i) => (
+              <div key={i} className={styles.mInboxRow}>
+                <span className={styles.mInboxIcon}>
+                  <r.Logo className={styles.mInboxIconLogo} />
+                </span>
+                <div className={styles.mInboxBody}>
+                  <span className={styles.mInboxName}>{r.name}</span>
+                  <span className={styles.mInboxMsg}>{r.msg}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className={styles.mCaption}>
+            Every DM, email and form — <span className={styles.mCaptionAccent}>one magical inbox.</span>
+          </p>
+        </div>
+
+        {/* Mobile 5 — feature image cards */}
+        <div className={styles.mSection}>
+          <div className={styles.mFeatureGrid}>
+            {[
+              { title: "One inbox", desc: "Every DM, email and form — in one place.", img: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=80" },
+              { title: "Smart bookings", desc: "Calendar, deposits and reminders — clients book themselves.", img: "https://images.unsplash.com/photo-1519823551278-64ac92734fb1?auto=format&fit=crop&w=900&q=80" },
+              { title: "Regulars rebook", desc: "Campaigns, nudges and birthdays — on autopilot.", img: "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&w=900&q=80" },
+              { title: "Get paid fast", desc: "Deposits, quotes and invoices — Stripe-powered.", img: "https://images.unsplash.com/photo-1522337094846-8a818192de1f?auto=format&fit=crop&w=900&q=80" },
+              { title: "Grow smarter", desc: "Quiet days, top clients and revenue — at a glance.", img: "https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=900&q=80" },
+            ].map((card) => (
+              <div
+                key={card.title}
+                className={styles.mFeatureCard}
+                style={{ backgroundImage: `url(${card.img})` }}
+              >
+                <div className={styles.mFeatureOverlay} aria-hidden="true" />
+                <div className={styles.mFeatureContent}>
+                  <div className={styles.mFeatureTitle}>{card.title}</div>
+                  <div className={styles.mFeatureDesc}>{card.desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className={styles.mCaption}>
+            You didn&rsquo;t get into beauty to do admin — <span className={styles.mCaptionAccent}>we&rsquo;ll handle the rest.</span>
+          </p>
         </div>
       </section>
     </>
