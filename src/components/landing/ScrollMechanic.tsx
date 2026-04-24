@@ -919,8 +919,8 @@ export function ScrollMechanic() {
                         {
                           title: "Smart bookings",
                           desc: "Calendar, deposits and reminders — clients book themselves.",
-                          // Massage therapist during a treatment
-                          img: "https://images.unsplash.com/photo-1519823551278-64ac92734fb1?auto=format&fit=crop&w=900&q=80",
+                          // Beauty portrait — close-up editorial
+                          img: "https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?auto=format&fit=crop&w=900&q=80",
                         },
                         {
                           title: "Regulars rebook",
@@ -1105,7 +1105,7 @@ export function ScrollMechanic() {
           <div className={styles.mFeatureGrid}>
             {[
               { title: "One inbox", desc: "Every DM, email and form — in one place.", img: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=80" },
-              { title: "Smart bookings", desc: "Calendar, deposits and reminders — clients book themselves.", img: "https://images.unsplash.com/photo-1519823551278-64ac92734fb1?auto=format&fit=crop&w=900&q=80" },
+              { title: "Smart bookings", desc: "Calendar, deposits and reminders — clients book themselves.", img: "https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?auto=format&fit=crop&w=900&q=80" },
               { title: "Regulars rebook", desc: "Campaigns, nudges and birthdays — on autopilot.", img: "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&w=900&q=80" },
               { title: "Get paid fast", desc: "Deposits, quotes and invoices — Stripe-powered.", img: "https://images.unsplash.com/photo-1522337094846-8a818192de1f?auto=format&fit=crop&w=900&q=80" },
               { title: "Grow smarter", desc: "Quiet days, top clients and revenue — at a glance.", img: "https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=900&q=80" },

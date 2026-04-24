@@ -839,12 +839,14 @@
 .featureSlide {
   align-items: center;
 }
-/* Slide 4 has 5 image cards — the widest composition of the whole
-   mechanic. At 1600px+ viewports the design sits at 0.82, matching the
-   other slides' visual weight. Below that, the scale shrinks linearly so
-   the feature grid always fits inside the viewport without cropping. */
+/* Slide 4's 5-card composition is DOM-wide ~1114px. At its design scale
+   (0.82) the stage's own popS*zoomS (~1.5x) magnifies it to ~1380px. We
+   clamp the transform scale to ~ viewport/1700 so the composition always
+   leaves comfortable margin inside the viewport — never cropping the
+   outer cards regardless of how narrow the window gets before the mobile
+   breakpoint takes over. */
 .featureSlide .slideBoards {
-  transform: scale(clamp(0.52, calc(0.82 * 100vw / 1600), 0.82));
+  transform: scale(clamp(0.44, calc(100vw / 1700), 0.82));
   transform-origin: center center;
 }
 .featureSlide .slideCap {
