@@ -104,7 +104,7 @@ export function PricingSection() {
           transition={sectionTransition}
           className="text-[1.75rem] sm:text-[2.25rem] font-bold text-foreground mb-3 leading-tight"
         >
-          Flat pricing. No per-staff fees. Ever.
+          Pricing.
         </motion.h2>
         <motion.p
           initial={{ opacity: 0, y: 20 }}
@@ -113,7 +113,7 @@ export function PricingSection() {
           transition={{ delay: 0.1, ...sectionTransition }}
           className="text-text-secondary mb-8 text-[15px]"
         >
-          14-day free trial on every plan. No credit card required.
+          Three tiers. Pick one, grow into the next. That&apos;s it.
         </motion.p>
 
         {/* Billing cycle toggle — SAVE 20% nudge only shown on Monthly */}

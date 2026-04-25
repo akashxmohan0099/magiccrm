@@ -1191,9 +1191,8 @@
 .tWht   { background: #ffffff; border: 1px solid #eaeaea; }
 
 /* ---------- SLIDE 2: speaks your language (calendar + services) ---------- */
-/* Calendar card mirrors the "Today" design from page.tsx's BuildJourney —
-   white rounded-2xl card, soft emerald top gradient, colored-accent booking
-   blocks, dark notification toast that springs in on persona change.
+/* Calendar card: white rounded-2xl, soft emerald top gradient, colored-accent
+   booking blocks, dark notification toast that springs in on persona change.
    Aspect is 2:3 portrait so the notif + 3 slots all fit comfortably. */
 /* Slide 2 ("speaks your language") renders a pair of small native-sized
    cards. The stage zoom multiplies everything ~2x, so we compensate with a

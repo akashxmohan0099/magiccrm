@@ -690,8 +690,7 @@ export default function LandingPage() {
       {/* Nav */}
       <SiteHeader />
 
-      {/* Hero — split layout. Previous centered hero archived at
-          src/archive/HeroCentered.tsx. */}
+      {/* Hero — split layout */}
       <HeroSplit />
 
       {/* Reveal text — scroll-driven word fade-in */}
@@ -699,8 +698,6 @@ export default function LandingPage() {
 
       {/* Scroll mechanic — Pinterest grid → zoom → horizontal pan */}
       <ScrollMechanic />
-
-      {/* Trust bar archived to src/archive/TrustBar.tsx */}
 
       {/* Cinematic Demo */}
       <CinematicDemo />
