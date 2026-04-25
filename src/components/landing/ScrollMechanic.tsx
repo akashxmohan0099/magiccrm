@@ -1325,7 +1325,7 @@ export function ScrollMechanic() {
 
         {/* Mobile 3 — today's calendar card */}
         <div className={styles.mSection}>
-          <div key={`m-cal-${activeSpec}`} className={`${styles.mCard} ${styles.lingoCalFade}`}>
+          <div key={`m-cal-${activeSpec}`} className={`${styles.mCard} ${styles.lingoCalFade} min-h-[340px]`}>
             <div className="flex items-center justify-between mb-3">
               <p className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider">Today</p>
               <span className="text-[11px] font-medium text-text-tertiary">April 4</span>

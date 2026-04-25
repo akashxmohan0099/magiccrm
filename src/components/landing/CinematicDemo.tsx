@@ -5,27 +5,36 @@ import { motion, AnimatePresence } from "framer-motion";
 import { MousePointer2 } from "lucide-react";
 import {
   Users, Inbox, MessageCircle, Calendar, Receipt, FolderKanban,
-  Megaphone, Headphones, FileText, Zap, BarChart3,
-  Package, UsersRound, SlidersHorizontal, Search, Check, Globe, ScrollText,
+  Megaphone, FileText, Zap, BarChart3,
+  UsersRound, SlidersHorizontal, Search, Check, ScrollText,
+  Sparkles, Gift, Heart, BadgeCheck, RotateCcw,
 } from "lucide-react";
 
 const MODULES = [
   { name: "Clients", icon: Users },
-  { name: "Leads", icon: Inbox },
+  { name: "Inquiries", icon: Inbox },
   { name: "Messages", icon: MessageCircle },
-  { name: "Scheduling", icon: Calendar },
+  { name: "Bookings", icon: Calendar },
   { name: "Projects", icon: FolderKanban },
-  { name: "Billing", icon: Receipt },
+  { name: "Payments", icon: Receipt },
   { name: "Proposals", icon: ScrollText },
   { name: "Documents", icon: FileText },
-  { name: "Products", icon: Package },
   { name: "Marketing", icon: Megaphone },
   { name: "Team", icon: UsersRound },
-  { name: "Support", icon: Headphones },
-  { name: "Client Portal", icon: Globe },
   { name: "Automations", icon: Zap },
-  { name: "Reporting", icon: BarChart3 },
 ];
+
+// Add-on modules — appear in FeatureCustomizeDemo sidebar based on persona,
+// not part of the core MODULES grid in ModulePickerDemo.
+const ADDON_MODULES = [
+  { name: "Memberships", icon: BadgeCheck },
+  { name: "Gift Cards", icon: Gift },
+  { name: "Loyalty", icon: Heart },
+  { name: "AI Insights", icon: Sparkles },
+  { name: "Win-Back", icon: RotateCcw },
+];
+
+const ALL_FEATURE_MODULES = [...MODULES, ...ADDON_MODULES];
 
 // ═══════════════════════════════════════════════════
 // SECTION 1: Pick Your Modules
@@ -34,11 +43,11 @@ const MODULES = [
 // ── Persona presets for the module picker demo ──
 
 const PERSONA_PRESETS = [
-  { label: "Sarah", role: "Lash Tech", context: "Sarah does lash extensions and brow lamination. She got Appointments (not generic bookings), a Service Menu (not a product catalog), and Receipts \u2014 because that\u2019s how she works.", modules: ["Clients", "Inquiries", "Messages", "Appointments", "Receipts", "Services", "Marketing", "Automations", "Reporting"] },
-  { label: "Emma", role: "Hair Stylist", context: "Emma runs a 3-chair salon. She got a Client list with colour formulas and hair types, Appointments with rebooking prompts, and Receipts that track tips and retail sales.", modules: ["Clients", "Inquiries", "Messages", "Appointments", "Receipts", "Services", "Marketing", "Team", "Automations", "Reporting"] },
-  { label: "Priya", role: "Nail Tech", context: "Priya does gel extensions and nail art from a home studio. She got a Service Menu with durations and pricing, Appointments with no-show protection, and client preferences for nail shape and type.", modules: ["Clients", "Messages", "Appointments", "Receipts", "Services", "Marketing", "Automations", "Reporting"] },
-  { label: "Jessica", role: "Makeup Artist", context: "Jessica does bridal and event makeup. She got Wedding Inquiries with event dates and party size, deposit-based invoicing, and a trial booking workflow.", modules: ["Clients", "Inquiries", "Messages", "Appointments", "Invoicing", "Services", "Marketing", "Automations", "Reporting"] },
-  { label: "Mia", role: "Spa Owner", context: "Mia runs a day spa with massage therapists. She got a treatment menu, client profiles with pressure preferences and contraindications, and team scheduling across multiple rooms.", modules: ["Clients", "Messages", "Appointments", "Receipts", "Services", "Marketing", "Team", "Automations", "Reporting"] },
+  { label: "Sarah", role: "Lash Tech", context: "Sarah does lash extensions and brow lamination. She uses Bookings tailored to lash work, a Service Menu, and Payments \u2014 because that\u2019s how she works.", modules: ["Clients", "Inquiries", "Messages", "Bookings", "Payments", "Marketing", "Automations"] },
+  { label: "Emma", role: "Hair Stylist", context: "Emma runs a 3-chair salon. She got a Client list with colour formulas and hair types, Bookings with rebooking prompts, and Payments that track tips and retail sales.", modules: ["Clients", "Inquiries", "Messages", "Bookings", "Payments", "Marketing", "Team", "Automations"] },
+  { label: "Priya", role: "Nail Tech", context: "Priya does gel extensions and nail art from a home studio. She got a Service Menu with durations and pricing, Bookings with no-show protection, and client preferences for nail shape and type.", modules: ["Clients", "Messages", "Bookings", "Payments", "Marketing", "Automations"] },
+  { label: "Jessica", role: "Makeup Artist", context: "Jessica does bridal and event makeup. She got Wedding Inquiries with event dates and party size, deposit-based Payments, and a trial booking workflow.", modules: ["Clients", "Inquiries", "Messages", "Bookings", "Payments", "Proposals", "Marketing", "Automations"] },
+  { label: "Mia", role: "Spa Owner", context: "Mia runs a day spa with massage therapists. She got a treatment menu, client profiles with pressure preferences and contraindications, and team scheduling across multiple rooms.", modules: ["Clients", "Messages", "Bookings", "Payments", "Marketing", "Team", "Automations"] },
 ];
 
 const PERSONA_CYCLE_MS = 6000;
@@ -154,13 +163,16 @@ export function ModulePickerDemo() {
             Pick a beauty specialty and see how their workspace looks. Same platform, completely different setup.
           </p>
 
-          {/* Persona preset pills */}
-          <div className="flex flex-wrap justify-center gap-2">
+          {/* Persona preset pills — horizontal scroll on mobile, wrap on sm+ */}
+          <div
+            className="flex gap-2 overflow-x-auto sm:flex-wrap sm:justify-center sm:overflow-x-visible -mx-4 px-4 sm:mx-0 sm:px-0"
+            style={{ scrollbarWidth: "none" }}
+          >
             {PERSONA_PRESETS.map((preset, i) => (
               <button
                 key={preset.label}
                 onClick={() => selectPreset(i)}
-                className={`px-4 py-2 rounded-full text-xs transition-all cursor-pointer ${
+                className={`flex-shrink-0 px-4 py-2 rounded-full text-xs transition-all cursor-pointer ${
                   activePreset === i
                     ? "bg-foreground text-background shadow-md"
                     : "bg-surface border border-border-light text-text-secondary hover:text-foreground hover:border-foreground/20"
@@ -337,15 +349,15 @@ export function ModulePickerDemo() {
 const MODULE_DEMOS: Record<string, { features: string[]; desc: string; content: { type: string; data: Record<string, unknown>[] } }> = {
   Clients: { features: ["CSV Import", "Lifecycle Stages", "Follow-Up Reminders", "Birthday Alerts", "Custom Fields", "Referral Tracking"], desc: "Profiles, tags, and full client history",
     content: { type: "table", data: [{ name: "Sarah Mitchell", email: "sarah@email.com", status: "active" }, { name: "Jess Thompson", email: "jess@email.com", status: "active" }, { name: "Emma Roberts", email: "emma@email.com", status: "inactive" }, { name: "Tom Kennedy", email: "tom@email.com", status: "prospect" }] } },
-  Leads: { features: ["Web Capture Forms", "Lead Scoring", "Custom Pipeline Stages", "Follow-Up Reminders", "Auto-Response", "Lead to Client Conversion"], desc: "Capture, score, and convert leads",
+  Inquiries: { features: ["Web Capture Forms", "Lead Scoring", "Custom Pipeline Stages", "Follow-Up Reminders", "Auto-Response", "Lead to Client Conversion"], desc: "Capture, score, and convert leads",
     content: { type: "kanban", data: [{ stage: "New", items: ["Lisa M.", "Tom K."] }, { stage: "Contacted", items: ["Sarah P."] }, { stage: "Proposal", items: ["James W."] }, { stage: "Won", items: ["Zoe R."] }] } },
   Messages: { features: ["Email", "SMS", "Instagram DMs", "WhatsApp", "Bulk Messaging", "After-Hours Auto-Reply"], desc: "Every channel, one inbox",
     content: { type: "inbox", data: [{ name: "Sarah M.", channel: "SMS", msg: "Can I reschedule Thursday?", time: "2m" }, { name: "Jess T.", channel: "Email", msg: "Thanks for the invoice!", time: "1hr" }, { name: "Emma R.", channel: "Instagram", msg: "Saturday availability?", time: "3hr" }] } },
-  Scheduling: { features: ["Online Booking Page", "Walk-In Queue", "Rebooking Prompts", "Booking Deposits", "No-Show Protection", "Satisfaction Rating"], desc: "Bookings, calendar, and reminders",
+  Bookings: { features: ["Online Booking Page", "Walk-In Queue", "Rebooking Prompts", "Booking Deposits", "No-Show Protection", "Satisfaction Rating"], desc: "Bookings, calendar, and reminders",
     content: { type: "appointments", data: [{ time: "9:00 AM", name: "Sarah — Lash Fill", color: "bg-pink-400" }, { time: "11:30 AM", name: "Jess — Volume Set", color: "bg-purple-400" }, { time: "2:00 PM", name: "Emma — Brow Tint", color: "bg-blue-400" }] } },
   Projects: { features: ["Billable Rate Tracking", "Expense Tracking", "Client Approval", "Profitability Summary", "Job Templates", "Recurring Jobs"], desc: "Tasks, time tracking, and deadlines",
     content: { type: "table", data: [{ name: "Kitchen renovation", email: "In Progress", status: "high" }, { name: "Bathroom refit", email: "Quoted", status: "medium" }, { name: "Garden lights", email: "Complete", status: "low" }] } },
-  Billing: { features: ["Invoices", "Quotes", "Milestone Billing", "Payment Plans", "Aging Report", "Stripe Integration"], desc: "Quotes, invoices, and payments",
+  Payments: { features: ["Invoices", "Quotes", "Milestone Billing", "Payment Plans", "Aging Report", "Stripe Integration"], desc: "Quotes, invoices, and payments",
     content: { type: "table", data: [{ name: "INV-001 Sarah M.", email: "A$175", status: "paid" }, { name: "INV-002 Jess T.", email: "A$200", status: "sent" }, { name: "INV-003 Emma R.", email: "A$90", status: "overdue" }] } },
   Proposals: { features: ["Wedding Templates", "Multi-Session Packages", "E-Signatures", "Deposit Capture", "Client View Tracking", "Auto-Follow-Up"], desc: "Branded proposals with e-sign",
     content: { type: "table", data: [{ name: "PROP-001 Bridal — Ava & James", email: "A$4,500", status: "viewed" }, { name: "PROP-002 Engagement — Mia K.", email: "A$850", status: "sent" }, { name: "PROP-003 Event — Lila R.", email: "A$2,200", status: "signed" }] } },
@@ -355,71 +367,75 @@ const MODULE_DEMOS: Record<string, { features: string[]; desc: string; content: 
     content: { type: "table", data: [{ name: "Summer Promo", email: "Email Campaign", status: "sent" }, { name: "New Year Offer", email: "Email Campaign", status: "draft" }] } },
   Team: { features: ["Module Access Control", "Role Templates", "Workload View", "Shift Scheduling", "Performance Dashboard", "Team Discussions"], desc: "Staff, roles, and assignments",
     content: { type: "table", data: [{ name: "You", email: "Owner", status: "online" }, { name: "Alex K.", email: "Stylist", status: "online" }, { name: "Mia L.", email: "Junior", status: "offline" }] } },
-  Support: { features: ["Auto-Responses", "Satisfaction Ratings", "Knowledge Base", "SLA Tracking", "Ticket to Job Conversion", "Priority Levels"], desc: "Track and resolve client requests",
-    content: { type: "table", data: [{ name: "TK-001", email: "Booking issue", status: "open" }, { name: "TK-002", email: "Invoice query", status: "resolved" }] } },
   Automations: { features: ["Recurring Task Templates", "Email Automations", "Conditional Logic", "Trigger Rules", "Activity Triggers", "Automation Log"], desc: "Automate repetitive work",
     content: { type: "table", data: [{ name: "Welcome email", email: "New client added", status: "active" }, { name: "Follow-up", email: "No booking 30d", status: "active" }] } },
-  Reporting: { features: ["Revenue Breakdown", "Client Retention", "Lead Conversion", "Tax Summary", "Profit & Loss", "Goal Tracking"], desc: "Dashboards and business insights",
-    content: { type: "table", data: [{ name: "Revenue", email: "A$4,280", status: "+12%" }, { name: "Clients", email: "47", status: "+3" }] } },
-  Products: { features: ["Duration Variants", "Service Add-Ons", "Cost Margins", "Inventory Tracking", "Bundles", "Allergen Info"], desc: "Your service and product catalog",
-    content: { type: "table", data: [{ name: "Classic Full Set", email: "A$150", status: "active" }, { name: "Volume Full Set", email: "A$200", status: "active" }] } },
-  "Client Portal": { features: ["View Bookings", "Pay Invoices", "Track Job Progress", "Shared Documents", "Messages", "Custom Branding"], desc: "Self-service hub for your clients",
-    content: { type: "table", data: [{ name: "Upcoming Bookings", email: "2 appointments", status: "active" }, { name: "Outstanding Invoices", email: "A$175 due", status: "sent" }] } },
+  Memberships: { features: ["Tier Builder", "Auto-Renewal", "Member Pricing", "Pause Membership", "Member-Only Promos", "Usage Tracking"], desc: "Recurring packages and member tiers",
+    content: { type: "table", data: [{ name: "Lash Club — Monthly", email: "A$120/mo", status: "active" }, { name: "Glow Tier — Quarterly", email: "A$330/qtr", status: "active" }, { name: "VIP Annual", email: "A$1,200/yr", status: "active" }] } },
+  "Gift Cards": { features: ["Custom Designs", "Bulk Sales", "Expiry Rules", "Refund Tracking", "Gift Card Reports", "Email Delivery"], desc: "Sell, redeem, and track gift cards",
+    content: { type: "table", data: [{ name: "GC-1041 — Mother's Day", email: "A$100", status: "active" }, { name: "GC-1042 — Birthday", email: "A$50", status: "redeemed" }, { name: "GC-1043 — Holiday", email: "A$200", status: "active" }] } },
+  Loyalty: { features: ["Points Per Visit", "Spend Multipliers", "Tier Rewards", "Birthday Bonuses", "Referral Rewards", "Redemption Tracking"], desc: "Reward repeat clients with points",
+    content: { type: "table", data: [{ name: "Sarah M. — Gold", email: "1,240 pts", status: "active" }, { name: "Jess T. — Silver", email: "680 pts", status: "active" }, { name: "Emma R. — Bronze", email: "320 pts", status: "active" }] } },
+  "AI Insights": { features: ["Daily Briefing", "Revenue Forecast", "At-Risk Client Score", "Booking Pattern Analysis", "Service Mix Suggestions", "Anomaly Alerts"], desc: "AI-powered business insights",
+    content: { type: "table", data: [{ name: "Revenue forecast — May", email: "A$18,400 ▲12%", status: "active" }, { name: "5 clients at risk", email: "No booking 60d", status: "sent" }, { name: "Tuesday gap detected", email: "Avg 40% empty", status: "active" }] } },
+  "Win-Back": { features: ["Inactivity Triggers", "Auto Drip Campaigns", "Discount Offers", "Win-Back Reports", "Custom Inactivity Window", "Outreach Lists"], desc: "Re-engage clients who've gone quiet",
+    content: { type: "table", data: [{ name: "60-day silent — 12 clients", email: "Drip queued", status: "active" }, { name: "Lapsed VIPs — 4 clients", email: "20% offer sent", status: "sent" }, { name: "May win-back report", email: "8 reactivated", status: "paid" }] } },
 };
 
 // ── Module info cards (shown outside the demo frame) ──
 
 const MODULE_INFO: Record<string, { headline: string; detail: string; stat?: string; statLabel?: string }> = {
   Clients: { headline: "Customize how you track clients", detail: "From follow-up reminders and birthday alerts to lifecycle stages and referral tracking — choose what matters to your business. Add your own custom fields too." },
-  Leads: { headline: "Your pipeline, your rules", detail: "From lead scoring and auto-response to custom pipeline stages — configure how leads flow through your business. Every step is yours to define." },
+  Inquiries: { headline: "Your pipeline, your rules", detail: "From lead scoring and auto-response to custom pipeline stages — configure how inquiries flow through your business. Every step is yours to define." },
   Messages: { headline: "Pick your channels, set your rules", detail: "From email and SMS to Instagram DMs and WhatsApp — turn on the channels you use. Add bulk messaging, canned responses, and auto-replies as you need them." },
-  Scheduling: { headline: "Bookings built around your workflow", detail: "From online booking pages and deposits to walk-in queues and rebooking prompts — every scheduling feature is a toggle. Turn on what fits your business." },
+  Bookings: { headline: "Bookings built around your workflow", detail: "From online booking pages and deposits to walk-in queues and rebooking prompts — every booking feature is a toggle. Turn on what fits your business." },
   Projects: { headline: "Track work your way", detail: "From billable rate tracking and expense logging to client approval gates and profitability summaries — build the project workflow that matches how you actually work." },
-  Billing: { headline: "Invoices and quotes — built in", detail: "From milestone billing and payment plans to aging reports — everything your billing needs lives where your bookings do. Stripe-connected so paid invoices reconcile automatically." },
+  Payments: { headline: "Invoices and quotes — built in", detail: "From milestone billing and payment plans to aging reports — everything your payments need lives where your bookings do. Stripe-connected so paid invoices reconcile automatically." },
   Proposals: { headline: "Win weddings and events", detail: "Send branded multi-session packages with photos, pricing tiers, and e-signature. Capture a deposit at sign, track when the client opens the proposal, and auto-follow-up if they go quiet." },
   Documents: { headline: "Contracts and files, simplified", detail: "From contract templates with merge fields to e-signatures and expiry alerts — manage your documents without leaving your workspace. Auto-attach to jobs as you go." },
   Marketing: { headline: "Grow without extra tools", detail: "From email sequences and social scheduling to review collection and referral programs — your marketing stack lives inside your workspace. No extra subscriptions." },
   Team: { headline: "Everyone sees only what they need", detail: "From module-level access control to role templates and performance dashboards — set up your team so everyone has exactly the tools they need, nothing more." },
-  Support: { headline: "Help desk that converts", detail: "From auto-responses and SLA tracking to knowledge base and ticket-to-job conversion — handle client issues and turn them into billable work." },
   Automations: { headline: "Automate the repetitive stuff", detail: "From trigger rules and email automations to recurring task templates — set up once and let your workspace handle the follow-ups, reminders, and status updates." },
-  Reporting: { headline: "See what matters, skip what doesn\u2019t", detail: "From revenue breakdown and client retention to tax summaries and profit & loss — choose the dashboards that help you make decisions. Skip the noise." },
-  Products: { headline: "Your catalog, pre-loaded", detail: "From duration variants and service add-ons to cost margins and allergen info — your service catalog comes pre-loaded for your industry. Customize from there." },
-  "Client Portal": { headline: "Let clients help themselves", detail: "From viewing bookings and paying invoices to tracking job progress — give clients a branded self-service hub. Choose exactly what they can see and do." },
+  Memberships: { headline: "Recurring revenue, on autopilot", detail: "From tier builders and auto-renewal to member-only pricing and pause options — turn one-off clients into a predictable monthly base." },
+  "Gift Cards": { headline: "Gift cards that sell themselves", detail: "From custom designs and bulk sales to expiry rules and email delivery — every gift card you sell is tracked, redeemed, and reconciled in one place." },
+  Loyalty: { headline: "Reward the regulars", detail: "From points-per-visit and spend multipliers to tier rewards and birthday bonuses — give your repeat clients a reason to come back." },
+  "AI Insights": { headline: "Your AI co-pilot", detail: "From daily briefings and revenue forecasts to at-risk client alerts and booking gap detection — surface what matters without lifting a finger." },
+  "Win-Back": { headline: "Bring quiet clients back", detail: "From inactivity triggers and auto drip campaigns to targeted discount offers — re-engage clients who've gone silent before they're gone for good." },
 };
 
 // Left-side info: what the module does (points from sidebar)
 const MODULE_LEFT_INFO: Record<string, { title: string; points: string[] }> = {
   Clients: { title: "Client Database", points: ["Full contact profiles", "Service history & notes", "Tags, segments, lifecycle stages", "CSV import with smart mapping"] },
-  Leads: { title: "Lead Pipeline", points: ["Capture from web, social, referrals", "Visual pipeline with custom stages", "Auto-score & prioritize leads", "One-click convert to client"] },
+  Inquiries: { title: "Inquiry Pipeline", points: ["Capture from web, social, referrals", "Visual pipeline with custom stages", "Auto-score & prioritize inquiries", "One-click convert to client"] },
   Messages: { title: "Unified Inbox", points: ["Email, SMS, Instagram, WhatsApp", "Canned responses & templates", "Schedule messages in advance", "Auto-reply outside hours"] },
-  Scheduling: { title: "Booking System", points: ["Online booking page", "Walk-in queue management", "Deposits & no-show protection", "Auto rebooking reminders"] },
+  Bookings: { title: "Booking System", points: ["Online booking page", "Walk-in queue management", "Deposits & no-show protection", "Auto rebooking reminders"] },
   Projects: { title: "Job Tracking", points: ["Task lists with checklists", "Time tracking with billable rates", "Expense logging per job", "Client approval at each stage"] },
-  Billing: { title: "Billing Hub", points: ["Invoices with status tracking", "Quotes with version history", "Milestone & deposit billing", "Stripe-connected payments"] },
+  Payments: { title: "Payments Hub", points: ["Invoices with status tracking", "Quotes with version history", "Milestone & deposit billing", "Stripe-connected payments"] },
   Proposals: { title: "Proposals", points: ["Branded wedding & event proposals", "Multi-session packages & tiers", "E-signature & deposit capture", "View tracking & auto-follow-up"] },
   Documents: { title: "Document Manager", points: ["Contract templates with merge fields", "E-signatures built in", "Auto-attach to jobs", "Expiry alerts & version history"] },
   Marketing: { title: "Marketing Suite", points: ["Email sequences & campaigns", "Social media scheduling", "Review collection automation", "Coupon codes & referral program"] },
   Team: { title: "Team Management", points: ["Module-level access control", "Role templates per industry", "Workload & performance views", "Internal discussion threads"] },
-  Support: { title: "Help Desk", points: ["Ticket tracking with SLA timers", "Auto-responses & routing", "Knowledge base for self-service", "Convert tickets to billable jobs"] },
   Automations: { title: "Workflow Engine", points: ["If-this-then-that triggers", "Email automation flows", "Recurring task templates", "Activity-based actions"] },
-  Reporting: { title: "Business Insights", points: ["Revenue & profit dashboards", "Client retention tracking", "Lead conversion reports", "Tax summary & P&L"] },
-  Products: { title: "Service Catalog", points: ["Services with duration variants", "Add-on upsell options", "Cost margins & stock tracking", "Pre-loaded per industry"] },
-  "Client Portal": { title: "Client Portal", points: ["Branded self-service hub", "View & manage bookings", "Pay invoices online", "Track job progress"] },
+  Memberships: { title: "Memberships", points: ["Build tiers with custom perks", "Auto-renew & pause options", "Member-only pricing", "Track usage per member"] },
+  "Gift Cards": { title: "Gift Cards", points: ["Sell single or bulk", "Custom designs & messages", "Expiry rules & reports", "Auto email delivery"] },
+  Loyalty: { title: "Loyalty Program", points: ["Points per visit & spend", "Tiered rewards", "Birthday & referral bonuses", "Redemption tracking"] },
+  "AI Insights": { title: "AI Insights", points: ["Daily business briefing", "Revenue forecasts", "At-risk client alerts", "Anomaly detection"] },
+  "Win-Back": { title: "Win-Back", points: ["Inactivity triggers", "Auto drip campaigns", "Discount offer engine", "Outreach reports"] },
 };
 
 const CUSTOMIZE_TICK_MS = 3500;
 
 // ── Persona presets for the feature customize demo ──
 const FEATURE_PERSONAS = [
-  { label: "Lash Tech", modules: ["Clients", "Messages", "Scheduling", "Products", "Marketing", "Automations", "Reporting"] },
-  { label: "Hair Stylist", modules: ["Clients", "Messages", "Scheduling", "Products", "Billing", "Marketing", "Team", "Automations", "Reporting"] },
-  { label: "Nail Tech", modules: ["Clients", "Messages", "Scheduling", "Products", "Billing", "Marketing", "Client Portal", "Automations", "Reporting"] },
-  { label: "Makeup Artist", modules: ["Clients", "Leads", "Messages", "Scheduling", "Proposals", "Documents", "Billing", "Marketing", "Automations", "Reporting"] },
-  { label: "Spa Owner", modules: ["Clients", "Leads", "Messages", "Scheduling", "Products", "Billing", "Documents", "Marketing", "Team", "Support", "Client Portal", "Automations", "Reporting"] },
+  { label: "Lash Tech", modules: ["Clients", "Inquiries", "Messages", "Bookings", "Payments", "Documents", "Marketing", "Automations", "Loyalty", "Memberships"] },
+  { label: "Hair Stylist", modules: ["Clients", "Inquiries", "Messages", "Bookings", "Payments", "Documents", "Marketing", "Team", "Automations", "Memberships", "Loyalty"] },
+  { label: "Nail Tech", modules: ["Clients", "Inquiries", "Messages", "Bookings", "Payments", "Documents", "Marketing", "Automations", "Loyalty", "Win-Back"] },
+  { label: "Makeup Artist", modules: ["Clients", "Inquiries", "Messages", "Bookings", "Proposals", "Documents", "Payments", "Marketing", "Automations", "Gift Cards", "Win-Back"] },
+  { label: "Spa Owner", modules: ["Clients", "Inquiries", "Messages", "Bookings", "Payments", "Proposals", "Documents", "Marketing", "Team", "Automations", "Memberships", "Gift Cards", "AI Insights"] },
 ];
 
 export function FeatureCustomizeDemo() {
   const [paused, setPaused] = useState(false);
-  const [activeModule, setActiveModule] = useState("Scheduling");
+  const [activeModule, setActiveModule] = useState("Bookings");
   const [activePersona, setActivePersona] = useState(0);
   const [featureStates, setFeatureStates] = useState<Record<string, boolean>>({});
   const autoFeatureIdx = useRef(0);
@@ -501,7 +517,7 @@ export function FeatureCustomizeDemo() {
     setActivePersona(index);
     const persona = FEATURE_PERSONAS[index];
     // Auto-select the first visible module for this persona
-    const firstVisible = MODULES.find((m) => persona.modules.includes(m.name) && MODULE_DEMOS[m.name]);
+    const firstVisible = ALL_FEATURE_MODULES.find((m) => persona.modules.includes(m.name) && MODULE_DEMOS[m.name]);
     if (firstVisible) setActiveModule(firstVisible.name);
   };
 
@@ -537,13 +553,16 @@ export function FeatureCustomizeDemo() {
             Every field, every feature, every workflow — from rebooking reminders to colour formulas. Nothing you didn&apos;t ask for.
           </p>
 
-          {/* Persona toggle pills */}
-          <div className="flex flex-wrap justify-center gap-2">
+          {/* Persona toggle pills — horizontal scroll on mobile, wrap on sm+ */}
+          <div
+            className="flex gap-2 overflow-x-auto sm:flex-wrap sm:justify-center sm:overflow-x-visible -mx-4 px-4 sm:mx-0 sm:px-0"
+            style={{ scrollbarWidth: "none" }}
+          >
             {FEATURE_PERSONAS.map((persona, i) => (
               <button
                 key={persona.label}
                 onClick={() => selectPersona(i)}
-                className={`px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                className={`flex-shrink-0 px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                   activePersona === i
                     ? "bg-foreground text-background shadow-md"
                     : "bg-surface border border-border-light text-text-secondary hover:text-foreground hover:border-foreground/20"
@@ -653,7 +672,7 @@ export function FeatureCustomizeDemo() {
                 </div>
               </div>
               <nav className="flex-1 px-2 py-2 overflow-y-auto">
-                {MODULES.filter((m) => MODULE_DEMOS[m.name] && visibleModuleNames.has(m.name)).map((mod) => (
+                {ALL_FEATURE_MODULES.filter((m) => MODULE_DEMOS[m.name] && visibleModuleNames.has(m.name)).map((mod) => (
                   <div
                     key={mod.name}
                     ref={(el) => { sidebarNavRefs.current[mod.name] = el; }}
@@ -739,7 +758,7 @@ export function FeatureCustomizeDemo() {
 
         {/* Bottom note */}
         <p className="text-center text-[13px] text-text-tertiary mt-6 max-w-lg mx-auto leading-relaxed">
-          This is a preview of how the platform works — representing a fraction of the 200+ features available. Your actual workspace will be tailored to your industry and business needs.
+          This is a visual representation. The real product may vary.
         </p>
       </div>
     </section>
@@ -785,7 +804,7 @@ function MobileFeatureDemo({
     container.scrollTo({ left: targetScrollLeft, behavior: "smooth" });
   }, [activeModule]);
 
-  const visibleModules = MODULES.filter(
+  const visibleModules = ALL_FEATURE_MODULES.filter(
     (m) => MODULE_DEMOS[m.name] && visibleModuleNames.has(m.name)
   );
 
@@ -931,9 +950,9 @@ function MobileFeatureDemo({
 function DemoContent({ module, features, data }: { module: string; features: Record<string, boolean>; data?: { type: string; data: Record<string, unknown>[] } }) {
   const f = (name: string) => features[name] ?? false;
 
-  // Billing tab state
-  const billingTabs = useMemo(() => {
-    if (module !== "Billing") return [];
+  // Payments tab state
+  const paymentsTabs = useMemo(() => {
+    if (module !== "Payments") return [];
     const tabs: string[] = [];
     if (f("Invoices")) tabs.push("Invoices");
     if (f("Quotes")) tabs.push("Quotes");
@@ -946,18 +965,18 @@ function DemoContent({ module, features, data }: { module: string; features: Rec
 
   // Auto-switch to a valid tab when tabs change
   useEffect(() => {
-    if (module !== "Billing") return;
-    if (billingTabs.length > 0 && !billingTabs.includes(demoTab)) {
-      setDemoTab(billingTabs[0]);
+    if (module !== "Payments") return;
+    if (paymentsTabs.length > 0 && !paymentsTabs.includes(demoTab)) {
+      setDemoTab(paymentsTabs[0]);
     }
     // When a new tab appears, auto-select it to show the change
-    if (billingTabs.length > 0) {
-      const lastAdded = billingTabs[billingTabs.length - 1];
+    if (paymentsTabs.length > 0) {
+      const lastAdded = paymentsTabs[paymentsTabs.length - 1];
       if (lastAdded !== "Invoices") setDemoTab(lastAdded);
     }
-  }, [billingTabs, module, demoTab]);
+  }, [paymentsTabs, module, demoTab]);
 
-  if (module === "Billing") {
+  if (module === "Payments") {
     const invoices = [
       { num: "INV-001", client: "Sarah M.", amount: 175, status: "paid", aging: "Current" },
       { num: "INV-002", client: "Jess T.", amount: 200, status: "sent", aging: "30 days" },
@@ -973,15 +992,15 @@ function DemoContent({ module, features, data }: { module: string; features: Rec
       { num: "PROP-003", client: "Sarah M.", amount: 6000, status: "Accepted" },
     ];
 
-    const nothingOn = billingTabs.length === 0;
+    const nothingOn = paymentsTabs.length === 0;
 
     return (
       <div>
         {/* Tab pills */}
-        {billingTabs.length > 0 && (
+        {paymentsTabs.length > 0 && (
           <div className="flex gap-1.5 mb-3">
             <AnimatePresence>
-              {billingTabs.map((tab) => (
+              {paymentsTabs.map((tab) => (
                 <motion.button
                   key={tab}
                   initial={{ opacity: 0, scale: 0.8, width: 0 }}
@@ -1080,7 +1099,7 @@ function DemoContent({ module, features, data }: { module: string; features: Rec
     );
   }
 
-  if (module === "Scheduling") {
+  if (module === "Bookings") {
     const appts = [
       { time: "9:00 AM", name: "Sarah — Lash Fill", color: "bg-pink-400", done: true },
       { time: "11:30 AM", name: "Jess — Volume Set", color: "bg-purple-400", done: false },
@@ -1215,7 +1234,7 @@ function DemoContent({ module, features, data }: { module: string; features: Rec
     );
   }
 
-  if (module === "Leads") {
+  if (module === "Inquiries") {
     const stages = [{ stage: "New", color: "bg-blue-400", items: ["Lisa M.", "Tom K."] }, { stage: "Contacted", color: "bg-yellow-400", items: ["Sarah P."] }, { stage: "Proposal", color: "bg-purple-400", items: ["James W."] }, { stage: "Won", color: "bg-green-400", items: ["Zoe R."] }];
     return (
       <div>
@@ -1445,42 +1464,6 @@ function DemoContent({ module, features, data }: { module: string; features: Rec
     );
   }
 
-  if (module === "Support") {
-    const tickets = [
-      { id: "TK-001", client: "Sarah M.", subject: "Booking issue", priority: "High", status: "open", rating: 0 },
-      { id: "TK-002", client: "Tom K.", subject: "Invoice query", priority: "Medium", status: "resolved", rating: 5 },
-      { id: "TK-003", client: "Emma R.", subject: "Login problem", priority: "Low", status: "open", rating: 0 },
-    ];
-    return (
-      <div>
-        <div className="border border-border-light rounded-xl overflow-hidden">
-          <motion.div layout className="grid bg-background px-3 py-1.5 border-b border-border-light text-[9px] font-medium text-text-tertiary" style={{ gridTemplateColumns: `45px 1fr ${f("Priority Levels") ? "50px " : ""}${f("Satisfaction Ratings") ? "45px " : ""}${f("SLA Tracking") ? "50px " : ""}50px` }}>
-            <span>Ticket</span><span>Subject</span>
-            {f("Priority Levels") && <span>Priority</span>}
-            {f("Satisfaction Ratings") && <span>CSAT</span>}
-            {f("SLA Tracking") && <span>SLA</span>}
-            <span>Status</span>
-          </motion.div>
-          {tickets.map((t) => (
-            <motion.div layout key={t.id} className="grid px-3 py-2 border-b border-border-light/50 last:border-0 text-[10px] items-center" style={{ gridTemplateColumns: `45px 1fr ${f("Priority Levels") ? "50px " : ""}${f("Satisfaction Ratings") ? "45px " : ""}${f("SLA Tracking") ? "50px " : ""}50px` }}>
-              <span className="text-text-tertiary">{t.id}</span>
-              <div><span className="font-medium text-foreground">{t.subject}</span><p className="text-[9px] text-text-tertiary">{t.client}</p></div>
-              {f("Priority Levels") && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={`text-[8px] px-1 py-0.5 rounded font-medium w-fit ${t.priority === "High" ? "bg-red-50 text-red-600" : t.priority === "Medium" ? "bg-yellow-50 text-yellow-700" : "bg-gray-100 text-gray-500"}`}>{t.priority}</motion.span>}
-              {f("Satisfaction Ratings") && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[9px] text-yellow-500">{t.rating > 0 ? "\u2605".repeat(Math.min(t.rating, 5)) : "\u2014"}</motion.span>}
-              {f("SLA Tracking") && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={`text-[8px] px-1 py-0.5 rounded font-medium ${t.status === "open" ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-700"}`}>{t.status === "open" ? "2hr left" : "Met"}</motion.span>}
-              <span className={`px-1 py-0.5 rounded text-[8px] font-medium w-fit ${t.status === "open" ? "bg-blue-50 text-blue-600" : "bg-emerald-50 text-emerald-700"}`}>{t.status}</span>
-            </motion.div>
-          ))}
-        </div>
-        <AnimatePresence>
-          {f("Auto-Responses") && <motion.div key="Auto-Responses" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mt-2"><div className="px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-[10px] text-blue-700">Auto-response sent to Emma R. — &quot;We&#39;ll get back to you within 2 hours&quot;</div></motion.div>}
-          {f("Knowledge Base") && <motion.div key="Knowledge Base" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mt-2"><div className="px-3 py-2 bg-surface rounded-lg text-[10px] text-text-secondary">Suggested article: <span className="font-medium text-foreground underline">How to reschedule a booking</span> — matched to TK-001</div></motion.div>}
-          {f("Ticket to Job Conversion") && <motion.div key="Ticket to Job Conversion" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mt-2"><div className="px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg text-[10px] text-emerald-700">TK-001 — <span className="font-medium underline">Convert to job</span></div></motion.div>}
-        </AnimatePresence>
-      </div>
-    );
-  }
-
   if (module === "Automations") {
     const rules = [
       { name: "Welcome email", trigger: "New client added", action: "Send welcome email", status: "active" },
@@ -1507,111 +1490,6 @@ function DemoContent({ module, features, data }: { module: string; features: Rec
           {f("Recurring Task Templates") && <motion.div key="Recurring Task Templates" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mt-2"><div className="px-3 py-2 bg-surface rounded-lg text-[10px] text-text-secondary">3 recurring templates: Weekly cleanup, Monthly report, Quarterly review</div></motion.div>}
           {f("Automation Log") && <motion.div key="Automation Log" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mt-2"><div className="text-[10px] text-text-tertiary space-y-1"><div className="flex gap-2"><div className="w-1 h-1 bg-emerald-400 rounded-full mt-1.5" /><span>Welcome email sent to Tom K. — 2hr ago</span></div><div className="flex gap-2"><div className="w-1 h-1 bg-emerald-400 rounded-full mt-1.5" /><span>Follow-up SMS sent to Lisa M. — 5hr ago</span></div></div></motion.div>}
         </AnimatePresence>
-      </div>
-    );
-  }
-
-  if (module === "Reporting") {
-    return (
-      <div>
-        {f("Revenue Breakdown") && <motion.div key="Revenue Breakdown" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-1.5 mb-3">{["Overview", "Revenue", "Clients"].map((t, i) => <span key={t} className={`px-2 py-1 rounded text-[9px] font-medium ${i === 0 ? "bg-foreground text-background" : "bg-background border border-border-light text-text-secondary"}`}>{t}</span>)}</motion.div>}
-        <div className="grid grid-cols-3 gap-2 mb-3">
-          {[{ label: "Revenue", value: "A$4,280", change: "+12%" }, { label: "Clients", value: "47", change: "+3" }, { label: "Bookings", value: "84", change: "+8%" }].map((stat) => (
-            <div key={stat.label} className="px-3 py-2.5 rounded-xl bg-card-bg border border-border-light">
-              <p className="text-[9px] text-text-tertiary">{stat.label}</p>
-              <p className="text-[15px] font-bold text-foreground">{stat.value}</p>
-              {f("Lead Conversion") && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[9px] text-emerald-600 font-medium">{stat.change}</motion.span>}
-            </div>
-          ))}
-        </div>
-        {f("Goal Tracking") && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2 mb-3">
-            {[{ goal: "Monthly revenue", current: 4280, target: 5000, prefix: "$" }, { goal: "New clients", current: 12, target: 15, prefix: "" }].map((g) => (
-              <div key={g.goal} className="px-3 py-2 rounded-lg bg-card-bg border border-border-light">
-                <div className="flex justify-between mb-1"><span className="text-[10px] text-foreground font-medium">{g.goal}</span><span className="text-[9px] text-text-tertiary">{g.prefix}{g.current} / {g.prefix}{g.target}</span></div>
-                <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden"><div className="h-full bg-primary rounded-full" style={{ width: `${(g.current / g.target) * 100}%` }} /></div>
-              </div>
-            ))}
-          </motion.div>
-        )}
-        {f("Client Retention") && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="px-3 py-3 rounded-xl bg-card-bg border border-border-light mb-3">
-            <p className="text-[10px] font-medium text-foreground mb-2">Retention — Last 7 days</p>
-            <div className="flex items-end gap-1 h-14">
-              {[40, 65, 45, 80, 55, 70, 90].map((h, i) => (
-                <div key={i} className="flex-1 bg-primary/20 rounded-t" style={{ height: `${h}%` }}><div className="w-full bg-primary rounded-t" style={{ height: "40%" }} /></div>
-              ))}
-            </div>
-            <div className="flex justify-between mt-1">{["M", "T", "W", "T", "F", "S", "S"].map((d, i) => <span key={i} className="text-[8px] text-text-tertiary flex-1 text-center">{d}</span>)}</div>
-          </motion.div>
-        )}
-        <AnimatePresence>
-          {f("Tax Summary") && <motion.div key="Tax Summary" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mt-2"><div className="px-3 py-2 bg-surface rounded-lg text-[10px] text-text-secondary">Tax collected this quarter: <span className="font-bold text-foreground">A$1,284</span> — <span className="underline">Export for accountant</span></div></motion.div>}
-          {f("Profit & Loss") && <motion.div key="Profit & Loss" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mt-2"><div className="px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg text-[10px] text-emerald-700">Net profit this month: <span className="font-bold">A$2,840</span> (66% margin)</div></motion.div>}
-        </AnimatePresence>
-      </div>
-    );
-  }
-
-  if (module === "Products") {
-    const products = [
-      { name: "Classic Full Set", price: 150, category: "Lashes", stock: null as number | null },
-      { name: "Volume Full Set", price: 200, category: "Lashes", stock: null as number | null },
-      { name: "Brow Lamination", price: 65, category: "Brows", stock: 12 },
-      { name: "Lash Glue", price: 25, category: "Products", stock: 8 },
-    ];
-    return (
-      <div>
-        {f("Duration Variants") && <motion.div key="Duration Variants" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-1.5 mb-3">{["All", "Services", "Products"].map((c, i) => <span key={c} className={`px-2 py-1 rounded-full text-[9px] font-medium ${i === 0 ? "bg-foreground text-background" : "bg-background border border-border-light text-text-secondary"}`}>{c}</span>)}</motion.div>}
-        <div className="border border-border-light rounded-xl overflow-hidden">
-          <motion.div layout className="grid bg-background px-3 py-1.5 border-b border-border-light text-[9px] font-medium text-text-tertiary" style={{ gridTemplateColumns: `1fr 50px ${f("Service Add-Ons") ? "55px " : ""}${f("Cost Margins") ? "50px " : ""}${f("Inventory Tracking") ? "40px " : ""}${f("Bundles") ? "50px " : ""}` }}>
-            <span>Product</span><span>Price</span>
-            {f("Service Add-Ons") && <span>Add-On</span>}
-            {f("Cost Margins") && <span>Margin</span>}
-            {f("Inventory Tracking") && <span>Stock</span>}
-            {f("Bundles") && <span>Bundle</span>}
-          </motion.div>
-          {products.map((p) => (
-            <motion.div layout key={p.name} className="grid px-3 py-2 border-b border-border-light/50 last:border-0 text-[10px] items-center" style={{ gridTemplateColumns: `1fr 50px ${f("Service Add-Ons") ? "55px " : ""}${f("Cost Margins") ? "50px " : ""}${f("Inventory Tracking") ? "40px " : ""}${f("Bundles") ? "50px " : ""}` }}>
-              <span className="font-medium text-foreground truncate">{p.name}</span>
-              <span className="font-medium text-foreground">${p.price}</span>
-              {f("Service Add-Ons") && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[8px] text-primary">{p.category === "Lashes" ? "+A$20" : "—"}</motion.span>}
-              {f("Cost Margins") && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[8px] text-emerald-600 font-medium">{p.price > 100 ? "72%" : p.price > 50 ? "65%" : "58%"}</motion.span>}
-              {f("Inventory Tracking") && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={`text-[9px] ${p.stock !== null && p.stock < 10 ? "text-red-500 font-medium" : "text-text-tertiary"}`}>{p.stock !== null ? p.stock : "\u221E"}</motion.span>}
-              {f("Bundles") && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[8px] text-text-tertiary">{p.category === "Lashes" ? "In bundle" : "\u2014"}</motion.span>}
-            </motion.div>
-          ))}
-        </div>
-        <AnimatePresence>
-          {f("Allergen Info") && <motion.div key="Allergen Info" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mt-2"><div className="px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-lg text-[10px] text-yellow-800">Allergen notice: Lash Glue contains cyanoacrylate — flag for sensitive clients</div></motion.div>}
-          {f("Bundles") && <motion.div key="Bundles" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mt-2"><div className="px-3 py-2 bg-primary/5 border border-primary/10 rounded-lg text-[10px] text-primary">Bundle: &quot;Lash Starter Kit&quot; — Classic + Volume for A$300 (save A$50)</div></motion.div>}
-        </AnimatePresence>
-      </div>
-    );
-  }
-
-  if (module === "Client Portal") {
-    return (
-      <div>
-        {f("Custom Branding") && <motion.div key="Custom Branding" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 mb-3 px-3 py-2 bg-primary/5 border border-primary/10 rounded-lg"><div className="w-5 h-5 rounded-lg flex items-center justify-center" style={{ backgroundColor: "var(--logo-green)" }}><div className="w-2 h-2 bg-card-bg rounded-sm" /></div><span className="text-[10px] text-primary font-medium">Your brand colors and logo applied to portal</span></motion.div>}
-        <div className="border border-border-light rounded-xl overflow-hidden">
-          <div className="grid bg-background px-3 py-1.5 border-b border-border-light text-[9px] font-medium text-text-tertiary" style={{ gridTemplateColumns: "1fr 80px 50px" }}>
-            <span>Section</span><span>Details</span><span>Status</span>
-          </div>
-          {[
-            { name: "Upcoming Bookings", detail: "2 appointments", status: "active", feature: "View Bookings" },
-            { name: "Outstanding Invoices", detail: "A$175 due", status: "sent", feature: "Pay Invoices" },
-            { name: "Job Progress", detail: "Kitchen reno", status: "active", feature: "Track Job Progress" },
-            { name: "Documents", detail: "3 files shared", status: "active", feature: "Shared Documents" },
-            { name: "Messages", detail: "1 unread", status: "active", feature: "Messages" },
-          ].filter(row => f(row.feature)).map((row) => (
-            <div key={row.name} className="grid px-3 py-2 border-b border-border-light/50 last:border-0 text-[10px]" style={{ gridTemplateColumns: "1fr 80px 50px" }}>
-              <span className="font-medium text-foreground">{row.name}</span>
-              <span className="text-text-tertiary">{row.detail}</span>
-              <span className={`px-1 py-0.5 rounded text-[8px] font-medium w-fit ${row.status === "active" ? "bg-emerald-50 text-emerald-700" : "bg-yellow-50 text-yellow-700"}`}>{row.status}</span>
-            </div>
-          ))}
-        </div>
       </div>
     );
   }

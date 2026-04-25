@@ -9,8 +9,10 @@ import {
   viewportConfig,
   ctaPulseVariants,
 } from "@/app/landing-data";
+import { useWaitlistModal } from "./waitlistStore";
 
 export function SiteFooter() {
+  const openWaitlist = useWaitlistModal((s) => s.open);
   return (
     <footer className="relative overflow-hidden" style={{ backgroundColor: "#0e0e0e" }}>
       {/* Ambient glow behind CTA */}
@@ -49,12 +51,13 @@ export function SiteFooter() {
           Everything your beauty business needs. One login. One price. No per-staff surprises.
         </motion.p>
         <motion.div variants={ctaPulseVariants} initial="hidden" whileInView="visible" viewport={viewportConfig}>
-          <Link
-            href="/waitlist"
+          <button
+            type="button"
+            onClick={openWaitlist}
             className="inline-flex items-center justify-center gap-2.5 rounded-full bg-primary px-10 py-3.5 text-[15px] font-semibold tracking-[-0.01em] text-foreground transition-colors hover:bg-primary-hover cta-glow"
           >
             Join the waitlist <ArrowRight className="w-5 h-5" />
-          </Link>
+          </button>
         </motion.div>
       </div>
 

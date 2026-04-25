@@ -1,3 +1,4 @@
+
 type Props = { className?: string };
 
 export function GmailLogo({ className }: Props) {
@@ -92,34 +93,27 @@ export function OutlookLogo({ className }: Props) {
 }
 
 export function InstagramLogo({ className }: Props) {
+  // Real Instagram brand mark — see public/landing/instagram-logo.webp.
+  // The wrapping component keeps the same Props API so callers (sized via
+  // className w-X h-Y) work without changes.
   return (
-    <svg className={className} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-label="Instagram">
-      <defs>
-        <radialGradient id="igGrad" cx="30%" cy="107%" r="150%">
-          <stop offset="0" stopColor="#FFDD55"/>
-          <stop offset="0.1" stopColor="#FFDD55"/>
-          <stop offset="0.5" stopColor="#FF543E"/>
-          <stop offset="1" stopColor="#C837AB"/>
-        </radialGradient>
-        <linearGradient id="igBlue" x1="0" y1="0" x2="20%" y2="20%">
-          <stop offset="0" stopColor="#3771C8"/>
-          <stop offset="1" stopColor="#3771C8" stopOpacity="0"/>
-        </linearGradient>
-      </defs>
-      <rect x="2" y="2" width="20" height="20" rx="5.5" fill="url(#igGrad)"/>
-      <rect x="2" y="2" width="20" height="20" rx="5.5" fill="url(#igBlue)"/>
-      <circle cx="12" cy="12" r="4.5" fill="none" stroke="#fff" strokeWidth="1.8"/>
-      <circle cx="17.4" cy="6.6" r="1.1" fill="#fff"/>
-    </svg>
+    <img
+      src="/landing/instagram-logo.webp"
+      alt="Instagram"
+      className={className}
+      draggable={false}
+    />
   );
 }
 
 export function WhatsAppLogo({ className }: Props) {
   return (
-    <svg className={className} viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-label="WhatsApp">
-      <path fill="#25D366" d="M16 2C8.28 2 2 8.28 2 16c0 2.46.66 4.89 1.9 7L2 30l7.2-1.88c2.04 1.12 4.35 1.7 6.8 1.7C23.72 29.82 30 23.55 30 15.83 30 8.1 23.72 2 16 2z"/>
-      <path fill="#fff" d="M22.9 19.08c-.4-.2-2.37-1.17-2.74-1.3-.37-.14-.63-.2-.9.2-.26.4-1.04 1.3-1.27 1.56-.23.26-.46.3-.86.1-.4-.2-1.7-.63-3.24-2-1.2-1.07-2-2.4-2.23-2.8-.23-.4-.02-.62.17-.82.18-.18.4-.46.6-.7.2-.23.27-.4.4-.66.13-.27.06-.5-.04-.7-.1-.2-.9-2.17-1.23-2.97-.32-.77-.66-.67-.9-.68l-.77-.02c-.27 0-.7.1-1.07.5-.37.4-1.4 1.37-1.4 3.33 0 1.97 1.44 3.87 1.64 4.14.2.27 2.83 4.32 6.86 6.06.96.42 1.7.66 2.28.84.96.3 1.83.26 2.52.16.77-.12 2.37-.97 2.7-1.9.33-.94.33-1.74.23-1.9-.1-.16-.37-.26-.77-.46z"/>
-    </svg>
+    <img
+      src="/landing/whatsapp-logo.webp"
+      alt="WhatsApp"
+      className={className}
+      draggable={false}
+    />
   );
 }
 

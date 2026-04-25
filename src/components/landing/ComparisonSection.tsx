@@ -2,8 +2,7 @@
 
 import { motion } from "framer-motion";
 import {
-  Check, TrendingUp, Receipt, Users, Zap, BrainCircuit,
-  Bot, ScrollText, ClipboardList, Camera, Crown, ListOrdered,
+  Check, Receipt, Sparkles, Crown, Star,
 } from "lucide-react";
 import {
   sectionHeadingVariants,
@@ -11,23 +10,62 @@ import {
   viewportConfig,
 } from "@/app/landing-data";
 
-const COMPARISON_ROWS = [
-  { icon: Receipt,      feature: "Pricing model",   sub: "What you pay for",               magic: "Flat monthly", fresha: "Per staff", timely: "Per staff", magicTone: "win" as const, freshaTone: "loss" as const, timelyTone: "loss" as const },
-  { icon: Users,        feature: "5-person salon",  sub: "Monthly cost, AUD",              magic: "A$59",         fresha: "A$165",     timely: "A$210",     magicTone: "win" as const, freshaTone: "loss" as const, timelyTone: "loss" as const },
-  { icon: Zap,          feature: "Smart rebooking", sub: "AI nudges overdue clients",      magic: "check",        fresha: "cross",     timely: "cross",     magicTone: "win" as const, freshaTone: "loss" as const, timelyTone: "loss" as const },
-  { icon: BrainCircuit, feature: "AI insights",     sub: "No-shows, gaps, revenue trends", magic: "check",        fresha: "cross",     timely: "cross",     magicTone: "win" as const, freshaTone: "loss" as const, timelyTone: "loss" as const },
-  { icon: Bot,          feature: "AI assistant",    sub: "Chat that reads & writes data",  magic: "check",        fresha: "cross",     timely: "cross",     magicTone: "win" as const, freshaTone: "loss" as const, timelyTone: "loss" as const },
-  { icon: Crown,        feature: "Memberships",     sub: "Session packs & auto-billing",   magic: "check",        fresha: "check",     timely: "cross",     magicTone: "win" as const, freshaTone: "neutral" as const, timelyTone: "loss" as const },
+type Cell = "check" | "dash" | string;
+type Tone = "win" | "loss" | "neutral";
+type Row = {
+  feature: string;
+  sub?: string;
+  magic: Cell;
+  fresha: Cell;
+  timely: Cell;
+  magicTone: Tone;
+  freshaTone: Tone;
+  timelyTone: Tone;
+};
+type Section = {
+  label: string;
+  icon: typeof Receipt;
+  rows: Row[];
+};
+
+const COMPARISON_SECTIONS: Section[] = [
+  {
+    label: "Pricing",
+    icon: Receipt,
+    rows: [
+      { feature: "Pricing model",  sub: "What you pay for",    magic: "Flat monthly", fresha: "Per staff", timely: "Per staff", magicTone: "win", freshaTone: "loss", timelyTone: "loss" },
+      { feature: "5-person salon", sub: "Monthly cost, AUD",   magic: "A$59",         fresha: "A$165",     timely: "A$210",     magicTone: "win", freshaTone: "loss", timelyTone: "loss" },
+    ],
+  },
+  {
+    label: "AI & automation",
+    icon: Sparkles,
+    rows: [
+      { feature: "Smart rebooking", sub: "AI nudges overdue clients",      magic: "check", fresha: "dash", timely: "dash", magicTone: "win", freshaTone: "loss", timelyTone: "loss" },
+      { feature: "AI insights",     sub: "No-shows, gaps, revenue trends", magic: "check", fresha: "dash", timely: "dash", magicTone: "win", freshaTone: "loss", timelyTone: "loss" },
+      { feature: "AI assistant",    sub: "Chat that reads & writes data",  magic: "check", fresha: "dash", timely: "dash", magicTone: "win", freshaTone: "loss", timelyTone: "loss" },
+    ],
+  },
+  {
+    label: "Essentials",
+    icon: Crown,
+    rows: [
+      { feature: "Memberships", sub: "Session packs & auto-billing", magic: "check", fresha: "check", timely: "dash", magicTone: "win", freshaTone: "neutral", timelyTone: "loss" },
+    ],
+  },
+  {
+    label: "Only on Magic",
+    icon: Star,
+    rows: [
+      { feature: "Wedding proposals",     sub: "Branded quotes with e-signature", magic: "check", fresha: "dash", timely: "dash", magicTone: "win", freshaTone: "loss", timelyTone: "loss" },
+      { feature: "Treatment notes",       sub: "SOAP notes for clinical records", magic: "check", fresha: "dash", timely: "dash", magicTone: "win", freshaTone: "loss", timelyTone: "loss" },
+      { feature: "Before & after photos", sub: "Capture proof of work in-app",    magic: "check", fresha: "dash", timely: "dash", magicTone: "win", freshaTone: "loss", timelyTone: "loss" },
+      { feature: "Smart waitlist",        sub: "Auto-notify when spots open up",  magic: "check", fresha: "dash", timely: "dash", magicTone: "win", freshaTone: "loss", timelyTone: "loss" },
+    ],
+  },
 ];
 
-const MAGIC_ONLY = [
-  { icon: ScrollText,     label: "Wedding proposals",     sub: "Branded quotes with e-signature" },
-  { icon: ClipboardList,  label: "Treatment notes",       sub: "SOAP notes for clinical records" },
-  { icon: Camera,         label: "Before & after photos", sub: "Capture proof of work in-app" },
-  { icon: ListOrdered,    label: "Smart waitlist",        sub: "Auto-notify when spots open up" },
-];
-
-function renderCell(text: string, tone: "win" | "loss" | "neutral", isMagic: boolean) {
+function renderCell(text: Cell, tone: Tone, isMagic: boolean) {
   if (text === "check") {
     return isMagic ? (
       <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center shadow-[0_2px_8px_-2px_rgba(124,254,157,0.6)]">
@@ -39,17 +77,17 @@ function renderCell(text: string, tone: "win" | "loss" | "neutral", isMagic: boo
       </div>
     );
   }
-  if (text === "cross") {
+  if (text === "dash") {
     return (
-      <div className="w-7 h-7 rounded-full bg-red-50 flex items-center justify-center">
-        <span className="text-red-400 text-[14px] font-bold leading-none">✕</span>
-      </div>
+      <span className="text-text-tertiary/60 text-[18px] leading-none font-light select-none">
+        —
+      </span>
     );
   }
   return (
     <span
       className={`text-[12px] sm:text-[14px] text-center leading-tight font-semibold ${
-        isMagic ? "text-primary" : tone === "loss" ? "text-red-500/80" : "text-text-secondary"
+        isMagic ? "text-primary" : tone === "loss" ? "text-text-secondary" : "text-text-secondary"
       }`}
     >
       {text}
@@ -77,7 +115,7 @@ export function ComparisonSection() {
             transition={sectionTransition}
             className="text-[2rem] sm:text-[2.75rem] font-bold text-foreground leading-[1.08] mb-4 tracking-tight"
           >
-            Why switch from Fresha or Timely?
+            More reasons to switch.
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -90,7 +128,8 @@ export function ComparisonSection() {
           </motion.p>
         </div>
 
-        {/* Comparison table */}
+        {/* Comparison table — horizontal scroll on mobile so all 4 columns
+            stay readable instead of crushing below usable width. */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -98,6 +137,8 @@ export function ComparisonSection() {
           transition={{ duration: 0.5 }}
           className="relative bg-card-bg rounded-[20px] border border-border-light overflow-hidden shadow-[0_20px_50px_-20px_rgba(10,10,10,0.1),0_4px_14px_-6px_rgba(10,10,10,0.06)]"
         >
+        <div className="overflow-x-auto [scrollbar-width:thin]">
+        <div className="min-w-[560px]">
           {/* Column headers */}
           <div className="grid grid-cols-[1.4fr_1fr_1fr_1fr] border-b border-border-light">
             <div className="px-4 sm:px-7 py-5 sm:py-6 flex items-end">
@@ -121,101 +162,72 @@ export function ComparisonSection() {
             </div>
           </div>
 
-          {/* Rows */}
-          {COMPARISON_ROWS.map((row, i) => {
-            const RowIcon = row.icon;
+          {/* Sectioned rows */}
+          {COMPARISON_SECTIONS.map((section) => {
+            const SectionIcon = section.icon;
+            const isHighlight = section.label === "Only on Magic";
             return (
-              <div
-                key={i}
-                className={`grid grid-cols-[1.4fr_1fr_1fr_1fr] items-center border-b border-border-light/70 last:border-b-0 transition-colors ${
-                  i % 2 === 1 ? "bg-surface/30" : ""
-                }`}
-              >
-                <div className="px-4 sm:px-7 py-4 sm:py-[18px] flex items-center gap-3 sm:gap-4 min-w-0">
-                  <div className="hidden sm:flex w-9 h-9 rounded-[10px] bg-foreground/[0.04] border border-border-light items-center justify-center flex-shrink-0">
-                    <RowIcon className="w-4 h-4 text-text-secondary" strokeWidth={1.8} />
+              <div key={section.label}>
+                {/* Section header — spans full width */}
+                <div
+                  className={`grid grid-cols-[1.4fr_1fr_1fr_1fr] border-b border-border-light/70 ${
+                    isHighlight ? "bg-primary/[0.05]" : "bg-surface/50"
+                  }`}
+                >
+                  <div className="px-4 sm:px-7 py-2.5 sm:py-3 flex items-center gap-2">
+                    <SectionIcon
+                      className={`w-[13px] h-[13px] ${isHighlight ? "text-primary" : "text-text-tertiary"}`}
+                      strokeWidth={2.2}
+                    />
+                    <span
+                      className={`text-[10.5px] uppercase tracking-[0.14em] font-bold ${
+                        isHighlight ? "text-primary" : "text-text-tertiary"
+                      }`}
+                    >
+                      {section.label}
+                    </span>
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-[13.5px] sm:text-[15px] font-semibold text-foreground leading-tight tracking-tight">{row.feature}</p>
-                    {row.sub && <p className="text-[11px] sm:text-[12px] text-text-tertiary leading-snug mt-0.5">{row.sub}</p>}
+                  <div className="bg-primary/[0.06]" />
+                  <div />
+                  <div />
+                </div>
+
+                {/* Section rows */}
+                {section.rows.map((row, i) => (
+                  <div
+                    key={row.feature}
+                    className="grid grid-cols-[1.4fr_1fr_1fr_1fr] items-center border-b border-border-light/70"
+                  >
+                    <div className="px-4 sm:px-7 py-4 sm:py-[18px] min-w-0">
+                      <p className="text-[13.5px] sm:text-[15px] font-semibold text-foreground leading-tight tracking-tight">
+                        {row.feature}
+                      </p>
+                      {row.sub && (
+                        <p className="text-[11px] sm:text-[12px] text-text-tertiary leading-snug mt-0.5">
+                          {row.sub}
+                        </p>
+                      )}
+                    </div>
+                    <div className="px-1.5 sm:px-5 py-4 sm:py-[18px] bg-primary/[0.06] flex items-center justify-center min-w-0">
+                      {renderCell(row.magic, row.magicTone, true)}
+                    </div>
+                    <div className="px-1.5 sm:px-5 py-4 sm:py-[18px] flex items-center justify-center min-w-0">
+                      {renderCell(row.fresha, row.freshaTone, false)}
+                    </div>
+                    <div className="px-1.5 sm:px-5 py-4 sm:py-[18px] flex items-center justify-center min-w-0">
+                      {renderCell(row.timely, row.timelyTone, false)}
+                    </div>
                   </div>
-                </div>
-                <div className="px-1.5 sm:px-5 py-4 sm:py-[18px] bg-primary/[0.06] flex items-center justify-center min-w-0">
-                  {renderCell(row.magic, row.magicTone, true)}
-                </div>
-                <div className="px-1.5 sm:px-5 py-4 sm:py-[18px] flex items-center justify-center min-w-0">
-                  {renderCell(row.fresha, row.freshaTone, false)}
-                </div>
-                <div className="px-1.5 sm:px-5 py-4 sm:py-[18px] flex items-center justify-center min-w-0">
-                  {renderCell(row.timely, row.timelyTone, false)}
-                </div>
+                ))}
               </div>
             );
           })}
-
-          {/* Footer stats — time + money saved */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 border-t-2 border-primary/25 bg-gradient-to-br from-primary/[0.08] to-primary/[0.03]">
-            <div className="px-6 sm:px-7 py-5 sm:py-6 flex items-center gap-4 border-b sm:border-b-0 sm:border-r border-primary/15">
-              <div className="w-11 h-11 rounded-[12px] bg-primary/15 flex items-center justify-center flex-shrink-0">
-                <Zap className="w-5 h-5 text-primary" strokeWidth={2.2} />
-              </div>
-              <div>
-                <p className="text-[10.5px] text-text-tertiary uppercase tracking-[0.14em] font-semibold mb-0.5">Admin time saved</p>
-                <p className="text-[22px] sm:text-[24px] font-bold text-primary leading-tight tracking-tight">~6 hrs / week</p>
-              </div>
-            </div>
-            <div className="px-6 sm:px-7 py-5 sm:py-6 flex items-center gap-4">
-              <div className="w-11 h-11 rounded-[12px] bg-primary/15 flex items-center justify-center flex-shrink-0">
-                <TrendingUp className="w-5 h-5 text-primary" strokeWidth={2.2} />
-              </div>
-              <div>
-                <p className="text-[10.5px] text-text-tertiary uppercase tracking-[0.14em] font-semibold mb-0.5">Money saved</p>
-                <p className="text-[22px] sm:text-[24px] font-bold text-primary leading-tight tracking-tight">A$150 / month</p>
-              </div>
-            </div>
-          </div>
+        </div>
+        </div>
         </motion.div>
         <p className="text-[11px] text-text-tertiary text-center mt-3">
           Based on published pricing · 2026 · AUD
         </p>
-
-        {/* Plus, only in Magic — clean label, no sparkles */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={viewportConfig}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="mt-16 sm:mt-20"
-        >
-          <div className="flex items-center gap-4 mb-8 max-w-2xl mx-auto">
-            <span className="flex-1 h-px bg-border-light" />
-            <p className="text-[11px] font-bold text-primary uppercase tracking-[0.18em]">
-              Only in Magic
-            </p>
-            <span className="flex-1 h-px bg-border-light" />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {MAGIC_ONLY.map((f, i) => {
-              const Icon = f.icon;
-              return (
-                <motion.div
-                  key={f.label}
-                  initial={{ opacity: 0, y: 12 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={viewportConfig}
-                  transition={{ duration: 0.4, delay: 0.15 + i * 0.06 }}
-                  className="group relative bg-card-bg border border-border-light rounded-[14px] p-4 sm:p-5 transition-all duration-300 hover:border-primary/30 hover:shadow-[0_10px_30px_-12px_rgba(124,254,157,0.25)] hover:-translate-y-0.5"
-                >
-                  <div className="w-9 h-9 rounded-[10px] bg-primary/10 flex items-center justify-center mb-3">
-                    <Icon className="w-4 h-4 text-primary" strokeWidth={2} />
-                  </div>
-                  <p className="text-[14px] font-bold text-foreground leading-tight tracking-tight">{f.label}</p>
-                  <p className="text-[12px] text-text-tertiary leading-snug mt-1">{f.sub}</p>
-                </motion.div>
-              );
-            })}
-          </div>
-        </motion.div>
       </div>
     </motion.section>
   );

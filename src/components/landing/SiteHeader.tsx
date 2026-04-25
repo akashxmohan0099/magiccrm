@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
+import { useWaitlistModal } from "./waitlistStore";
+import { WaitlistModal } from "./WaitlistModal";
 
 // Shared landing header — used by the homepage and every marketing page
 // (Product, Pricing, Waitlist). Edit in one place so the nav stays
@@ -14,6 +16,7 @@ import { ArrowRight } from "lucide-react";
 // Glass-morph backdrop fades in once the user leaves the very top.
 export function SiteHeader() {
   const pathname = usePathname();
+  const openWaitlist = useWaitlistModal((s) => s.open);
   const [hidden, setHidden] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const lastY = useRef(0);
@@ -34,7 +37,6 @@ export function SiteHeader() {
   }, []);
 
   const navLinks: { href: string; label: string }[] = [
-    { href: "/product", label: "Product" },
     { href: "/pricing", label: "Pricing" },
   ];
 
@@ -66,40 +68,46 @@ export function SiteHeader() {
           </Link>
 
           <div className="flex items-center gap-1 sm:gap-2">
-            {navLinks.map((link) => {
-              const active = pathname === link.href;
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`relative px-3 sm:px-4 py-2 rounded-full text-[14px] sm:text-[14.5px] font-medium transition-colors ${
-                    active
-                      ? "text-foreground"
-                      : "text-text-secondary hover:text-foreground"
-                  }`}
-                >
-                  {link.label}
-                  {active && (
-                    <motion.span
-                      layoutId="nav-active-pill"
-                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                      className="absolute inset-0 -z-10 rounded-full bg-foreground/[0.06]"
-                    />
-                  )}
-                </Link>
-              );
-            })}
+            {/* Nav links hidden below sm so the logo + CTA have breathing room */}
+            <div className="hidden sm:flex items-center gap-1 sm:gap-2">
+              {navLinks.map((link) => {
+                const active = pathname === link.href;
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`relative px-3 sm:px-4 py-2 rounded-full text-[14px] sm:text-[14.5px] font-medium transition-colors ${
+                      active
+                        ? "text-foreground"
+                        : "text-text-secondary hover:text-foreground"
+                    }`}
+                  >
+                    {link.label}
+                    {active && (
+                      <motion.span
+                        layoutId="nav-active-pill"
+                        transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                        className="absolute inset-0 -z-10 rounded-full bg-foreground/[0.06]"
+                      />
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
 
-            <Link
-              href="/waitlist"
-              className="ml-2 inline-flex items-center gap-1.5 rounded-full bg-foreground px-4 sm:px-5 py-2 sm:py-2.5 text-[13.5px] sm:text-[14px] font-semibold tracking-[-0.01em] text-background transition-all hover:opacity-90 hover:gap-2"
+            <button
+              type="button"
+              onClick={openWaitlist}
+              className="sm:ml-2 inline-flex items-center gap-1.5 rounded-full bg-foreground px-3.5 sm:px-5 py-2 sm:py-2.5 text-[13px] sm:text-[14px] font-semibold tracking-[-0.01em] text-background transition-all hover:opacity-90 hover:gap-2"
             >
-              Join the waitlist
+              <span className="hidden sm:inline">Join the waitlist</span>
+              <span className="sm:hidden">Join waitlist</span>
               <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
+            </button>
           </div>
         </nav>
       </div>
+      <WaitlistModal />
     </motion.header>
   );
 }

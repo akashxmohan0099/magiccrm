@@ -974,7 +974,7 @@
   height: 0;
   display: flex;
   align-items: stretch;
-  gap: 12vw;
+  gap: 6vw;
   padding-left: 8vw;
   padding-right: 10vw;
   opacity: 0;
@@ -1591,7 +1591,7 @@
   position: relative;
   width: 210px;
   height: 320px;
-  border-radius: 20px;
+  border-radius: 10px;
   overflow: hidden;
   background-color: #0a0a0a;
   background-size: cover;
@@ -2200,7 +2200,7 @@
   width: 100%;
   aspect-ratio: 3 / 4;
   max-height: 380px;
-  border-radius: 18px;
+  border-radius: 10px;
   overflow: hidden;
   background-color: #0a0a0a;
   background-size: cover;
