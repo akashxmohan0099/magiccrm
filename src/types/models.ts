@@ -114,6 +114,7 @@ export interface Inquiry {
   formId?: string;
   bookingId?: string;
   clientId?: string;
+  notes?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -440,8 +441,23 @@ export interface WorkspaceSettings {
   resolvedPersona?: OnboardingPersona;
   selectedOnboardingActions?: OnboardingActionId[];
   onboardingFollowUps?: OnboardingFollowUps;
+  // v2 onboarding: persona slug + raw answers stash so re-running the
+  // questionnaire from settings can pre-populate the existing draft.
+  persona?: string;
+  onboardingAnswers?: {
+    persona: string;
+    structure: Record<string, string>;
+    solutions: string[];
+    marketing: string[];
+    billing: string[];
+    engagement: string[];
+  };
   enabledAddons: string[];    // dashboard add-on module IDs
   enabledFeatures: string[];   // toggle-on feature IDs
+  // Dev-only override used by /dev to flip the dashboard between owner/staff
+  // views without re-authenticating. Real auth populates `member.role` from
+  // workspace_members; this is only consulted when there's no real session.
+  role?: 'owner' | 'staff';
   updatedAt: string;
 }
 

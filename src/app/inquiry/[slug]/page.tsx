@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { Check, Loader2, Send } from "lucide-react";
+import { Check, Loader2, Send, ArrowRight } from "lucide-react";
 import type { FormFieldConfig } from "@/types/models";
 
 interface PublicInquiryForm {
@@ -24,6 +24,7 @@ export default function InquiryFormPage() {
 
   const [values, setValues] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -78,25 +79,37 @@ export default function InquiryFormPage() {
   if (!form) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <div className="text-center">
+        <div className="text-center max-w-sm">
           <h1 className="text-xl font-bold text-foreground mb-2">Form not found</h1>
-          <p className="text-sm text-text-secondary">{error || "This form doesn&apos;t exist or has been disabled."}</p>
+          <p className="text-sm text-text-secondary">{error || "This form doesn't exist or has been disabled."}</p>
         </div>
       </div>
     );
   }
 
+  const brandColor = form.branding.primaryColor || "#34D399";
+
   if (submitted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <div className="w-full max-w-md bg-card-bg border border-border-light rounded-2xl p-8 text-center">
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
-            style={{ backgroundColor: (form.branding.primaryColor || "#34D399") + "15" }}>
-            <Check className="w-7 h-7" style={{ color: form.branding.primaryColor || "#34D399" }} />
+      <div
+        className="min-h-screen flex items-center justify-center p-4"
+        style={{
+          background: `radial-gradient(ellipse 80% 60% at 50% 0%, ${brandColor}1A, transparent 65%), var(--background)`,
+        }}
+      >
+        <div className="w-full max-w-md bg-card-bg border border-border-light rounded-3xl p-10 text-center shadow-[0_24px_60px_-20px_rgba(0,0,0,0.08)]">
+          <div
+            className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5"
+            style={{
+              backgroundColor: `${brandColor}1A`,
+              boxShadow: `0 8px 24px -8px ${brandColor}40`,
+            }}
+          >
+            <Check className="w-8 h-8" style={{ color: brandColor }} strokeWidth={2.5} />
           </div>
-          <h2 className="text-[20px] font-bold text-foreground mb-2">Thank you!</h2>
-          <p className="text-[14px] text-text-secondary">
-            Your inquiry has been submitted. We&apos;ll get back to you soon.
+          <h2 className="text-[22px] font-bold text-foreground mb-2">Thank you!</h2>
+          <p className="text-[14px] text-text-secondary leading-relaxed">
+            Your inquiry has been received. We&apos;ll be in touch shortly.
           </p>
         </div>
       </div>
@@ -105,6 +118,7 @@ export default function InquiryFormPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting) return;
 
     // Validate required fields
     for (const field of form.fields) {
@@ -115,6 +129,7 @@ export default function InquiryFormPage() {
     }
 
     try {
+      setSubmitting(true);
       setError("");
 
       const res = await fetch("/api/public/inquiry", {
@@ -132,74 +147,167 @@ export default function InquiryFormPage() {
       setSubmitted(true);
     } catch {
       setError("Failed to submit inquiry");
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const brandColor = form.branding.primaryColor || "#34D399";
-
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div
+      className="min-h-screen flex items-center justify-center p-4 sm:p-6"
+      style={{
+        background: `radial-gradient(ellipse 80% 60% at 50% 0%, ${brandColor}1A, transparent 65%), var(--background)`,
+      }}
+    >
       <div className="w-full max-w-lg">
-        <div className="bg-card-bg border border-border-light rounded-2xl overflow-hidden">
-          {/* Header with brand color */}
-          <div className="h-2" style={{ backgroundColor: brandColor }} />
-          <div className="p-8">
-            <h1 className="text-[22px] font-bold text-foreground mb-1">{form.name}</h1>
-            <p className="text-[14px] text-text-secondary mb-6">Fill out the form below and we&apos;ll be in touch.</p>
+        <div className="bg-card-bg border border-border-light rounded-3xl overflow-hidden shadow-[0_24px_60px_-20px_rgba(0,0,0,0.08)]">
+          {/* Branded header — soft gradient instead of a flat bar */}
+          <div
+            className="px-8 pt-8 pb-6 relative"
+            style={{
+              background: `linear-gradient(180deg, ${brandColor}14 0%, transparent 100%)`,
+            }}
+          >
+            <h1 className="text-[24px] font-bold text-foreground tracking-tight">{form.name}</h1>
+            <p className="text-[13px] text-text-secondary mt-1.5">
+              Fill in the form and we&apos;ll be in touch.
+            </p>
+          </div>
 
+          <div className="px-8 pb-8">
             {error && (
-              <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-[13px] text-red-700">
+              <div
+                className="mb-5 px-4 py-3 rounded-xl text-[13px]"
+                style={{
+                  backgroundColor: "#FEF2F2",
+                  border: "1px solid #FECACA",
+                  color: "#B91C1C",
+                }}
+              >
                 {error}
               </div>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {form.fields.map((field) => (
-                <div key={field.name}>
-                  <label className="text-[13px] font-medium text-foreground block mb-1.5">
-                    {field.label} {field.required && <span className="text-red-500">*</span>}
-                  </label>
-                  {field.type === "textarea" ? (
-                    <textarea
-                      value={values[field.name] || ""}
-                      onChange={(e) => { setValues((v) => ({ ...v, [field.name]: e.target.value })); setError(""); }}
-                      rows={4}
-                      placeholder={field.label}
-                      className="w-full px-4 py-3 bg-surface border border-border-light rounded-xl text-[14px] text-foreground outline-none focus:ring-2 focus:border-transparent resize-none"
-                      style={{ "--tw-ring-color": brandColor + "40" } as React.CSSProperties}
-                    />
-                  ) : field.type === "select" ? (
-                    <select
-                      value={values[field.name] || ""}
-                      onChange={(e) => { setValues((v) => ({ ...v, [field.name]: e.target.value })); setError(""); }}
-                      className="w-full px-4 py-3 bg-surface border border-border-light rounded-xl text-[14px] text-foreground outline-none focus:ring-2"
-                      style={{ "--tw-ring-color": brandColor + "40" } as React.CSSProperties}
-                    >
-                      <option value="">Select {field.label.toLowerCase()}</option>
-                      {field.options?.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-                    </select>
-                  ) : (
-                    <input
-                      type={field.type === "email" ? "email" : field.type === "phone" ? "tel" : field.type === "date" ? "date" : "text"}
-                      value={values[field.name] || ""}
-                      onChange={(e) => { setValues((v) => ({ ...v, [field.name]: e.target.value })); setError(""); }}
-                      placeholder={field.label}
-                      className="w-full px-4 py-3 bg-surface border border-border-light rounded-xl text-[14px] text-foreground outline-none focus:ring-2"
-                      style={{ "--tw-ring-color": brandColor + "40" } as React.CSSProperties}
-                    />
-                  )}
-                </div>
+                <FieldRow
+                  key={field.name}
+                  field={field}
+                  value={values[field.name] || ""}
+                  brandColor={brandColor}
+                  onChange={(v) => {
+                    setValues((p) => ({ ...p, [field.name]: v }));
+                    setError("");
+                  }}
+                />
               ))}
 
-              <button type="submit"
-                className="w-full py-3.5 rounded-xl text-[14px] font-semibold text-white flex items-center justify-center gap-2 cursor-pointer hover:opacity-90 transition-opacity"
-                style={{ backgroundColor: brandColor }}>
-                <Send className="w-4 h-4" /> Submit Inquiry
+              <button
+                type="submit"
+                disabled={submitting}
+                className="group w-full py-3.5 rounded-xl text-[14px] font-semibold text-white flex items-center justify-center gap-2 cursor-pointer transition-all hover:opacity-95 disabled:opacity-60 disabled:cursor-not-allowed"
+                style={{
+                  backgroundColor: brandColor,
+                  boxShadow: `0 8px 24px -8px ${brandColor}66`,
+                }}
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" /> Sending…
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" /> Submit Inquiry
+                    <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+                  </>
+                )}
               </button>
             </form>
           </div>
         </div>
+
+        <p className="text-center text-[11px] text-text-tertiary mt-5">
+          Powered by{" "}
+          <a
+            href="https://usemagic.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-text-secondary hover:text-foreground transition-colors"
+          >
+            Magic
+          </a>
+        </p>
       </div>
+    </div>
+  );
+}
+
+function FieldRow({
+  field,
+  value,
+  brandColor,
+  onChange,
+}: {
+  field: FormFieldConfig;
+  value: string;
+  brandColor: string;
+  onChange: (v: string) => void;
+}) {
+  // Focus border uses the form's brand color as a CSS variable so every
+  // input picks up the same accent regardless of the form's color choice.
+  const ringStyle = { "--brand": brandColor } as React.CSSProperties;
+  const inputClass =
+    "w-full px-4 py-3 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary outline-none transition-colors focus:border-[var(--brand)]";
+
+  return (
+    <div>
+      <label className="text-[12px] font-semibold text-foreground block mb-1.5">
+        {field.label}
+        {field.required && (
+          <span className="text-text-tertiary font-normal ml-1">*</span>
+        )}
+      </label>
+      {field.type === "textarea" ? (
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          rows={4}
+          placeholder={field.label}
+          style={ringStyle}
+          className={`${inputClass} resize-none`}
+        />
+      ) : field.type === "select" ? (
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          style={ringStyle}
+          className={inputClass}
+        >
+          <option value="">Select {field.label.toLowerCase()}</option>
+          {field.options?.map((opt) => (
+            <option key={opt} value={opt}>
+              {opt}
+            </option>
+          ))}
+        </select>
+      ) : (
+        <input
+          type={
+            field.type === "email"
+              ? "email"
+              : field.type === "phone"
+              ? "tel"
+              : field.type === "date"
+              ? "date"
+              : "text"
+          }
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={field.label}
+          style={ringStyle}
+          className={inputClass}
+        />
+      )}
     </div>
   );
 }

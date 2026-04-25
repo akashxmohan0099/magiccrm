@@ -1,92 +1,121 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ArrowRight, ArrowLeft, Check, Sparkles,
-  Mail, Lock, Loader2, User,
+  ArrowRight,
+  ArrowLeft,
+  Check,
+  Sparkles,
+  Mail,
+  Lock,
+  Loader2,
+  User as UserIcon,
+  Users,
+  MailQuestion,
+  MessageSquare,
+  CreditCard,
+  Calendar,
+  Package,
+  BarChart3,
+  Megaphone,
+  Ticket,
+  Gift,
+  Lightbulb,
+  UserCheck,
+  ScrollText,
+  Crown,
+  FileSignature,
+  Plus,
+  type LucideIcon,
 } from "lucide-react";
 import { useSettingsStore } from "@/store/settings";
-import { useServicesStore } from "@/store/services";
 import { useAutomationsStore } from "@/store/automations";
+import { useOnboardingDraftStore } from "@/store/onboarding-draft";
 import { createClient } from "@/lib/supabase";
 import posthog from "posthog-js";
 import {
-  buildOnboardingActivation,
-  getActionDefinition,
-  getArtistLabel,
-  getArtistOptions,
-  getBookingChannelOptions,
-  getFollowUpOptions,
-  getFollowUpPrompt,
-  getFollowUpSummary,
-  getPaymentMethodOptions,
-  getPersonaActions,
-  getPersonaLabel,
-  getTeamSizeOptions,
-  getWorkLocationOptions,
-  resolvePersona,
-} from "@/lib/onboarding";
-import type {
-  OnboardingActionId,
-  OnboardingArtistType,
-  OnboardingBookingChannel,
-  OnboardingFollowUpKey,
-  OnboardingFollowUps,
-  OnboardingPaymentMethod,
-  OnboardingTeamSize,
-  OnboardingWorkLocation,
-} from "@/types/models";
+  PERSONAS,
+  getPersona,
+  getStructuralQuestions,
+  getSolutionsOptions,
+  getMarketingOptions,
+  getBillingOptions,
+  getEngagementOptions,
+  resolveEnabledAddons,
+  type MultiOption,
+  type PersonaSlug,
+  type StructuralQuestion,
+} from "@/lib/onboarding-v2";
+import { ADDON_MODULES } from "@/lib/addon-modules";
 
 const STEPS = [
-  "Welcome",
+  "Persona",
+  "Structure",
+  "Solutions",
+  "Marketing",
+  "Billing",
+  "Engagement",
+  "Summary",
   "Account",
-  "Artist",
-  "Location",
-  "Team",
-  "Bookings",
-  "Payments",
-  "Goals",
-  "Ready",
 ];
 
-function toggleArrayValue<T extends string>(items: T[], value: T) {
-  return items.includes(value)
-    ? items.filter((item) => item !== value)
-    : [...items, value];
+interface ModuleCard {
+  id: string;
+  name: string;
+  description: string;
+  icon: LucideIcon;
+  accent: string; // hex — used for top gradient wash + icon tile tint
 }
 
-function OptionCard({
-  label,
-  selected,
-  onClick,
-}: {
-  label: string;
-  selected: boolean;
-  onClick: () => void;
-}) {
+// Core dashboard tabs that are always on. Curated subset shown on the
+// summary so the workspace feels populated even when no add-ons are
+// resolved from the questionnaire.
+const CORE_MODULES: ModuleCard[] = [
+  { id: "clients",        name: "Clients",    description: "Your clients all in one place.",      icon: Users,         accent: "#3B82F6" },
+  { id: "inquiries",      name: "Inquiries",  description: "Never lose a potential customer.",    icon: MailQuestion,  accent: "#7C3AED" },
+  { id: "communications", name: "Messages",   description: "Every conversation, one inbox.",      icon: MessageSquare, accent: "#F43F5E" },
+  { id: "payments",       name: "Billing",    description: "Quotes, invoices, and payments.",     icon: CreditCard,    accent: "#F59E0B" },
+  { id: "calendar",       name: "Scheduling", description: "Bookings, appointments, calendar.",   icon: Calendar,      accent: "#10B981" },
+  { id: "services",       name: "Services",   description: "Your service catalog and pricing.",   icon: Package,       accent: "#6366F1" },
+];
+
+// Accent hex per add-on id, mirroring ADDON_MODULES.
+const ADDON_VISUALS: Record<string, { icon: LucideIcon; accent: string }> = {
+  analytics:     { icon: BarChart3,     accent: "#0EA5E9" },
+  marketing:     { icon: Megaphone,     accent: "#EC4899" },
+  "gift-cards":  { icon: Ticket,        accent: "#F43F5E" },
+  loyalty:       { icon: Gift,          accent: "#F59E0B" },
+  "ai-insights": { icon: Lightbulb,     accent: "#EAB308" },
+  "win-back":    { icon: UserCheck,     accent: "#14B8A6" },
+  proposals:     { icon: ScrollText,    accent: "#7C3AED" },
+  memberships:   { icon: Crown,         accent: "#D946EF" },
+  documents:     { icon: FileSignature, accent: "#64748B" },
+};
+
+export default function OnboardingPage() {
   return (
-    <button
-      onClick={onClick}
-      className={`w-full text-left px-4 py-3 rounded-xl border transition-all cursor-pointer ${
-        selected
-          ? "border-primary/40 bg-primary/[0.05]"
-          : "border-border-light bg-surface hover:border-primary/20"
-      }`}
-    >
-      <span className="text-[14px] font-medium text-foreground">{label}</span>
-    </button>
+    <Suspense fallback={null}>
+      <OnboardingInner />
+    </Suspense>
   );
 }
 
-export default function OnboardingPage() {
+function OnboardingInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { updateSettings } = useSettingsStore();
-  const { addService } = useServicesStore();
-  const { initDefaults, updateRule } = useAutomationsStore();
+  const { initDefaults } = useAutomationsStore();
+  const { draft, setPersona, setStructure, toggleSelection, reset } =
+    useOnboardingDraftStore();
 
-  const [step, setStep] = useState(0);
+  const initialStep = (() => {
+    const raw = Number(searchParams.get("step"));
+    if (!Number.isFinite(raw)) return 0;
+    return Math.min(Math.max(0, Math.trunc(raw)), STEPS.length - 1);
+  })();
+  const [step, setStep] = useState(initialStep);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -95,47 +124,37 @@ export default function OnboardingPage() {
   const [password, setPassword] = useState("");
   const [businessName, setBusinessName] = useState("");
 
-  const [artistType, setArtistType] = useState<OnboardingArtistType | null>(null);
-  const [workLocation, setWorkLocation] = useState<OnboardingWorkLocation | null>(null);
-  const [teamSize, setTeamSize] = useState<OnboardingTeamSize | null>(null);
-  const [bookingChannels, setBookingChannels] = useState<OnboardingBookingChannel[]>([]);
-  const [paymentMethods, setPaymentMethods] = useState<OnboardingPaymentMethod[]>([]);
-  const [selectedActions, setSelectedActions] = useState<OnboardingActionId[]>([]);
-  const [followUps, setFollowUps] = useState<OnboardingFollowUps>({});
-
-  const resolvedPersona = useMemo(() => {
-    if (!artistType || !workLocation || !teamSize) return null;
-    return resolvePersona(artistType, workLocation, teamSize);
-  }, [artistType, workLocation, teamSize]);
-
-  const personaActions = useMemo(
-    () => (resolvedPersona ? getPersonaActions(resolvedPersona) : null),
-    [resolvedPersona],
+  const persona = getPersona(draft.persona);
+  const structuralQuestions = useMemo(
+    () => getStructuralQuestions(draft.persona),
+    [draft.persona],
   );
 
-  const handleToggleAction = (actionId: OnboardingActionId) => {
-    setSelectedActions((current) => {
-      const next = toggleArrayValue(current, actionId);
-      const definition = getActionDefinition(actionId);
-      if (definition.followUpKey && !next.includes(actionId)) {
-        const followUpKey = definition.followUpKey;
-        setFollowUps((prev) => {
-          const updated = { ...prev };
-          delete updated[followUpKey];
-          return updated;
-        });
-      }
-      return next;
-    });
-  };
+  const canNext = (() => {
+    if (step === 0) return !!draft.persona;
+    if (step === 1) {
+      return structuralQuestions.every((q) => !!draft.structure[q.id]);
+    }
+    if (step === 7) {
+      return (
+        email.includes("@") &&
+        password.length >= 8 &&
+        businessName.trim().length > 0
+      );
+    }
+    return true;
+  })();
 
-  const handleSetFollowUp = (key: OnboardingFollowUpKey, value: OnboardingFollowUps[OnboardingFollowUpKey]) => {
-    setFollowUps((prev) => ({ ...prev, [key]: value }));
-  };
+  const skipAllowed = step >= 2 && step <= 5;
+  // Progress bar only shows during the four multi-select steps. The
+  // earlier persona/structure steps and the later summary/signup steps
+  // get a clean empty top bar — questions just appear, no counter, no
+  // tally pressure.
+  const showProgress = step >= 2 && step <= 5;
+  const multiProgress = showProgress ? ((step - 2 + 1) / 4) * 100 : 0;
 
   const handleComplete = async () => {
-    if (!artistType || !workLocation || !teamSize) return;
-
+    if (!draft.persona) return;
     setLoading(true);
     setError("");
     setNotice("");
@@ -147,11 +166,10 @@ export default function OnboardingPage() {
         body: JSON.stringify({
           email,
           password,
-          workspaceName: businessName.trim() || `${getArtistLabel(artistType)} Studio`,
+          workspaceName: businessName.trim() || `${persona?.label} Studio`,
           ownerName: businessName.trim() || email.split("@")[0] || "Owner",
         }),
       });
-
       const signupData = await signupRes.json();
 
       if (!signupRes.ok) {
@@ -162,16 +180,18 @@ export default function OnboardingPage() {
 
       if (signupData.requiresEmailConfirmation) {
         setNotice(
-          signupData.message
-          || "Check your email to confirm your account, then sign in to finish setup.",
+          signupData.message ||
+            "Check your email to confirm your account, then sign in to finish setup.",
         );
         setLoading(false);
         return;
       }
 
       const supabase = createClient();
-      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
       if (signInError) {
         setError("Account created but sign-in failed. Try logging in manually.");
         setLoading(false);
@@ -179,422 +199,638 @@ export default function OnboardingPage() {
       }
 
       const workspaceId = signupData.workspaceId as string;
-      const activation = buildOnboardingActivation({
-        artistType,
-        workLocation,
-        teamSize,
-        bookingChannels,
-        paymentMethods,
-        selectedActions,
-        followUps,
-      }, workspaceId);
+      const enabledAddons = resolveEnabledAddons(draft);
 
-      updateSettings({
+      updateSettings(
+        {
+          workspaceId,
+          businessName: businessName.trim() || `${persona?.label} Studio`,
+          contactEmail: email,
+          persona: draft.persona,
+          onboardingAnswers: {
+            persona: draft.persona,
+            structure: draft.structure,
+            solutions: draft.solutions,
+            marketing: draft.marketing,
+            billing: draft.billing,
+            engagement: draft.engagement,
+          },
+          enabledAddons,
+          enabledFeatures: [],
+          updatedAt: new Date().toISOString(),
+        },
         workspaceId,
-        businessName: businessName.trim() || `${getArtistLabel(artistType)} Studio`,
-        contactEmail: email,
-        stripeOnboardingComplete: false,
-        cancellationWindowHours: 24,
-        depositPercentage: activation.settingsUpdate.depositPercentage ?? 0,
-        noShowFee: 0,
-        messageTemplates: {},
-        notificationDefaults: activation.settingsUpdate.notificationDefaults ?? "email",
-        branding: {},
-        calendarSyncEnabled: false,
-        minNoticeHours: 4,
-        maxAdvanceDays: 56,
-        autoReplyEnabled: false,
-        serviceAreaMode: activation.settingsUpdate.serviceAreaMode,
-        travelFeeMode: activation.settingsUpdate.travelFeeMode,
-        artistType: activation.settingsUpdate.artistType,
-        workLocation: activation.settingsUpdate.workLocation,
-        teamSize: activation.settingsUpdate.teamSize,
-        bookingChannels: activation.settingsUpdate.bookingChannels ?? [],
-        paymentMethods: activation.settingsUpdate.paymentMethods ?? [],
-        resolvedPersona: activation.settingsUpdate.resolvedPersona,
-        selectedOnboardingActions: activation.settingsUpdate.selectedOnboardingActions ?? [],
-        onboardingFollowUps: activation.settingsUpdate.onboardingFollowUps ?? {},
-        enabledFeatures: activation.enabledFeatures,
-        enabledAddons: activation.enabledAddons,
-        updatedAt: new Date().toISOString(),
-      }, workspaceId);
-
-      for (const service of activation.services) {
-        addService(service, workspaceId);
-      }
+      );
 
       initDefaults(workspaceId);
-      const rules = useAutomationsStore.getState().rules;
-      for (const type of activation.automationTypesToEnable) {
-        const rule = rules.find((candidate) => candidate.type === type);
-        if (!rule) continue;
-        updateRule(rule.id, {
-          enabled: true,
-          channel: activation.settingsUpdate.notificationDefaults ?? "email",
-        }, workspaceId);
-      }
 
       posthog.identify(email, { email, name: businessName || email });
-      posthog.capture("onboarding_completed", {
+      posthog.capture("onboarding_completed_v2", {
         workspace_id: workspaceId,
-        business_name: businessName,
-        artist_type: artistType,
-        work_location: workLocation,
-        team_size: teamSize,
-        booking_channels: bookingChannels,
-        payment_methods: paymentMethods,
-        selected_actions: selectedActions,
-        resolved_persona: resolvedPersona,
+        persona: draft.persona,
+        structure: draft.structure,
+        solutions: draft.solutions,
+        marketing: draft.marketing,
+        billing: draft.billing,
+        engagement: draft.engagement,
+        enabled_addons: enabledAddons,
       });
 
+      reset();
       router.push("/dashboard");
-    } catch (_err) {
+    } catch {
       setError("Something went wrong. Please try again.");
       setLoading(false);
     }
   };
 
-  const canNext = step === 0
-    ? true
-    : step === 1
-      ? email.includes("@") && password.length >= 8 && businessName.trim().length > 0
-      : step === 2
-        ? !!artistType
-        : step === 3
-          ? !!workLocation
-          : step === 4
-            ? !!teamSize
-            : true;
-
-  const skipAllowed = step >= 5 && step <= 7;
-
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-xl">
-        <div className="flex items-center justify-center gap-1.5 mb-8">
-          {STEPS.map((label, index) => (
-            <div key={label} className="flex items-center gap-1.5">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-bold transition-colors ${
-                index < step ? "bg-primary text-white" : index === step ? "bg-foreground text-background" : "bg-surface text-text-tertiary"
-              }`}>
-                {index < step ? <Check className="w-4 h-4" /> : index + 1}
-              </div>
-              {index < STEPS.length - 1 && (
-                <div className={`w-4 h-0.5 rounded ${index < step ? "bg-primary" : "bg-border-light"}`} />
-              )}
-            </div>
-          ))}
-        </div>
-
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={step}
-            initial={{ x: 20, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: -20, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="bg-card-bg border border-border-light rounded-2xl p-8"
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      <div
+        aria-hidden
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(ellipse 90% 60% at 50% 0%, rgba(16, 185, 129, 0.20), transparent 65%), radial-gradient(ellipse 80% 50% at 50% 100%, rgba(16, 185, 129, 0.14), transparent 65%), radial-gradient(ellipse 60% 40% at 0% 50%, rgba(16, 185, 129, 0.08), transparent 60%), radial-gradient(ellipse 60% 40% at 100% 50%, rgba(16, 185, 129, 0.08), transparent 60%)",
+        }}
+      />
+      <div className="relative max-w-2xl mx-auto px-4 py-6 min-h-screen flex flex-col">
+        {/* Top bar: back arrow + (optional) progress bar. No step counter. */}
+        <div className="flex items-center gap-4 mb-12 h-8">
+          <motion.button
+            onClick={() => {
+              if (step === 0) return;
+              setStep((c) => c - 1);
+              setError("");
+            }}
+            disabled={step === 0}
+            whileHover={step === 0 ? undefined : { x: -2 }}
+            whileTap={step === 0 ? undefined : { scale: 0.92 }}
+            transition={{ type: "spring", stiffness: 500, damping: 25 }}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-text-secondary hover:text-foreground hover:bg-foreground/[0.04] transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+            aria-label="Back"
           >
-            {step === 0 && (
-              <div className="text-center">
-                <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-5">
-                  <Sparkles className="w-8 h-8 text-primary" />
-                </div>
-                <h2 className="text-[24px] font-bold text-foreground mb-2">Welcome to Magic</h2>
-                <p className="text-[15px] text-text-secondary mb-6 max-w-sm mx-auto">
-                  Let&apos;s shape your workspace around how you actually work. You can refine everything later.
-                </p>
-              </div>
-            )}
-
-            {step === 1 && (
-              <div>
-                <h2 className="text-[20px] font-bold text-foreground mb-1">Create your account</h2>
-                <p className="text-[14px] text-text-secondary mb-6">Your login details and business name.</p>
-                {error && (
-                  <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-[13px] text-red-700">{error}</div>
-                )}
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider block mb-1.5">Email *</label>
-                    <div className="relative">
-                      <Mail className="w-4 h-4 text-text-tertiary absolute left-3 top-1/2 -translate-y-1/2" />
-                      <input
-                        value={email}
-                        onChange={(e) => { setEmail(e.target.value); setError(""); }}
-                        type="email"
-                        autoFocus
-                        placeholder="you@example.com"
-                        className="w-full pl-10 pr-4 py-3 bg-surface border border-border-light rounded-xl text-[14px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider block mb-1.5">Password *</label>
-                    <div className="relative">
-                      <Lock className="w-4 h-4 text-text-tertiary absolute left-3 top-1/2 -translate-y-1/2" />
-                      <input
-                        value={password}
-                        onChange={(e) => { setPassword(e.target.value); setError(""); }}
-                        type="password"
-                        placeholder="Min 8 chars, 1 uppercase, 1 number"
-                        className="w-full pl-10 pr-4 py-3 bg-surface border border-border-light rounded-xl text-[14px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
-                      />
-                    </div>
-                    <p className="text-[11px] text-text-tertiary mt-1.5">At least 8 characters, one uppercase letter, one number.</p>
-                  </div>
-                  <div>
-                    <label className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider block mb-1.5">Business Name *</label>
-                    <div className="relative">
-                      <User className="w-4 h-4 text-text-tertiary absolute left-3 top-1/2 -translate-y-1/2" />
-                      <input
-                        value={businessName}
-                        onChange={(e) => setBusinessName(e.target.value)}
-                        placeholder="e.g. Glow Studio"
-                        className="w-full pl-10 pr-4 py-3 bg-surface border border-border-light rounded-xl text-[14px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {step === 2 && (
-              <QuestionStep
-                title="What kind of artist are you?"
-                description="Pick the business type that best matches your work."
-                options={getArtistOptions()}
-                selectedValue={artistType}
-                onSelect={(value) => setArtistType(value)}
+            <ArrowLeft className="w-4 h-4" />
+          </motion.button>
+          {showProgress && (
+            <div className="flex-1 h-1 rounded-full bg-foreground/10 overflow-hidden">
+              <motion.div
+                className="h-full bg-primary rounded-full"
+                initial={false}
+                animate={{ width: `${multiProgress}%` }}
+                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
               />
-            )}
-
-            {step === 3 && (
-              <QuestionStep
-                title="Where do you work?"
-                description="We’ll use this to enable the right booking and travel defaults."
-                options={getWorkLocationOptions()}
-                selectedValue={workLocation}
-                onSelect={(value) => setWorkLocation(value)}
-              />
-            )}
-
-            {step === 4 && (
-              <QuestionStep
-                title="How is your business structured?"
-                description="This controls whether team-specific setup is surfaced after onboarding."
-                options={getTeamSizeOptions()}
-                selectedValue={teamSize}
-                onSelect={(value) => setTeamSize(value)}
-              />
-            )}
-
-            {step === 5 && (
-              <MultiSelectStep
-                title="How do clients currently book with you?"
-                description="Select every channel you currently use. You can leave this empty."
-                options={getBookingChannelOptions()}
-                selectedValues={bookingChannels}
-                onToggle={(value) => setBookingChannels((current) => toggleArrayValue(current, value))}
-              />
-            )}
-
-            {step === 6 && (
-              <MultiSelectStep
-                title="How do you currently take payments?"
-                description="Select every payment method you currently use. You can leave this empty."
-                options={getPaymentMethodOptions()}
-                selectedValues={paymentMethods}
-                onToggle={(value) => setPaymentMethods((current) => toggleArrayValue(current, value))}
-              />
-            )}
-
-            {step === 7 && (
-              <div>
-                <h2 className="text-[20px] font-bold text-foreground mb-1">I want to...</h2>
-                <p className="text-[14px] text-text-secondary mb-2">
-                  Choose the outcomes you want Magic to set up first. You can leave this empty.
-                </p>
-                {resolvedPersona && (
-                  <p className="text-[12px] text-text-tertiary mb-6">Using persona: {getPersonaLabel(resolvedPersona)}</p>
-                )}
-
-                <div className="space-y-3">
-                  {personaActions?.options.map((action) => (
-                    <OptionCard
-                      key={action.id}
-                      label={action.label}
-                      selected={selectedActions.includes(action.id)}
-                      onClick={() => handleToggleAction(action.id)}
-                    />
-                  ))}
-                </div>
-
-                {personaActions && selectedActions.length > 0 && (
-                  <div className="mt-6 space-y-4">
-                    {selectedActions.map((actionId) => {
-                      const definition = getActionDefinition(actionId);
-                      if (!definition.followUpKey) return null;
-                      const summary = getFollowUpSummary(definition.followUpKey, followUps);
-                      const options = getFollowUpOptions(definition.followUpKey);
-                      const selectedValue = followUps[definition.followUpKey];
-
-                      return (
-                        <div key={actionId} className="border border-border-light rounded-xl p-4 bg-surface">
-                          <p className="text-[13px] font-semibold text-foreground mb-3">
-                            {getFollowUpPrompt(definition.followUpKey)}
-                          </p>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            {options.map((option) => (
-                              <OptionCard
-                                key={option.value}
-                                label={option.label}
-                                selected={selectedValue === option.value}
-                                onClick={() => handleSetFollowUp(definition.followUpKey as OnboardingFollowUpKey, option.value)}
-                              />
-                            ))}
-                          </div>
-                          {summary && (
-                            <p className="text-[11px] text-text-tertiary mt-3">Selected: {summary}</p>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {step === 8 && (
-              <div className="text-center">
-                <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-5">
-                  <Check className="w-8 h-8 text-white" />
-                </div>
-                <h2 className="text-[24px] font-bold text-foreground mb-2">You&apos;re all set!</h2>
-                <p className="text-[15px] text-text-secondary mb-2 max-w-sm mx-auto">
-                  <strong>{businessName || "Your workspace"}</strong> will launch as a tailored {resolvedPersona ? getPersonaLabel(resolvedPersona) : "workspace"} setup.
-                </p>
-                <p className="text-[13px] text-text-tertiary max-w-sm mx-auto">
-                  We&apos;ll preload your service templates, enable your selected tools, and surface the right setup checklist on the dashboard.
-                </p>
-                {error && (
-                  <div className="mt-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-[13px] text-red-700">{error}</div>
-                )}
-                {notice && (
-                  <div className="mt-4 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl text-[13px] text-emerald-700">{notice}</div>
-                )}
-              </div>
-            )}
-          </motion.div>
-        </AnimatePresence>
-
-        <div className="flex items-center justify-between mt-6">
-          {step > 0 ? (
-            <button
-              onClick={() => { setStep((current) => current - 1); setError(""); }}
-              className="flex items-center gap-1.5 px-4 py-2.5 text-[14px] font-medium text-text-secondary hover:text-foreground cursor-pointer transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" /> Back
-            </button>
-          ) : <div />}
-
-          {step < STEPS.length - 1 ? (
-            <button
-              onClick={() => setStep((current) => current + 1)}
-              disabled={!canNext}
-              className="flex items-center gap-1.5 px-6 py-2.5 bg-foreground text-background rounded-xl text-[14px] font-medium cursor-pointer hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {step === 0 ? "Get Started" : "Continue"} <ArrowRight className="w-4 h-4" />
-            </button>
-          ) : (
-            <button
-              onClick={handleComplete}
-              disabled={loading}
-              className="flex items-center gap-1.5 px-6 py-2.5 bg-primary text-white rounded-xl text-[14px] font-semibold cursor-pointer hover:bg-primary-hover transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> Creating...</>
-              ) : (
-                <><Sparkles className="w-4 h-4" /> Launch Dashboard</>
-              )}
-            </button>
+            </div>
           )}
         </div>
 
-        {skipAllowed && (
-          <p className="text-center mt-4">
+        {/* Step content */}
+        <div className="flex-1 flex flex-col items-center justify-center w-full">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={step}
+              initial={{ y: 12, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -12, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className={`w-full ${step === 6 ? "max-w-3xl" : "max-w-md"}`}
+            >
+              {step === 0 && (
+                <PersonaStep
+                  selected={draft.persona}
+                  onSelect={(slug) => setPersona(slug)}
+                />
+              )}
+              {step === 1 && (
+                <StructuralStep
+                  questions={structuralQuestions}
+                  values={draft.structure}
+                  onSelect={(key, value) => setStructure(key, value)}
+                />
+              )}
+              {step === 2 && (
+                <MultiSelectStep
+                  title="What do you want Magic to handle?"
+                  options={getSolutionsOptions(draft.persona)}
+                  selectedIds={draft.solutions}
+                  onToggle={(id) => toggleSelection("solutions", id)}
+                />
+              )}
+              {step === 3 && (
+                <MultiSelectStep
+                  title="How do you reach out to clients?"
+                  options={getMarketingOptions(draft.persona)}
+                  selectedIds={draft.marketing}
+                  onToggle={(id) => toggleSelection("marketing", id)}
+                />
+              )}
+              {step === 4 && (
+                <MultiSelectStep
+                  title="How do you handle money?"
+                  options={getBillingOptions(draft.persona)}
+                  selectedIds={draft.billing}
+                  onToggle={(id) => toggleSelection("billing", id)}
+                />
+              )}
+              {step === 5 && (
+                <MultiSelectStep
+                  title="What keeps clients coming back?"
+                  options={getEngagementOptions(draft.persona)}
+                  selectedIds={draft.engagement}
+                  onToggle={(id) => toggleSelection("engagement", id)}
+                />
+              )}
+              {step === 6 && <SummaryStep />}
+              {step === 7 && (
+                <SignupStep
+                  email={email}
+                  password={password}
+                  businessName={businessName}
+                  onEmail={(v) => {
+                    setEmail(v);
+                    setError("");
+                  }}
+                  onPassword={(v) => {
+                    setPassword(v);
+                    setError("");
+                  }}
+                  onBusinessName={setBusinessName}
+                  error={error}
+                  notice={notice}
+                />
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        {/* Footer: Next + Skip */}
+        <div className="flex flex-col items-center gap-3 pt-8 pb-4">
+          {step < STEPS.length - 1 ? (
+            <motion.button
+              onClick={() => setStep((c) => c + 1)}
+              disabled={!canNext}
+              whileHover={canNext ? { y: -2, scale: 1.02 } : undefined}
+              whileTap={canNext ? { scale: 0.97 } : undefined}
+              transition={{ type: "spring", stiffness: 400, damping: 22 }}
+              className="group flex items-center gap-2 px-12 py-3.5 rounded-full bg-foreground text-background text-[14px] font-semibold cursor-pointer hover:shadow-[0_8px_24px_-6px] hover:shadow-foreground/40 transition-shadow disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
+            >
+              Next
+              <motion.span
+                className="inline-flex"
+                animate={{ x: 0 }}
+                whileHover={{ x: 2 }}
+              >
+                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+              </motion.span>
+            </motion.button>
+          ) : (
+            <motion.button
+              onClick={handleComplete}
+              disabled={loading || !canNext}
+              whileHover={loading || !canNext ? undefined : { y: -2, scale: 1.02 }}
+              whileTap={loading || !canNext ? undefined : { scale: 0.97 }}
+              transition={{ type: "spring", stiffness: 400, damping: 22 }}
+              className="flex items-center gap-2 px-12 py-3.5 rounded-full bg-primary text-white text-[14px] font-semibold cursor-pointer hover:shadow-[0_8px_24px_-6px] hover:shadow-primary/50 transition-shadow disabled:opacity-60 disabled:cursor-not-allowed disabled:shadow-none"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" /> Creating…
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" /> Launch Dashboard
+                </>
+              )}
+            </motion.button>
+          )}
+          {skipAllowed && (
             <button
-              onClick={() => setStep((current) => Math.min(current + 1, STEPS.length - 1))}
+              onClick={() => setStep((c) => Math.min(c + 1, STEPS.length - 1))}
               className="text-[12px] text-text-tertiary hover:text-foreground cursor-pointer"
             >
               Skip for now
             </button>
-          </p>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
-function QuestionStep<T extends string>({
-  title,
-  description,
-  options,
-  selectedValue,
+// ── Reusable pill option ───────────────────────────────────────
+
+function PillOption({
+  label,
+  selected,
+  onClick,
+  index = 0,
+}: {
+  label: string;
+  selected: boolean;
+  onClick: () => void;
+  index?: number;
+}) {
+  return (
+    <motion.button
+      onClick={onClick}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay: index * 0.035, ease: [0.22, 1, 0.36, 1] }}
+      whileHover={{ y: -1, scale: 1.005 }}
+      whileTap={{ scale: 0.985 }}
+      className={`w-full px-5 py-3.5 rounded-full cursor-pointer flex items-center justify-between gap-3 transition-colors duration-200 ${
+        selected
+          ? "bg-primary text-white shadow-[0_4px_16px_-4px] shadow-primary/30"
+          : "bg-background border-2 border-border-light text-foreground hover:border-foreground/30 hover:shadow-sm"
+      }`}
+    >
+      <span
+        className={`text-[13px] ${
+          selected ? "font-semibold" : "font-medium"
+        }`}
+      >
+        {label}
+      </span>
+      <motion.div
+        animate={{ scale: selected ? 1 : 0.92 }}
+        transition={{ type: "spring", stiffness: 500, damping: 22 }}
+        className={`w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center transition-colors duration-200 ${
+          selected ? "bg-white/25" : "border-2 border-border-light"
+        }`}
+      >
+        {selected && (
+          <motion.span
+            initial={{ scale: 0, rotate: -90 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: "spring", stiffness: 600, damping: 18 }}
+          >
+            <Check className="w-3 h-3 text-white" strokeWidth={3} />
+          </motion.span>
+        )}
+      </motion.div>
+    </motion.button>
+  );
+}
+
+// ── Step components ────────────────────────────────────────────
+
+function PersonaStep({
+  selected,
   onSelect,
 }: {
-  title: string;
-  description: string;
-  options: { value: T; label: string }[];
-  selectedValue: T | null;
-  onSelect: (value: T) => void;
+  selected: PersonaSlug | null;
+  onSelect: (slug: PersonaSlug) => void;
 }) {
   return (
     <div>
-      <h2 className="text-[20px] font-bold text-foreground mb-1">{title}</h2>
-      <p className="text-[14px] text-text-secondary mb-6">{description}</p>
-      <div className="space-y-3">
-        {options.map((option) => (
-          <OptionCard
-            key={option.value}
-            label={option.label}
-            selected={selectedValue === option.value}
-            onClick={() => onSelect(option.value)}
-          />
+      <h2 className="text-[22px] font-bold text-foreground text-center mb-1">
+        What do you do?
+      </h2>
+      <p className="text-[13px] text-text-secondary text-center mb-8">
+        Pick the one that fits best
+      </p>
+      <div className="grid grid-cols-2 gap-3">
+        {PERSONAS.map((p, i) => {
+          const Icon = p.icon;
+          const isSelected = selected === p.slug;
+          return (
+            <motion.button
+              key={p.slug}
+              onClick={() => onSelect(p.slug)}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, delay: i * 0.04, ease: [0.22, 1, 0.36, 1] }}
+              whileHover={{ y: -3 }}
+              whileTap={{ scale: 0.97 }}
+              className={`text-left p-4 rounded-2xl border-2 cursor-pointer transition-colors duration-200 ${
+                isSelected
+                  ? "border-primary bg-primary/[0.06] shadow-[0_8px_24px_-8px] shadow-primary/25"
+                  : "border-border-light bg-background hover:border-foreground/25 hover:shadow-md"
+              }`}
+            >
+              <motion.div
+                animate={isSelected ? { rotate: [0, -8, 8, 0] } : { rotate: 0 }}
+                transition={{ duration: 0.4 }}
+                className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 transition-colors duration-200 ${
+                  isSelected
+                    ? "bg-primary text-white"
+                    : `${p.iconBg} ${p.iconColor}`
+                }`}
+              >
+                <Icon className="w-5 h-5" />
+              </motion.div>
+              <div className="text-[14px] font-semibold text-foreground">
+                {p.label}
+              </div>
+              <div className="text-[11px] text-text-tertiary mt-0.5">
+                {p.example}
+              </div>
+            </motion.button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function StructuralStep({
+  questions,
+  values,
+  onSelect,
+}: {
+  questions: StructuralQuestion[];
+  values: Record<string, string>;
+  onSelect: (key: string, value: string) => void;
+}) {
+  return (
+    <div>
+      <h2 className="text-[22px] font-bold text-foreground text-center mb-1">
+        How do you run it?
+      </h2>
+      <p className="text-[13px] text-text-secondary text-center mb-8">
+        Quick basics so we can shape the rest
+      </p>
+      <div className="space-y-7">
+        {questions.map((q, qi) => (
+          <div key={q.id}>
+            <p className="text-[13px] font-semibold text-foreground text-center mb-3">
+              {q.title}
+            </p>
+            <div className="space-y-2">
+              {q.options.map((opt, oi) => (
+                <PillOption
+                  key={opt.value}
+                  index={qi * 3 + oi}
+                  label={opt.label}
+                  selected={values[q.id] === opt.value}
+                  onClick={() => onSelect(q.id, opt.value)}
+                />
+              ))}
+            </div>
+          </div>
         ))}
       </div>
     </div>
   );
 }
 
-function MultiSelectStep<T extends string>({
+function MultiSelectStep({
   title,
-  description,
   options,
-  selectedValues,
+  selectedIds,
   onToggle,
 }: {
   title: string;
-  description: string;
-  options: { value: T; label: string }[];
-  selectedValues: T[];
-  onToggle: (value: T) => void;
+  options: MultiOption[];
+  selectedIds: string[];
+  onToggle: (id: string) => void;
 }) {
   return (
     <div>
-      <h2 className="text-[20px] font-bold text-foreground mb-1">{title}</h2>
-      <p className="text-[14px] text-text-secondary mb-6">{description}</p>
-      <div className="space-y-3">
-        {options.map((option) => (
-          <OptionCard
-            key={option.value}
-            label={option.label}
-            selected={selectedValues.includes(option.value)}
-            onClick={() => onToggle(option.value)}
+      <h2 className="text-[22px] font-bold text-foreground text-center mb-1">
+        {title}
+      </h2>
+      <p className="text-[13px] text-text-secondary text-center mb-8">
+        Select all that apply
+      </p>
+      <div className="space-y-2">
+        {options.map((opt, i) => (
+          <PillOption
+            key={opt.id}
+            index={i}
+            label={opt.label}
+            selected={selectedIds.includes(opt.id)}
+            onClick={() => onToggle(opt.id)}
           />
         ))}
       </div>
-      <p className="text-[12px] text-text-tertiary mt-3">{selectedValues.length} selected</p>
+    </div>
+  );
+}
+
+function SummaryStep() {
+  const draft = useOnboardingDraftStore((s) => s.draft);
+  const persona = getPersona(draft.persona);
+  const enabledAddonIds = resolveEnabledAddons(draft);
+
+  // Configured = core modules + add-ons that resolved from selections.
+  const enabledAddonCards: ModuleCard[] = enabledAddonIds
+    .map((id) => {
+      const addon = ADDON_MODULES.find((a) => a.id === id);
+      const visual = ADDON_VISUALS[id];
+      if (!addon || !visual) return null;
+      return {
+        id: addon.id,
+        name: addon.name,
+        description: addon.description,
+        icon: visual.icon,
+        accent: visual.accent,
+      };
+    })
+    .filter((c): c is ModuleCard => !!c);
+
+  const configured = [...CORE_MODULES, ...enabledAddonCards];
+
+  // Not-yet-enabled = add-ons not in the resolved set.
+  const remaining: ModuleCard[] = ADDON_MODULES
+    .filter((a) => !enabledAddonIds.includes(a.id))
+    .map((addon) => {
+      const visual = ADDON_VISUALS[addon.id];
+      return visual
+        ? {
+            id: addon.id,
+            name: addon.name,
+            description: addon.description,
+            icon: visual.icon,
+            accent: visual.accent,
+          }
+        : null;
+    })
+    .filter((c): c is ModuleCard => !!c);
+
+  return (
+    <div>
+      {/* Persona pill at top */}
+      {persona && (
+        <div className="flex justify-center mb-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-foreground/[0.04] border border-border-light/60">
+            <persona.icon className={`w-3.5 h-3.5 ${persona.iconColor}`} />
+            <span className="text-[12px] font-semibold text-foreground">
+              {persona.label}
+            </span>
+          </div>
+        </div>
+      )}
+
+      <h2 className="text-[26px] font-bold text-foreground text-center mb-2">
+        Your workspace is ready
+      </h2>
+      <p className="text-[13px] text-text-secondary text-center max-w-md mx-auto mb-8">
+        {configured.length} modules configured for you. Everything is
+        customizable from your dashboard.
+      </p>
+
+      {/* Configured modules grid — landing addon-card pattern. */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+        {configured.map((m, i) => {
+          const Icon = m.icon;
+          return (
+            <motion.div
+              key={m.id}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: 0.3,
+                delay: i * 0.04,
+                ease: [0.22, 1, 0.36, 1],
+              }}
+              whileHover={{ y: -2 }}
+              className="relative bg-card-bg rounded-2xl border border-border-light overflow-hidden hover:shadow-md hover:border-foreground/15 transition-all"
+            >
+              <div
+                className="absolute top-0 left-0 right-0 h-24 opacity-[0.08] pointer-events-none"
+                style={{
+                  background: `linear-gradient(to bottom, ${m.accent}, transparent)`,
+                }}
+              />
+              <div className="relative px-5 pt-5 pb-4">
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center mb-3"
+                  style={{ backgroundColor: `${m.accent}1F` }}
+                >
+                  <Icon className="w-5 h-5" style={{ color: m.accent }} />
+                </div>
+                <h3 className="text-[14px] font-bold text-foreground">
+                  {m.name}
+                </h3>
+                <p className="text-[11px] text-text-secondary mt-1 leading-snug">
+                  {m.description}
+                </p>
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
+
+      {remaining.length > 0 && (
+        <>
+          <p className="text-[12px] text-text-tertiary text-center mb-3">
+            Not included yet — enable any of these later from your dashboard
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {remaining.map((m, i) => {
+              const Icon = m.icon;
+              return (
+                <motion.div
+                  key={m.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{
+                    duration: 0.3,
+                    delay: 0.2 + i * 0.04,
+                    ease: [0.22, 1, 0.36, 1],
+                  }}
+                  whileHover={{ y: -2 }}
+                  className="relative rounded-2xl border border-dashed border-border-light overflow-hidden hover:border-foreground/30 transition-colors group bg-card-bg"
+                >
+                  <div
+                    className="absolute top-0 left-0 right-0 h-24 opacity-[0.04] group-hover:opacity-[0.08] pointer-events-none transition-opacity"
+                    style={{
+                      background: `linear-gradient(to bottom, ${m.accent}, transparent)`,
+                    }}
+                  />
+                  <div className="relative px-5 pt-5 pb-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div
+                        className="w-10 h-10 rounded-xl flex items-center justify-center opacity-60 group-hover:opacity-100 transition-opacity"
+                        style={{ backgroundColor: `${m.accent}1F` }}
+                      >
+                        <Icon className="w-5 h-5" style={{ color: m.accent }} />
+                      </div>
+                      <Plus className="w-4 h-4 text-text-tertiary group-hover:text-foreground transition-colors" />
+                    </div>
+                    <h3 className="text-[14px] font-semibold text-text-secondary group-hover:text-foreground transition-colors">
+                      {m.name}
+                    </h3>
+                    <p className="text-[11px] text-text-tertiary mt-1 leading-snug">
+                      {m.description}
+                    </p>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function SignupStep({
+  email,
+  password,
+  businessName,
+  onEmail,
+  onPassword,
+  onBusinessName,
+  error,
+  notice,
+}: {
+  email: string;
+  password: string;
+  businessName: string;
+  onEmail: (v: string) => void;
+  onPassword: (v: string) => void;
+  onBusinessName: (v: string) => void;
+  error: string;
+  notice: string;
+}) {
+  return (
+    <div>
+      <h2 className="text-[22px] font-bold text-foreground text-center mb-1">
+        Create your account
+      </h2>
+      <p className="text-[13px] text-text-secondary text-center mb-8">
+        Last step — your login and business name
+      </p>
+      {error && (
+        <p className="mb-3 text-[12px] text-red-600 text-center">{error}</p>
+      )}
+      {notice && (
+        <p className="mb-3 text-[12px] text-emerald-600 text-center">{notice}</p>
+      )}
+      <div className="space-y-2.5">
+        <div className="relative">
+          <Mail className="w-4 h-4 text-text-tertiary absolute left-4 top-1/2 -translate-y-1/2" />
+          <input
+            value={email}
+            onChange={(e) => onEmail(e.target.value)}
+            type="email"
+            autoFocus
+            placeholder="you@example.com"
+            className="w-full pl-11 pr-4 py-3 bg-background border border-border-light rounded-full text-[14px] text-foreground outline-none focus:border-primary transition-colors"
+          />
+        </div>
+        <div className="relative">
+          <Lock className="w-4 h-4 text-text-tertiary absolute left-4 top-1/2 -translate-y-1/2" />
+          <input
+            value={password}
+            onChange={(e) => onPassword(e.target.value)}
+            type="password"
+            placeholder="Password"
+            className="w-full pl-11 pr-4 py-3 bg-background border border-border-light rounded-full text-[14px] text-foreground outline-none focus:border-primary transition-colors"
+          />
+        </div>
+        <div className="relative">
+          <UserIcon className="w-4 h-4 text-text-tertiary absolute left-4 top-1/2 -translate-y-1/2" />
+          <input
+            value={businessName}
+            onChange={(e) => onBusinessName(e.target.value)}
+            placeholder="Business name"
+            className="w-full pl-11 pr-4 py-3 bg-background border border-border-light rounded-full text-[14px] text-foreground outline-none focus:border-primary transition-colors"
+          />
+        </div>
+      </div>
     </div>
   );
 }

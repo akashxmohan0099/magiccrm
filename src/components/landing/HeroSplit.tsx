@@ -75,13 +75,16 @@ export function HeroSplit() {
   // startHalf: 0 = 9:00, 1 = 9:30, … ; span = half-hour units.
   // kind determines rendering: "booking" (colored card), "event"
   // (full-day/long block), "break" (striped unavailable slot).
+  // Two semantic block colors + an accent for events. Keeps the grid tidy
+  // — repeat clients (recurring/regulars) get the warm tone, everyone else
+  // gets the neutral indigo. No saturated borders; the soft fill is enough.
+  // Solid pastel palette — distinct hues so block types read at a
+  // glance, all soft enough to sit harmoniously together. Brand green
+  // anchors the events; blue and pink carry the rest.
   const HUE = {
-    pink:   { bg: "rgba(236,72,153,0.10)", border: "#EC4899", text: "#9D174D" },
-    purple: { bg: "rgba(139,92,246,0.10)", border: "#8B5CF6", text: "#5B21B6" },
-    blue:   { bg: "rgba(59,130,246,0.10)", border: "#3B82F6", text: "#1E40AF" },
-    teal:   { bg: "rgba(20,184,166,0.10)", border: "#14B8A6", text: "#115E59" },
-    amber:  { bg: "rgba(245,158,11,0.10)", border: "#F59E0B", text: "#92400E" },
-    event:  { bg: "rgba(253,186,116,0.35)", border: "#EA580C", text: "#7C2D12" },
+    default: { bg: "#C8DCF2" }, // brighter blue — regular bookings
+    repeat:  { bg: "#F7C9D5" }, // brighter pink — recurring/repeat clients
+    event:   { bg: "#B8DCC4" }, // brighter sage green — full-day events
   };
   const appointments: {
     dayIndex: number;
@@ -93,32 +96,43 @@ export function HeroSplit() {
     label?: string;
     depositPaid?: boolean;
     recurring?: boolean;
-    hue: { bg: string; border: string; text: string };
+    hue: { bg: string };
   }[] = [
     // ── Wed (today) — recurring 3-weekly lash client + cleanup buffer ─
-    { dayIndex: 0, startHalf: 1,  span: 2, kind: "booking", name: "Maya R.", svc: "Lash Fill",  depositPaid: true, recurring: true, hue: HUE.pink },
-    { dayIndex: 0, startHalf: 3,  span: 1, kind: "break",   label: "Cleanup",                                                       hue: HUE.pink },
-    { dayIndex: 0, startHalf: 4,  span: 2, kind: "booking", name: "Ruby T.", svc: "Gel Mani",                                       hue: HUE.amber },
-    { dayIndex: 0, startHalf: 7,  span: 2, kind: "break",   label: "Lunch",                                                          hue: HUE.pink },
-    { dayIndex: 0, startHalf: 10, span: 2, kind: "booking", name: "Chloe F.", svc: "Brow Lam",  depositPaid: true,                  hue: HUE.blue },
+    { dayIndex: 0, startHalf: 1,  span: 2, kind: "booking", name: "Maya R.",  svc: "Lash Fill",     depositPaid: true, recurring: true, hue: HUE.repeat  },
+    { dayIndex: 0, startHalf: 3,  span: 1, kind: "break",   label: "Cleanup",                                                            hue: HUE.default },
+    { dayIndex: 0, startHalf: 4,  span: 2, kind: "booking", name: "Ruby T.",  svc: "Gel Mani",                                           hue: HUE.default },
+    { dayIndex: 0, startHalf: 7,  span: 2, kind: "break",   label: "Lunch",                                                              hue: HUE.default },
+    { dayIndex: 0, startHalf: 10, span: 2, kind: "booking", name: "Chloe F.", svc: "Brow Lam",      depositPaid: true,                   hue: HUE.default },
     // ── Thu — travel time between two clients ───────────────────────
-    { dayIndex: 1, startHalf: 0,  span: 2, kind: "booking", name: "Emma K.", svc: "Brow Tint",                                       hue: HUE.blue },
-    { dayIndex: 1, startHalf: 3,  span: 3, kind: "booking", name: "Jess L.", svc: "Volume Set",                                      hue: HUE.purple },
-    { dayIndex: 1, startHalf: 8,  span: 2, kind: "break",   label: "Travel",                                                         hue: HUE.pink },
-    { dayIndex: 1, startHalf: 11, span: 2, kind: "booking", name: "Sofia D.", svc: "Lash Fill", recurring: true,                     hue: HUE.pink },
+    { dayIndex: 1, startHalf: 0,  span: 2, kind: "booking", name: "Emma K.",  svc: "Brow Tint",                                          hue: HUE.default },
+    { dayIndex: 1, startHalf: 3,  span: 3, kind: "booking", name: "Jess L.",  svc: "Volume Set",                                         hue: HUE.default },
+    { dayIndex: 1, startHalf: 8,  span: 2, kind: "break",   label: "Travel",                                                             hue: HUE.default },
+    { dayIndex: 1, startHalf: 11, span: 2, kind: "booking", name: "Sofia D.", svc: "Lash Fill",     recurring: true,                     hue: HUE.repeat  },
     // ── Fri — bridal trial + cleanup ─────────────────────────────────
-    { dayIndex: 2, startHalf: 1,  span: 3, kind: "booking", name: "Leila P.", svc: "Volume Set",                                     hue: HUE.purple },
-    { dayIndex: 2, startHalf: 5,  span: 2, kind: "booking", name: "Priya N.", svc: "Bridal Trial", depositPaid: true,                hue: HUE.teal },
-    { dayIndex: 2, startHalf: 7,  span: 1, kind: "break",   label: "Reset",                                                          hue: HUE.pink },
-    { dayIndex: 2, startHalf: 10, span: 2, kind: "booking", name: "Maya R.", svc: "Lash Fill",  recurring: true,                     hue: HUE.pink },
+    { dayIndex: 2, startHalf: 1,  span: 3, kind: "booking", name: "Leila P.", svc: "Volume Set",                                         hue: HUE.default },
+    { dayIndex: 2, startHalf: 5,  span: 2, kind: "booking", name: "Priya N.", svc: "Bridal Trial",  depositPaid: true,                   hue: HUE.default },
+    { dayIndex: 2, startHalf: 7,  span: 1, kind: "break",   label: "Reset",                                                              hue: HUE.default },
+    { dayIndex: 2, startHalf: 10, span: 2, kind: "booking", name: "Maya R.",  svc: "Lash Fill",     recurring: true,                     hue: HUE.repeat  },
     // ── Sat — on-site wedding ────────────────────────────────────────
-    { dayIndex: 3, startHalf: 0,  span: 2, kind: "break",   label: "Prep",                                                           hue: HUE.pink },
-    { dayIndex: 3, startHalf: 2,  span: 10, kind: "event",  label: "Wedding · Ana K.",                                              hue: HUE.event },
+    { dayIndex: 3, startHalf: 0,  span: 2, kind: "break",   label: "Prep",                                                               hue: HUE.default },
+    { dayIndex: 3, startHalf: 2,  span: 10, kind: "event",  label: "Wedding · Ana K.",                                                   hue: HUE.event   },
     // ── Sun ──────────────────────────────────────────────────────────
-    { dayIndex: 4, startHalf: 2,  span: 2, kind: "booking", name: "Chloe F.", svc: "Lash Fill",                                       hue: HUE.pink },
-    { dayIndex: 4, startHalf: 5,  span: 1, kind: "booking", name: "Jess L.", svc: "Gel Mani",                                         hue: HUE.amber },
-    { dayIndex: 4, startHalf: 8,  span: 8, kind: "break",   label: "Closed",                                                          hue: HUE.pink },
+    { dayIndex: 4, startHalf: 2,  span: 2, kind: "booking", name: "Chloe F.", svc: "Lash Fill",                                          hue: HUE.default },
+    { dayIndex: 4, startHalf: 5,  span: 1, kind: "booking", name: "Jess L.",  svc: "Gel Mani",                                           hue: HUE.default },
+    { dayIndex: 4, startHalf: 8,  span: 8, kind: "break",   label: "Closed",                                                             hue: HUE.default },
   ];
+
+  // Calendar starts at 9 AM. Each half-step = 30 min. Show ":30" only when
+  // the slot doesn't land on the hour, matching how Notion / Cron / Linear
+  // condense top-of-hour times.
+  const fmtTime = (half: number) => {
+    const minutes = half * 30;
+    const h24 = 9 + Math.floor(minutes / 60);
+    const m = minutes % 60;
+    const h12 = h24 > 12 ? h24 - 12 : h24;
+    return m === 0 ? `${h12}` : `${h12}:30`;
+  };
 
   const HOUR_ROW = 24; // px per half-hour slot
   const HEADER_ROW = 32; // px for day-labels row
@@ -237,7 +251,7 @@ export function HeroSplit() {
               <div className="flex">
                 {/* Sidebar */}
                 <div className="w-[148px] bg-card-bg border-r border-border-light flex flex-col flex-shrink-0">
-                  <div className="px-3 py-3 border-b border-border-light">
+                  <div className="h-[44px] px-3 flex items-center border-b border-border-light">
                     <div className="flex items-center gap-2">
                       <div
                         className="w-5 h-5 rounded-[5px] flex items-center justify-center"
@@ -281,7 +295,7 @@ export function HeroSplit() {
                 {/* Main content */}
                 <div className="flex-1 min-w-0 flex flex-col">
                   {/* Top bar */}
-                  <div className="bg-card-bg border-b border-border-light px-4 py-2 flex items-center justify-between flex-shrink-0">
+                  <div className="bg-card-bg border-b border-border-light h-[44px] px-4 flex items-center justify-between flex-shrink-0">
                     <div className="px-3 py-1 bg-background border border-border-light rounded-lg text-[10px] text-text-tertiary w-40 flex items-center gap-1.5">
                       <Search className="w-3 h-3" /> Search…
                     </div>
@@ -309,7 +323,7 @@ export function HeroSplit() {
                           Calendar
                         </h3>
                         <p className="text-[10.5px] text-text-tertiary">
-                          Mon 28 — Fri 02 · This week
+                          Wed 30 — Sun 04 · This week
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
@@ -352,7 +366,7 @@ export function HeroSplit() {
                       {days.map((d) => (
                         <div
                           key={d.label}
-                          className={`flex flex-col items-center justify-center border-b border-r border-border-light last:border-r-0 ${
+                          className={`flex flex-col items-center justify-center gap-[3px] py-1 border-b border-r border-border-light last:border-r-0 ${
                             d.today ? "bg-primary/[0.05]" : "bg-surface/40"
                           }`}
                         >
@@ -363,13 +377,15 @@ export function HeroSplit() {
                           >
                             {d.label}
                           </span>
-                          <span
-                            className={`text-[11.5px] font-bold leading-none ${
-                              d.today ? "text-primary" : "text-foreground"
-                            }`}
-                          >
-                            {d.date}
-                          </span>
+                          {d.today ? (
+                            <span className="w-[18px] h-[18px] rounded-full bg-primary text-white text-[10px] font-bold flex items-center justify-center leading-none shadow-[0_2px_6px_-1px_rgba(16,185,129,0.5)]">
+                              {d.date}
+                            </span>
+                          ) : (
+                            <span className="text-[11.5px] font-bold leading-none text-foreground tabular-nums">
+                              {d.date}
+                            </span>
+                          )}
                         </div>
                       ))}
 
@@ -391,28 +407,27 @@ export function HeroSplit() {
                         </div>
                       ))}
 
-                      {/* Day columns background (8 hour cells per day) */}
-                      {days.map((d, dIdx) => (
-                        <div
-                          key={d.label}
-                          style={{
-                            gridColumn: dIdx + 2,
-                            gridRow: "2 / span 16",
-                          }}
-                          className={`relative border-r border-border-light last:border-r-0 ${
-                            d.today ? "bg-primary/[0.02]" : ""
-                          }`}
-                        >
-                          {/* Hour divider lines every 2 rows */}
-                          {Array.from({ length: 8 }).map((_, i) => (
-                            <div
-                              key={i}
-                              className="absolute left-0 right-0 border-b border-border-light/60"
-                              style={{ top: `${(i + 1) * HOUR_ROW * 2}px` }}
-                            />
-                          ))}
-                        </div>
-                      ))}
+                      {/* Day-column hour cells. Each one is a grid cell that
+                          spans the same 2 half-hour rows as a time-label cell,
+                          so their borders align pixel-perfect — no more
+                          mismatched/disconnected lines between the time
+                          column and the day columns. */}
+                      {days.flatMap((d, dIdx) =>
+                        hours.map((_, hIdx) => (
+                          <div
+                            key={`${d.label}-${hIdx}`}
+                            style={{
+                              gridColumn: dIdx + 2,
+                              gridRow: `${2 + hIdx * 2} / span 2`,
+                            }}
+                            className={`border-b border-border-light ${
+                              dIdx < days.length - 1
+                                ? "border-r border-border-light"
+                                : ""
+                            } ${d.today ? "bg-primary/[0.02]" : ""}`}
+                          />
+                        )),
+                      )}
 
                       {/* Appointment blocks, events, and breaks */}
                       {appointments.map((apt, i) => {
@@ -454,23 +469,23 @@ export function HeroSplit() {
                               style={{
                                 ...commonStyle,
                                 backgroundColor: apt.hue.bg,
-                                borderLeft: `3px solid ${apt.hue.border}`,
-                                color: apt.hue.text,
                               }}
-                              className="relative rounded-[6px] px-2 py-1.5 leading-tight overflow-hidden z-10"
+                              className="relative rounded-[6px] px-2 py-1.5 leading-tight overflow-hidden z-10 text-foreground"
                             >
-                              <p className="text-[7.5px] font-bold uppercase tracking-[0.12em] opacity-70">
-                                Event
+                              <p className="text-[7.5px] font-bold uppercase tracking-[0.12em] text-foreground/55">
+                                Event · full day
                               </p>
                               <p className="text-[10px] font-bold mt-0.5 truncate">
                                 {apt.label}
                               </p>
-                              <p className="text-[8.5px] font-normal opacity-75 mt-0.5 truncate">
-                                On-site · full day
+                              <p className="text-[8.5px] font-normal opacity-65 mt-0.5 truncate">
+                                On-site
                               </p>
                             </motion.div>
                           );
                         }
+                        const timeRange = `${fmtTime(apt.startHalf)}–${fmtTime(apt.startHalf + apt.span)}`;
+                        const isCompact = apt.span < 2;
                         return (
                           <motion.div
                             key={`${apt.dayIndex}-${apt.startHalf}-${apt.name}`}
@@ -484,16 +499,14 @@ export function HeroSplit() {
                             style={{
                               ...commonStyle,
                               backgroundColor: apt.hue.bg,
-                              borderLeft: `3px solid ${apt.hue.border}`,
-                              color: apt.hue.text,
                             }}
-                            className="relative rounded-[6px] px-1.5 py-1 text-[9.5px] font-semibold leading-tight overflow-hidden z-10"
+                            className="relative rounded-[6px] px-1.5 py-1 leading-tight overflow-hidden z-10 text-foreground"
                           >
                             {(apt.depositPaid || apt.recurring) && (
                               <span className="absolute top-1 right-1 flex items-center gap-[2px]">
                                 {apt.recurring && (
                                   <RotateCw
-                                    className="w-[7px] h-[7px] opacity-70"
+                                    className="w-[7px] h-[7px] opacity-55"
                                     strokeWidth={2.5}
                                   />
                                 )}
@@ -506,15 +519,31 @@ export function HeroSplit() {
                                 )}
                               </span>
                             )}
-                            <p className="truncate pr-3">{apt.name}</p>
-                            <p className="text-[8.5px] font-normal opacity-80 truncate">
-                              {apt.svc}
-                            </p>
+                            {isCompact ? (
+                              <p className="text-[9px] font-semibold truncate pr-3">
+                                <span className="opacity-55 font-medium mr-1">{timeRange}</span>
+                                {apt.name}
+                              </p>
+                            ) : (
+                              <>
+                                <p className="text-[7.5px] font-medium opacity-55 leading-none mb-[3px]">
+                                  {timeRange}
+                                </p>
+                                <p className="text-[9.5px] font-semibold truncate pr-3">
+                                  {apt.name}
+                                </p>
+                                <p className="text-[8.5px] font-normal opacity-65 truncate">
+                                  {apt.svc}
+                                </p>
+                              </>
+                            )}
                           </motion.div>
                         );
                       })}
 
-                      {/* "Now" indicator — today = Wed (col 2), line at 10:30 */}
+                      {/* "Now" indicator — today = Wed (col 2), line at 10:30.
+                          Glow on the dot + gradient-fade line so it reads as
+                          live but doesn't compete with the booking blocks. */}
                       <div
                         aria-hidden="true"
                         style={{
@@ -526,13 +555,22 @@ export function HeroSplit() {
                         className="pointer-events-none"
                       >
                         <div
-                          className="absolute left-[-4px] right-0 flex items-center"
+                          className="absolute left-[-5px] right-0 flex items-center"
                           style={{ top: "50%" }}
                         >
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#EC4899] flex-shrink-0" />
+                          <span
+                            className="w-2 h-2 rounded-full bg-[#EC4899] flex-shrink-0"
+                            style={{
+                              boxShadow:
+                                "0 0 0 3px rgba(236, 72, 153, 0.18), 0 0 8px rgba(236, 72, 153, 0.4)",
+                            }}
+                          />
                           <span
                             className="flex-1 h-[1.5px]"
-                            style={{ backgroundColor: "#EC4899" }}
+                            style={{
+                              background:
+                                "linear-gradient(to right, #EC4899 0%, rgba(236, 72, 153, 0.45) 60%, rgba(236, 72, 153, 0) 100%)",
+                            }}
                           />
                         </div>
                       </div>
@@ -541,6 +579,17 @@ export function HeroSplit() {
                 </div>
               </div>
             </motion.div>
+
+            {/* Caption below the dashboard mockup — desktop only */}
+            <motion.p
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.55, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+              className="hidden md:block mt-7 text-center text-[17px] sm:text-[18px] font-semibold text-foreground tracking-[-0.015em]"
+            >
+              One workspace. Every tool.{" "}
+              <span className="text-text-tertiary font-medium">Zero app-switching.</span>
+            </motion.p>
 
             {/* PHONE MOCKUP — content sized to match real iPhone optics */}
             <motion.div
@@ -551,7 +600,7 @@ export function HeroSplit() {
                 duration: 0.85,
                 ease: [0.22, 1, 0.36, 1],
               }}
-              className="hidden md:block absolute -bottom-14 -right-[90px] lg:-right-[135px] w-[192px] z-10"
+              className="hidden md:block absolute -bottom-2 -right-[90px] lg:-right-[135px] w-[192px] z-10"
               style={{
                 filter: "drop-shadow(0 32px 48px rgba(10,10,10,0.26))",
               }}

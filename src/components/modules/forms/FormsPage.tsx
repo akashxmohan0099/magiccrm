@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { FileText, Plus, Globe, Code, Eye, Calendar, Inbox, ToggleLeft, ToggleRight, Pencil, Trash2, Copy, Check, GripVertical } from "lucide-react";
 import { useFormsStore } from "@/store/forms";
 import { useInquiriesStore } from "@/store/inquiries";
@@ -17,6 +17,7 @@ type SlideMode = "preview" | "edit" | "responses" | "embed";
 
 export function FormsPage() {
   const { forms, updateForm, deleteForm, addForm } = useFormsStore();
+  const { inquiries } = useInquiriesStore();
   const { workspaceId } = useAuth();
   const bookingPageSlug = useSettingsStore((s) => s.settings?.bookingPageSlug);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -25,6 +26,16 @@ export function FormsPage() {
   const selected = selectedId ? forms.find((f) => f.id === selectedId) : null;
   const bookingForms = forms.filter((f) => f.type === "booking");
   const inquiryForms = forms.filter((f) => f.type === "inquiry");
+
+  // Submissions per form, used to render the live count chip on each card.
+  const submissionsByFormId = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const inq of inquiries) {
+      if (!inq.formId) continue;
+      map.set(inq.formId, (map.get(inq.formId) ?? 0) + 1);
+    }
+    return map;
+  }, [inquiries]);
 
   const openForm = (id: string, mode: SlideMode) => {
     setSelectedId(id);
@@ -53,7 +64,7 @@ export function FormsPage() {
                 { name: "message", type: "textarea", label: "Message", required: true },
               ],
               branding: {},
-              slug: `form-${Date.now()}`,
+              slug: "",
               enabled: false,
             }, workspaceId || undefined);
             if (f) openForm(f.id, "edit");
@@ -64,9 +75,32 @@ export function FormsPage() {
       />
 
       {forms.length === 0 ? (
-        <div className="bg-card-bg border border-border-light rounded-2xl p-12 text-center">
-          <FileText className="w-8 h-8 text-text-tertiary mx-auto mb-3" />
-          <p className="text-text-tertiary text-sm">No forms yet.</p>
+        <div className="bg-card-bg border border-border-light rounded-2xl p-12 text-center max-w-md mx-auto">
+          <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+            <FileText className="w-6 h-6 text-primary" />
+          </div>
+          <h3 className="text-[15px] font-bold text-foreground mb-1">No forms yet</h3>
+          <p className="text-[13px] text-text-secondary mb-5">
+            Create a form to collect inquiries from your website, social bio, or email signature.
+          </p>
+          <Button variant="primary" size="sm" onClick={() => {
+            const f = addForm({
+              workspaceId: workspaceId ?? "",
+              type: "inquiry",
+              name: "New Form",
+              fields: [
+                { name: "name", type: "text", label: "Full Name", required: true },
+                { name: "email", type: "email", label: "Email", required: true },
+                { name: "message", type: "textarea", label: "Message", required: true },
+              ],
+              branding: {},
+              slug: "",
+              enabled: false,
+            }, workspaceId || undefined);
+            if (f) openForm(f.id, "edit");
+          }}>
+            <Plus className="w-4 h-4 mr-1.5" /> Create your first form
+          </Button>
         </div>
       ) : (
         <div className="space-y-8">
@@ -75,6 +109,7 @@ export function FormsPage() {
               label="Booking Forms"
               icon={<Calendar className="w-4 h-4 text-text-secondary" />}
               forms={bookingForms}
+              submissionsByFormId={submissionsByFormId}
               onOpen={openForm}
               onToggle={toggleEnabled}
             />
@@ -84,6 +119,7 @@ export function FormsPage() {
               label="Inquiry Forms"
               icon={<Inbox className="w-4 h-4 text-text-secondary" />}
               forms={inquiryForms}
+              submissionsByFormId={submissionsByFormId}
               onOpen={openForm}
               onToggle={toggleEnabled}
             />
@@ -129,7 +165,11 @@ export function FormsPage() {
 
             {/* Edit */}
             {slideMode === "edit" && (
-              <FormEditor form={selected} onUpdate={(data) => updateForm(selected.id, data, workspaceId || undefined)} />
+              <FormEditor
+                form={selected}
+                allForms={forms}
+                onUpdate={(data) => updateForm(selected.id, data, workspaceId || undefined)}
+              />
             )}
 
             {/* Responses */}
@@ -150,10 +190,11 @@ export function FormsPage() {
 
 // ── Form Section ──
 
-function FormSection({ label, icon, forms, onOpen, onToggle }: {
+function FormSection({ label, icon, forms, submissionsByFormId, onOpen, onToggle }: {
   label: string;
   icon: React.ReactNode;
   forms: Form[];
+  submissionsByFormId: Map<string, number>;
   onOpen: (id: string, mode: SlideMode) => void;
   onToggle: (form: Form, e: React.MouseEvent) => void;
 }) {
@@ -165,43 +206,75 @@ function FormSection({ label, icon, forms, onOpen, onToggle }: {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {forms.map((form) => (
-          <button
+          // Card itself isn't a <button> — that was nesting actual buttons
+          // (toggle + preview/edit/embed chips) inside an interactive
+          // element, which is invalid HTML and caused click bubbling
+          // headaches. Card is a plain div; the title area is its own
+          // clickable region.
+          <div
             key={form.id}
-            onClick={() => onOpen(form.id, "preview")}
-            className="bg-card-bg border border-border-light rounded-xl overflow-hidden text-left hover:shadow-md hover:border-foreground/10 transition-all cursor-pointer"
+            className="bg-card-bg border border-border-light rounded-xl overflow-hidden hover:shadow-md hover:border-foreground/10 transition-all"
           >
             <div className="h-1.5" style={{ backgroundColor: form.branding.primaryColor || "var(--primary)" }} />
             <div className="p-5">
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <p className="text-[14px] font-semibold text-foreground">{form.name}</p>
-                  <p className="text-[12px] text-text-tertiary">{form.fields.length} fields</p>
-                </div>
-                <div onClick={(e) => onToggle(form, e)} className="cursor-pointer">
-                  {form.enabled ? <ToggleRight className="w-6 h-6 text-emerald-500" /> : <ToggleLeft className="w-6 h-6 text-text-tertiary" />}
-                </div>
+              <div className="flex items-start justify-between mb-3 gap-3">
+                <button
+                  onClick={() => onOpen(form.id, "preview")}
+                  className="flex-1 text-left cursor-pointer min-w-0"
+                >
+                  <p className="text-[14px] font-semibold text-foreground truncate hover:underline decoration-foreground/30 underline-offset-2">
+                    {form.name}
+                  </p>
+                  <p className="text-[12px] text-text-tertiary">
+                    {form.fields.length} fields
+                    {(submissionsByFormId.get(form.id) ?? 0) > 0 && (
+                      <>
+                        {" · "}
+                        <span className="text-foreground font-medium">
+                          {submissionsByFormId.get(form.id)} submission
+                          {(submissionsByFormId.get(form.id) ?? 0) === 1 ? "" : "s"}
+                        </span>
+                      </>
+                    )}
+                  </p>
+                </button>
+                <button
+                  onClick={(e) => onToggle(form, e)}
+                  className="cursor-pointer flex-shrink-0"
+                  aria-label={form.enabled ? "Disable form" : "Enable form"}
+                >
+                  {form.enabled
+                    ? <ToggleRight className="w-6 h-6 text-emerald-500" />
+                    : <ToggleLeft className="w-6 h-6 text-text-tertiary" />}
+                </button>
               </div>
               {form.slug && (
-                <p className="text-[11px] text-text-tertiary font-mono flex items-center gap-1 mb-3">
-                  <Globe className="w-3 h-3" /> /{form.slug}
+                <p className="text-[11px] text-text-tertiary font-mono flex items-center gap-1 mb-3 truncate">
+                  <Globe className="w-3 h-3 flex-shrink-0" /> /{form.slug}
                 </p>
               )}
               <div className="flex items-center gap-2">
-                <span onClick={(e) => { e.stopPropagation(); onOpen(form.id, "preview"); }}
-                  className="flex items-center gap-1 px-2.5 py-1.5 bg-surface rounded-lg text-[11px] font-medium text-text-secondary hover:text-foreground transition-colors">
+                <button
+                  onClick={() => onOpen(form.id, "preview")}
+                  className="flex items-center gap-1 px-2.5 py-1.5 bg-surface rounded-lg text-[11px] font-medium text-text-secondary hover:text-foreground hover:bg-card-bg cursor-pointer transition-colors"
+                >
                   <Eye className="w-3 h-3" /> Preview
-                </span>
-                <span onClick={(e) => { e.stopPropagation(); onOpen(form.id, "edit"); }}
-                  className="flex items-center gap-1 px-2.5 py-1.5 bg-surface rounded-lg text-[11px] font-medium text-text-secondary hover:text-foreground transition-colors">
+                </button>
+                <button
+                  onClick={() => onOpen(form.id, "edit")}
+                  className="flex items-center gap-1 px-2.5 py-1.5 bg-surface rounded-lg text-[11px] font-medium text-text-secondary hover:text-foreground hover:bg-card-bg cursor-pointer transition-colors"
+                >
                   <Pencil className="w-3 h-3" /> Edit
-                </span>
-                <span onClick={(e) => { e.stopPropagation(); onOpen(form.id, "embed"); }}
-                  className="flex items-center gap-1 px-2.5 py-1.5 bg-surface rounded-lg text-[11px] font-medium text-text-secondary hover:text-foreground transition-colors">
+                </button>
+                <button
+                  onClick={() => onOpen(form.id, "embed")}
+                  className="flex items-center gap-1 px-2.5 py-1.5 bg-surface rounded-lg text-[11px] font-medium text-text-secondary hover:text-foreground hover:bg-card-bg cursor-pointer transition-colors"
+                >
                   <Code className="w-3 h-3" /> Embed
-                </span>
+                </button>
               </div>
             </div>
-          </button>
+          </div>
         ))}
       </div>
     </div>
@@ -259,7 +332,15 @@ function FormPreview({ form }: { form: Form }) {
 
 // ── Form Editor ──
 
-function FormEditor({ form, onUpdate }: { form: Form; onUpdate: (data: Partial<Form>) => void }) {
+function FormEditor({
+  form,
+  allForms,
+  onUpdate,
+}: {
+  form: Form;
+  allForms: Form[];
+  onUpdate: (data: Partial<Form>) => void;
+}) {
   const [name, setName] = useState(form.name);
   const [slug, setSlug] = useState(form.slug || "");
   const [color, setColor] = useState(form.branding.primaryColor || "#8B5CF6");
@@ -267,10 +348,43 @@ function FormEditor({ form, onUpdate }: { form: Form; onUpdate: (data: Partial<F
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
 
+  // Auto-suggest the slug from the name only while the user hasn't
+  // touched the slug field directly. Once they edit it, they own it.
+  // Existing forms with a saved slug are considered already-touched.
+  const [slugTouched, setSlugTouched] = useState(!!form.slug);
+  useEffect(() => {
+    if (slugTouched) return;
+    const suggestion = name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 60);
+    setSlug(suggestion);
+  }, [name, slugTouched]);
+
+  const trimmedSlug = slug.trim();
+  const slugCollides = useMemo(() => {
+    if (!trimmedSlug) return false;
+    return allForms.some(
+      (f) => f.id !== form.id && f.slug === trimmedSlug,
+    );
+  }, [allForms, form.id, trimmedSlug]);
+  const slugMissing = !trimmedSlug;
+  const slugInvalid = !!trimmedSlug && !/^[a-z0-9-]+$/.test(trimmedSlug);
+  const slugError = slugMissing
+    ? "Slug is required — this is the form's public URL."
+    : slugCollides
+    ? "Another form already uses this slug."
+    : slugInvalid
+    ? "Use lowercase letters, numbers, and dashes only."
+    : "";
+  const canSave = !slugError;
+
   const save = () => {
+    if (!canSave) return;
     onUpdate({
       name,
-      slug,
+      slug: trimmedSlug,
       fields,
       branding: { ...form.branding, primaryColor: color },
     });
@@ -302,9 +416,26 @@ function FormEditor({ form, onUpdate }: { form: Form; onUpdate: (data: Partial<F
           <label className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider block mb-1">URL Slug</label>
           <div className="flex items-center">
             <span className="text-[13px] text-text-tertiary mr-1">/</span>
-            <input value={slug} onChange={(e) => setSlug(e.target.value.replace(/\s/g, "-").toLowerCase())}
-              className="w-full px-3 py-2.5 bg-surface border border-border-light rounded-lg text-[14px] text-foreground font-mono outline-none focus:ring-2 focus:ring-primary/20" />
+            <input
+              value={slug}
+              onChange={(e) => {
+                setSlugTouched(true);
+                setSlug(e.target.value.replace(/\s/g, "-").toLowerCase());
+              }}
+              className={`w-full px-3 py-2.5 bg-surface border rounded-lg text-[14px] text-foreground font-mono outline-none focus:ring-2 ${
+                slugError
+                  ? "border-red-300 focus:ring-red-200"
+                  : "border-border-light focus:ring-primary/20"
+              }`}
+            />
           </div>
+          {slugError ? (
+            <p className="text-[11px] text-red-600 mt-1">{slugError}</p>
+          ) : (
+            <p className="text-[11px] text-text-tertiary mt-1">
+              Public URL: <span className="font-mono">/inquiry/{trimmedSlug || "—"}</span>
+            </p>
+          )}
         </div>
       </div>
 
@@ -375,7 +506,7 @@ function FormEditor({ form, onUpdate }: { form: Form; onUpdate: (data: Partial<F
       </div>
 
       {/* Save */}
-      <Button variant="primary" size="sm" className="w-full" onClick={save}>
+      <Button variant="primary" size="sm" className="w-full" onClick={save} disabled={!canSave}>
         <Check className="w-4 h-4 mr-1.5" /> Save Changes
       </Button>
     </div>

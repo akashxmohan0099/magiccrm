@@ -150,12 +150,15 @@ CREATE TABLE inquiries (
   form_id UUID,                           -- if from an inquiry form
   booking_id UUID,                        -- set when converted to booking
   client_id UUID,                         -- set when converted (client created via booking)
+  notes TEXT DEFAULT '',                  -- private internal notes (not shown to client)
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now(),
   UNIQUE(id, workspace_id),
   FOREIGN KEY (conversation_id, workspace_id) REFERENCES conversations(id, workspace_id) ON DELETE SET NULL,
   FOREIGN KEY (client_id, workspace_id) REFERENCES clients(id, workspace_id) ON DELETE SET NULL
 );
+-- Idempotent ALTER for existing dev databases that pre-date the notes column.
+ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS notes TEXT DEFAULT '';
 
 CREATE TABLE bookings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -171,7 +171,8 @@ function DashboardShell({ children }: { children: ReactNode }) {
     }
   };
 
-  // Grace period: don't show "Workspace not found" for 4 seconds after mount.
+  // Grace period: don't auto-bootstrap for 4 seconds after mount —
+  // gives the normal workspace lookup a chance to settle first.
   const [graceExpired, setGraceExpired] = useState(false);
   useEffect(() => {
     if (workspaceId) return;
@@ -179,17 +180,57 @@ function DashboardShell({ children }: { children: ReactNode }) {
     return () => clearTimeout(t);
   }, [workspaceId]);
 
-  // Demo mode: no authenticated user and no workspace from Supabase.
-  // This covers incognito, first visit, and local dev without Supabase.
-  const isDemoMode = !workspaceId && !user && !authLoading;
+  // Demo mode: no real workspace from Supabase AND either (a) no auth
+  // user at all, or (b) we're in dev with locally-seeded settings (came
+  // from /dev). Without (b), a stale Supabase session from prior testing
+  // would force the auto-bootstrap path even though /dev already seeded
+  // the Zustand stores — leaving the user stuck on the preloader.
+  const isDev = process.env.NODE_ENV === "development";
+  const hasSeededSettings = !!settings?.workspaceId;
+  const isDemoMode =
+    !workspaceId &&
+    !authLoading &&
+    (!user || (isDev && hasSeededSettings));
 
-  // Show preloader while anything is still resolving
-  if (authLoading || syncing || (!workspaceId && !graceExpired && !isDemoMode)) {
-    return <AppPreloader />;
-  }
+  // Auto-bootstrap: when an authenticated user has no workspace_member
+  // row (e.g. they signed up but never finished, or their workspace was
+  // wiped), silently create one instead of dropping them at a dead-end.
+  // Only the explicit failure of this fetch shows the recovery screen.
+  const bootstrapAttempted = useRef(false);
+  useEffect(() => {
+    if (bootstrapAttempted.current) return;
+    if (authLoading || syncing) return;
+    if (!user || workspaceId) return;
+    if (!graceExpired) return;
 
-  // If user has no workspace after grace period, show setup prompt (skip in demo mode)
-  if (!workspaceId && !isDemoMode) {
+    bootstrapAttempted.current = true;
+    setRepairingWorkspace(true);
+    setRepairWorkspaceError("");
+
+    fetch("/api/auth/bootstrap-workspace", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ workspaceName: businessName }),
+    })
+      .then(async (res) => {
+        const result = await res.json();
+        if (!res.ok) {
+          setRepairWorkspaceError(result.error || "Failed to set up workspace.");
+          setRepairingWorkspace(false);
+          return;
+        }
+        await refreshMember();
+        router.refresh();
+        setRepairingWorkspace(false);
+      })
+      .catch(() => {
+        setRepairWorkspaceError("Failed to set up workspace.");
+        setRepairingWorkspace(false);
+      });
+  }, [authLoading, syncing, user, workspaceId, graceExpired, businessName, refreshMember, router]);
+
+  // Recovery screen — only when auto-bootstrap explicitly failed.
+  if (!workspaceId && !isDemoMode && repairWorkspaceError && !repairingWorkspace) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center max-w-sm">
@@ -247,6 +288,18 @@ function DashboardShell({ children }: { children: ReactNode }) {
         </div>
       </div>
     );
+  }
+
+  // Preloader covers: auth/sync still resolving, bootstrap in flight, or
+  // logged-in user without a workspace (auto-bootstrap useEffect will
+  // fire on the next tick — preloader keeps the screen calm meanwhile).
+  if (
+    authLoading ||
+    syncing ||
+    repairingWorkspace ||
+    (!workspaceId && !isDemoMode)
+  ) {
+    return <AppPreloader />;
   }
 
   return (
@@ -442,15 +495,24 @@ function SidebarContent({
   onNavClick: () => void;
 }) {
   const teamSize = useSettingsStore((s) => s.settings?.teamSize);
+  const role = useSettingsStore((s) => s.settings?.role);
   const enabledAddons = useSettingsStore((s) => s.enabledAddons);
   const activeAddons = ADDON_MODULES.filter((addon) =>
     enabledAddons.includes(addon.id)
   );
   const showTeams = teamSize ? teamSize !== "solo" : true;
-  const displayGroups = navGroups.map((group) => ({
-    ...group,
-    items: group.items.filter((item) => showTeams || item.href !== "/dashboard/teams"),
-  }));
+  // Staff role hides the entire Setup group (Services, Forms, Automations,
+  // Teams) and the bottom Settings link. Owner / undefined sees everything.
+  const isStaff = role === "staff";
+  const displayGroups = navGroups
+    .filter((group) => !isStaff || group.label !== "Setup")
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => showTeams || item.href !== "/dashboard/teams"),
+    }));
+  const visibleBottomItems = bottomItems.filter(
+    (item) => !isStaff || item.href !== "/dashboard/settings",
+  );
 
   return (
     <>
@@ -560,7 +622,7 @@ function SidebarContent({
 
       {/* Bottom: Settings */}
       <div className="px-3 py-3 border-t border-border-light space-y-0.5">
-        {bottomItems.map((item) => {
+        {visibleBottomItems.map((item) => {
           const isActive = pathname.startsWith(item.href);
           return (
             <Link

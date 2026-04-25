@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Inbox, Plus, MessageCircle, Calendar, CreditCard, FileText, ChevronRight } from "lucide-react";
 import { useInquiriesStore } from "@/store/inquiries";
@@ -11,7 +11,6 @@ import { Inquiry, InquiryStatus } from "@/types/models";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { SearchInput } from "@/components/ui/SearchInput";
-import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Column } from "@/components/ui/DataTable";
 import { SlideOver } from "@/components/ui/SlideOver";
 import { toast } from "@/components/ui/Toast";
@@ -76,8 +75,29 @@ export function InquiriesPage() {
     updateInquiry(id, { status }, workspaceId || undefined);
   };
 
+  // Long-form date for the detail panel.
   const formatDate = (iso: string) =>
     new Date(iso).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
+
+  // Relative time for the table — fresh inquiries should feel fresh.
+  // Falls back to the date format above for anything older than ~a week.
+  const formatRelative = (iso: string) => {
+    const then = new Date(iso).getTime();
+    if (!Number.isFinite(then)) return "—";
+    const diffSec = Math.max(0, (Date.now() - then) / 1000);
+    if (diffSec < 60) return "just now";
+    if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
+    if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
+    if (diffSec < 86400 * 7) return `${Math.floor(diffSec / 86400)}d ago`;
+    return formatDate(iso);
+  };
+
+  const STATUS_PILL: Record<InquiryStatus, { dot: string; bg: string; text: string; label: string }> = {
+    new:         { dot: "bg-blue-500",    bg: "bg-blue-50",    text: "text-blue-700",    label: "New" },
+    in_progress: { dot: "bg-amber-500",   bg: "bg-amber-50",   text: "text-amber-700",   label: "In progress" },
+    converted:   { dot: "bg-emerald-500", bg: "bg-emerald-50", text: "text-emerald-700", label: "Converted" },
+    closed:      { dot: "bg-gray-400",    bg: "bg-gray-100",   text: "text-gray-600",    label: "Closed" },
+  };
 
   const columns: Column<Inquiry>[] = [
     {
@@ -108,36 +128,27 @@ export function InquiriesPage() {
     },
     {
       key: "createdAt",
-      label: "Date",
+      label: "Received",
       sortable: true,
-      render: (i) => <span className="text-[13px] text-text-secondary">{formatDate(i.createdAt)}</span>,
+      render: (i) => (
+        <span className="text-[13px] text-text-secondary tabular-nums">
+          {formatRelative(i.createdAt)}
+        </span>
+      ),
     },
     {
       key: "status",
       label: "Status",
       sortable: true,
       render: (i) => {
-        const colors: Record<InquiryStatus, { dot: string; text: string }> = {
-          new: { dot: "bg-blue-500", text: "text-blue-700" },
-          in_progress: { dot: "bg-amber-500", text: "text-amber-700" },
-          converted: { dot: "bg-emerald-500", text: "text-emerald-700" },
-          closed: { dot: "bg-gray-400", text: "text-gray-500" },
-        };
-        const c = colors[i.status] || colors.new;
+        const c = STATUS_PILL[i.status] ?? STATUS_PILL.new;
         return (
-          <div className="relative inline-flex items-center" onClick={(e) => e.stopPropagation()}>
-            <span className={`w-2 h-2 rounded-full mr-1.5 flex-shrink-0 ${c.dot}`} />
-            <select
-              value={i.status}
-              onChange={(e) => handleStatusChange(i.id, e.target.value as InquiryStatus)}
-              className={`text-[12px] font-semibold ${c.text} bg-transparent border-none outline-none cursor-pointer appearance-none pr-4`}
-              style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 0 center" }}
-            >
-              {STATUS_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-          </div>
+          <span
+            className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full ${c.bg} ${c.text} text-[11px] font-semibold`}
+          >
+            <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
+            {c.label}
+          </span>
         );
       },
     },
@@ -182,11 +193,48 @@ export function InquiriesPage() {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="bg-card-bg border border-border-light rounded-2xl p-12 text-center">
-          <Inbox className="w-8 h-8 text-text-tertiary mx-auto mb-3" />
-          <p className="text-text-tertiary text-sm">
-            {inquiries.length === 0 ? "No inquiries yet." : "No inquiries match your filters."}
-          </p>
+        <div className="bg-card-bg border border-border-light rounded-2xl p-12 text-center max-w-md mx-auto">
+          <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+            <Inbox className="w-6 h-6 text-primary" />
+          </div>
+          {inquiries.length === 0 ? (
+            <>
+              <h3 className="text-[15px] font-bold text-foreground mb-1">No inquiries yet</h3>
+              <p className="text-[13px] text-text-secondary mb-5">
+                {forms.length === 0
+                  ? "Create an inquiry form to start collecting leads from your website or social bio."
+                  : "Share your form's public URL — submissions will appear here in real time."}
+              </p>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() =>
+                  forms.length === 0
+                    ? router.push("/dashboard/forms")
+                    : setNewInquiryOpen(true)
+                }
+              >
+                {forms.length === 0 ? "Create a form" : "Log an inquiry manually"}
+              </Button>
+            </>
+          ) : (
+            <>
+              <h3 className="text-[15px] font-bold text-foreground mb-1">Nothing matches</h3>
+              <p className="text-[13px] text-text-secondary mb-5">
+                No inquiries match your current filters.
+              </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSearch("");
+                  setStatusFilter("all");
+                }}
+              >
+                Clear filters
+              </Button>
+            </>
+          )}
         </div>
       ) : (
         <GroupedInquiries
@@ -206,10 +254,23 @@ export function InquiriesPage() {
             <div>
               <h3 className="text-xl font-bold text-foreground">{selected.name}</h3>
               <p className="text-[12px] text-text-secondary mt-0.5">
-                {selected.source === "comms" ? "From conversation" : "From form"} · {formatDate(selected.createdAt)}
+                {selected.source === "comms" ? "From conversation" : "From form"} ·{" "}
+                <span title={formatDate(selected.createdAt)}>
+                  {formatRelative(selected.createdAt)}
+                </span>
               </p>
               <div className="mt-2">
-                <StatusBadge status={selected.status} />
+                {(() => {
+                  const c = STATUS_PILL[selected.status] ?? STATUS_PILL.new;
+                  return (
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full ${c.bg} ${c.text} text-[11px] font-semibold`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
+                      {c.label}
+                    </span>
+                  );
+                })()}
               </div>
             </div>
 
@@ -273,6 +334,15 @@ export function InquiriesPage() {
               </div>
             )}
 
+            {/* Internal notes — private to the team, never shown to the client. */}
+            <NotesEditor
+              key={selected.id}
+              initial={selected.notes ?? ""}
+              onSave={(val) =>
+                updateInquiry(selected.id, { notes: val }, workspaceId || undefined)
+              }
+            />
+
             {/* Linked conversation */}
             {linkedConversation && (
               <div className="flex items-center gap-2 text-[12px] text-text-secondary bg-surface rounded-lg px-3 py-2.5 border border-border-light">
@@ -281,18 +351,33 @@ export function InquiriesPage() {
               </div>
             )}
 
-            {/* Status */}
+            {/* Status quick-actions — context-aware. Only the next-step
+                buttons show up so the panel doesn't crowd the user with
+                every possible state transition. */}
             <div className="bg-surface rounded-lg p-4 border border-border-light">
-              <h4 className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider mb-2">Status</h4>
-              <select
-                value={selected.status}
-                onChange={(e) => handleStatusChange(selected.id, e.target.value as InquiryStatus)}
-                className="w-full text-[13px] bg-card-bg border border-border-light rounded-lg px-3 py-2 text-foreground"
-              >
-                {STATUS_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
+              <h4 className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider mb-3">
+                Update status
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                {STATUS_OPTIONS.map((opt) => {
+                  const isActive = selected.status === opt.value;
+                  const c = STATUS_PILL[opt.value];
+                  return (
+                    <button
+                      key={opt.value}
+                      onClick={() => handleStatusChange(selected.id, opt.value)}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[12px] font-semibold cursor-pointer transition-colors ${
+                        isActive
+                          ? `${c.bg} ${c.text} border-transparent`
+                          : "bg-card-bg text-text-secondary border-border-light hover:border-foreground/20 hover:text-foreground"
+                      }`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Actions */}
@@ -359,6 +444,67 @@ export function InquiriesPage() {
           }, workspaceId || undefined);
           setNewInquiryOpen(false);
         }}
+      />
+    </div>
+  );
+}
+
+// ── NotesEditor ───────────────────────────────────────────────
+// Local-state textarea that persists on blur (or when the user pauses
+// typing for a moment). Avoids spamming Supabase on every keystroke
+// while still feeling like an auto-saving notes panel.
+
+function NotesEditor({
+  initial,
+  onSave,
+}: {
+  initial: string;
+  onSave: (value: string) => void;
+}) {
+  const [value, setValue] = useState(initial);
+  const [savedValue, setSavedValue] = useState(initial);
+  const [savingState, setSavingState] = useState<"idle" | "saving" | "saved">("idle");
+
+  // Debounced auto-save: 1.2s after the last keystroke.
+  useEffect(() => {
+    if (value === savedValue) return;
+    setSavingState("saving");
+    const t = setTimeout(() => {
+      onSave(value);
+      setSavedValue(value);
+      setSavingState("saved");
+      const t2 = setTimeout(() => setSavingState("idle"), 1500);
+      return () => clearTimeout(t2);
+    }, 1200);
+    return () => clearTimeout(t);
+  }, [value, savedValue, onSave]);
+
+  const flushOnBlur = () => {
+    if (value === savedValue) return;
+    onSave(value);
+    setSavedValue(value);
+    setSavingState("saved");
+    setTimeout(() => setSavingState("idle"), 1500);
+  };
+
+  return (
+    <div className="bg-surface rounded-lg p-4 border border-border-light">
+      <div className="flex items-center justify-between mb-2">
+        <h4 className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider">
+          Internal notes
+        </h4>
+        <span className="text-[11px] text-text-tertiary">
+          {savingState === "saving" && "Saving…"}
+          {savingState === "saved" && "Saved"}
+        </span>
+      </div>
+      <textarea
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={flushOnBlur}
+        rows={3}
+        placeholder="Anything you want to remember about this inquiry — only your team will see this."
+        className="w-full px-3 py-2 bg-card-bg border border-border-light rounded-lg text-[13px] text-foreground placeholder:text-text-tertiary outline-none focus:border-foreground/30 transition-colors resize-y"
       />
     </div>
   );

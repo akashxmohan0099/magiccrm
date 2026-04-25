@@ -40,3 +40,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 audit-screenshots/
+audit-run/
+
+# local agent / IDE config
+.claude/
