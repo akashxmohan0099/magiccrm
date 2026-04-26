@@ -263,11 +263,19 @@ export default function PublicBookingPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <div className="max-w-md w-full text-center space-y-3">
-          <Calendar className="w-12 h-12 text-gray-300 mx-auto" />
-          <h1 className="text-xl font-bold text-gray-900">Booking Unavailable</h1>
-          <p className="text-sm text-gray-500">{error}</p>
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
+        <div className="max-w-md w-full bg-card-bg border border-border-light rounded-3xl p-10 text-center shadow-[0_24px_60px_-20px_rgba(0,0,0,0.06)]">
+          <div className="w-14 h-14 rounded-2xl bg-foreground/[0.04] flex items-center justify-center mx-auto mb-4">
+            <Calendar className="w-7 h-7 text-text-tertiary" />
+          </div>
+          <h1 className="text-[20px] font-bold text-foreground mb-2">
+            Booking unavailable
+          </h1>
+          <p className="text-[13px] text-text-secondary leading-relaxed">
+            {error.toLowerCase().includes("not found")
+              ? "This booking link doesn't match an active page yet. Set your booking page slug from Settings → Booking, then try the link again."
+              : error}
+          </p>
         </div>
       </div>
     );

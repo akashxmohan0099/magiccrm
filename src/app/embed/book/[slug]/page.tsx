@@ -262,18 +262,27 @@ export default function EmbedBookingPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+      <div ref={containerRef} className="flex items-center justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin text-text-tertiary" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center py-16 px-4">
-        <div className="text-center space-y-2">
-          <Calendar className="w-10 h-10 text-gray-300 mx-auto" />
-          <p className="text-sm text-gray-500">{error}</p>
+      <div ref={containerRef} className="px-4 py-10">
+        <div className="max-w-sm mx-auto text-center">
+          <div className="w-12 h-12 rounded-2xl bg-foreground/[0.04] flex items-center justify-center mx-auto mb-3">
+            <Calendar className="w-6 h-6 text-text-tertiary" />
+          </div>
+          <h2 className="text-[15px] font-bold text-foreground mb-1">
+            Booking page not found
+          </h2>
+          <p className="text-[12px] text-text-secondary leading-relaxed">
+            {error.includes("not found")
+              ? "The slug in this embed doesn't match any active booking page. Set your booking page slug from Settings, then re-copy the embed code."
+              : error}
+          </p>
         </div>
       </div>
     );

@@ -4,18 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { Check, Loader2, Send } from "lucide-react";
 import type { FormFieldConfig } from "@/types/models";
-
-interface PublicInquiryForm {
-  id: string;
-  name: string;
-  slug?: string;
-  fields: FormFieldConfig[];
-  branding: {
-    logo?: string;
-    primaryColor?: string;
-    accentColor?: string;
-  };
-}
+import {
+  resolvePublicInquiryForm,
+  submitPublicInquiry,
+  type PublicInquiryForm,
+} from "@/lib/public-inquiry-fallback";
 
 /** Post height to parent window so the iframe can auto-resize. */
 function postHeight() {
@@ -59,15 +52,14 @@ export default function EmbedInquiryFormPage() {
       try {
         setLoading(true);
         setError("");
-        const res = await fetch(`/api/public/inquiry/info?slug=${encodeURIComponent(slug)}`);
-        const data = await res.json().catch(() => ({ error: "Form not found" }));
+        const resolved = await resolvePublicInquiryForm(slug);
         if (cancelled) return;
-        if (!res.ok) {
+        if (!resolved) {
           setForm(null);
-          setError(data.error || "Form not found");
+          setError("Form not found");
           return;
         }
-        setForm(data);
+        setForm(resolved);
       } catch {
         if (!cancelled) {
           setForm(null);
@@ -97,15 +89,9 @@ export default function EmbedInquiryFormPage() {
     try {
       setSubmitting(true);
       setError("");
-      const res = await fetch("/api/public/inquiry", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug, values }),
-      });
-
-      const data = await res.json().catch(() => ({ error: "Failed to submit inquiry" }));
-      if (!res.ok) {
-        setError(data.error || "Failed to submit inquiry");
+      const result = await submitPublicInquiry(slug, values);
+      if (!result.ok) {
+        setError(result.error);
         return;
       }
 

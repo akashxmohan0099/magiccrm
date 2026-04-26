@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, notFound } from "next/navigation";
 import { useDevStore } from "@/store/dev";
 import { useSettingsStore } from "@/store/settings";
+import { useFormsStore } from "@/store/forms";
 import type { DevPersonaKey, DevRole } from "@/lib/seed-data";
 import { ADDON_MODULES } from "@/lib/addon-modules";
 
@@ -42,6 +43,11 @@ function DevLauncher() {
   const setRole = useDevStore((s) => s.setRole);
   const resetDev = useDevStore((s) => s.reset);
   const settings = useSettingsStore((s) => s.settings);
+  const forms = useFormsStore((s) => s.forms);
+  // Inquiry forms have their own slugs (separate from the workspace's
+  // booking page slug). Filter to enabled inquiry forms so the dev
+  // links always point at something that resolves.
+  const inquiryForms = forms.filter((f) => f.type === "inquiry" && f.enabled && f.slug);
 
   // No auto-seed on mount — the dashboard layout already seeds on first
   // mount, and /dev itself doesn't need that data to render. We only seed
@@ -211,11 +217,34 @@ function DevLauncher() {
           ))}
         </Section>
 
-        <Section title={`Public flows (slug: ${slug})`}>
+        <Section title={`Public booking (slug: ${slug})`}>
           <NavBtn href={`/book/${slug}`} label={`/book/${slug}`} />
-          <NavBtn href={`/inquiry/${slug}`} label={`/inquiry/${slug}`} />
           <NavBtn href={`/embed/book/${slug}`} label={`/embed/book/${slug}`} />
-          <NavBtn href={`/embed/inquiry/${slug}`} label={`/embed/inquiry/${slug}`} />
+        </Section>
+
+        <Section title="Public inquiry forms">
+          {inquiryForms.length === 0 ? (
+            <p className="text-[12px] text-text-tertiary">
+              No enabled inquiry forms. Create one in{" "}
+              <Link href="/dashboard/forms" className="underline">
+                /dashboard/forms
+              </Link>
+              .
+            </p>
+          ) : (
+            inquiryForms.flatMap((f) => [
+              <NavBtn
+                key={`std-${f.id}`}
+                href={`/inquiry/${f.slug}`}
+                label={`/inquiry/${f.slug} · ${f.name}`}
+              />,
+              <NavBtn
+                key={`emb-${f.id}`}
+                href={`/embed/inquiry/${f.slug}`}
+                label={`/embed/inquiry/${f.slug}`}
+              />,
+            ])
+          )}
         </Section>
 
         <footer className="mt-8 pt-6 border-t border-border-light text-[12px] text-text-tertiary">
