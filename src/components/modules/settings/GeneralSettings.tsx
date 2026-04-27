@@ -160,6 +160,10 @@ function LogoUpload({
         >
           {logoUrl ? (
             <>
+              {/* User-uploaded logo URL — domain unknown at build time, so
+                  next/image would need wildcard remotePatterns. Plain <img>
+                  for the avatar-sized preview is fine here. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={logoUrl} alt="Business logo" className="w-full h-full object-cover" />
               <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                 <Camera className="w-5 h-5 text-white" />

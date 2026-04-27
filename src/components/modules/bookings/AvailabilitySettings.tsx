@@ -29,8 +29,13 @@ export function AvailabilitySettings() {
   const { settings, updateSettings } = useSettingsStore();
   const { workspaceId } = useAuth();
 
-  // Use workspace-level working hours as default
-  const workspaceHours = settings?.workingHours ?? {};
+  // Use workspace-level working hours as default. useMemo so the empty
+  // fallback object doesn't get a new identity on every render — that
+  // would invalidate the useEffect deps below and re-sync slots constantly.
+  const workspaceHours = useMemo(
+    () => settings?.workingHours ?? {},
+    [settings?.workingHours],
+  );
 
   // Find the current user (owner) to edit their working hours
   const currentMember = useMemo(() => {

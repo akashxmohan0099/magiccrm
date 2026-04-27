@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Users, Plus, ChevronRight, Upload } from "lucide-react";
 import { useClientsStore } from "@/store/clients";
@@ -37,12 +37,17 @@ export function ClientsPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [detailClientId, setDetailClientId] = useState<string | null>(null);
 
-  const clearQueryParams = (keys: string[]) => {
-    const next = new URLSearchParams(searchParams.toString());
-    keys.forEach((key) => next.delete(key));
-    const query = next.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
-  };
+  // useCallback so this is stable across renders and can be safely
+  // referenced from the useEffect dep array below.
+  const clearQueryParams = useCallback(
+    (keys: string[]) => {
+      const next = new URLSearchParams(searchParams.toString());
+      keys.forEach((key) => next.delete(key));
+      const query = next.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    },
+    [searchParams, router, pathname],
+  );
 
   // Auto-close detail panel if the selected client was deleted
   const detailClient = detailClientId ? getClient(detailClientId) : null;
@@ -68,7 +73,7 @@ export function ClientsPage() {
       clearQueryParams(["client"]);
       return () => window.clearTimeout(timeout);
     }
-  }, [detailClientId, formOpen, getClient, searchParams]);
+  }, [detailClientId, formOpen, getClient, searchParams, clearQueryParams]);
 
   const filtered = useMemo(() => {
     let result = clients;

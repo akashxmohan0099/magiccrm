@@ -12,13 +12,18 @@ export function BookingPagePreview() {
   const { services } = useServicesStore();
   const settings = useSettingsStore((s) => s.settings);
   const businessName = settings?.businessName || "";
-  const workingHours = settings?.workingHours ?? {};
   const [copied, setCopied] = useState(false);
   const [embedCopied, setEmbedCopied] = useState(false);
   const [showEmbed, setShowEmbed] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
 
-  const enabledDays = useMemo(() => Object.keys(workingHours).length, [workingHours]);
+  // Reading settings.workingHours inside the useMemo callback (rather
+  // than via a closure variable that gets a fresh `{}` each render)
+  // gives the memo a stable input — no re-counts on unrelated renders.
+  const enabledDays = useMemo(
+    () => Object.keys(settings?.workingHours ?? {}).length,
+    [settings?.workingHours],
+  );
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const bookingSlug = settings?.bookingPageSlug?.trim();
   const bookingUrl = bookingSlug ? `${origin}/book/${bookingSlug}` : "";
