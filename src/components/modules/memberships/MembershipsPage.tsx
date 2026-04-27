@@ -5,7 +5,6 @@ import {
   Plus,
   Crown,
   Users,
-  CreditCard,
   Zap,
   Trash2,
   RotateCcw,
@@ -13,7 +12,6 @@ import {
 import { useMembershipsStore } from "@/store/memberships";
 import { useClientsStore } from "@/store/clients";
 import { useServicesStore } from "@/store/services";
-import type { MembershipPlan, ClientMembership } from "@/types/models";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { SearchInput } from "@/components/ui/SearchInput";
@@ -31,7 +29,7 @@ function formatDate(iso: string) {
 }
 
 export function MembershipsPage() {
-  const { plans, memberships, addPlan, updatePlan, deletePlan, addMembership, updateMembership, recordSession } = useMembershipsStore();
+  const { plans, memberships, addPlan, deletePlan, addMembership, updateMembership, recordSession } = useMembershipsStore();
   const { clients } = useClientsStore();
   const { services } = useServicesStore();
 

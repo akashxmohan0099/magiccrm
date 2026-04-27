@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Mail, Phone, Calendar, Trash2, Plus, Clock, CreditCard,
+  Mail, Phone, Calendar, Trash2, Plus, CreditCard,
   MessageCircle, CheckCircle2, XCircle, Bell, FileText,
   ChevronRight, ChevronDown, DollarSign, User, ExternalLink,
 } from "lucide-react";

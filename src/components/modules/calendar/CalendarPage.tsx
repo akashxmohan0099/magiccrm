@@ -4,7 +4,6 @@ import { useState, useMemo } from "react";
 import { Plus } from "lucide-react";
 import { useBookingsStore } from "@/store/bookings";
 import { useTeamStore } from "@/store/team";
-import { useAuth } from "@/hooks/useAuth";
 import { Booking } from "@/types/models";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/Button";
@@ -16,7 +15,6 @@ import { BookingDetail } from "@/components/modules/bookings/BookingDetail";
 export function CalendarPage() {
   const { bookings } = useBookingsStore();
   const { members } = useTeamStore();
-  const { workspaceId } = useAuth();
   const [teamView, setTeamView] = useState<"my" | "team">("team");
   const [formOpen, setFormOpen] = useState(false);
   const [editingBooking, setEditingBooking] = useState<Booking | undefined>(undefined);

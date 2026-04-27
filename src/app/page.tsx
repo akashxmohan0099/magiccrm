@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
+import { motion, useScroll, AnimatePresence } from "framer-motion";
 import {
   ArrowRight, Check,
   Crown, Gift, UserCheck, NotebookPen,
@@ -9,7 +9,6 @@ import {
   Users, Calendar, Receipt, MessageCircle, BarChart3,
   Send, Bot, Sparkles, Megaphone, FileSignature,
 } from "lucide-react";
-import Link from "next/link";
 import dynamic from "next/dynamic";
 import { SiteHeader } from "@/components/landing/SiteHeader";
 import { HeroSplit } from "@/components/landing/HeroSplit";
@@ -70,7 +69,7 @@ const ADDONS_DATA: { name: string; icon: LucideIcon; color: string; gradient: st
 
 const FEATURED_ADDONS = ["Proposals", "Win-Back", "AI Insights"];
 
-function AddonsGrid({ viewportConfig }: { viewportConfig: { once: boolean; margin: string } }) {
+function AddonsGrid() {
   const [filter, setFilter] = useState<string>("All");
   const [expanded, setExpanded] = useState(false);
 
@@ -762,7 +761,7 @@ export default function LandingPage() {
             </motion.p>
           </div>
 
-          <AddonsGrid viewportConfig={viewportConfig} />
+          <AddonsGrid />
         </div>
       </motion.section>
 

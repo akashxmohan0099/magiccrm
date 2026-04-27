@@ -3,12 +3,11 @@
 import { ReactNode, useEffect } from "react";
 import {
   BarChart3, Megaphone, Ticket, Gift, Lightbulb, UserCheck,
-  ScrollText, Crown, FileSignature, Puzzle, Check, TrendingUp,
-  Send, Star, ArrowRight, Users, Calendar, Target,
+  ScrollText, Crown, FileSignature, Puzzle, Check,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useSettingsStore } from "@/store/settings";
-import { ADDON_MODULES, type AddonModule } from "@/lib/addon-modules";
+import { ADDON_MODULES } from "@/lib/addon-modules";
 import { useAuth } from "@/hooks/useAuth";
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {

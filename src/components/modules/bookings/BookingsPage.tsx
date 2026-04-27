@@ -90,12 +90,6 @@ export function BookingsPage() {
     return map;
   }, [services]);
 
-  const memberMap = useMemo(() => {
-    const map: Record<string, string> = {};
-    members.forEach((m) => { map[m.id] = m.name; });
-    return map;
-  }, [members]);
-
   const formatTime = (isoOrTime: string) => {
     if (isoOrTime.includes("T")) {
       return new Date(isoOrTime).toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" });
@@ -302,8 +296,6 @@ function InlineSelect({
   onChange: (value: string) => void;
   placeholder?: string;
 }) {
-  const label = options.find((o) => o.value === value)?.label || placeholder || "—";
-
   return (
     <select
       value={value}

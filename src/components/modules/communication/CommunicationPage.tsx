@@ -3,7 +3,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { Plus, MessageSquare } from "lucide-react";
 import { useCommunicationStore } from "@/store/communication";
-import { useAuth } from "@/hooks/useAuth";
 import { Channel, Conversation } from "@/types/models";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { Button } from "@/components/ui/Button";
@@ -13,7 +12,6 @@ import { ChannelFilter } from "./ChannelFilter";
 import { NewConversationForm } from "./NewConversationForm";
 
 export function CommunicationPage() {
-  const { workspaceId } = useAuth();
   const conversations = useCommunicationStore((s) => s.conversations);
   const getMessages = useCommunicationStore((s) => s.getMessages);
   const [selectedId, setSelectedId] = useState<string | null>(null);

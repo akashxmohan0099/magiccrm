@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { DocumentTemplate, SentDocument, DocumentField } from "@/types/models";
+import type { DocumentTemplate, SentDocument } from "@/types/models";
 import { generateId } from "@/lib/id";
 import { toast } from "@/components/ui/Toast";
 

@@ -193,7 +193,7 @@ export function ComparisonSection() {
                 </div>
 
                 {/* Section rows */}
-                {section.rows.map((row, i) => (
+                {section.rows.map((row) => (
                   <div
                     key={row.feature}
                     className="grid grid-cols-[1.4fr_1fr_1fr_1fr] items-center border-b border-border-light/70"

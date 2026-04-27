@@ -4,7 +4,6 @@ import { useState, useMemo } from "react";
 import { UsersRound, Plus, Mail, Phone, Calendar, Clock, Trash2 } from "lucide-react";
 import { useTeamStore } from "@/store/team";
 import { useBookingsStore } from "@/store/bookings";
-import { usePaymentsStore } from "@/store/payments";
 import { useServicesStore } from "@/store/services";
 import { useClientsStore } from "@/store/clients";
 import { TeamMember, TeamRole, WorkingHours, Booking, Service, Client } from "@/types/models";
@@ -33,14 +32,11 @@ const DEFAULT_WORKING_HOURS: Record<string, WorkingHours> = {
 export function TeamsPage() {
   const { members, addMember, updateMember } = useTeamStore();
   const { bookings } = useBookingsStore();
-  const { documents } = usePaymentsStore();
   const { services } = useServicesStore();
   const { workspaceId, user } = useAuth();
-  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const selected = selectedId ? members.find((m) => m.id === selectedId) : null;
   const editing = editingId ? members.find((m) => m.id === editingId) : null;
 
   const serviceMap = useMemo(() => new Map(services.map((s) => [s.id, s])), [services]);

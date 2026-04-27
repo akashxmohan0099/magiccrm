@@ -10,7 +10,6 @@ import {
   Check,
   LogOut,
   Trash2,
-  Loader2,
   Eye,
   EyeOff,
 } from "lucide-react";

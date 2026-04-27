@@ -3,7 +3,6 @@
 import { useState, useMemo } from "react";
 import {
   Plus,
-  FileSignature,
   FileText,
   Send,
   CheckCircle2,
@@ -13,7 +12,7 @@ import {
 } from "lucide-react";
 import { useDocumentsStore } from "@/store/documents";
 import { useClientsStore } from "@/store/clients";
-import type { DocumentTemplate, SentDocument, DocumentField } from "@/types/models";
+import type { DocumentField } from "@/types/models";
 import { generateId } from "@/lib/id";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/Button";

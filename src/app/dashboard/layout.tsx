@@ -10,7 +10,7 @@ import {
   Settings, Bell, Search, Command, Menu,
   FileText, UsersRound, Megaphone, BarChart3, Ticket,
   Gift, Lightbulb, UserCheck, ScrollText, Crown, FileSignature,
-  LogOut, Loader2, User, Puzzle,
+  LogOut, Loader2, Puzzle,
 } from "lucide-react";
 import { useSettingsStore } from "@/store/settings";
 import { ADDON_MODULES } from "@/lib/addon-modules";

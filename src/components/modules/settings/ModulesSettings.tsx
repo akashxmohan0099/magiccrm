@@ -4,7 +4,7 @@ import {
   BarChart3, Megaphone, Ticket, Gift, Lightbulb, UserCheck,
   ScrollText, Crown, FileSignature, Puzzle, ToggleLeft, ToggleRight,
   CreditCard, Shield, FileQuestion, ClipboardList, MapPin, Navigation,
-  DollarSign, Scissors, RefreshCw, Clock, List,
+  DollarSign, Scissors, RefreshCw, List,
 } from "lucide-react";
 import { useSettingsStore } from "@/store/settings";
 import { ADDON_MODULES } from "@/lib/addon-modules";

@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { useMarketingStore } from "@/store/marketing";
-import { useAuth } from "@/hooks/useAuth";
 import { Campaign } from "@/types/models";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useModuleSchema } from "@/hooks/useModuleSchema";
@@ -14,7 +13,6 @@ import { CampaignForm } from "./CampaignForm";
 
 export function MarketingPage() {
   const { campaigns } = useMarketingStore();
-  const { workspaceId } = useAuth();
   const ms = useModuleSchema("marketing");
   const [formOpen, setFormOpen] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | undefined>(undefined);

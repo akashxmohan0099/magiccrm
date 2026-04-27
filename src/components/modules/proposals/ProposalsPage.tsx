@@ -13,11 +13,10 @@ import {
   ThumbsDown,
   Copy,
   Trash2,
-  FileText,
 } from "lucide-react";
 import { useProposalsStore } from "@/store/proposals";
 import { useClientsStore } from "@/store/clients";
-import type { Proposal, ProposalSection, ProposalStatus } from "@/types/models";
+import type { ProposalSection } from "@/types/models";
 import { generateId } from "@/lib/id";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/Button";

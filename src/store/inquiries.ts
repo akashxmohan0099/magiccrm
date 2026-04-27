@@ -27,7 +27,7 @@ interface InquiriesStore {
 
 export const useInquiriesStore = create<InquiriesStore>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       inquiries: [],
 
       addInquiry: (data, workspaceId) => {

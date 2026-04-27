@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { CSVImportWizard } from "@/components/modules/shared/CSVImportWizard";
-import type { ImportedService } from "@/lib/csv-import";
 import { toast } from "@/components/ui/Toast";
 
 export function ServicesPage() {
@@ -22,7 +21,6 @@ export function ServicesPage() {
   const [newCategoryOpen, setNewCategoryOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<Service | null>(null);
-  const [previewOpen, setPreviewOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
 
   // Form state for add/edit

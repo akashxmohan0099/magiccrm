@@ -5,7 +5,6 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Users, Plus, ChevronRight, Upload } from "lucide-react";
 import { useClientsStore } from "@/store/clients";
 import { CSVImportWizard } from "@/components/modules/shared/CSVImportWizard";
-import type { ImportedClient } from "@/lib/csv-import";
 import { Client } from "@/types/models";
 import { useVocabulary } from "@/hooks/useVocabulary";
 import { useAuth } from "@/hooks/useAuth";
@@ -22,8 +21,6 @@ export function ClientsPage() {
   const {
     clients,
     getClient,
-    addClient,
-    updateClient,
     bulkImportClients,
   } = useClientsStore();
   const vocab = useVocabulary();

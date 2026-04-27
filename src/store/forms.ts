@@ -27,7 +27,7 @@ interface FormsStore {
 
 export const useFormsStore = create<FormsStore>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       forms: [],
 
       addForm: (data, workspaceId) => {

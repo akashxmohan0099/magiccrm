@@ -2,8 +2,8 @@
 
 import { useState, useMemo } from "react";
 import {
-  Lightbulb, Calendar, Users, TrendingUp, Clock, Target,
-  ChevronRight, Sparkles, RefreshCw, Check, X,
+  Lightbulb, Calendar, Users, TrendingUp, Target,
+  ChevronRight, Sparkles, X,
 } from "lucide-react";
 import { useBookingsStore } from "@/store/bookings";
 import { useClientsStore } from "@/store/clients";
@@ -42,7 +42,6 @@ export function AIInsightsPage() {
   const insights = useMemo((): Insight[] => {
     const result: Insight[] = [];
     const today = new Date();
-    const todayStr = today.toISOString().split("T")[0];
 
     // Scheduling: Underbooked days
     const nextWeek = Array.from({ length: 7 }, (_, i) => {

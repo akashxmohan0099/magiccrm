@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Proposal, ProposalSection } from "@/types/models";
+import type { Proposal } from "@/types/models";
 import { generateId } from "@/lib/id";
 import { toast } from "@/components/ui/Toast";
 
@@ -22,7 +22,7 @@ interface ProposalsStore {
 
 export const useProposalsStore = create<ProposalsStore>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       proposals: [],
 
       addProposal: (data) => {

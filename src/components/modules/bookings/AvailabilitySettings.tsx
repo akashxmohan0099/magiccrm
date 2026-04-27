@@ -42,8 +42,6 @@ export function AvailabilitySettings() {
     return members.find((m) => m.role === "owner") ?? members[0];
   }, [members]);
 
-  const sourceHours = currentMember?.workingHours ?? workspaceHours;
-
   const [slots, setSlots] = useState<WorkingHoursSlot[]>([]);
   const [saved, setSaved] = useState(false);
   const [editMode, setEditMode] = useState<"workspace" | "member">(

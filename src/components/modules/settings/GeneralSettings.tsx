@@ -8,7 +8,6 @@ import {
   Building2,
   Palette,
   MapPin,
-  Briefcase,
   Check,
   Sparkles,
   X,

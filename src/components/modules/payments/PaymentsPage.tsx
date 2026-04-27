@@ -3,8 +3,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
-  CreditCard, Plus, FileText, CheckCircle, Clock,
-  AlertTriangle, XCircle,
+  CreditCard, Plus,
 } from "lucide-react";
 import { usePaymentsStore } from "@/store/payments";
 import { useClientsStore } from "@/store/clients";

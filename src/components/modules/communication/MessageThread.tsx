@@ -52,7 +52,7 @@ export function MessageThread({ conversationId }: MessageThreadProps) {
   const handleConvertToLead = () => {
     if (!conversation || isLinked) return;
     const contactName = conversation.contactName || "Unknown";
-    const inquiry = useInquiriesStore.getState().addInquiry({
+    useInquiriesStore.getState().addInquiry({
       workspaceId: workspaceId ?? "",
       name: contactName,
       email: conversation.contactEmail ?? "",

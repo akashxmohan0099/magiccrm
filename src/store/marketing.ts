@@ -27,7 +27,7 @@ interface MarketingStore {
 
 export const useMarketingStore = create<MarketingStore>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       campaigns: [],
 
       addCampaign: (data, workspaceId) => {

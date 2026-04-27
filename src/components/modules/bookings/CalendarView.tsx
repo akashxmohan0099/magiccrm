@@ -60,11 +60,6 @@ function formatTimeDisplay(isoOrTime: string): string {
   return isoOrTime;
 }
 
-function snapTo15(yOffset: number): number {
-  const totalMinutes = MIN_MINUTES + (yOffset / PX_PER_HOUR) * 60;
-  const snapped = Math.round(totalMinutes / 15) * 15;
-  return Math.max(MIN_MINUTES, Math.min(snapped, MIN_MINUTES + HOURS.length * 60));
-}
 
 function formatTimeLabel(hour: number): string {
   if (hour === 12) return "12 PM";
