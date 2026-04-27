@@ -154,6 +154,19 @@ export async function POST(req: NextRequest) {
     });
 
     if (bookingErr) {
+      // Postgres exclusion-constraint violation = another request grabbed
+      // this slot between our availability check and our insert. Surface
+      // as 409 so the client can refresh availability and pick again.
+      const isOverlap =
+        // Postgres surfaces exclusion violations as code 23P01.
+        (bookingErr as { code?: string }).code === "23P01" ||
+        /no_overlapping_bookings_per_member/i.test(bookingErr.message ?? "");
+      if (isOverlap) {
+        return NextResponse.json(
+          { error: "This time slot was just booked. Please pick another time." },
+          { status: 409 },
+        );
+      }
       console.error("[public/book] Insert error:", bookingErr);
       return NextResponse.json({ error: "Failed to create booking" }, { status: 500 });
     }

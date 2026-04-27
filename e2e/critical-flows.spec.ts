@@ -96,13 +96,20 @@ test.describe("Landing Page", () => {
   test("loads with heading and CTA", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("h1").first()).toBeVisible();
-    await expect(page.locator("a").filter({ hasText: /build my crm/i }).first()).toBeVisible();
+    await expect(
+      page.locator("button").filter({ hasText: /join the waitlist/i }).first(),
+    ).toBeVisible();
   });
 
-  test("CTA links to onboarding", async ({ page }) => {
+  test("CTA opens the waitlist modal", async ({ page }) => {
     await page.goto("/");
-    const href = await page.locator("a").filter({ hasText: /build my crm/i }).first().getAttribute("href");
-    expect(href).toContain("/onboarding");
+    await page
+      .locator("button")
+      .filter({ hasText: /join the waitlist/i })
+      .first()
+      .click();
+    // Modal renders an email input + a "Join the waitlist" submit button.
+    await expect(page.locator('input[type="email"]').first()).toBeVisible({ timeout: 5000 });
   });
 
   test("no horizontal overflow on mobile", async ({ page }) => {
@@ -134,15 +141,23 @@ test.describe("Error handling", () => {
 });
 
 test.describe("Onboarding", () => {
-  test("onboarding page loads with welcome step", async ({ page }) => {
+  test("onboarding starts at the persona picker", async ({ page }) => {
     await page.goto("/onboarding");
-    const hasWelcome = await page.locator("text=/welcome|get started|set up your workspace/i").first().isVisible().catch(() => false);
-    expect(hasWelcome).toBeTruthy();
+    await expect(
+      page.getByRole("heading", { name: /what do you do\?/i }),
+    ).toBeVisible();
   });
 
-  test("can advance to account step", async ({ page }) => {
+  test("can pick a persona and advance", async ({ page }) => {
     await page.goto("/onboarding");
-    await page.getByRole("button", { name: /get started/i }).click();
-    await expect(page.getByRole("heading", { name: /create your account/i })).toBeVisible();
+    // Persona buttons are rendered as motion.buttons with the persona
+    // label inside; clicking one advances to the structural questions
+    // step (team size / business model).
+    await page.getByRole("button", { name: /makeup|hair|barber|nails/i }).first().click();
+    // The next step's primary CTA is "Continue" — the heading varies
+    // by persona, so assert on the button instead.
+    await expect(
+      page.getByRole("button", { name: /continue|next/i }).first(),
+    ).toBeVisible({ timeout: 5000 });
   });
 });

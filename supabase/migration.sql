@@ -920,6 +920,138 @@ BEGIN
   END LOOP;
 END $$;
 
+-- ══════════════════════════════════════════════════════════════════
+-- RLS hardening (idempotent — drops and recreates affected policies)
+-- ══════════════════════════════════════════════════════════════════
+-- Tightens four policy groups that earlier let any active member
+-- (not just owners) manage workspace state:
+--   1. workspaces_delete: owner-only (was: any member)
+--   2. workspace_members insert/update/delete: owner-only, with a
+--      narrow self-update path so members can edit their own profile
+--   3. bookings_insert: members can only insert bookings assigned to
+--      themselves; owners can insert anything
+--   4. clients_insert: owner-only (public booking uses the service-role
+--      admin client and bypasses RLS, so this doesn't break that flow)
+-- A BEFORE UPDATE trigger on workspace_members prevents non-owners
+-- from escalating their role or flipping status, even via the
+-- self-update path.
+
+DROP POLICY IF EXISTS "workspaces_delete" ON workspaces;
+CREATE POLICY "workspaces_delete" ON workspaces FOR DELETE USING (
+  id = get_my_workspace_id() AND is_workspace_owner()
+);
+
+DROP POLICY IF EXISTS "members_insert" ON workspace_members;
+CREATE POLICY "members_insert" ON workspace_members FOR INSERT WITH CHECK (
+  workspace_id = get_my_workspace_id() AND is_workspace_owner()
+);
+
+DROP POLICY IF EXISTS "members_update" ON workspace_members;
+DROP POLICY IF EXISTS "members_update_self" ON workspace_members;
+CREATE POLICY "members_update" ON workspace_members FOR UPDATE USING (
+  workspace_id = get_my_workspace_id() AND is_workspace_owner()
+) WITH CHECK (
+  workspace_id = get_my_workspace_id() AND is_workspace_owner()
+);
+CREATE POLICY "members_update_self" ON workspace_members FOR UPDATE USING (
+  workspace_id = get_my_workspace_id() AND id = get_my_member_id()
+) WITH CHECK (
+  workspace_id = get_my_workspace_id() AND id = get_my_member_id()
+);
+
+DROP POLICY IF EXISTS "members_delete" ON workspace_members;
+CREATE POLICY "members_delete" ON workspace_members FOR DELETE USING (
+  workspace_id = get_my_workspace_id() AND is_workspace_owner()
+);
+
+-- Self-update path can't be used to escalate role/status. Trigger
+-- runs for every UPDATE; it only blocks non-owner attempts to change
+-- role or status, so owners (who pass through normal channels) are
+-- unaffected.
+CREATE OR REPLACE FUNCTION prevent_member_self_escalation()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF is_workspace_owner() THEN
+    RETURN NEW;
+  END IF;
+  IF NEW.role IS DISTINCT FROM OLD.role THEN
+    RAISE EXCEPTION 'Only workspace owners can change member role';
+  END IF;
+  IF NEW.status IS DISTINCT FROM OLD.status THEN
+    RAISE EXCEPTION 'Only workspace owners can change member status';
+  END IF;
+  IF NEW.workspace_id IS DISTINCT FROM OLD.workspace_id THEN
+    RAISE EXCEPTION 'workspace_id is immutable';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS members_prevent_self_escalation ON workspace_members;
+CREATE TRIGGER members_prevent_self_escalation
+  BEFORE UPDATE ON workspace_members
+  FOR EACH ROW EXECUTE FUNCTION prevent_member_self_escalation();
+
+DROP POLICY IF EXISTS "bookings_insert" ON bookings;
+CREATE POLICY "bookings_insert" ON bookings FOR INSERT WITH CHECK (
+  workspace_id = get_my_workspace_id()
+  AND (is_workspace_owner() OR assigned_to_id = get_my_member_id())
+);
+
+DROP POLICY IF EXISTS "clients_insert" ON clients;
+CREATE POLICY "clients_insert" ON clients FOR INSERT WITH CHECK (
+  workspace_id = get_my_workspace_id() AND is_workspace_owner()
+);
+
+-- ── Booking concurrency guard ──
+-- Prevents two confirmed/pending bookings for the same team member from
+-- overlapping in time. Enforced at the DB so two simultaneous public
+-- booking requests can't both pass an availability check and write
+-- conflicting rows. Skips cancelled/no_show (operator can rebook the
+-- slot) and rows where assigned_to_id is NULL (no member resolved yet).
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'no_overlapping_bookings_per_member'
+  ) THEN
+    ALTER TABLE bookings
+      ADD CONSTRAINT no_overlapping_bookings_per_member
+      EXCLUDE USING gist (
+        workspace_id WITH =,
+        assigned_to_id WITH =,
+        tstzrange(start_at, end_at, '[)') WITH &&
+      )
+      WHERE (status IN ('confirmed', 'pending') AND assigned_to_id IS NOT NULL);
+  END IF;
+END $$;
+
+-- ── Landing-page waitlist (no workspace; pre-signup leads) ──
+-- Distinct from the per-workspace `waitlist` table above (which queues
+-- existing clients for cancelled slots). This collects pre-launch
+-- signups from the public landing page before a workspace exists.
+CREATE TABLE IF NOT EXISTS landing_waitlist_signups (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email TEXT NOT NULL,
+  personas TEXT[] DEFAULT '{}',
+  source TEXT DEFAULT 'landing',
+  referrer TEXT,
+  user_agent TEXT,
+  ip TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(email)
+);
+ALTER TABLE landing_waitlist_signups ENABLE ROW LEVEL SECURITY;
+-- No public read/write policies — only service-role (admin client) writes,
+-- and reads are dashboard-side via the same admin client. Keeps PII off
+-- the public path.
+CREATE INDEX IF NOT EXISTS idx_landing_waitlist_signups_created_at
+  ON landing_waitlist_signups(created_at DESC);
+
 -- ── Indexes for new tables ──
 CREATE INDEX idx_calendar_blocks_workspace ON calendar_blocks(workspace_id, team_member_id);
 CREATE INDEX idx_client_tags_workspace ON client_tags(workspace_id);

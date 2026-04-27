@@ -90,11 +90,11 @@ export async function proxy(request: NextRequest) {
     return redirectResponse;
   }
 
-  // Allow iframe embedding for /embed routes (remove X-Frame-Options restriction)
-  if (pathname.startsWith("/embed")) {
-    supabaseResponse.headers.delete("X-Frame-Options");
-    supabaseResponse.headers.set("Content-Security-Policy", "frame-ancestors *");
-  }
+  // Note: framing policy is owned by next.config.ts headers() — embed
+  // routes get `frame-ancestors *`, everything else gets `'none'`. We
+  // used to mutate headers here, but that wiped the rest of the CSP
+  // and conflicted with the global X-Frame-Options. Single source of
+  // truth lives in next.config now.
 
   return supabaseResponse;
 }

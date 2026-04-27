@@ -1,11 +1,16 @@
 /**
- * Rate limiter with Upstash Redis backend and in-memory fallback.
+ * Rate limiter with Upstash Redis backend.
  *
- * Uses @upstash/ratelimit with sliding window when UPSTASH_REDIS_REST_URL
- * and UPSTASH_REDIS_REST_TOKEN are configured. Falls back to a local
- * in-memory counter for development or if Redis is unavailable.
+ * Production: requires UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN.
+ * If either is missing, public endpoints fail closed (returns
+ * { allowed: false }) since serverless multi-instance deploys can't
+ * share an in-memory counter. The route handler turns that into a 503.
  *
- * The public API is unchanged — all consumers import `rateLimit(key, limit, windowMs)`.
+ * Development: falls back to a process-local in-memory counter so
+ * `npm run dev` works without setting up Upstash.
+ *
+ * The public API is unchanged — all consumers import
+ * `rateLimit(key, limit, windowMs)`.
  */
 
 import { Ratelimit } from "@upstash/ratelimit";
@@ -101,10 +106,28 @@ export async function rateLimit(
       const limiter = getRedisLimiter(limit, windowMs);
       const result = await limiter.limit(key);
       return { allowed: result.success, remaining: result.remaining };
-    } catch {
-      // Redis error — fall back to memory so requests aren't blocked
+    } catch (err) {
+      // Redis error in production: fail closed — better to degrade
+      // request handling than to leave abuse paths wide open.
+      if (process.env.NODE_ENV === "production") {
+        console.error("[rate-limit] Redis error in production:", err);
+        return { allowed: false, remaining: 0 };
+      }
+      // Dev: fall back to memory so local development isn't blocked
+      // by a flaky Upstash dev key.
       return memoryRateLimit(key, limit, windowMs);
     }
+  }
+
+  // No Redis configured.
+  if (process.env.NODE_ENV === "production") {
+    // In serverless multi-instance prod, an in-memory counter doesn't
+    // share state across instances and gives no real protection. Fail
+    // closed instead. The deploy is misconfigured if we hit this.
+    console.error(
+      "[rate-limit] UPSTASH env vars not configured in production — failing closed",
+    );
+    return { allowed: false, remaining: 0 };
   }
 
   return memoryRateLimit(key, limit, windowMs);

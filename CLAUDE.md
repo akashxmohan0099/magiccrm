@@ -4,7 +4,7 @@
 
 Conversation-first CRM for Beauty & Wellness. Three entry points (booking form, inquiry form, unified comms) funnel into 5 core objects: Client, Booking, Inquiry, Conversation, Payment Document.
 
-Clients are never manually created — a client record only exists when a booking is made.
+Clients are never created as a side-effect of any flow other than booking. Manual entry (the dashboard's Add Client / Import buttons) exists for legacy and walk-in clients only — bookings/inquiries/conversations themselves don't auto-create client rows; they reference one only after the operator confirms a booking.
 
 ## Architecture
 

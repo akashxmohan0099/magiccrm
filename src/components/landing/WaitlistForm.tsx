@@ -25,9 +25,24 @@ export function WaitlistForm() {
     setSubmitting(true);
     setError(null);
     try {
-      // TODO: wire up persistence — POST to /api/waitlist or a
-      // Supabase / Resend endpoint. Simulated for now.
-      await new Promise((r) => setTimeout(r, 500));
+      const res = await fetch("/api/waitlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email.trim(),
+          personas,
+          source: "landing",
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(
+          res.status === 429
+            ? "Slow down a moment and try again."
+            : data.error || "Something went wrong. Try again in a moment.",
+        );
+        return;
+      }
       setSubmitted(true);
     } catch {
       setError("Something went wrong. Try again in a moment.");
