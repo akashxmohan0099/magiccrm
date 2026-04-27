@@ -247,6 +247,7 @@ export function ScrollMechanic() {
   useEffect(() => {
     const override = specLock ?? specHover;
     if (override !== null && override !== personaIdx) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: redirect animation sequence on hover/lock
       setPersonaIdx(override);
     }
   }, [specHover, specLock, personaIdx]);
@@ -256,6 +257,7 @@ export function ScrollMechanic() {
   // separate effect so it can wait for interaction + cooldown to clear.
   useEffect(() => {
     const timers: ReturnType<typeof setTimeout>[] = [];
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: reset scripted sequence when persona changes
     setSeqStep(0);
     timers.push(setTimeout(() => setSeqStep(1), 500));   // persona selects
     timers.push(setTimeout(() => setSeqStep(2), 1700));  // Q1 answered

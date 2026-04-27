@@ -94,9 +94,10 @@ export function OutlookLogo({ className }: Props) {
 
 export function InstagramLogo({ className }: Props) {
   // Real Instagram brand mark — see public/landing/instagram-logo.webp.
-  // The wrapping component keeps the same Props API so callers (sized via
-  // className w-X h-Y) work without changes.
+  // Plain <img> here — the asset is already a sub-10KB webp rendered
+  // at icon size; next/image would add layout machinery for no benefit.
   return (
+    // eslint-disable-next-line @next/next/no-img-element
     <img
       src="/landing/instagram-logo.webp"
       alt="Instagram"
@@ -108,6 +109,7 @@ export function InstagramLogo({ className }: Props) {
 
 export function WhatsAppLogo({ className }: Props) {
   return (
+    // eslint-disable-next-line @next/next/no-img-element
     <img
       src="/landing/whatsapp-logo.webp"
       alt="WhatsApp"

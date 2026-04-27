@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { FileText, Plus, Globe, Code, Eye, Calendar, Inbox, ToggleLeft, ToggleRight, Pencil, Trash2, Copy, Check, GripVertical } from "lucide-react";
 import { useFormsStore } from "@/store/forms";
 import { useInquiriesStore } from "@/store/inquiries";
@@ -14,6 +14,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSettingsStore } from "@/store/settings";
 
 type SlideMode = "preview" | "edit" | "responses" | "embed";
+
+function slugify(s: string) {
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
+}
 
 export function FormsPage() {
   const { forms, updateForm, deleteForm, addForm } = useFormsStore();
@@ -342,25 +350,17 @@ function FormEditor({
   onUpdate: (data: Partial<Form>) => void;
 }) {
   const [name, setName] = useState(form.name);
-  const [slug, setSlug] = useState(form.slug || "");
   const [color, setColor] = useState(form.branding.primaryColor || "#8B5CF6");
   const [fields, setFields] = useState<FormFieldConfig[]>(form.fields);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
 
-  // Auto-suggest the slug from the name only while the user hasn't
-  // touched the slug field directly. Once they edit it, they own it.
-  // Existing forms with a saved slug are considered already-touched.
+  // Slug: track what the user explicitly typed separately from the
+  // suggestion derived from the name. Until the user edits the field,
+  // the displayed slug is derived during render — no useEffect needed.
+  const [userSlug, setUserSlug] = useState(form.slug || "");
   const [slugTouched, setSlugTouched] = useState(!!form.slug);
-  useEffect(() => {
-    if (slugTouched) return;
-    const suggestion = name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "")
-      .slice(0, 60);
-    setSlug(suggestion);
-  }, [name, slugTouched]);
+  const slug = slugTouched ? userSlug : slugify(name);
 
   const trimmedSlug = slug.trim();
   const slugCollides = useMemo(() => {
@@ -420,7 +420,7 @@ function FormEditor({
               value={slug}
               onChange={(e) => {
                 setSlugTouched(true);
-                setSlug(e.target.value.replace(/\s/g, "-").toLowerCase());
+                setUserSlug(e.target.value.replace(/\s/g, "-").toLowerCase());
               }}
               className={`w-full px-3 py-2.5 bg-surface border rounded-lg text-[14px] text-foreground font-mono outline-none focus:ring-2 ${
                 slugError

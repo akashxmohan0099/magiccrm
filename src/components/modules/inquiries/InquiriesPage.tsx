@@ -79,12 +79,22 @@ export function InquiriesPage() {
   const formatDate = (iso: string) =>
     new Date(iso).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
 
+  // "Now" anchor for relative-time formatting. Updates once a minute so
+  // labels like "5m ago" tick over without re-rendering on every parent
+  // change. Captured here (not via Date.now() in render) so the format
+  // function below stays a pure function of its inputs.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(t);
+  }, []);
+
   // Relative time for the table — fresh inquiries should feel fresh.
   // Falls back to the date format above for anything older than ~a week.
   const formatRelative = (iso: string) => {
     const then = new Date(iso).getTime();
     if (!Number.isFinite(then)) return "—";
-    const diffSec = Math.max(0, (Date.now() - then) / 1000);
+    const diffSec = Math.max(0, (now - then) / 1000);
     if (diffSec < 60) return "just now";
     if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
     if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
@@ -463,29 +473,39 @@ function NotesEditor({
 }) {
   const [value, setValue] = useState(initial);
   const [savedValue, setSavedValue] = useState(initial);
-  const [savingState, setSavingState] = useState<"idle" | "saving" | "saved">("idle");
+  const [showSavedAt, setShowSavedAt] = useState<number | null>(null);
 
-  // Debounced auto-save: 1.2s after the last keystroke.
+  // Pending state is derived — no setState in render, no setState
+  // synchronously in an effect body.
+  const isPending = value !== savedValue;
+
+  // Debounced auto-save: 1.2s after the last keystroke. The setStates
+  // here run inside the timeout callback (async), not the effect body.
   useEffect(() => {
-    if (value === savedValue) return;
-    setSavingState("saving");
+    if (!isPending) return;
     const t = setTimeout(() => {
       onSave(value);
       setSavedValue(value);
-      setSavingState("saved");
-      const t2 = setTimeout(() => setSavingState("idle"), 1500);
-      return () => clearTimeout(t2);
+      setShowSavedAt(Date.now());
     }, 1200);
     return () => clearTimeout(t);
-  }, [value, savedValue, onSave]);
+  }, [value, isPending, onSave]);
+
+  // Hide the "Saved" indicator after 1.5s.
+  useEffect(() => {
+    if (showSavedAt === null) return;
+    const t = setTimeout(() => setShowSavedAt(null), 1500);
+    return () => clearTimeout(t);
+  }, [showSavedAt]);
 
   const flushOnBlur = () => {
-    if (value === savedValue) return;
+    if (!isPending) return;
     onSave(value);
     setSavedValue(value);
-    setSavingState("saved");
-    setTimeout(() => setSavingState("idle"), 1500);
+    setShowSavedAt(Date.now());
   };
+
+  const status = isPending ? "saving" : showSavedAt !== null ? "saved" : "idle";
 
   return (
     <div className="bg-surface rounded-lg p-4 border border-border-light">
@@ -494,8 +514,8 @@ function NotesEditor({
           Internal notes
         </h4>
         <span className="text-[11px] text-text-tertiary">
-          {savingState === "saving" && "Saving…"}
-          {savingState === "saved" && "Saved"}
+          {status === "saving" && "Saving…"}
+          {status === "saved" && "Saved"}
         </span>
       </div>
       <textarea
