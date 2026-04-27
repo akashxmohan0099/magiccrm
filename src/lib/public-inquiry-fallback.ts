@@ -3,7 +3,7 @@
 // and accepts submissions. In production these helpers fall through to
 // the API path — never touched.
 
-import type { FormFieldConfig } from "@/types/models";
+import type { FormFieldConfig, FormBranding } from "@/types/models";
 import { useFormsStore } from "@/store/forms";
 import { useInquiriesStore } from "@/store/inquiries";
 
@@ -12,11 +12,7 @@ export interface PublicInquiryForm {
   name: string;
   slug?: string;
   fields: FormFieldConfig[];
-  branding: {
-    logo?: string;
-    primaryColor?: string;
-    accentColor?: string;
-  };
+  branding: FormBranding;
 }
 
 const isDev = process.env.NODE_ENV === "development";
@@ -89,12 +85,18 @@ export async function submitPublicInquiry(
   if (!isDev || typeof window === "undefined") {
     return { ok: false, error: "Failed to submit inquiry" };
   }
+  // Mirror the server's honeypot behavior so dev parity stays clean.
+  if (values.__hp) return { ok: true };
   const form = useFormsStore
     .getState()
     .forms.find(
       (f) => f.type === "inquiry" && f.enabled && f.slug === slug,
     );
   if (!form) return { ok: false, error: "Form not found" };
+
+  // Strip the honeypot field — never persist it.
+  const { __hp: _hp, ...submissionValues } = values;
+  void _hp;
 
   useInquiriesStore.getState().addInquiry(
     {
@@ -109,6 +111,7 @@ export async function submitPublicInquiry(
       source: "form",
       status: "new",
       formId: form.id,
+      submissionValues,
     },
     undefined, // no workspaceId → stays local, doesn't hit Supabase
   );

@@ -151,6 +151,7 @@ CREATE TABLE inquiries (
   booking_id UUID,                        -- set when converted to booking
   client_id UUID,                         -- set when converted (client created via booking)
   notes TEXT DEFAULT '',                  -- private internal notes (not shown to client)
+  submission_values JSONB DEFAULT '{}',   -- full form submission keyed by field.name
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now(),
   UNIQUE(id, workspace_id),
@@ -159,6 +160,7 @@ CREATE TABLE inquiries (
 );
 -- Idempotent ALTER for existing dev databases that pre-date the notes column.
 ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS notes TEXT DEFAULT '';
+ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS submission_values JSONB DEFAULT '{}';
 
 CREATE TABLE bookings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

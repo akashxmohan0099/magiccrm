@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { FileText, Plus, Globe, Code, Eye, Calendar, Inbox, ToggleLeft, ToggleRight, Pencil, Trash2, Copy, Check, GripVertical } from "lucide-react";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { FileText, Plus, Globe, Code, Eye, Calendar, Inbox, ToggleLeft, ToggleRight, Pencil, Trash2, Copy, Check, GripVertical, Download } from "lucide-react";
 import { useFormsStore } from "@/store/forms";
 import { useInquiriesStore } from "@/store/inquiries";
 import { Form, FormFieldConfig } from "@/types/models";
@@ -28,8 +29,44 @@ export function FormsPage() {
   const { inquiries } = useInquiriesStore();
   const { workspaceId } = useAuth();
   const bookingPageSlug = useSettingsStore((s) => s.settings?.bookingPageSlug);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [slideMode, setSlideMode] = useState<SlideMode>("preview");
+
+  // Stable so it can sit in the useEffect dep array below without
+  // re-firing on every render.
+  const clearQueryParams = useCallback(
+    (keys: string[]) => {
+      const next = new URLSearchParams(searchParams.toString());
+      keys.forEach((key) => next.delete(key));
+      const query = next.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    },
+    [searchParams, router, pathname],
+  );
+
+  // Deep-link: /dashboard/forms?form=<id>&tab=<edit|preview|responses|embed>
+  // opens the slide-over directly. Used by the inquiries inbox so the
+  // "Edit form" button on a section header jumps straight into that form.
+  // Deferred via setTimeout so the setState runs async (satisfies React 19
+  // purity — no synchronous setState inside the effect body).
+  useEffect(() => {
+    const formId = searchParams.get("form");
+    const tab = searchParams.get("tab");
+    if (!formId || !forms.some((f) => f.id === formId)) return;
+
+    const t = window.setTimeout(() => {
+      setSelectedId(formId);
+      const validTabs: SlideMode[] = ["preview", "edit", "responses", "embed"];
+      if (tab && (validTabs as string[]).includes(tab)) {
+        setSlideMode(tab as SlideMode);
+      }
+    }, 0);
+    clearQueryParams(["form", "tab"]);
+    return () => window.clearTimeout(t);
+  }, [forms, searchParams, clearQueryParams]);
 
   const selected = selectedId ? forms.find((f) => f.id === selectedId) : null;
   const bookingForms = forms.filter((f) => f.type === "booking");
@@ -182,7 +219,7 @@ export function FormsPage() {
 
             {/* Responses */}
             {slideMode === "responses" && (
-              <FormResponses formId={selected.id} />
+              <FormResponses formId={selected.id} formName={selected.name} />
             )}
 
             {/* Embed */}
@@ -292,45 +329,73 @@ function FormSection({ label, icon, forms, submissionsByFormId, onOpen, onToggle
 // ── Form Preview ──
 
 function FormPreview({ form }: { form: Form }) {
-  return (
-    <div className="space-y-4">
-      <div className="bg-surface rounded-xl border border-border-light overflow-hidden">
-        {/* Preview header */}
-        <div className="p-5 text-center" style={{ backgroundColor: form.branding.primaryColor || "var(--primary)", opacity: 0.1 }}>
-        </div>
-        <div className="p-6 -mt-3">
-          <h3 className="text-[18px] font-bold text-foreground text-center mb-1">{form.name}</h3>
-          <p className="text-[12px] text-text-tertiary text-center mb-6">Preview of how your form looks to clients</p>
+  const brandColor = form.branding.primaryColor || "#34D399";
+  const description =
+    form.branding.description?.trim() || "Fill in the form and we'll be in touch.";
 
-          <div className="space-y-4 max-w-md mx-auto">
-            {form.fields.map((field, i) => (
-              <div key={i}>
-                <label className="text-[13px] font-medium text-foreground block mb-1.5">
-                  {field.label} {field.required && <span className="text-red-500">*</span>}
-                </label>
-                {field.type === "textarea" ? (
-                  <div className="w-full px-3 py-2.5 bg-card-bg border border-border-light rounded-lg text-[13px] text-text-tertiary h-20">
-                    {field.label}...
+  return (
+    <div className="space-y-3">
+      <p className="text-[11px] text-text-tertiary">
+        This is exactly what visitors see at <span className="font-mono">/inquiry/{form.slug || "—"}</span>.
+      </p>
+      <div
+        className="rounded-2xl p-5"
+        style={{
+          background: `radial-gradient(ellipse 80% 60% at 50% 0%, ${brandColor}1A, transparent 65%), var(--surface)`,
+        }}
+      >
+        <div className="bg-card-bg border border-border-light rounded-2xl overflow-hidden shadow-sm">
+          {/* Branded header — same gradient as the public page */}
+          <div
+            className="px-6 pt-6 pb-5"
+            style={{
+              background: `linear-gradient(180deg, ${brandColor}14 0%, transparent 100%)`,
+            }}
+          >
+            <h3 className="text-[18px] font-bold text-foreground tracking-tight">{form.name}</h3>
+            <p className="text-[12px] text-text-secondary mt-1 whitespace-pre-wrap">{description}</p>
+          </div>
+
+          <div className="px-6 pb-6">
+            <div className="space-y-3.5">
+              {form.fields.map((field, i) => {
+                const placeholder = field.placeholder ?? field.label;
+                return (
+                  <div key={i}>
+                    <label className="text-[12px] font-semibold text-foreground block mb-1.5">
+                      {field.label}
+                      {field.required && <span className="text-text-tertiary font-normal ml-1">*</span>}
+                    </label>
+                    {field.type === "textarea" ? (
+                      <div className="w-full px-3 py-2.5 bg-surface border border-border-light rounded-lg text-[13px] text-text-tertiary h-16">
+                        {placeholder}
+                      </div>
+                    ) : field.type === "select" ? (
+                      <div className="w-full px-3 py-2.5 bg-surface border border-border-light rounded-lg text-[13px] text-text-tertiary">
+                        Select {placeholder.toLowerCase()}
+                      </div>
+                    ) : (
+                      <div className="w-full px-3 py-2.5 bg-surface border border-border-light rounded-lg text-[13px] text-text-tertiary">
+                        {field.type === "email" ? "email@example.com" : field.type === "phone" ? "0412 345 678" : placeholder}
+                      </div>
+                    )}
+                    {field.helpText && (
+                      <p className="text-[11px] text-text-tertiary mt-1">{field.helpText}</p>
+                    )}
                   </div>
-                ) : field.type === "select" ? (
-                  <select disabled className="w-full px-3 py-2.5 bg-card-bg border border-border-light rounded-lg text-[13px] text-text-tertiary">
-                    <option>Select {field.label.toLowerCase()}</option>
-                    {field.options?.map((opt, j) => <option key={j}>{opt}</option>)}
-                  </select>
-                ) : (
-                  <div className="w-full px-3 py-2.5 bg-card-bg border border-border-light rounded-lg text-[13px] text-text-tertiary">
-                    {field.type === "email" ? "email@example.com" : field.type === "phone" ? "0412 345 678" : field.label}
-                  </div>
-                )}
-              </div>
-            ))}
-            <button
-              disabled
-              className="w-full py-3 rounded-xl text-[14px] font-semibold text-white"
-              style={{ backgroundColor: form.branding.primaryColor || "var(--primary)" }}
-            >
-              {form.type === "booking" ? "Book Now" : "Submit Inquiry"}
-            </button>
+                );
+              })}
+              <button
+                disabled
+                className="w-full py-3 rounded-xl text-[14px] font-semibold text-white mt-1"
+                style={{
+                  backgroundColor: brandColor,
+                  boxShadow: `0 8px 24px -8px ${brandColor}66`,
+                }}
+              >
+                {form.type === "booking" ? "Book Now" : "Submit Inquiry"}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -351,6 +416,8 @@ function FormEditor({
 }) {
   const [name, setName] = useState(form.name);
   const [color, setColor] = useState(form.branding.primaryColor || "#8B5CF6");
+  const [description, setDescription] = useState(form.branding.description ?? "");
+  const [successMessage, setSuccessMessage] = useState(form.branding.successMessage ?? "");
   const [fields, setFields] = useState<FormFieldConfig[]>(form.fields);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
@@ -386,7 +453,12 @@ function FormEditor({
       name,
       slug: trimmedSlug,
       fields,
-      branding: { ...form.branding, primaryColor: color },
+      branding: {
+        ...form.branding,
+        primaryColor: color,
+        description: description.trim() || undefined,
+        successMessage: successMessage.trim() || undefined,
+      },
     });
     toast("Form saved");
   };
@@ -450,6 +522,34 @@ function FormEditor({
         </div>
       </div>
 
+      {/* Copy: description + thank-you */}
+      <div className="grid grid-cols-1 gap-3">
+        <div>
+          <label className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider block mb-1">
+            Description <span className="text-text-tertiary font-normal normal-case tracking-normal">(optional)</span>
+          </label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={2}
+            placeholder="Shown under the form title. Describe what this form is for."
+            className="w-full px-3 py-2.5 bg-surface border border-border-light rounded-lg text-[13px] text-foreground placeholder:text-text-tertiary outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+          />
+        </div>
+        <div>
+          <label className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider block mb-1">
+            Success Message <span className="text-text-tertiary font-normal normal-case tracking-normal">(optional)</span>
+          </label>
+          <textarea
+            value={successMessage}
+            onChange={(e) => setSuccessMessage(e.target.value)}
+            rows={2}
+            placeholder="Defaults to “Your inquiry has been received. We'll be in touch shortly.”"
+            className="w-full px-3 py-2.5 bg-surface border border-border-light rounded-lg text-[13px] text-foreground placeholder:text-text-tertiary outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+          />
+        </div>
+      </div>
+
       {/* Fields */}
       <div>
         <div className="flex items-center justify-between mb-2">
@@ -500,6 +600,20 @@ function FormEditor({
                   placeholder="Options (comma separated)"
                   className="w-full mt-2 px-2.5 py-2 bg-card-bg border border-border-light rounded-lg text-[12px] text-foreground outline-none" />
               )}
+              <div className="grid grid-cols-2 gap-2 pl-6 mt-2">
+                <input
+                  value={field.placeholder ?? ""}
+                  onChange={(e) => updateField(idx, { placeholder: e.target.value || undefined })}
+                  placeholder="Placeholder (optional)"
+                  className="px-2.5 py-2 bg-card-bg border border-border-light rounded-lg text-[12px] text-foreground placeholder:text-text-tertiary outline-none"
+                />
+                <input
+                  value={field.helpText ?? ""}
+                  onChange={(e) => updateField(idx, { helpText: e.target.value || undefined })}
+                  placeholder="Help text (optional)"
+                  className="px-2.5 py-2 bg-card-bg border border-border-light rounded-lg text-[12px] text-foreground placeholder:text-text-tertiary outline-none"
+                />
+              </div>
             </div>
           ))}
         </div>
@@ -628,7 +742,15 @@ function FormEmbed({
 
 // ── Form Responses ──
 
-function FormResponses({ formId }: { formId: string }) {
+function csvEscape(value: string) {
+  if (value === "") return "";
+  if (/[",\n\r]/.test(value)) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+}
+
+function FormResponses({ formId, formName }: { formId: string; formName: string }) {
   const { inquiries } = useInquiriesStore();
   const responses = useMemo(
     () => inquiries.filter((i) => i.formId === formId).sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
@@ -636,6 +758,46 @@ function FormResponses({ formId }: { formId: string }) {
   );
 
   const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
+
+  const exportCSV = () => {
+    if (responses.length === 0) return;
+    const headers = [
+      "Submitted",
+      "Name",
+      "Email",
+      "Phone",
+      "Interest",
+      "Event",
+      "Date Range",
+      "Message",
+      "Status",
+    ];
+    const rows = responses.map((r) => [
+      new Date(r.createdAt).toISOString(),
+      r.name,
+      r.email,
+      r.phone,
+      r.serviceInterest ?? "",
+      r.eventType ?? "",
+      r.dateRange ?? "",
+      r.message ?? "",
+      r.status,
+    ]);
+    const csv = [headers, ...rows]
+      .map((row) => row.map((cell) => csvEscape(String(cell))).join(","))
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const safeName = formName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "form";
+    a.href = url;
+    a.download = `${safeName}-responses-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast("Responses exported");
+  };
 
   if (responses.length === 0) {
     return (
@@ -649,7 +811,15 @@ function FormResponses({ formId }: { formId: string }) {
 
   return (
     <div className="space-y-3">
-      <p className="text-[12px] text-text-tertiary">{responses.length} response{responses.length !== 1 ? "s" : ""}</p>
+      <div className="flex items-center justify-between">
+        <p className="text-[12px] text-text-tertiary">{responses.length} response{responses.length !== 1 ? "s" : ""}</p>
+        <button
+          onClick={exportCSV}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 bg-surface border border-border-light rounded-lg text-[12px] font-medium text-text-secondary hover:text-foreground hover:bg-card-bg cursor-pointer transition-colors"
+        >
+          <Download className="w-3.5 h-3.5" /> Export CSV
+        </button>
+      </div>
       {responses.map((r) => (
         <div key={r.id} className="bg-surface rounded-lg border border-border-light p-4 space-y-2">
           <div className="flex items-center justify-between">

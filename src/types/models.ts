@@ -115,6 +115,9 @@ export interface Inquiry {
   bookingId?: string;
   clientId?: string;
   notes?: string;
+  // Full form submission keyed by field.name. Lets the inbox surface every
+  // field a form collects, not just the structured columns above.
+  submissionValues?: Record<string, string>;
   createdAt: string;
   updatedAt: string;
 }
@@ -197,6 +200,18 @@ export interface FormFieldConfig {
   label: string;
   required: boolean;
   options?: string[];         // for select fields
+  placeholder?: string;       // optional placeholder, falls back to label
+  helpText?: string;          // small supporting text under the field
+}
+
+export interface FormBranding {
+  logo?: string;
+  primaryColor?: string;
+  accentColor?: string;
+  // Stored on the JSON column so we don't need a DB migration. These are
+  // form-presentation settings that travel with the form's visual identity.
+  description?: string;       // shown under form name on the public page
+  successMessage?: string;    // custom thank-you copy after submit
 }
 
 export interface Form {
@@ -205,11 +220,7 @@ export interface Form {
   type: FormType;
   name: string;
   fields: FormFieldConfig[];
-  branding: {
-    logo?: string;
-    primaryColor?: string;
-    accentColor?: string;
-  };
+  branding: FormBranding;
   slug?: string;
   enabled: boolean;
   createdAt: string;

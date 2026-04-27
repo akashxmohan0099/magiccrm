@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase";
-import type { Form, FormType, FormFieldConfig } from "@/types/models";
+import type { Form, FormType, FormFieldConfig, FormBranding } from "@/types/models";
 
 // ---------------------------------------------------------------------------
 // snake_case <-> camelCase mapping
@@ -13,7 +13,7 @@ export function mapFormFromDB(row: Record<string, unknown>): Form {
     type: row.type as FormType,
     name: row.name as string,
     fields: row.fields as FormFieldConfig[],
-    branding: (row.branding ?? {}) as { logo?: string; primaryColor?: string; accentColor?: string },
+    branding: (row.branding ?? {}) as FormBranding,
     slug: (row.slug as string) || undefined,
     enabled: row.enabled as boolean,
     createdAt: row.created_at as string,

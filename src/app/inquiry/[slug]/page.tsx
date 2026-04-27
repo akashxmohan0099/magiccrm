@@ -78,6 +78,11 @@ export default function InquiryFormPage() {
 
   const brandColor = form.branding.primaryColor || "#34D399";
 
+  const successMessage =
+    form.branding.successMessage?.trim() ||
+    "Your inquiry has been received. We'll be in touch shortly.";
+  const description = form.branding.description?.trim() || "Fill in the form and we'll be in touch.";
+
   if (submitted) {
     return (
       <div
@@ -97,8 +102,8 @@ export default function InquiryFormPage() {
             <Check className="w-8 h-8" style={{ color: brandColor }} strokeWidth={2.5} />
           </div>
           <h2 className="text-[22px] font-bold text-foreground mb-2">Thank you!</h2>
-          <p className="text-[14px] text-text-secondary leading-relaxed">
-            Your inquiry has been received. We&apos;ll be in touch shortly.
+          <p className="text-[14px] text-text-secondary leading-relaxed whitespace-pre-wrap">
+            {successMessage}
           </p>
         </div>
       </div>
@@ -151,8 +156,8 @@ export default function InquiryFormPage() {
             }}
           >
             <h1 className="text-[24px] font-bold text-foreground tracking-tight">{form.name}</h1>
-            <p className="text-[13px] text-text-secondary mt-1.5">
-              Fill in the form and we&apos;ll be in touch.
+            <p className="text-[13px] text-text-secondary mt-1.5 whitespace-pre-wrap">
+              {description}
             </p>
           </div>
 
@@ -183,6 +188,27 @@ export default function InquiryFormPage() {
                   }}
                 />
               ))}
+
+              {/* Honeypot — must stay empty. Real users never see it; bots
+                  fill every input they find. The server drops any submission
+                  with a non-empty value here. */}
+              <input
+                type="text"
+                tabIndex={-1}
+                autoComplete="off"
+                aria-hidden="true"
+                value={values.__hp || ""}
+                onChange={(e) => setValues((p) => ({ ...p, __hp: e.target.value }))}
+                style={{
+                  position: "absolute",
+                  left: "-9999px",
+                  width: 1,
+                  height: 1,
+                  opacity: 0,
+                  pointerEvents: "none",
+                }}
+              />
+
 
               <button
                 type="submit"
@@ -241,6 +267,8 @@ function FieldRow({
   const inputClass =
     "w-full px-4 py-3 bg-surface border border-border-light rounded-xl text-[14px] text-foreground placeholder:text-text-tertiary outline-none transition-colors focus:border-[var(--brand)]";
 
+  const placeholder = field.placeholder ?? field.label;
+
   return (
     <div>
       <label className="text-[12px] font-semibold text-foreground block mb-1.5">
@@ -254,7 +282,7 @@ function FieldRow({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           rows={4}
-          placeholder={field.label}
+          placeholder={placeholder}
           style={ringStyle}
           className={`${inputClass} resize-none`}
         />
@@ -265,7 +293,7 @@ function FieldRow({
           style={ringStyle}
           className={inputClass}
         >
-          <option value="">Select {field.label.toLowerCase()}</option>
+          <option value="">{placeholder ? `Select ${placeholder.toLowerCase()}` : `Select ${field.label.toLowerCase()}`}</option>
           {field.options?.map((opt) => (
             <option key={opt} value={opt}>
               {opt}
@@ -285,10 +313,13 @@ function FieldRow({
           }
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder={field.label}
+          placeholder={placeholder}
           style={ringStyle}
           className={inputClass}
         />
+      )}
+      {field.helpText && (
+        <p className="text-[11px] text-text-tertiary mt-1.5">{field.helpText}</p>
       )}
     </div>
   );

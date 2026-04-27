@@ -17,7 +17,7 @@ import { toast } from "@/components/ui/Toast";
 import { BookingForm } from "@/components/modules/bookings/BookingForm";
 import { useAuth } from "@/hooks/useAuth";
 import { useCreatePayment } from "@/hooks/useCreatePayment";
-import { GroupedInquiries } from "./GroupedInquiries";
+import { GroupedInquiries, inquiryFieldValue } from "./GroupedInquiries";
 import { LogInquiryForm } from "./LogInquiryForm";
 
 const STATUS_OPTIONS: { value: InquiryStatus; label: string }[] = [
@@ -109,19 +109,9 @@ export function InquiriesPage() {
     closed:      { dot: "bg-gray-400",    bg: "bg-gray-100",   text: "text-gray-600",    label: "Closed" },
   };
 
-  const columns: Column<Inquiry>[] = [
-    {
-      key: "name",
-      label: "Name",
-      sortable: true,
-      render: (i) => <span className="text-[13px] font-medium text-foreground">{i.name}</span>,
-    },
-    {
-      key: "serviceInterest" as keyof Inquiry,
-      label: "Interest",
-      sortable: true,
-      render: (i) => <span className="text-[13px] text-text-secondary">{i.serviceInterest || i.eventType || "—"}</span>,
-    },
+  // Trailing columns shared across every section (form-backed or not)
+  // — Source/Received/Status are always last.
+  const trailingColumns: Column<Inquiry>[] = [
     {
       key: "source",
       label: "Source",
@@ -162,6 +152,31 @@ export function InquiriesPage() {
         );
       },
     },
+  ];
+
+  // Default columns for non-form sections (Conversations / Unlinked).
+  // Form-backed sections build their own column list from form.fields.
+  const defaultColumns: Column<Inquiry>[] = [
+    {
+      key: "name",
+      label: "Name",
+      sortable: true,
+      removable: false,
+      render: (i) => (
+        <span className="text-[13px] font-medium text-foreground">{i.name}</span>
+      ),
+    },
+    {
+      key: "interest",
+      label: "Interest",
+      sortable: true,
+      render: (i) => (
+        <span className="text-[13px] text-text-secondary">
+          {i.serviceInterest || i.eventType || "—"}
+        </span>
+      ),
+    },
+    ...trailingColumns,
   ];
 
   return (
@@ -250,8 +265,8 @@ export function InquiriesPage() {
         <GroupedInquiries
           inquiries={filtered}
           forms={forms}
-          formMap={formMap}
-          columns={columns}
+          defaultColumns={defaultColumns}
+          trailingColumns={trailingColumns}
           onRowClick={(i) => setSelectedId(i.id)}
         />
       )}
@@ -313,30 +328,87 @@ export function InquiriesPage() {
               )}
             </div>
 
-            {/* Details */}
-            <div className="bg-surface rounded-lg p-4 border border-border-light space-y-3">
-              <h4 className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider">Details</h4>
-              {selected.serviceInterest && (
-                <div className="flex items-center justify-between">
-                  <span className="text-[12px] text-text-tertiary">Interest</span>
-                  <span className="text-[13px] text-foreground">{selected.serviceInterest}</span>
-                </div>
-              )}
-              {selected.eventType && (
-                <div className="flex items-center justify-between">
-                  <span className="text-[12px] text-text-tertiary">Event</span>
-                  <span className="text-[13px] text-foreground">{selected.eventType}</span>
-                </div>
-              )}
-              {selected.dateRange && (
-                <div className="flex items-center justify-between">
-                  <span className="text-[12px] text-text-tertiary">Date Range</span>
-                  <span className="text-[13px] text-foreground">{selected.dateRange}</span>
-                </div>
-              )}
-            </div>
+            {/* Submission — when the inquiry came from a known form, walk
+                its field config in order so the panel mirrors what the
+                client actually filled in (with the form's own labels).
+                Falls back to the structured columns for legacy inquiries. */}
+            {(() => {
+              const sourceForm = selected.formId ? formMap.get(selected.formId) : null;
 
-            {/* Message */}
+              const skipKeys = new Set([
+                "name", "full_name", "fullName", "client_name",
+                "email",
+                "phone", "mobile", "contact_phone",
+                "message", "your_message", "details",
+              ]);
+
+              if (sourceForm) {
+                const rows = sourceForm.fields
+                  .filter((f) => !skipKeys.has(f.name))
+                  .map((f) => ({
+                    label: f.label,
+                    value: inquiryFieldValue(selected, f.name),
+                    isLong: f.type === "textarea",
+                  }))
+                  .filter((r) => r.value);
+
+                if (rows.length === 0) return null;
+
+                return (
+                  <div className="bg-surface rounded-lg p-4 border border-border-light space-y-3">
+                    <h4 className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider">
+                      Submission
+                    </h4>
+                    {rows.map((r, i) =>
+                      r.isLong ? (
+                        <div key={i} className="space-y-1">
+                          <span className="text-[11px] text-text-tertiary block">{r.label}</span>
+                          <p className="text-[13px] text-foreground whitespace-pre-wrap bg-card-bg rounded-md px-3 py-2 border border-border-light">
+                            {r.value}
+                          </p>
+                        </div>
+                      ) : (
+                        <div key={i} className="flex items-start justify-between gap-3">
+                          <span className="text-[12px] text-text-tertiary flex-shrink-0">{r.label}</span>
+                          <span className="text-[13px] text-foreground text-right break-words">{r.value}</span>
+                        </div>
+                      ),
+                    )}
+                  </div>
+                );
+              }
+
+              // Legacy / non-form fallback: keep the structured fields.
+              const hasAny = selected.serviceInterest || selected.eventType || selected.dateRange;
+              if (!hasAny) return null;
+              return (
+                <div className="bg-surface rounded-lg p-4 border border-border-light space-y-3">
+                  <h4 className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider">Details</h4>
+                  {selected.serviceInterest && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-[12px] text-text-tertiary">Interest</span>
+                      <span className="text-[13px] text-foreground">{selected.serviceInterest}</span>
+                    </div>
+                  )}
+                  {selected.eventType && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-[12px] text-text-tertiary">Event</span>
+                      <span className="text-[13px] text-foreground">{selected.eventType}</span>
+                    </div>
+                  )}
+                  {selected.dateRange && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-[12px] text-text-tertiary">Date Range</span>
+                      <span className="text-[13px] text-foreground">{selected.dateRange}</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* Message — separated from Submission so long-form replies
+                always have their own block, regardless of how the form was
+                shaped. */}
             {selected.message && (
               <div className="bg-surface rounded-lg p-4 border border-border-light">
                 <h4 className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider mb-2">Message</h4>

@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { FormFieldConfig } from "@/types/models";
+import type { FormFieldConfig, FormBranding } from "@/types/models";
 import { createAdminClient } from "@/lib/supabase-server";
 import { mapFormFromDB } from "@/lib/db/forms";
 
@@ -10,11 +10,7 @@ export interface PublicInquiryForm {
   name: string;
   slug?: string;
   fields: FormFieldConfig[];
-  branding: {
-    logo?: string;
-    primaryColor?: string;
-    accentColor?: string;
-  };
+  branding: FormBranding;
 }
 
 export async function fetchPublicInquiryFormBySlug(

@@ -129,6 +129,11 @@ export default function EmbedInquiryFormPage() {
     ? `#${accentOverride.replace("#", "")}`
     : form.branding.primaryColor || "#34D399";
 
+  const successMessage =
+    form.branding.successMessage?.trim() ||
+    "Your inquiry has been received. We'll be in touch shortly.";
+  const description = form.branding.description?.trim() || "Fill in the form and we'll be in touch.";
+
   if (submitted) {
     return (
       <div ref={containerRef} className="px-4 py-8">
@@ -140,8 +145,8 @@ export default function EmbedInquiryFormPage() {
             <Check className="w-6 h-6" style={{ color: brandColor }} strokeWidth={2.5} />
           </div>
           <h2 className="text-[16px] font-bold text-foreground mb-1">Thank you!</h2>
-          <p className="text-[12px] text-text-secondary">
-            Your inquiry has been received. We&apos;ll be in touch shortly.
+          <p className="text-[12px] text-text-secondary whitespace-pre-wrap">
+            {successMessage}
           </p>
           <p className="text-[10px] text-text-tertiary pt-3">Powered by Magic</p>
         </div>
@@ -161,8 +166,8 @@ export default function EmbedInquiryFormPage() {
             }}
           >
             <h1 className="text-[16px] font-bold text-foreground">{form.name}</h1>
-            <p className="text-[11px] text-text-secondary mt-0.5">
-              Fill in the form and we&apos;ll be in touch.
+            <p className="text-[11px] text-text-secondary mt-0.5 whitespace-pre-wrap">
+              {description}
             </p>
           </div>
 
@@ -193,6 +198,26 @@ export default function EmbedInquiryFormPage() {
                   }}
                 />
               ))}
+
+              {/* Honeypot — hidden from real users; bots fill it. Server drops
+                  any submission with a non-empty value. */}
+              <input
+                type="text"
+                tabIndex={-1}
+                autoComplete="off"
+                aria-hidden="true"
+                value={values.__hp || ""}
+                onChange={(e) => setValues((p) => ({ ...p, __hp: e.target.value }))}
+                style={{
+                  position: "absolute",
+                  left: "-9999px",
+                  width: 1,
+                  height: 1,
+                  opacity: 0,
+                  pointerEvents: "none",
+                }}
+              />
+
 
               <button
                 type="submit"
@@ -238,6 +263,8 @@ function FieldRow({
   const inputClass =
     "w-full px-3 py-2 bg-surface border border-border-light rounded-lg text-[13px] text-foreground placeholder:text-text-tertiary outline-none transition-colors focus:border-[var(--brand)]";
 
+  const placeholder = field.placeholder ?? field.label;
+
   return (
     <div>
       <label className="block text-[11px] font-semibold text-foreground mb-1">
@@ -251,7 +278,7 @@ function FieldRow({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           rows={3}
-          placeholder={field.label}
+          placeholder={placeholder}
           style={ringStyle}
           className={`${inputClass} resize-none`}
         />
@@ -262,7 +289,7 @@ function FieldRow({
           style={ringStyle}
           className={inputClass}
         >
-          <option value="">Select {field.label.toLowerCase()}</option>
+          <option value="">{placeholder ? `Select ${placeholder.toLowerCase()}` : `Select ${field.label.toLowerCase()}`}</option>
           {field.options?.map((opt) => (
             <option key={opt} value={opt}>
               {opt}
@@ -282,10 +309,13 @@ function FieldRow({
           }
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder={field.label}
+          placeholder={placeholder}
           style={ringStyle}
           className={inputClass}
         />
+      )}
+      {field.helpText && (
+        <p className="text-[10px] text-text-tertiary mt-1 leading-snug">{field.helpText}</p>
       )}
     </div>
   );

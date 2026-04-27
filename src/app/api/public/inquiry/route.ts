@@ -44,6 +44,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing slug" }, { status: 400 });
     }
 
+    // Honeypot — silently swallow filled traps. Returning 201 means bots
+    // get no signal that they were detected, while real users (who never
+    // touch the hidden input) submit normally.
+    if (values.__hp) {
+      return NextResponse.json({ success: true }, { status: 201 });
+    }
+
     const form = await fetchPublicInquiryFormBySlug(slug);
     if (!form) {
       return NextResponse.json({ error: "Form not found" }, { status: 404 });
@@ -102,6 +109,12 @@ export async function POST(req: NextRequest) {
     const inquiryId = generateId();
     const supabase = await createAdminClient();
 
+    // Strip the honeypot field — never persist it. The structured
+    // columns above (name/email/etc) stay for back-compat queries; the
+    // full blob below lets the inbox surface every custom field.
+    const { __hp: _hp, ...submissionValues } = values;
+    void _hp;
+
     const { error: inquiryError } = await supabase.from("inquiries").insert({
       id: inquiryId,
       workspace_id: form.workspaceId,
@@ -115,6 +128,7 @@ export async function POST(req: NextRequest) {
       source: "form",
       status: "new",
       form_id: form.id,
+      submission_values: submissionValues,
       created_at: now,
       updated_at: now,
     });

@@ -24,6 +24,7 @@ export function mapInquiryFromDB(row: Record<string, unknown>): Inquiry {
     bookingId: (row.booking_id as string) || undefined,
     clientId: (row.client_id as string) || undefined,
     notes: (row.notes as string) || undefined,
+    submissionValues: (row.submission_values as Record<string, string>) || undefined,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };
@@ -51,6 +52,7 @@ function mapInquiryToDB(
   if (data.bookingId !== undefined) row.booking_id = data.bookingId || null;
   if (data.clientId !== undefined) row.client_id = data.clientId || null;
   if (data.notes !== undefined) row.notes = data.notes ?? "";
+  if (data.submissionValues !== undefined) row.submission_values = data.submissionValues ?? {};
   if (data.createdAt !== undefined) row.created_at = data.createdAt;
   if (data.updatedAt !== undefined) row.updated_at = data.updatedAt;
 
