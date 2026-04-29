@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient, createClient } from "@/lib/supabase-server";
 import { bootstrapWorkspaceForUser } from "@/lib/auth/bootstrap-workspace";
-import { rateLimit } from "@/lib/rate-limit";
 import { getPostHogClient } from "@/lib/posthog-server";
 
 function isE2ESignupBypass(req: NextRequest) {
@@ -12,12 +11,6 @@ function isE2ESignupBypass(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-  const { allowed } = await rateLimit(`signup:${ip}`, 5, 300_000);
-  if (!allowed) {
-    return NextResponse.json({ error: "Too many signup attempts. Please try again in a few minutes." }, { status: 429 });
-  }
-
   let createdUserId: string | null = null;
 
   try {

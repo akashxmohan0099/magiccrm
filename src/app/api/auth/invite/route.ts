@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { inviteTeamMember } from "@/lib/auth/invite";
-import { rateLimit } from "@/lib/rate-limit";
 
 /**
  * POST /api/auth/invite
@@ -13,12 +12,6 @@ import { rateLimit } from "@/lib/rate-limit";
  */
 export async function POST(request: Request) {
   try {
-    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-    const { allowed } = await rateLimit(`invite:${ip}`, 10, 300_000);
-    if (!allowed) {
-      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
-    }
-
     const supabase = await createClient();
 
     // Verify the caller is authenticated
