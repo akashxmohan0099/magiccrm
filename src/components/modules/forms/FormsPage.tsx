@@ -1892,72 +1892,83 @@ function ThankYouSection(props: {
   setSuccessRedirectDelaySeconds: (v: number) => void;
 }) {
   return (
-    <div className="space-y-5">
-      <div>
-        <p className="text-[14px] font-semibold text-foreground">Thank-you screen</p>
-        <p className="text-[13px] text-text-secondary mt-1 leading-snug">
-          What the visitor sees the moment they submit.
-        </p>
-      </div>
-
-      {/* Success message — the headline shown on the thank-you screen. */}
-      <div className="space-y-2">
-        <label className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider block">
-          Message <span className="font-normal normal-case tracking-normal">(optional)</span>
-        </label>
-        <textarea
-          value={props.successMessage}
-          onChange={(e) => props.setSuccessMessage(e.target.value)}
-          rows={2}
-          placeholder="Defaults to “Your inquiry has been received. We'll be in touch shortly.”"
-          className="w-full px-3 py-2 bg-card-bg border border-border-light rounded-lg text-[13px] text-foreground placeholder:text-text-tertiary outline-none focus:ring-2 focus:ring-primary/20 resize-none"
-        />
-      </div>
-
-      {/* Thank-you CTA */}
-      <div className="space-y-2">
-        <label className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider block">
-          Call-to-action button <span className="font-normal normal-case tracking-normal">(optional)</span>
-        </label>
-        <div className="grid grid-cols-2 gap-2">
-          <input
-            value={props.successCtaLabel}
-            onChange={(e) => props.setSuccessCtaLabel(e.target.value)}
-            placeholder="Button label e.g. Visit our Instagram"
-            className="px-3 py-2 bg-card-bg border border-border-light rounded-lg text-[13px] text-foreground placeholder:text-text-tertiary outline-none focus:ring-2 focus:ring-primary/20"
-          />
-          <input
-            value={props.successCtaUrl}
-            onChange={(e) => props.setSuccessCtaUrl(e.target.value)}
-            placeholder="https://"
-            className="px-3 py-2 bg-card-bg border border-border-light rounded-lg text-[13px] text-foreground placeholder:text-text-tertiary outline-none focus:ring-2 focus:ring-primary/20 font-mono"
-          />
+    <div className="rounded-xl border border-border-light bg-surface p-5 space-y-5">
+      <div className="flex items-start gap-3">
+        <div className="w-9 h-9 rounded-lg border border-emerald-100 bg-gradient-to-br from-emerald-50 to-emerald-100/60 flex items-center justify-center flex-shrink-0">
+          <MessageSquare className="w-4 h-4 text-emerald-700" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-[14px] font-semibold text-foreground">Thank-you screen</p>
+          <p className="text-[12.5px] text-text-secondary mt-0.5 leading-snug">
+            What the visitor sees the moment they submit.
+          </p>
         </div>
       </div>
 
-      {/* Auto-redirect */}
-      <div className="space-y-2">
-        <label className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider block">
-          Auto-redirect <span className="font-normal normal-case tracking-normal">(optional)</span>
-        </label>
-        <div className="grid grid-cols-3 gap-2">
-          <input
-            value={props.successRedirectUrl}
-            onChange={(e) => props.setSuccessRedirectUrl(e.target.value)}
-            placeholder="https://yoursite.com/thanks"
-            className="col-span-2 px-3 py-2 bg-card-bg border border-border-light rounded-lg text-[13px] text-foreground placeholder:text-text-tertiary outline-none focus:ring-2 focus:ring-primary/20 font-mono"
+      <div className="space-y-4 pl-12">
+        {/* Success message */}
+        <div className="space-y-1.5">
+          <label className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider block">
+            Message <span className="font-normal normal-case tracking-normal">(optional)</span>
+          </label>
+          <textarea
+            value={props.successMessage}
+            onChange={(e) => props.setSuccessMessage(e.target.value)}
+            rows={2}
+            placeholder="Defaults to “Your inquiry has been received. We'll be in touch shortly.”"
+            className="w-full px-3 py-2 bg-card-bg border border-border-light rounded-lg text-[13px] text-foreground placeholder:text-text-tertiary outline-none focus:ring-2 focus:ring-primary/20 resize-none"
           />
-          <div className="flex items-center gap-2">
+        </div>
+
+        <div className="border-t border-border-light/60" />
+
+        {/* CTA */}
+        <div className="space-y-1.5">
+          <label className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider block">
+            Call-to-action button <span className="font-normal normal-case tracking-normal">(optional)</span>
+          </label>
+          <div className="grid grid-cols-2 gap-2">
             <input
-              type="number"
-              min={0}
-              max={60}
-              value={props.successRedirectDelaySeconds}
-              onChange={(e) => props.setSuccessRedirectDelaySeconds(Number(e.target.value) || 0)}
-              disabled={!props.successRedirectUrl.trim()}
-              className="w-16 px-2 py-2 bg-card-bg border border-border-light rounded-lg text-[13px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
+              value={props.successCtaLabel}
+              onChange={(e) => props.setSuccessCtaLabel(e.target.value)}
+              placeholder="Button label e.g. Visit our Instagram"
+              className="px-3 py-2 bg-card-bg border border-border-light rounded-lg text-[13px] text-foreground placeholder:text-text-tertiary outline-none focus:ring-2 focus:ring-primary/20"
             />
-            <span className="text-[12px] text-text-tertiary">sec</span>
+            <input
+              value={props.successCtaUrl}
+              onChange={(e) => props.setSuccessCtaUrl(e.target.value)}
+              placeholder="https://"
+              className="px-3 py-2 bg-card-bg border border-border-light rounded-lg text-[13px] text-foreground placeholder:text-text-tertiary outline-none focus:ring-2 focus:ring-primary/20 font-mono"
+            />
+          </div>
+        </div>
+
+        <div className="border-t border-border-light/60" />
+
+        {/* Auto-redirect */}
+        <div className="space-y-1.5">
+          <label className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider block">
+            Auto-redirect <span className="font-normal normal-case tracking-normal">(optional)</span>
+          </label>
+          <div className="grid grid-cols-3 gap-2">
+            <input
+              value={props.successRedirectUrl}
+              onChange={(e) => props.setSuccessRedirectUrl(e.target.value)}
+              placeholder="https://yoursite.com/thanks"
+              className="col-span-2 px-3 py-2 bg-card-bg border border-border-light rounded-lg text-[13px] text-foreground placeholder:text-text-tertiary outline-none focus:ring-2 focus:ring-primary/20 font-mono"
+            />
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min={0}
+                max={60}
+                value={props.successRedirectDelaySeconds}
+                onChange={(e) => props.setSuccessRedirectDelaySeconds(Number(e.target.value) || 0)}
+                disabled={!props.successRedirectUrl.trim()}
+                className="w-16 px-2 py-2 bg-card-bg border border-border-light rounded-lg text-[13px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
+              />
+              <span className="text-[12px] text-text-tertiary">sec</span>
+            </div>
           </div>
         </div>
       </div>
@@ -2008,27 +2019,39 @@ function RoutedThankYouSection({
 
   if (eligible.length === 0) {
     return (
-      <div className="border-t border-border-light pt-5">
-        <p className="text-[14px] font-semibold text-foreground">Routed thank-you screens</p>
-        <p className="text-[12px] text-text-secondary mt-1 leading-snug">
-          Add a Dropdown, Radio, Multi-select, or Service field to route the thank-you
-          screen based on the visitor&apos;s answer.
-        </p>
+      <div className="rounded-xl border border-dashed border-border-light bg-surface/40 p-5">
+        <div className="flex items-start gap-3">
+          <div className="w-9 h-9 rounded-lg border border-violet-100 bg-gradient-to-br from-violet-50 to-violet-100/60 flex items-center justify-center flex-shrink-0">
+            <Filter className="w-4 h-4 text-violet-700" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[14px] font-semibold text-foreground">Routed thank-you screens</p>
+            <p className="text-[12.5px] text-text-secondary mt-0.5 leading-snug">
+              Add a Dropdown, Radio, Multi-select, or Service field to route the thank-you
+              screen based on the visitor&apos;s answer.
+            </p>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="border-t border-border-light pt-5 space-y-3">
-      <div>
-        <p className="text-[14px] font-semibold text-foreground">Routed thank-you screens</p>
-        <p className="text-[13px] text-text-secondary mt-1 leading-snug">
-          Show a different message based on the visitor&apos;s answer to one field.
-          Falls back to the default thank-you screen above when nothing matches.
-        </p>
+    <div className="rounded-xl border border-border-light bg-surface p-5 space-y-4">
+      <div className="flex items-start gap-3">
+        <div className="w-9 h-9 rounded-lg border border-violet-100 bg-gradient-to-br from-violet-50 to-violet-100/60 flex items-center justify-center flex-shrink-0">
+          <Filter className="w-4 h-4 text-violet-700" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-[14px] font-semibold text-foreground">Routed thank-you screens</p>
+          <p className="text-[12.5px] text-text-secondary mt-0.5 leading-snug">
+            Show a different message based on the visitor&apos;s answer to one field.
+            Falls back to the default thank-you screen above when nothing matches.
+          </p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 items-end">
+      <div className="grid grid-cols-2 gap-2 items-end pl-12">
         <label className="block">
           <span className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider block mb-1">
             Route on field
@@ -2047,7 +2070,7 @@ function RoutedThankYouSection({
       </div>
 
       {routeFieldName && (
-        <div className="space-y-2">
+        <div className="space-y-2 pl-12">
           {variants.map((v) => {
             const opts = routeField && fieldHasOptions(routeField.type) ? routeField.options ?? [] : [];
             return (
