@@ -16,11 +16,14 @@ interface FormsStore {
     data: Omit<Form, "id" | "createdAt" | "updatedAt">,
     workspaceId?: string
   ) => Form;
+  /** Optimistic local update; the returned Promise resolves once the DB
+   *  write lands, or rejects with the underlying error so callers running
+   *  autosave can surface failures to the user instead of silently lying. */
   updateForm: (
     id: string,
     data: Partial<Form>,
     workspaceId?: string
-  ) => void;
+  ) => Promise<void>;
   deleteForm: (id: string, workspaceId?: string) => void;
   loadFromSupabase: (workspaceId: string) => Promise<void>;
 }
@@ -49,20 +52,18 @@ export const useFormsStore = create<FormsStore>()(
         return form;
       },
 
-      updateForm: (id, data, workspaceId) => {
+      updateForm: async (id, data, workspaceId) => {
         const now = new Date().toISOString();
         set((s) => ({
           forms: s.forms.map((f) =>
             f.id === id ? { ...f, ...data, updatedAt: now } : f
           ),
         }));
-        if (workspaceId) {
-          dbUpdateForm(
-            workspaceId,
-            id,
-            data as Record<string, unknown>
-          ).catch(console.error);
-        }
+        if (!workspaceId) return;
+        // Bubble DB errors so callers (autosave) can react. Local state stays
+        // optimistically updated regardless — reverting it would feel worse
+        // than showing an error and letting the next save retry.
+        await dbUpdateForm(workspaceId, id, data as Record<string, unknown>);
       },
 
       deleteForm: (id, workspaceId) => {
@@ -82,6 +83,29 @@ export const useFormsStore = create<FormsStore>()(
         }
       },
     }),
-    { name: "magic-crm-forms", version: 2 }
+    {
+      name: "magic-crm-forms",
+      version: 3,
+      // v2 → v3: backfill autoPromoteToInquiry. Default ON for seeded inquiry
+      // forms (Wedding Inquiry, General Inquiry) so they land in Main forms;
+      // any other inquiry form without an explicit value also defaults ON
+      // (matches prior behavior where every inquiry submission appeared in
+      // the leads inbox). Booking forms get false — irrelevant either way.
+      migrate: (persisted: unknown, version: number) => {
+        const state = persisted as { forms?: Form[] } | null;
+        if (!state || !Array.isArray(state.forms)) return state;
+        if (version >= 3) return state;
+        return {
+          ...state,
+          forms: state.forms.map((f) => ({
+            ...f,
+            autoPromoteToInquiry:
+              typeof f.autoPromoteToInquiry === "boolean"
+                ? f.autoPromoteToInquiry
+                : f.type === "inquiry",
+          })),
+        };
+      },
+    }
   )
 );

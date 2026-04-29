@@ -2,13 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import { Check, Loader2, Send } from "lucide-react";
-import type { FormFieldConfig } from "@/types/models";
+import { Loader2 } from "lucide-react";
+import { FormRenderer } from "@/components/forms/FormRenderer";
 import {
   resolvePublicInquiryForm,
   submitPublicInquiry,
   type PublicInquiryForm,
 } from "@/lib/public-inquiry-fallback";
+import { captureHiddenFieldValues, isFieldVisible } from "@/lib/form-logic";
 
 /** Post height to parent window so the iframe can auto-resize. */
 function postHeight() {
@@ -35,14 +36,16 @@ export default function EmbedInquiryFormPage() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // auto-resize: post height on every render and on state changes
+  // Auto-resize the iframe to match content height. ResizeObserver only
+  // fires on actual layout changes — much cheaper than re-posting on every
+  // React render (slides animations alone re-render dozens of times).
   useEffect(() => {
+    if (typeof window === "undefined") return;
     postHeight();
-  });
-  useEffect(() => {
-    const timer = setTimeout(postHeight, 100);
-    return () => clearTimeout(timer);
-  }, [submitted, error, form]);
+    const observer = new ResizeObserver(() => postHeight());
+    observer.observe(document.documentElement);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!slug) return;
@@ -75,12 +78,30 @@ export default function EmbedInquiryFormPage() {
     };
   }, [slug]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Capture URL params (utm_source etc.) into hidden fields, plus any
+  // ?fieldName=... prefill keys, once the form definition loads.
+  useEffect(() => {
+    if (!form) return;
+    const hidden = captureHiddenFieldValues(form.fields, searchParams);
+    const prefilled: Record<string, string> = { ...hidden };
+    for (const f of form.fields) {
+      if (f.type === "hidden") continue;
+      const got = searchParams?.get(f.name);
+      if (got) prefilled[f.name] = got;
+    }
+    if (Object.keys(prefilled).length > 0) {
+      setValues((prev) => ({ ...prefilled, ...prev }));
+    }
+  }, [form, searchParams]);
+
+  const handleSubmit = async () => {
     if (!form || submitting) return;
 
     for (const field of form.fields) {
-      if (field.required && !values[field.name]?.trim()) {
+      if (!field.required) continue;
+      if (field.type === "hidden") continue;
+      if (!isFieldVisible(field, values, form.fields)) continue;
+      if (!values[field.name]?.trim()) {
         setError(`${field.label} is required`);
         return;
       }
@@ -125,198 +146,27 @@ export default function EmbedInquiryFormPage() {
     );
   }
 
-  const brandColor = accentOverride
-    ? `#${accentOverride.replace("#", "")}`
-    : form.branding.primaryColor || "#34D399";
-
-  const successMessage =
-    form.branding.successMessage?.trim() ||
-    "Your inquiry has been received. We'll be in touch shortly.";
-  const description = form.branding.description?.trim() || "Fill in the form and we'll be in touch.";
-
-  if (submitted) {
-    return (
-      <div ref={containerRef} className="px-4 py-8">
-        <div className="max-w-md mx-auto text-center">
-          <div
-            className="mx-auto w-12 h-12 rounded-2xl flex items-center justify-center mb-3"
-            style={{ backgroundColor: `${brandColor}1A` }}
-          >
-            <Check className="w-6 h-6" style={{ color: brandColor }} strokeWidth={2.5} />
-          </div>
-          <h2 className="text-[16px] font-bold text-foreground mb-1">Thank you!</h2>
-          <p className="text-[12px] text-text-secondary whitespace-pre-wrap">
-            {successMessage}
-          </p>
-          <p className="text-[10px] text-text-tertiary pt-3">Powered by Magic</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div ref={containerRef} className="px-3 py-4 sm:px-4">
-      <div className="max-w-lg mx-auto">
-        <div className="bg-card-bg rounded-2xl border border-border-light overflow-hidden">
-          {/* Soft brand gradient header — matches the standalone page */}
-          <div
-            className="px-5 pt-5 pb-4"
-            style={{
-              background: `linear-gradient(180deg, ${brandColor}14 0%, transparent 100%)`,
-            }}
-          >
-            <h1 className="text-[16px] font-bold text-foreground">{form.name}</h1>
-            <p className="text-[11px] text-text-secondary mt-0.5 whitespace-pre-wrap">
-              {description}
-            </p>
-          </div>
-
-          <div className="px-5 pb-5">
-            {error && (
-              <div
-                className="mb-3 px-3 py-2 rounded-lg text-[11px]"
-                style={{
-                  backgroundColor: "#FEF2F2",
-                  border: "1px solid #FECACA",
-                  color: "#B91C1C",
-                }}
-              >
-                {error}
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-3">
-              {form.fields.map((field) => (
-                <FieldRow
-                  key={field.name}
-                  field={field}
-                  value={values[field.name] || ""}
-                  brandColor={brandColor}
-                  onChange={(v) => {
-                    setValues((p) => ({ ...p, [field.name]: v }));
-                    setError("");
-                  }}
-                />
-              ))}
-
-              {/* Honeypot — hidden from real users; bots fill it. Server drops
-                  any submission with a non-empty value. */}
-              <input
-                type="text"
-                tabIndex={-1}
-                autoComplete="off"
-                aria-hidden="true"
-                value={values.__hp || ""}
-                onChange={(e) => setValues((p) => ({ ...p, __hp: e.target.value }))}
-                style={{
-                  position: "absolute",
-                  left: "-9999px",
-                  width: 1,
-                  height: 1,
-                  opacity: 0,
-                  pointerEvents: "none",
-                }}
-              />
-
-
-              <button
-                type="submit"
-                disabled={submitting}
-                className="w-full py-2.5 rounded-xl text-white text-[13px] font-semibold flex items-center justify-center gap-2 cursor-pointer hover:opacity-95 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ backgroundColor: brandColor }}
-              >
-                {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                {submitting ? "Sending…" : "Submit Inquiry"}
-              </button>
-            </form>
-          </div>
-        </div>
-
-        <p className="text-center text-[10px] text-text-tertiary mt-3">
-          Powered by{" "}
-          <a
-            href="https://usemagic.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-text-secondary"
-          >
-            Magic
-          </a>
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function FieldRow({
-  field,
-  value,
-  brandColor,
-  onChange,
-}: {
-  field: FormFieldConfig;
-  value: string;
-  brandColor: string;
-  onChange: (v: string) => void;
-}) {
-  const ringStyle = { "--brand": brandColor } as React.CSSProperties;
-  const inputClass =
-    "w-full px-3 py-2 bg-surface border border-border-light rounded-lg text-[13px] text-foreground placeholder:text-text-tertiary outline-none transition-colors focus:border-[var(--brand)]";
-
-  const placeholder = field.placeholder ?? field.label;
-
-  return (
-    <div>
-      <label className="block text-[11px] font-semibold text-foreground mb-1">
-        {field.label}
-        {field.required && (
-          <span className="text-text-tertiary font-normal ml-0.5">*</span>
-        )}
-      </label>
-      {field.type === "textarea" ? (
-        <textarea
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          rows={3}
-          placeholder={placeholder}
-          style={ringStyle}
-          className={`${inputClass} resize-none`}
-        />
-      ) : field.type === "select" ? (
-        <select
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          style={ringStyle}
-          className={inputClass}
-        >
-          <option value="">{placeholder ? `Select ${placeholder.toLowerCase()}` : `Select ${field.label.toLowerCase()}`}</option>
-          {field.options?.map((opt) => (
-            <option key={opt} value={opt}>
-              {opt}
-            </option>
-          ))}
-        </select>
-      ) : (
-        <input
-          type={
-            field.type === "email"
-              ? "email"
-              : field.type === "phone"
-              ? "tel"
-              : field.type === "date"
-              ? "date"
-              : "text"
-          }
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          style={ringStyle}
-          className={inputClass}
-        />
-      )}
-      {field.helpText && (
-        <p className="text-[10px] text-text-tertiary mt-1 leading-snug">{field.helpText}</p>
-      )}
+    <div ref={containerRef}>
+      <FormRenderer
+        form={form}
+        values={values}
+        onChange={(name, value) => {
+          setValues((p) => ({ ...p, [name]: value }));
+          setError("");
+        }}
+        onSubmit={handleSubmit}
+        submitting={submitting}
+        submitted={submitted}
+        error={error}
+        compact
+        brandColorOverride={
+          accentOverride ? `#${accentOverride.replace("#", "")}` : undefined
+        }
+        workspaceLogo={form.workspaceLogo}
+        services={form.services}
+        showPoweredBy
+      />
     </div>
   );
 }

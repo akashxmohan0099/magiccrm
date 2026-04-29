@@ -153,7 +153,7 @@ export function HeroSplit() {
               transition={{ delay: 0.15, duration: 0.55 }}
               className="text-[13px] text-text-secondary font-medium mb-6"
             >
-              The business platform for beauty &amp; wellness
+              For beauty businesses run through DMs, bookings, and repeat clients
             </motion.div>
 
             <motion.h1
@@ -162,9 +162,9 @@ export function HeroSplit() {
               transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
               className="text-[2.1rem] sm:text-[2.75rem] lg:text-[3.25rem] font-bold mb-6 leading-[1.05]"
             >
-              <span className="gradient-text">Grow your beauty business.</span>
+              <span className="gradient-text">Turn beauty inquiries</span>
               <br />
-              <span className="text-text-secondary">Not your admin.</span>
+              <span className="text-text-secondary">into paid repeat bookings.</span>
             </motion.h1>
 
             <motion.p
@@ -173,8 +173,9 @@ export function HeroSplit() {
               transition={{ delay: 0.15, duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
               className="text-[15px] sm:text-[16.5px] text-text-secondary mb-9 max-w-lg leading-relaxed"
             >
-              Bookings, clients, payments, and smart reminders — built for
-              hair, lash, nail, and spa businesses in Australia.
+              Magic brings bookings, client messages, deposits, reminders, and
+              follow-ups into one workspace built for hair, lash, nail, makeup,
+              and spa businesses.
             </motion.p>
 
             <motion.div
@@ -188,10 +189,10 @@ export function HeroSplit() {
                 onClick={openWaitlist}
                 className="inline-flex items-center justify-center gap-2.5 rounded-full bg-foreground px-9 py-3.5 text-[15px] font-semibold tracking-[-0.01em] text-background transition-all hover:opacity-90 hover:gap-3"
               >
-                Join the waitlist <ArrowRight className="w-5 h-5" />
+                Get early access <ArrowRight className="w-5 h-5" />
               </button>
               <p className="text-[13.5px] text-text-tertiary">
-                Be first in line when we open seats.
+                Early access for solo artists and small beauty teams.
               </p>
             </motion.div>
           </div>

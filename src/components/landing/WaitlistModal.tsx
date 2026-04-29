@@ -67,10 +67,11 @@ export function WaitlistModal() {
                   id="waitlist-modal-title"
                   className="text-[1.75rem] sm:text-[2rem] font-bold text-foreground leading-[1.05] mb-3"
                 >
-                  Join the waitlist.
+                  Get early access to Magic.
                 </h2>
                 <p className="text-[14px] text-text-secondary max-w-md mx-auto">
-                  Be first in line when we open seats. Takes under a minute.
+                  Tell us what kind of beauty business you run. We&rsquo;ll invite
+                  early users as seats open.
                 </p>
               </div>
               <WaitlistForm />

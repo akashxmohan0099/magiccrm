@@ -131,3 +131,110 @@ export function buildRebookingNudgeEmail(
     ),
   };
 }
+
+// ---------------------------------------------------------------------------
+// Inquiry confirmation templates (sent after a public form submission)
+// ---------------------------------------------------------------------------
+
+export interface InquiryEmailContext {
+  clientName: string;
+  businessName: string;
+  serviceInterest?: string;
+  eventType?: string;
+  message?: string;
+}
+
+const DEFAULT_AUTO_REPLY_BODY =
+  "Hi {{name}},\n\nThanks for reaching out to {{businessName}} — we've received your inquiry and will be in touch shortly.\n\nIf you need anything urgent in the meantime, just reply to this email.";
+
+const DEFAULT_AUTO_REPLY_SMS =
+  "Hi {{name}}, thanks for your inquiry with {{businessName}}. We'll be in touch shortly!";
+
+/** Plain-text → HTML paragraphs, preserving blank lines between blocks. */
+function textToHtmlParagraphs(text: string): string {
+  return text
+    .split(/\n{2,}/)
+    .map((block) =>
+      `<p style="margin:0 0 12px;font-size:14px;color:#333;line-height:1.55;">${block
+        .replace(/\n/g, "<br/>")
+        .trim()}</p>`,
+    )
+    .join("");
+}
+
+export function buildInquiryAutoReplyEmail(
+  ctx: InquiryEmailContext,
+  template?: { subject?: string; body?: string },
+): { subject: string; html: string; text: string } {
+  const subject = (template?.subject?.trim() || `We received your inquiry — ${ctx.businessName}`);
+  const bodyText = interpolateTemplate(template?.body?.trim() || DEFAULT_AUTO_REPLY_BODY, {
+    name: ctx.clientName,
+    businessName: ctx.businessName,
+    serviceInterest: ctx.serviceInterest,
+    eventType: ctx.eventType,
+  });
+  return {
+    subject: interpolateTemplate(subject, {
+      name: ctx.clientName,
+      businessName: ctx.businessName,
+      serviceInterest: ctx.serviceInterest,
+      eventType: ctx.eventType,
+    }),
+    html: wrapInEmailLayout(textToHtmlParagraphs(bodyText), ctx.businessName),
+    text: bodyText,
+  };
+}
+
+export function buildInquiryAutoReplySms(
+  ctx: InquiryEmailContext,
+  template?: { body?: string },
+): string {
+  return interpolateTemplate(template?.body?.trim() || DEFAULT_AUTO_REPLY_SMS, {
+    name: ctx.clientName,
+    businessName: ctx.businessName,
+    serviceInterest: ctx.serviceInterest,
+    eventType: ctx.eventType,
+  });
+}
+
+export function buildOwnerInquiryNotifyEmail(ctx: {
+  businessName: string;
+  formName: string;
+  contactName: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  serviceInterest?: string;
+  eventType?: string;
+  message?: string;
+  dashboardUrl?: string;
+}): { subject: string; html: string } {
+  const rows: string[] = [];
+  const row = (label: string, value?: string) =>
+    value
+      ? `<p style="margin:0 0 8px;font-size:13px;color:#333;"><strong style="color:#111;">${label}:</strong> ${value}</p>`
+      : "";
+  rows.push(row("From", ctx.contactName));
+  rows.push(row("Email", ctx.contactEmail));
+  rows.push(row("Phone", ctx.contactPhone));
+  rows.push(row("Service interest", ctx.serviceInterest));
+  rows.push(row("Event type", ctx.eventType));
+  if (ctx.message) {
+    rows.push(
+      `<p style="margin:8px 0 0;font-size:13px;color:#111;"><strong>Message</strong></p>
+       <p style="margin:4px 0 0;font-size:13px;color:#333;line-height:1.55;white-space:pre-wrap;">${ctx.message}</p>`,
+    );
+  }
+  const cta = ctx.dashboardUrl
+    ? `<p style="margin:16px 0 0;"><a href="${ctx.dashboardUrl}" style="color:#111;font-size:13px;font-weight:600;text-decoration:underline;">Open in Magic →</a></p>`
+    : "";
+
+  return {
+    subject: `New inquiry — ${ctx.formName}`,
+    html: wrapInEmailLayout(
+      `<p style="margin:0 0 12px;font-size:16px;font-weight:700;color:#111;">New inquiry from ${ctx.contactName}</p>
+       ${rows.join("")}
+       ${cta}`,
+      ctx.businessName,
+    ),
+  };
+}

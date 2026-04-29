@@ -100,8 +100,8 @@ export function SiteHeader() {
               onClick={openWaitlist}
               className="sm:ml-2 inline-flex items-center gap-1.5 rounded-full bg-foreground px-3.5 sm:px-5 py-2 sm:py-2.5 text-[13px] sm:text-[14px] font-semibold tracking-[-0.01em] text-background transition-all hover:opacity-90 hover:gap-2"
             >
-              <span className="hidden sm:inline">Join the waitlist</span>
-              <span className="sm:hidden">Join waitlist</span>
+              <span className="hidden sm:inline">Get early access</span>
+              <span className="sm:hidden">Early access</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>

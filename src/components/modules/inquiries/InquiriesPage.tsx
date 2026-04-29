@@ -7,18 +7,65 @@ import { useInquiriesStore } from "@/store/inquiries";
 import { useBookingsStore } from "@/store/bookings";
 import { useCommunicationStore } from "@/store/communication";
 import { useFormsStore } from "@/store/forms";
+import { useFormResponsesStore } from "@/store/form-responses";
+import { useServicesStore } from "@/store/services";
 import { Inquiry, InquiryStatus } from "@/types/models";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { SearchInput } from "@/components/ui/SearchInput";
-import { Column } from "@/components/ui/DataTable";
+import { DataTable, Column } from "@/components/ui/DataTable";
 import { SlideOver } from "@/components/ui/SlideOver";
 import { toast } from "@/components/ui/Toast";
 import { BookingForm } from "@/components/modules/bookings/BookingForm";
 import { useAuth } from "@/hooks/useAuth";
 import { useCreatePayment } from "@/hooks/useCreatePayment";
-import { GroupedInquiries, inquiryFieldValue } from "./GroupedInquiries";
 import { LogInquiryForm } from "./LogInquiryForm";
+import { InlineDropdown } from "@/components/ui/InlineDropdown";
+
+// Map a form-field name to an Inquiry value. Prefers the structured
+// submissionValues blob, falls back to the legacy structured columns.
+function inquiryFieldValue(inquiry: Inquiry, fieldName: string): string {
+  const fromBlob = inquiry.submissionValues?.[fieldName];
+  if (fromBlob != null && fromBlob !== "") return fromBlob;
+  switch (fieldName) {
+    case "name":
+    case "full_name":
+    case "fullName":
+    case "client_name":
+      return inquiry.name || "";
+    case "email":
+      return inquiry.email || "";
+    case "phone":
+    case "mobile":
+    case "contact_phone":
+      return inquiry.phone || "";
+    case "message":
+    case "your_message":
+    case "details":
+      return inquiry.message || "";
+    case "service_interest":
+    case "service_you_re_interested_in":
+      return inquiry.serviceInterest || "";
+    case "event_type":
+      return inquiry.eventType || "";
+    case "date_range":
+    case "wedding_date___date_range":
+      return inquiry.dateRange || "";
+    default:
+      return "";
+  }
+}
+
+// Turn a snake_case form-field name into a Capital Case label so
+// orphaned submission values (left over after a form edit) still render
+// with a readable heading.
+function humaniseKey(key: string): string {
+  return key
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 const STATUS_OPTIONS: { value: InquiryStatus; label: string }[] = [
   { value: "new", label: "New" },
@@ -32,6 +79,7 @@ export function InquiriesPage() {
   const { bookings } = useBookingsStore();
   const { conversations } = useCommunicationStore();
   const { forms } = useFormsStore();
+  const { formResponses } = useFormResponsesStore();
   const { workspaceId } = useAuth();
   const { createPayment } = useCreatePayment();
   const bookingsCountRef = useRef(0);
@@ -109,19 +157,44 @@ export function InquiriesPage() {
     closed:      { dot: "bg-gray-400",    bg: "bg-gray-100",   text: "text-gray-600",    label: "Closed" },
   };
 
-  // Trailing columns shared across every section (form-backed or not)
-  // — Source/Received/Status are always last.
-  const trailingColumns: Column<Inquiry>[] = [
+  const columns: Column<Inquiry>[] = [
+    {
+      key: "name",
+      label: "Name",
+      sortable: true,
+      removable: false,
+      render: (i) => (
+        <span className="text-[13px] font-medium text-foreground">{i.name}</span>
+      ),
+    },
+    {
+      key: "interest",
+      label: "Interest",
+      sortable: true,
+      render: (i) => <InlineInterestCell inquiry={i} />,
+    },
     {
       key: "source",
       label: "Source",
       sortable: true,
       render: (i) => {
         const formName = i.formId ? formMap.get(i.formId)?.name : null;
+        const isForm = i.source === "form" && !!i.formId;
+        const isManual = i.source === "form" && !i.formId;
         return (
           <span className="flex items-center gap-1.5 text-[12px] text-text-secondary">
-            {i.source === "comms" ? <MessageCircle className="w-3.5 h-3.5" /> : <Inbox className="w-3.5 h-3.5" />}
-            {i.source === "comms" ? "Conversation" : formName || "Form"}
+            {i.source === "comms" ? (
+              <MessageCircle className="w-3.5 h-3.5" />
+            ) : (
+              <Inbox className="w-3.5 h-3.5" />
+            )}
+            {i.source === "comms"
+              ? "Conversation"
+              : isManual
+                ? "Manual"
+                : isForm
+                  ? `Form: ${formName ?? "Unknown"}`
+                  : "Form"}
           </span>
         );
       },
@@ -140,60 +213,25 @@ export function InquiriesPage() {
       key: "status",
       label: "Status",
       sortable: true,
-      render: (i) => {
-        const c = STATUS_PILL[i.status] ?? STATUS_PILL.new;
-        return (
-          <span
-            className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full ${c.bg} ${c.text} text-[11px] font-semibold`}
-          >
-            <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
-            {c.label}
-          </span>
-        );
-      },
+      render: (i) => <InlineStatusCell inquiry={i} pillStyles={STATUS_PILL} />,
     },
-  ];
-
-  // Default columns for non-form sections (Conversations / Unlinked).
-  // Form-backed sections build their own column list from form.fields.
-  const defaultColumns: Column<Inquiry>[] = [
-    {
-      key: "name",
-      label: "Name",
-      sortable: true,
-      removable: false,
-      render: (i) => (
-        <span className="text-[13px] font-medium text-foreground">{i.name}</span>
-      ),
-    },
-    {
-      key: "interest",
-      label: "Interest",
-      sortable: true,
-      render: (i) => (
-        <span className="text-[13px] text-text-secondary">
-          {i.serviceInterest || i.eventType || "—"}
-        </span>
-      ),
-    },
-    ...trailingColumns,
   ];
 
   return (
     <div>
       <PageHeader
-        title="Inquiries"
-        description="Inbound requests from forms and conversations."
+        title="Leads"
+        description="Your sales pipeline — leads from forms, conversations, and manual logs."
         actions={
           <Button variant="primary" size="sm" onClick={() => setNewInquiryOpen(true)}>
             <Plus className="w-4 h-4 mr-1.5" />
-            Log Inquiry
+            Log Lead
           </Button>
         }
       />
 
       <div className="flex items-center gap-3 mb-6">
-        <SearchInput value={search} onChange={setSearch} placeholder="Search inquiries..." />
+        <SearchInput value={search} onChange={setSearch} placeholder="Search leads..." />
         <div className="flex items-center bg-surface rounded-lg p-1 border border-border-light">
           <button
             onClick={() => setStatusFilter("all")}
@@ -224,10 +262,10 @@ export function InquiriesPage() {
           </div>
           {inquiries.length === 0 ? (
             <>
-              <h3 className="text-[15px] font-bold text-foreground mb-1">No inquiries yet</h3>
+              <h3 className="text-[15px] font-bold text-foreground mb-1">No leads yet</h3>
               <p className="text-[13px] text-text-secondary mb-5">
                 {forms.length === 0
-                  ? "Create an inquiry form to start collecting leads from your website or social bio."
+                  ? "Create a form to start collecting leads from your website or social bio."
                   : "Share your form's public URL — submissions will appear here in real time."}
               </p>
               <Button
@@ -239,14 +277,14 @@ export function InquiriesPage() {
                     : setNewInquiryOpen(true)
                 }
               >
-                {forms.length === 0 ? "Create a form" : "Log an inquiry manually"}
+                {forms.length === 0 ? "Create a form" : "Log a lead manually"}
               </Button>
             </>
           ) : (
             <>
               <h3 className="text-[15px] font-bold text-foreground mb-1">Nothing matches</h3>
               <p className="text-[13px] text-text-secondary mb-5">
-                No inquiries match your current filters.
+                No leads match your current filters.
               </p>
               <Button
                 variant="ghost"
@@ -262,13 +300,15 @@ export function InquiriesPage() {
           )}
         </div>
       ) : (
-        <GroupedInquiries
-          inquiries={filtered}
-          forms={forms}
-          defaultColumns={defaultColumns}
-          trailingColumns={trailingColumns}
-          onRowClick={(i) => setSelectedId(i.id)}
-        />
+        <div className="bg-card-bg border border-border-light rounded-xl overflow-hidden">
+          <DataTable<Inquiry>
+            storageKey="magic-crm-inquiries"
+            columns={columns}
+            data={filtered}
+            keyExtractor={(i) => i.id}
+            onRowClick={(i) => setSelectedId(i.id)}
+          />
+        </div>
       )}
 
       {/* Detail Sidebar */}
@@ -334,6 +374,14 @@ export function InquiriesPage() {
                 Falls back to the structured columns for legacy inquiries. */}
             {(() => {
               const sourceForm = selected.formId ? formMap.get(selected.formId) : null;
+              const linkedResponse = selected.formResponseId
+                ? formResponses.find((r) => r.id === selected.formResponseId)
+                : null;
+              // Prefer the linked form_response's values; fall back to legacy
+              // inquiry.submissionValues so older rows still render.
+              const enriched: Inquiry = linkedResponse
+                ? { ...selected, submissionValues: linkedResponse.values }
+                : selected;
 
               const skipKeys = new Set([
                 "name", "full_name", "fullName", "client_name",
@@ -343,22 +391,40 @@ export function InquiriesPage() {
               ]);
 
               if (sourceForm) {
-                const rows = sourceForm.fields
+                const fieldRows = sourceForm.fields
                   .filter((f) => !skipKeys.has(f.name))
                   .map((f) => ({
                     label: f.label,
-                    value: inquiryFieldValue(selected, f.name),
+                    value: inquiryFieldValue(enriched, f.name),
                     isLong: f.type === "textarea",
                   }))
                   .filter((r) => r.value);
 
-                if (rows.length === 0) return null;
+                // Catch values from submissions made before the form was
+                // edited — fields removed from the form would otherwise be
+                // dropped silently. Render them with humanised keys.
+                const knownNames = new Set([
+                  ...sourceForm.fields.map((f) => f.name),
+                  ...skipKeys,
+                ]);
+                const strayRows = Object.entries(enriched.submissionValues ?? {})
+                  .filter(([key, value]) => value && !knownNames.has(key))
+                  .map(([key, value]) => ({
+                    label: humaniseKey(key),
+                    value,
+                    isLong: value.length > 80 || value.includes("\n"),
+                  }));
+
+                const rows = [...fieldRows, ...strayRows];
+
+                if (rows.length === 0 && !selected.serviceInterest) return null;
 
                 return (
                   <div className="bg-surface rounded-lg p-4 border border-border-light space-y-3">
                     <h4 className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider">
                       Submission
                     </h4>
+                    <InterestRow inquiry={selected} />
                     {rows.map((r, i) =>
                       r.isLong ? (
                         <div key={i} className="space-y-1">
@@ -384,12 +450,7 @@ export function InquiriesPage() {
               return (
                 <div className="bg-surface rounded-lg p-4 border border-border-light space-y-3">
                   <h4 className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider">Details</h4>
-                  {selected.serviceInterest && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-[12px] text-text-tertiary">Interest</span>
-                      <span className="text-[13px] text-foreground">{selected.serviceInterest}</span>
-                    </div>
-                  )}
+                  <InterestRow inquiry={selected} />
                   {selected.eventType && (
                     <div className="flex items-center justify-between">
                       <span className="text-[12px] text-text-tertiary">Event</span>
@@ -595,9 +656,218 @@ function NotesEditor({
         onChange={(e) => setValue(e.target.value)}
         onBlur={flushOnBlur}
         rows={3}
-        placeholder="Anything you want to remember about this inquiry — only your team will see this."
+        placeholder="Anything you want to remember about this lead — only your team will see this."
         className="w-full px-3 py-2 bg-card-bg border border-border-light rounded-lg text-[13px] text-foreground placeholder:text-text-tertiary outline-none focus:border-foreground/30 transition-colors resize-y"
       />
+    </div>
+  );
+}
+
+// Inline-editable Interest cell — click to pick a service from a styled
+// dropdown, or pick "Custom..." to type a one-off value. stopPropagation
+// in the dropdown keeps the row's slide-over from opening when the user
+// is just changing the value.
+function InlineInterestCell({ inquiry }: { inquiry: Inquiry }) {
+  const services = useServicesStore((s) => s.services);
+  const { updateInquiry } = useInquiriesStore();
+  const { workspaceId } = useAuth();
+  const [customMode, setCustomMode] = useState(false);
+  const [customValue, setCustomValue] = useState("");
+
+  const options = useMemo(() => {
+    // Show every service in the store. The Services page has no UI to
+    // toggle `enabled`, and the DB column is nullable so legacy rows may
+    // come back with null — filtering on it just hides services from
+    // operators with no way to fix it.
+    const all = [...services]
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map((s) => ({ value: s.name, label: s.name }));
+    const current = inquiry.serviceInterest || "";
+    const isCustom =
+      current && !all.some((o) => o.value === current);
+    return [
+      ...all,
+      ...(isCustom ? [{ value: current, label: current, suffix: "(custom)" }] : []),
+    ];
+  }, [services, inquiry.serviceInterest]);
+
+  const save = (next: string) => {
+    updateInquiry(
+      inquiry.id,
+      { serviceInterest: next || undefined },
+      workspaceId || undefined,
+    );
+  };
+
+  if (customMode) {
+    return (
+      <input
+        autoFocus
+        value={customValue}
+        onChange={(e) => setCustomValue(e.target.value)}
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => {
+          e.stopPropagation();
+          if (e.key === "Enter") {
+            save(customValue.trim());
+            setCustomMode(false);
+          } else if (e.key === "Escape") {
+            setCustomMode(false);
+          }
+        }}
+        onBlur={() => {
+          if (customValue.trim()) save(customValue.trim());
+          setCustomMode(false);
+        }}
+        placeholder="Type a custom interest…"
+        className="w-full max-w-[220px] px-2 py-1 bg-card-bg border border-primary/40 rounded-md text-[13px] text-foreground outline-none focus:border-primary"
+      />
+    );
+  }
+
+  const display = inquiry.serviceInterest || inquiry.eventType || "—";
+
+  return (
+    <InlineDropdown
+      ariaLabel="Edit interest"
+      value={inquiry.serviceInterest || ""}
+      options={options}
+      placeholder="— Not set —"
+      menuHeading={services.length > 0 ? "Services" : undefined}
+      onChange={save}
+      actionItem={{
+        label: "Custom…",
+        onClick: () => {
+          setCustomValue(inquiry.serviceInterest && !options.some((o) => o.value === inquiry.serviceInterest) ? inquiry.serviceInterest : "");
+          setCustomMode(true);
+        },
+      }}
+      triggerClassName="rounded px-1 -mx-1 py-0.5 hover:bg-surface/60 transition-colors"
+    >
+      <span className="text-[13px] text-text-secondary">{display}</span>
+    </InlineDropdown>
+  );
+}
+
+// Inline-editable Status cell — pill stays visible as the trigger; the
+// dropdown shows colored dots for each status.
+function InlineStatusCell({
+  inquiry,
+  pillStyles,
+}: {
+  inquiry: Inquiry;
+  pillStyles: Record<InquiryStatus, { dot: string; bg: string; text: string; label: string }>;
+}) {
+  const { updateInquiry } = useInquiriesStore();
+  const { workspaceId } = useAuth();
+  const c = pillStyles[inquiry.status] ?? pillStyles.new;
+  const allStatuses: InquiryStatus[] = ["new", "in_progress", "converted", "closed"];
+  const options = allStatuses.map((s) => ({
+    value: s,
+    label: pillStyles[s].label,
+    dot: pillStyles[s].dot,
+  }));
+
+  return (
+    <InlineDropdown
+      ariaLabel="Edit status"
+      value={inquiry.status}
+      options={options}
+      onChange={(next) =>
+        updateInquiry(
+          inquiry.id,
+          { status: next as InquiryStatus },
+          workspaceId || undefined,
+        )
+      }
+    >
+      <span
+        className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full ${c.bg} ${c.text} text-[11px] font-semibold`}
+      >
+        <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
+        {c.label}
+      </span>
+    </InlineDropdown>
+  );
+}
+
+// Interest row — editable services dropdown for the sidebar. Mirrors
+// InlineInterestCell so the table and detail panel stay in sync.
+function InterestRow({ inquiry }: { inquiry: Inquiry }) {
+  const services = useServicesStore((s) => s.services);
+  const { updateInquiry } = useInquiriesStore();
+  const { workspaceId } = useAuth();
+  const [customMode, setCustomMode] = useState(false);
+  const [customValue, setCustomValue] = useState("");
+
+  const options = useMemo(() => {
+    const all = [...services]
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map((s) => ({ value: s.name, label: s.name }));
+    const current = inquiry.serviceInterest || "";
+    const isCustom = current && !all.some((o) => o.value === current);
+    return [
+      ...all,
+      ...(isCustom ? [{ value: current, label: current, suffix: "(custom)" }] : []),
+    ];
+  }, [services, inquiry.serviceInterest]);
+
+  const save = (next: string) => {
+    updateInquiry(
+      inquiry.id,
+      { serviceInterest: next || undefined },
+      workspaceId || undefined,
+    );
+  };
+
+  const current = inquiry.serviceInterest || "";
+
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-[12px] text-text-tertiary flex-shrink-0">Interest</span>
+      {customMode ? (
+        <input
+          autoFocus
+          value={customValue}
+          onChange={(e) => setCustomValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              save(customValue.trim());
+              setCustomMode(false);
+            } else if (e.key === "Escape") {
+              setCustomMode(false);
+            }
+          }}
+          onBlur={() => {
+            if (customValue.trim()) save(customValue.trim());
+            setCustomMode(false);
+          }}
+          placeholder="Type a custom interest…"
+          className="flex-1 max-w-[60%] px-2.5 py-1.5 bg-card-bg border border-primary/40 rounded-lg text-[13px] text-foreground outline-none focus:border-primary"
+        />
+      ) : (
+        <InlineDropdown
+          ariaLabel="Edit interest"
+          align="end"
+          value={current}
+          options={options}
+          placeholder="— Not set —"
+          menuHeading={services.length > 0 ? "Services" : undefined}
+          onChange={save}
+          actionItem={{
+            label: "Custom…",
+            onClick: () => {
+              setCustomValue(current && !options.some((o) => o.value === current) ? current : "");
+              setCustomMode(true);
+            },
+          }}
+          triggerClassName="px-2.5 py-1.5 bg-card-bg border border-border-light rounded-lg hover:border-foreground/30 transition-colors"
+        >
+          <span className="text-[13px] text-foreground">
+            {current || <span className="text-text-tertiary italic">— Not set —</span>}
+          </span>
+        </InlineDropdown>
+      )}
     </div>
   );
 }

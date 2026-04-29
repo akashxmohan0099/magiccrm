@@ -1,17 +1,34 @@
 "use client";
 
-import { useState, useMemo, useRef, useCallback } from "react";
-import { ChevronLeft, ChevronRight, Plus, Clock } from "lucide-react";
-import { Booking } from "@/types/models";
+import { useState, useMemo, useRef, useCallback, useEffect } from "react";
+import { ChevronLeft, ChevronRight, Plus, Clock, ChevronRight as ChevronRightIcon } from "lucide-react";
+import { Booking, CalendarBlock, BlockKind } from "@/types/models";
 import { useClientsStore } from "@/store/clients";
 import { useServicesStore } from "@/store/services";
+import { useCalendarBlocksStore } from "@/store/calendar-blocks";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { QUICK_BLOCK_KINDS, REASON_BLOCK_KINDS, getBlockMeta } from "@/lib/blocks-meta";
 
 interface CalendarViewProps {
   bookings: Booking[];
   onDateSelect: (date: string) => void;
   onBookingClick: (booking: Booking) => void;
   onTimeSelect?: (date: string, startTime: string, endTime: string) => void;
+  // Quick-create a block of the given kind. If openForm is true, the parent
+  // should open the BlockForm so the user can fill out reason/recurrence —
+  // used for "Blocked", "Unavailable", and "More options".
+  onBlockCreate?: (
+    date: string,
+    startTime: string,
+    endTime: string,
+    kind: BlockKind,
+    openForm: boolean
+  ) => void;
+  onBlockClick?: (block: CalendarBlock) => void;
+  // When true, keep the drag-selection ghost visible (e.g. while a booking
+  // or block form is open). Parent should flip this back to false once the
+  // form is dismissed so the ghost clears.
+  selectionVisible?: boolean;
 }
 
 type CalendarMode = "today" | "week" | "month";
@@ -79,9 +96,18 @@ function getBookingStyle(b: Booking): string {
   return STATUS_STYLES[b.status] || STATUS_STYLES.confirmed;
 }
 
-export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSelect }: CalendarViewProps) {
+export function CalendarView({
+  bookings,
+  onDateSelect,
+  onBookingClick,
+  onTimeSelect,
+  onBlockCreate,
+  onBlockClick,
+  selectionVisible = false,
+}: CalendarViewProps) {
   const { clients } = useClientsStore();
   const { services } = useServicesStore();
+  const { blocks } = useCalendarBlocksStore();
   const [mode, setMode] = useState<CalendarMode>("today");
   const [currentDate, setCurrentDate] = useState(() => new Date());
 
@@ -97,6 +123,20 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
   const weekGridRef = useRef<HTMLDivElement>(null);
 
   const todayKey = formatDateKey(new Date());
+
+  // When the parent form closes (selectionVisible flips false), clear the
+  // drag selection so the ghost block disappears with it.
+  const prevSelectionVisible = useRef(selectionVisible);
+  useEffect(() => {
+    if (prevSelectionVisible.current && !selectionVisible) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setDragDateKey("");
+      setDragDayIdx(-1);
+      setDragStartMin(0);
+      setDragEndMin(0);
+    }
+    prevSelectionVisible.current = selectionVisible;
+  }, [selectionVisible]);
 
   const clientMap = useMemo(() => {
     const map: Record<string, string> = {};
@@ -130,6 +170,23 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
     }));
     return map;
   }, [bookings]);
+
+  const blocksByDate = useMemo(() => {
+    const map: Record<string, CalendarBlock[]> = {};
+    blocks.forEach((b) => {
+      if (!map[b.date]) map[b.date] = [];
+      map[b.date].push(b);
+    });
+    Object.values(map).forEach((arr) => arr.sort((a, b) => {
+      return timeToMinutes(a.startTime) - timeToMinutes(b.startTime);
+    }));
+    return map;
+  }, [blocks]);
+
+  const getBlockLabel = useCallback((b: CalendarBlock): string => {
+    if (b.label) return b.label;
+    return getBlockMeta(b.kind).label;
+  }, []);
 
   const prev = () => {
     const d = new Date(currentDate);
@@ -214,6 +271,15 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
     setShowQuickAdd(false);
   }, [currentDate, dragDateKey, dragStartMin, dragEndMin, onTimeSelect, onDateSelect]);
 
+  const createBlockFromDrag = useCallback((kind: BlockKind, openForm: boolean) => {
+    if (!onBlockCreate) return;
+    const dateKey = dragDateKey || formatDateKey(currentDate);
+    const start = Math.min(dragStartMin, dragEndMin);
+    const end = Math.max(dragStartMin, dragEndMin);
+    onBlockCreate(dateKey, minutesToTime(start), minutesToTime(end), kind, openForm);
+    setShowQuickAdd(false);
+  }, [currentDate, dragDateKey, dragStartMin, dragEndMin, onBlockCreate]);
+
   // Booking preview popup
   const [previewBooking, setPreviewBooking] = useState<Booking | null>(null);
   const [previewPos, setPreviewPos] = useState({ x: 0, y: 0 });
@@ -261,6 +327,7 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
         {mode === "today" && (() => {
           const dateKey = formatDateKey(currentDate);
           const dayBookings = bookingsByDate[dateKey] || [];
+          const dayBlocks = blocksByDate[dateKey] || [];
           const isToday = dateKey === todayKey;
           const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
 
@@ -300,7 +367,7 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
                 )}
 
                 {/* Drag ghost / selection block */}
-                {(isDragging || showQuickAdd) && (
+                {(isDragging || showQuickAdd || selectionVisible) && dragDateKey === dateKey && (
                   <div
                     className={`absolute left-[56px] sm:left-[72px] right-3 rounded-lg z-10 pointer-events-none flex items-center justify-center ${
                       isDragging
@@ -314,6 +381,42 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
                     </span>
                   </div>
                 )}
+
+                {/* Calendar blocks (breaks, lunch, blocked, etc.) */}
+                {dayBlocks.map((b) => {
+                  const startMin = timeToMinutes(b.startTime);
+                  const endMin = timeToMinutes(b.endTime);
+                  const top = ((startMin - MIN_MINUTES) / 60) * PX_PER_HOUR;
+                  const height = Math.max(((endMin - startMin) / 60) * PX_PER_HOUR, 24);
+                  const meta = getBlockMeta(b.kind);
+                  const Icon = meta.Icon;
+                  const labelText = getBlockLabel(b);
+                  return (
+                    <button
+                      key={b.id}
+                      onClick={(e) => { e.stopPropagation(); onBlockClick?.(b); }}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      className={`absolute left-[56px] sm:left-[72px] right-3 rounded-lg border px-3 py-1.5 cursor-pointer hover:shadow-md transition-shadow z-[4] ${meta.className}`}
+                      style={{
+                        top: Math.max(top, 0),
+                        height,
+                        backgroundImage:
+                          "repeating-linear-gradient(135deg, rgba(0,0,0,0.04) 0 6px, transparent 6px 12px)",
+                      }}
+                      title={b.reason ? `${labelText} — ${b.reason}` : labelText}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <Icon className="w-3.5 h-3.5 flex-shrink-0" />
+                        <p className="text-xs font-semibold truncate">{labelText}</p>
+                      </div>
+                      <p className="text-[11px] opacity-75 truncate">
+                        {formatTimeDisplay(b.startTime)} – {formatTimeDisplay(b.endTime)}
+                        {b.reason && !b.isPrivate ? ` · ${b.reason}` : ""}
+                        {b.isRecurring ? " · repeats" : ""}
+                      </p>
+                    </button>
+                  );
+                })}
 
                 {/* Booking blocks + buffer zones */}
                 {dayBookings.filter(b => b.status !== "cancelled").map((b) => {
@@ -430,7 +533,7 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
                 ))}
 
                 {/* Week drag ghost */}
-                {(isDragging || showQuickAdd) && dragDayIdx >= 0 && (
+                {(isDragging || showQuickAdd || selectionVisible) && dragDayIdx >= 0 && (
                   <div
                     className={`absolute rounded-lg z-10 pointer-events-none flex items-center justify-center text-[10px] font-medium text-primary ${
                       isDragging ? "bg-primary/15 border-2 border-dashed border-primary/40" : "bg-primary/10 border-2 border-primary/30"
@@ -445,6 +548,41 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
                     {minutesToTime(Math.min(dragStartMin, dragEndMin))} — {minutesToTime(Math.max(dragStartMin, dragEndMin))}
                   </div>
                 )}
+
+                {/* Calendar blocks */}
+                {weekDays.map((d, dayIdx) => {
+                  const dk = formatDateKey(d);
+                  const dayBlocks = blocksByDate[dk] || [];
+                  return dayBlocks.map((b) => {
+                    const startMin = timeToMinutes(b.startTime);
+                    const endMin = timeToMinutes(b.endTime);
+                    const top = ((startMin - MIN_MINUTES) / 60) * WEEK_PX_PER_HOUR;
+                    const height = Math.max(((endMin - startMin) / 60) * WEEK_PX_PER_HOUR, 18);
+                    const meta = getBlockMeta(b.kind);
+                    const Icon = meta.Icon;
+                    return (
+                      <button
+                        key={b.id}
+                        onClick={(e) => { e.stopPropagation(); onBlockClick?.(b); }}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        className={`absolute rounded border px-1 py-0.5 cursor-pointer text-left overflow-hidden hover:shadow-sm transition-shadow z-[1] ${meta.className}`}
+                        style={{
+                          top: Math.max(top, 0), height,
+                          left: `calc(48px + (${dayIdx} * (100% - 48px) / 7) + 2px)`,
+                          width: `calc((100% - 48px) / 7 - 4px)`,
+                          backgroundImage:
+                            "repeating-linear-gradient(135deg, rgba(0,0,0,0.04) 0 6px, transparent 6px 12px)",
+                        }}
+                        title={b.reason ? `${getBlockLabel(b)} — ${b.reason}` : getBlockLabel(b)}
+                      >
+                        <p className="text-[10px] font-semibold truncate flex items-center gap-1">
+                          <Icon className="w-3 h-3 flex-shrink-0" />
+                          {getBlockLabel(b)}
+                        </p>
+                      </button>
+                    );
+                  });
+                })}
 
                 {/* Booking blocks */}
                 {weekDays.map((d, dayIdx) => {
@@ -504,17 +642,41 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
                 <div className="grid grid-cols-7">
                   {cells.map(({ day, dateKey, inMonth }, idx) => {
                     const dayBookings = bookingsByDate[dateKey] || [];
+                    const dayBlocks = blocksByDate[dateKey] || [];
                     const isToday = dateKey === todayKey;
+                    const items: { id: string; type: "booking" | "block"; sortMin: number; render: React.ReactNode }[] = [];
+                    dayBookings.forEach((b) => items.push({
+                      id: `booking-${b.id}`,
+                      type: "booking",
+                      sortMin: timeToMinutes(b.startAt),
+                      render: (
+                        <div key={`booking-${b.id}`} className={`text-[10px] px-1.5 py-0.5 rounded truncate ${getBookingStyle(b)}`}>
+                          {`${formatTimeDisplay(b.startAt)} ${getBookingLabel(b)}`}
+                        </div>
+                      ),
+                    }));
+                    dayBlocks.forEach((b) => {
+                      const m = getBlockMeta(b.kind);
+                      const Icon = m.Icon;
+                      items.push({
+                        id: `block-${b.id}`,
+                        type: "block",
+                        sortMin: timeToMinutes(b.startTime),
+                        render: (
+                          <div key={`block-${b.id}`} className={`text-[10px] px-1.5 py-0.5 rounded truncate flex items-center gap-1 ${m.className}`}>
+                            <Icon className="w-2.5 h-2.5 flex-shrink-0" />
+                            <span className="truncate">{getBlockLabel(b)}</span>
+                          </div>
+                        ),
+                      });
+                    });
+                    items.sort((a, b) => a.sortMin - b.sortMin);
                     return (
                       <button key={idx} onClick={() => { setCurrentDate(new Date(dateKey + "T00:00:00")); setMode("today"); }} className={`relative min-h-[80px] p-1.5 text-left border-b border-r border-border-light transition-colors cursor-pointer ${!inMonth ? "bg-surface/30" : "hover:bg-surface/50"}`}>
                         <span className={`text-xs font-medium inline-flex items-center justify-center w-6 h-6 rounded-full ${isToday ? "bg-foreground text-background" : inMonth ? "text-foreground" : "text-text-tertiary/40"}`}>{day}</span>
                         <div className="mt-0.5 space-y-0.5">
-                          {dayBookings.slice(0, 2).map((b) => (
-                            <div key={b.id} className={`text-[10px] px-1.5 py-0.5 rounded truncate ${getBookingStyle(b)}`}>
-                              {`${formatTimeDisplay(b.startAt)} ${getBookingLabel(b)}`}
-                            </div>
-                          ))}
-                          {dayBookings.length > 2 && <p className="text-[10px] text-text-tertiary px-1.5">+{dayBookings.length - 2} more</p>}
+                          {items.slice(0, 2).map((it) => it.render)}
+                          {items.length > 2 && <p className="text-[10px] text-text-tertiary px-1.5">+{items.length - 2} more</p>}
                         </div>
                       </button>
                     );
@@ -531,19 +693,68 @@ export function CalendarView({ bookings, onDateSelect, onBookingClick, onTimeSel
         <>
           <div className="fixed inset-0 z-[90]" onClick={() => setShowQuickAdd(false)} />
           <div
-            className="fixed z-[95] bg-card-bg rounded-xl border border-border-light shadow-xl p-1.5 min-w-[180px]"
-            style={{ left: Math.min(quickAddPos.x, window.innerWidth - 200), top: Math.min(quickAddPos.y, window.innerHeight - 120) }}
+            className="fixed z-[95] bg-card-bg rounded-xl border border-border-light shadow-xl p-1.5 min-w-[260px]"
+            style={{ left: Math.min(quickAddPos.x, window.innerWidth - 280), top: Math.min(quickAddPos.y, window.innerHeight - 460) }}
           >
             <p className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider px-2.5 py-1.5">
               {minutesToTime(Math.min(dragStartMin, dragEndMin))} — {minutesToTime(Math.max(dragStartMin, dragEndMin))}
             </p>
+
             <button
               onClick={() => createBookingFromDrag()}
               className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-surface transition-colors cursor-pointer text-left"
             >
-              <Plus className={`w-4 h-4 text-primary`} />
+              <Plus className="w-4 h-4 text-primary" />
               <span className="text-[13px] font-medium text-foreground">New Appointment</span>
             </button>
+
+            {onBlockCreate && (
+              <>
+                <div className="my-1 border-t border-border-light" />
+                {QUICK_BLOCK_KINDS.map((k) => {
+                  const m = getBlockMeta(k);
+                  const Icon = m.Icon;
+                  return (
+                    <button
+                      key={k}
+                      onClick={() => createBlockFromDrag(k, false)}
+                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-surface transition-colors cursor-pointer text-left"
+                    >
+                      <Icon className={`w-4 h-4 ${m.iconClassName}`} />
+                      <span className="text-[13px] font-medium text-foreground">{m.label}</span>
+                    </button>
+                  );
+                })}
+
+                <div className="my-1 border-t border-border-light" />
+                {REASON_BLOCK_KINDS.map((k) => {
+                  const m = getBlockMeta(k);
+                  const Icon = m.Icon;
+                  return (
+                    <button
+                      key={k}
+                      onClick={() => createBlockFromDrag(k, true)}
+                      className="w-full flex items-center justify-between gap-2.5 px-2.5 py-2 rounded-lg hover:bg-surface transition-colors cursor-pointer text-left"
+                    >
+                      <span className="flex items-center gap-2.5">
+                        <Icon className={`w-4 h-4 ${m.iconClassName}`} />
+                        <span className="text-[13px] font-medium text-foreground">{m.label}</span>
+                      </span>
+                      <span className="text-[10px] text-text-tertiary">with reason</span>
+                    </button>
+                  );
+                })}
+
+                <div className="my-1 border-t border-border-light" />
+                <button
+                  onClick={() => createBlockFromDrag("custom", true)}
+                  className="w-full flex items-center justify-between gap-2.5 px-2.5 py-2 rounded-lg hover:bg-surface transition-colors cursor-pointer text-left"
+                >
+                  <span className="text-[13px] font-medium text-foreground">More options</span>
+                  <ChevronRightIcon className="w-3.5 h-3.5 text-text-tertiary" />
+                </button>
+              </>
+            )}
           </div>
         </>
       )}

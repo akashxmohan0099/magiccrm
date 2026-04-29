@@ -21,6 +21,7 @@ export function mapInquiryFromDB(row: Record<string, unknown>): Inquiry {
     status: row.status as InquiryStatus,
     conversationId: (row.conversation_id as string) || undefined,
     formId: (row.form_id as string) || undefined,
+    formResponseId: (row.form_response_id as string) || undefined,
     bookingId: (row.booking_id as string) || undefined,
     clientId: (row.client_id as string) || undefined,
     notes: (row.notes as string) || undefined,
@@ -49,6 +50,7 @@ function mapInquiryToDB(
   if (data.status !== undefined) row.status = data.status;
   if (data.conversationId !== undefined) row.conversation_id = data.conversationId || null;
   if (data.formId !== undefined) row.form_id = data.formId || null;
+  if (data.formResponseId !== undefined) row.form_response_id = data.formResponseId || null;
   if (data.bookingId !== undefined) row.booking_id = data.bookingId || null;
   if (data.clientId !== undefined) row.client_id = data.clientId || null;
   if (data.notes !== undefined) row.notes = data.notes ?? "";

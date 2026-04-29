@@ -251,7 +251,7 @@ export default function DashboardPage() {
         <StatCard icon={Calendar} iconBg="bg-emerald-100" iconColor="text-emerald-600" label="Bookings" value={String(rangeBookings.length)} sub={`${todaysBookings.length} today`} href="/dashboard/bookings" accent="#34D399" />
         <StatCard icon={TrendingUp} iconBg="bg-violet-100" iconColor="text-violet-600" label="Revenue" value={`$${rangeRevenue.toLocaleString()}`} sub={`${completedBookings} completed`} href="/dashboard/payments" accent="#8B5CF6" />
         <StatCard icon={Users} iconBg="bg-blue-100" iconColor="text-blue-600" label="Clients" value={String(clients.length)} sub={`${rangeNewClients} new`} href="/dashboard/clients" accent="#3B82F6" />
-        <StatCard icon={Inbox} iconBg="bg-amber-100" iconColor="text-amber-600" label="Inquiries" value={String(pendingInquiries.length)} sub="pending" href="/dashboard/inquiries" accent="#F59E0B" />
+        <StatCard icon={Inbox} iconBg="bg-amber-100" iconColor="text-amber-600" label="Leads" value={String(pendingInquiries.length)} sub="pending" href="/dashboard/leads" accent="#F59E0B" />
       </motion.div>
 
       {/* Two columns: Upcoming Bookings + Recent Payments */}

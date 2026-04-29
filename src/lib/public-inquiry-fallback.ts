@@ -6,6 +6,10 @@
 import type { FormFieldConfig, FormBranding } from "@/types/models";
 import { useFormsStore } from "@/store/forms";
 import { useInquiriesStore } from "@/store/inquiries";
+import { useFormResponsesStore } from "@/store/form-responses";
+import { useSettingsStore } from "@/store/settings";
+import { useServicesStore } from "@/store/services";
+import { extractContactFromValues } from "@/lib/form-response-extract";
 
 export interface PublicInquiryForm {
   id: string;
@@ -13,6 +17,11 @@ export interface PublicInquiryForm {
   slug?: string;
   fields: FormFieldConfig[];
   branding: FormBranding;
+  autoPromoteToInquiry: boolean;
+  /** Workspace logo from Settings. Falls back when the form has no logo. */
+  workspaceLogo?: string;
+  /** Live workspace services for the Service field dropdown. */
+  services?: { id: string; name: string }[];
 }
 
 const isDev = process.env.NODE_ENV === "development";
@@ -21,11 +30,17 @@ const isDev = process.env.NODE_ENV === "development";
  * Resolve a public inquiry form by slug. Tries the Supabase-backed API
  * first; in dev, falls back to the local Zustand forms store so seeded
  * demo forms render without needing real Supabase data.
+ *
+ * - Returns the form on 200.
+ * - Returns null only when the form is genuinely not found (404 + nothing
+ *   matched in the dev fallback).
+ * - Throws on network failures and 5xx so the page can distinguish "form
+ *   doesn't exist" from "server is broken" and show the right message.
  */
 export async function resolvePublicInquiryForm(
   slug: string,
 ): Promise<PublicInquiryForm | null> {
-  // 1. Try the real API.
+  let serverFailure = false;
   try {
     const res = await fetch(
       `/api/public/inquiry/info?slug=${encodeURIComponent(slug)}`,
@@ -33,27 +48,46 @@ export async function resolvePublicInquiryForm(
     if (res.ok) {
       return (await res.json()) as PublicInquiryForm;
     }
-    // Non-404 errors propagate to the caller as null + caller handles UI.
-    if (res.status !== 404) return null;
+    if (res.status !== 404) {
+      // 5xx, 429, etc. — try the dev fallback before surfacing the failure.
+      serverFailure = true;
+    }
   } catch {
-    // network blip — fall through to dev fallback
+    // Network blip — try dev fallback before surfacing the failure.
+    serverFailure = true;
   }
 
-  // 2. Dev-only Zustand fallback.
-  if (!isDev || typeof window === "undefined") return null;
-  const form = useFormsStore
-    .getState()
-    .forms.find(
-      (f) => f.type === "inquiry" && f.enabled && f.slug === slug,
-    );
-  if (!form) return null;
-  return {
-    id: form.id,
-    name: form.name,
-    slug: form.slug,
-    fields: form.fields,
-    branding: form.branding,
-  };
+  // Dev-only Zustand fallback so seeded demo forms render without Supabase.
+  if (isDev && typeof window !== "undefined") {
+    const form = useFormsStore
+      .getState()
+      .forms.find(
+        (f) => f.type === "inquiry" && f.enabled && f.slug === slug,
+      );
+    if (form) {
+      const settings = useSettingsStore.getState().settings;
+      const services = useServicesStore
+        .getState()
+        .services.filter((s) => s.enabled)
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+        .map((s) => ({ id: s.id, name: s.name }));
+      return {
+        id: form.id,
+        name: form.name,
+        slug: form.slug,
+        fields: form.fields,
+        branding: form.branding,
+        autoPromoteToInquiry: form.autoPromoteToInquiry,
+        workspaceLogo: settings?.branding?.logo,
+        services,
+      };
+    }
+  }
+
+  if (serverFailure) {
+    throw new Error("Failed to load form");
+  }
+  return null;
 }
 
 /**
@@ -98,23 +132,45 @@ export async function submitPublicInquiry(
   const { __hp: _hp, ...submissionValues } = values;
   void _hp;
 
-  useInquiriesStore.getState().addInquiry(
+  const contact = extractContactFromValues(submissionValues, form.fields);
+
+  // Always log the form response. Dev fallback never has a workspaceId so
+  // everything stays local; addFormResponse skips the Supabase write.
+  const response = useFormResponsesStore.getState().addFormResponse(
     {
       workspaceId: form.workspaceId,
-      name: values.name || values.full_name || "Demo Submission",
-      email: values.email || "",
-      phone: values.phone || "",
-      message: values.message || "",
-      serviceInterest: values.service_interest,
-      eventType: values.event_type,
-      dateRange: values.date_range,
-      source: "form",
-      status: "new",
       formId: form.id,
-      submissionValues,
+      values: submissionValues,
+      contactName: contact.name,
+      contactEmail: contact.email ?? undefined,
+      contactPhone: contact.phone ?? undefined,
     },
-    undefined, // no workspaceId → stays local, doesn't hit Supabase
+    undefined,
   );
+
+  if (form.autoPromoteToInquiry) {
+    const inquiry = useInquiriesStore.getState().addInquiry(
+      {
+        workspaceId: form.workspaceId,
+        name: contact.name,
+        email: contact.email ?? "",
+        phone: contact.phone ?? "",
+        message: contact.message,
+        serviceInterest: contact.serviceInterest ?? undefined,
+        eventType: contact.eventType ?? undefined,
+        dateRange: contact.dateRange ?? undefined,
+        source: "form",
+        status: "new",
+        formId: form.id,
+        formResponseId: response.id,
+        submissionValues,
+      },
+      undefined,
+    );
+    useFormResponsesStore.getState().updateFormResponse(response.id, {
+      inquiryId: inquiry.id,
+    });
+  }
 
   return { ok: true };
 }

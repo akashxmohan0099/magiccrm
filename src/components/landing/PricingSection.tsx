@@ -235,7 +235,7 @@ export function PricingSection() {
                       : "bg-surface text-foreground hover:bg-foreground hover:text-background border border-border-light"
                   }`}
                 >
-                  Join the waitlist <ArrowRight className="w-4 h-4" />
+                  Get early access <ArrowRight className="w-4 h-4" />
                 </button>
               </motion.div>
             );

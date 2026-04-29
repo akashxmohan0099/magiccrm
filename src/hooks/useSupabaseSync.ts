@@ -11,7 +11,9 @@ import { usePaymentsStore } from "@/store/payments";
 import { useMarketingStore } from "@/store/marketing";
 import { useAutomationsStore } from "@/store/automations";
 import { useFormsStore } from "@/store/forms";
+import { useFormResponsesStore } from "@/store/form-responses";
 import { useSettingsStore } from "@/store/settings";
+import { useCalendarBlocksStore } from "@/store/calendar-blocks";
 
 /**
  * Loads workspace data from Supabase once auth is ready.
@@ -49,6 +51,7 @@ export function useSupabaseSync({
     const loaders = [
       ["clients", () => useClientsStore.getState().loadFromSupabase(workspaceId)],
       ["bookings", () => useBookingsStore.getState().loadFromSupabase(workspaceId)],
+      ["calendar-blocks", () => useCalendarBlocksStore.getState().loadFromSupabase(workspaceId)],
       ["services", () => useServicesStore.getState().loadFromSupabase(workspaceId)],
       ["communication", () => useCommunicationStore.getState().loadFromSupabase(workspaceId)],
       ["team", () => useTeamStore.getState().loadFromSupabase(workspaceId)],
@@ -57,6 +60,7 @@ export function useSupabaseSync({
       ["marketing", () => useMarketingStore.getState().loadFromSupabase(workspaceId)],
       ["automations", () => useAutomationsStore.getState().loadFromSupabase(workspaceId)],
       ["forms", () => useFormsStore.getState().loadFromSupabase(workspaceId)],
+      ["form-responses", () => useFormResponsesStore.getState().loadFromSupabase(workspaceId)],
       ["settings", () => useSettingsStore.getState().loadFromSupabase(workspaceId)],
     ] as const;
 

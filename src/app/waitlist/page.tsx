@@ -2,7 +2,7 @@ import { SiteHeader } from "@/components/landing/SiteHeader";
 import { WaitlistForm } from "@/components/landing/WaitlistForm";
 
 export const metadata = {
-  title: "Join the waitlist · Magic",
+  title: "Get early access · Magic",
 };
 
 export default function WaitlistPage() {
@@ -15,11 +15,11 @@ export default function WaitlistPage() {
             Early access
           </p>
           <h1 className="text-[2rem] sm:text-[2.5rem] font-bold text-foreground leading-[1.05] mb-4">
-            Join the waitlist.
+            Get early access to Magic.
           </h1>
           <p className="text-[15px] text-text-secondary max-w-md mx-auto">
-            Be first in line when we open seats. Takes under a minute —
-            we&rsquo;ll only reach out when your spot opens.
+            Tell us what kind of beauty business you run. We&rsquo;ll invite early
+            users as seats open.
           </p>
         </header>
         <WaitlistForm />

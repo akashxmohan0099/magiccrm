@@ -29,14 +29,14 @@ import { useSettingsStore } from "@/store/settings";
 // ── Hardcoded navigation items matching the 12 tabs ──────────
 const NAV_ITEMS = [
   { id: "communications", label: "Communications", slug: "communications", icon: MessageSquare, keywords: "messages email sms chat" },
-  { id: "inquiries", label: "Inquiries", slug: "inquiries", icon: Inbox, keywords: "leads prospects pipeline" },
+  { id: "leads", label: "Leads", slug: "leads", icon: Inbox, keywords: "inquiries prospects pipeline" },
   { id: "bookings", label: "Bookings", slug: "bookings", icon: Calendar, keywords: "appointments schedule calendar" },
   { id: "calendar", label: "Calendar", slug: "calendar", icon: Calendar, keywords: "schedule dates events" },
   { id: "clients", label: "Clients", slug: "clients", icon: Users, keywords: "customers contacts people" },
   { id: "payments", label: "Payments", slug: "payments", icon: CreditCard, keywords: "invoices billing money transactions" },
   { id: "marketing", label: "Marketing", slug: "marketing", icon: Megaphone, keywords: "campaigns promotions outreach" },
   { id: "services", label: "Services", slug: "services", icon: Wrench, keywords: "offerings products menu" },
-  { id: "forms", label: "Forms", slug: "forms", icon: FileText, keywords: "intake consultation questionnaire" },
+  { id: "forms", label: "Forms and Inquiries", slug: "forms", icon: FileText, keywords: "intake consultation questionnaire submissions" },
   { id: "automations", label: "Automations", slug: "automations", icon: Zap, keywords: "workflows triggers rules" },
   { id: "teams", label: "Teams", slug: "teams", icon: UsersRound, keywords: "staff members roles" },
   { id: "settings", label: "Settings", slug: "settings", icon: Settings, keywords: "preferences configuration account" },

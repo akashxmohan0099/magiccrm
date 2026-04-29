@@ -27,5 +27,8 @@ export async function GET(req: NextRequest) {
     slug: form.slug,
     fields: form.fields,
     branding: form.branding,
+    autoPromoteToInquiry: form.autoPromoteToInquiry,
+    workspaceLogo: form.workspaceLogo,
+    services: form.services,
   });
 }

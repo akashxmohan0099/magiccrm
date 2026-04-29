@@ -20,7 +20,7 @@ CREATE TABLE workspace_members (
   name TEXT NOT NULL,
   email TEXT NOT NULL,
   phone TEXT,
-  role TEXT NOT NULL DEFAULT 'staff' CHECK (role IN ('owner', 'staff')),
+  role TEXT NOT NULL DEFAULT 'staff' CHECK (role IN ('owner', 'admin', 'staff')),
   avatar_url TEXT,
   status TEXT DEFAULT 'active' CHECK (status IN ('active', 'invited', 'inactive')),
   working_hours JSONB DEFAULT '{}',       -- { "mon": { "start": "09:00", "end": "17:00" }, ... }
@@ -161,6 +161,7 @@ CREATE TABLE inquiries (
 -- Idempotent ALTER for existing dev databases that pre-date the notes column.
 ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS notes TEXT DEFAULT '';
 ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS submission_values JSONB DEFAULT '{}';
+ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS form_response_id UUID;
 
 CREATE TABLE bookings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -244,10 +245,30 @@ CREATE TABLE forms (
   branding JSONB DEFAULT '{}',            -- { "logo": "...", "primary_color": "#..." }
   slug TEXT,                              -- for standalone URL
   enabled BOOLEAN DEFAULT true,
+  auto_promote_to_inquiry BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now(),
   UNIQUE(id, workspace_id)
 );
+ALTER TABLE forms ADD COLUMN IF NOT EXISTS auto_promote_to_inquiry BOOLEAN NOT NULL DEFAULT false;
+
+CREATE TABLE form_responses (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+  form_id UUID,
+  values JSONB NOT NULL DEFAULT '{}',
+  contact_name TEXT,
+  contact_email TEXT,
+  contact_phone TEXT,
+  inquiry_id UUID,                        -- back-pointer set when promoted (kept loose: inquiries.form_response_id is the canonical FK)
+  submitted_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(id, workspace_id),
+  FOREIGN KEY (form_id, workspace_id) REFERENCES forms(id, workspace_id) ON DELETE SET NULL
+);
+
+ALTER TABLE inquiries
+  ADD CONSTRAINT fk_inquiries_form_response
+  FOREIGN KEY (form_response_id, workspace_id) REFERENCES form_responses(id, workspace_id) ON DELETE SET NULL;
 
 -- ── Automations ──
 
@@ -528,6 +549,7 @@ BEGIN
       'inquiries',
       'payment_documents', 'payment_line_items',
       'forms',
+      'form_responses',
       'automation_rules',
       'campaigns',
       'activity_log',
@@ -642,6 +664,11 @@ CREATE INDEX idx_messages_conversation ON messages(conversation_id);
 
 -- Inquiries
 CREATE INDEX idx_inquiries_workspace_status ON inquiries(workspace_id, status);
+CREATE INDEX idx_inquiries_form_response ON inquiries(workspace_id, form_response_id) WHERE form_response_id IS NOT NULL;
+
+-- Form responses
+CREATE INDEX idx_form_responses_workspace ON form_responses(workspace_id, submitted_at DESC);
+CREATE INDEX idx_form_responses_form ON form_responses(workspace_id, form_id);
 
 -- Bookings
 CREATE INDEX idx_bookings_workspace_date ON bookings(workspace_id, date);
@@ -1061,3 +1088,45 @@ CREATE INDEX idx_internal_notes_entity ON internal_notes(workspace_id, entity_ty
 CREATE INDEX idx_questionnaire_responses_client ON questionnaire_responses(workspace_id, client_id);
 CREATE INDEX idx_waitlist_workspace ON waitlist(workspace_id, slot_datetime);
 CREATE INDEX idx_refunds_workspace ON refunds(workspace_id, payment_document_id);
+
+-- ── Calendar block extensions: kind, reason, privacy, date, color, updated_at ──
+-- Idempotent ALTERs so existing dev databases pick up the new columns. The
+-- block kinds correspond to the BlockKind enum on the frontend; widening the
+-- list here is a follow-up migration that drops/recreates the CHECK.
+ALTER TABLE calendar_blocks ADD COLUMN IF NOT EXISTS kind TEXT NOT NULL DEFAULT 'blocked'
+  CHECK (kind IN (
+    'break','cleanup','lunch','travel','prep',
+    'blocked','unavailable','admin','training','personal',
+    'sick','vacation','deep_clean','delivery','holiday','custom'
+  ));
+ALTER TABLE calendar_blocks ADD COLUMN IF NOT EXISTS reason TEXT;
+ALTER TABLE calendar_blocks ADD COLUMN IF NOT EXISTS is_private BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE calendar_blocks ADD COLUMN IF NOT EXISTS date DATE;
+ALTER TABLE calendar_blocks ADD COLUMN IF NOT EXISTS color TEXT;
+ALTER TABLE calendar_blocks ADD COLUMN IF NOT EXISTS recurrence_end_date DATE;
+ALTER TABLE calendar_blocks ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
+
+-- Backfill date for any pre-existing rows so the NOT NULL we want to enforce
+-- below succeeds. Derived from start_time at the workspace's local day; for
+-- now, derive from start_time UTC date — workspaces without timezone config
+-- accept this; later rows are written with the correct day from the client.
+UPDATE calendar_blocks SET date = (start_time AT TIME ZONE 'UTC')::date
+  WHERE date IS NULL;
+ALTER TABLE calendar_blocks ALTER COLUMN date SET NOT NULL;
+
+-- Widen recurrence_pattern to include fortnightly + monthly (the artist
+-- gap that no competitor closes well). Drop the old CHECK if present.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.constraint_column_usage
+    WHERE table_name = 'calendar_blocks' AND constraint_name LIKE '%recurrence_pattern%check%'
+  ) THEN
+    ALTER TABLE calendar_blocks DROP CONSTRAINT IF EXISTS calendar_blocks_recurrence_pattern_check;
+  END IF;
+END $$;
+ALTER TABLE calendar_blocks ADD CONSTRAINT calendar_blocks_recurrence_pattern_check
+  CHECK (recurrence_pattern IS NULL OR recurrence_pattern IN ('daily','weekdays','weekly','fortnightly','monthly'));
+
+CREATE INDEX IF NOT EXISTS idx_calendar_blocks_workspace_date
+  ON calendar_blocks(workspace_id, date);

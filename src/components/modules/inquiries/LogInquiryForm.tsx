@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { SlideOver } from "@/components/ui/SlideOver";
 import { toast } from "@/components/ui/Toast";
+import { useServicesStore } from "@/store/services";
 
 export function LogInquiryForm({
   open, onClose, onSave,
@@ -12,6 +13,11 @@ export function LogInquiryForm({
   onClose: () => void;
   onSave: (data: { name: string; email: string; phone: string; message: string; serviceInterest?: string; eventType?: string }) => void;
 }) {
+  const services = useServicesStore((s) => s.services);
+  const serviceOptions = useMemo(
+    () => [...services].sort((a, b) => a.sortOrder - b.sortOrder),
+    [services],
+  );
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -52,8 +58,22 @@ export function LogInquiryForm({
         </div>
         <div>
           <p className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider mb-2">Service Interest</p>
-          <input value={serviceInterest} onChange={(e) => setServiceInterest(e.target.value)} placeholder="e.g. Bridal makeup, Facial"
-            className="w-full px-3 py-2.5 bg-surface border border-border-light rounded-xl text-[13px] text-foreground outline-none focus:ring-2 focus:ring-primary/20" />
+          <select
+            value={serviceInterest}
+            onChange={(e) => setServiceInterest(e.target.value)}
+            className="w-full px-3 py-2.5 bg-surface border border-border-light rounded-xl text-[13px] text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+          >
+            <option value="">Select a service…</option>
+            {serviceOptions.map((s) => (
+              <option key={s.id} value={s.name}>{s.name}</option>
+            ))}
+            <option value="Other">Other</option>
+          </select>
+          {serviceOptions.length === 0 && (
+            <p className="text-[11px] text-text-tertiary mt-1.5">
+              No services configured yet — add some in Settings → Services to populate this list.
+            </p>
+          )}
         </div>
         <div>
           <p className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider mb-2">Event Type</p>

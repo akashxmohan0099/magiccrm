@@ -97,7 +97,7 @@ test.describe("Landing Page", () => {
     await page.goto("/");
     await expect(page.locator("h1").first()).toBeVisible();
     await expect(
-      page.locator("button").filter({ hasText: /join the waitlist/i }).first(),
+      page.locator("button").filter({ hasText: /get early access/i }).first(),
     ).toBeVisible();
   });
 
@@ -105,10 +105,10 @@ test.describe("Landing Page", () => {
     await page.goto("/");
     await page
       .locator("button")
-      .filter({ hasText: /join the waitlist/i })
+      .filter({ hasText: /get early access/i })
       .first()
       .click();
-    // Modal renders an email input + a "Join the waitlist" submit button.
+    // Modal renders an email input + a "Get early access" submit button.
     await expect(page.locator('input[type="email"]').first()).toBeVisible({ timeout: 5000 });
   });
 

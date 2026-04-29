@@ -115,12 +115,12 @@ export function WaitlistForm() {
         disabled={!valid || submitting}
         className="mt-1 inline-flex items-center justify-center gap-2 rounded-full bg-foreground px-6 py-3 text-[14px] font-semibold tracking-[-0.01em] text-background transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
       >
-        {submitting ? "Joining…" : "Join the waitlist"}
+        {submitting ? "Sending…" : "Get early access"}
         {!submitting && <ArrowRight className="w-4 h-4" />}
       </button>
 
       <p className="text-[12px] text-text-tertiary text-center">
-        We&rsquo;ll only email you when your spot opens.
+        We&rsquo;ll only email you about early access.
       </p>
     </form>
   );

@@ -193,13 +193,13 @@ function DevLauncher() {
         <Section title="Dashboard core">
           <NavBtn href="/dashboard" label="Home" />
           <NavBtn href="/dashboard/communications" label="Communications" />
-          <NavBtn href="/dashboard/inquiries" label="Inquiries" />
+          <NavBtn href="/dashboard/leads" label="Leads" />
           <NavBtn href="/dashboard/bookings" label="Bookings" />
           <NavBtn href="/dashboard/calendar" label="Calendar" />
           <NavBtn href="/dashboard/clients" label="Clients" />
           <NavBtn href="/dashboard/payments" label="Payments" />
           <NavBtn href="/dashboard/services" label="Services" />
-          <NavBtn href="/dashboard/forms" label="Forms" />
+          <NavBtn href="/dashboard/forms" label="Forms and Inquiries" />
           <NavBtn href="/dashboard/automations" label="Automations" />
           <NavBtn href="/dashboard/teams" label="Teams" />
           <NavBtn href="/dashboard/settings" label="Settings" />

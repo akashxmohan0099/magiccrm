@@ -18,12 +18,13 @@ function useMounted() {
 interface SlideOverProps {
   open: boolean;
   onClose: () => void;
-  title: string;
+  title: ReactNode;
   children: ReactNode;
   wide?: boolean;
+  headerExtra?: ReactNode;
 }
 
-export function SlideOver({ open, onClose, title, children, wide }: SlideOverProps) {
+export function SlideOver({ open, onClose, title, children, wide, headerExtra }: SlideOverProps) {
   const titleId = useId();
   const mounted = useMounted();
 
@@ -66,16 +67,19 @@ export function SlideOver({ open, onClose, title, children, wide }: SlideOverPro
               wide ? "w-full max-w-3xl" : "w-full max-w-2xl"
             }`}
           >
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border-light">
-              <h2 id={titleId} className="text-lg font-semibold text-foreground tracking-tight">{title}</h2>
-              <motion.button
-                whileHover={{ scale: 1.1, rotate: 90 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={onClose}
-                className="p-1.5 rounded-lg hover:bg-surface text-text-secondary cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </motion.button>
+            <div className="flex items-center justify-between gap-3 px-6 py-4 border-b border-border-light">
+              <div id={titleId} className="min-w-0 flex-1 text-lg font-semibold text-foreground tracking-tight">{title}</div>
+              <div className="flex items-center gap-1 shrink-0">
+                {headerExtra}
+                <motion.button
+                  whileHover={{ scale: 1.1, rotate: 90 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={onClose}
+                  className="p-1.5 rounded-lg hover:bg-surface text-text-secondary cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </motion.button>
+              </div>
             </div>
             <div className="flex-1 overflow-y-auto p-6">{children}</div>
           </motion.div>

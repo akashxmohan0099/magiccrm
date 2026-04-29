@@ -3,6 +3,7 @@ import { generateId } from "@/lib/id";
 import { rateLimit } from "@/lib/rate-limit";
 import { createAdminClient } from "@/lib/supabase-server";
 import { fetchPublicInquiryFormBySlug } from "@/lib/server/public-inquiries";
+import { extractContactFromValues } from "@/lib/form-response-extract";
 
 function normalizeValues(raw: unknown): Record<string, string> {
   if (!raw || typeof raw !== "object") {
@@ -15,17 +16,6 @@ function normalizeValues(raw: unknown): Record<string, string> {
       typeof value === "string" ? value.trim() : String(value ?? "").trim(),
     ]),
   );
-}
-
-function firstValue(
-  values: Record<string, string>,
-  keys: string[],
-): string {
-  for (const key of keys) {
-    const value = values[key];
-    if (value) return value;
-  }
-  return "";
 }
 
 export async function POST(req: NextRequest) {
@@ -62,92 +52,97 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const email = firstValue(values, ["email"]);
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    const contact = extractContactFromValues(values, form.fields);
+    if (contact.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.email)) {
       return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
     }
 
-    const fieldLabels = new Map(form.fields.map((field) => [field.name, field.label]));
-    const name = firstValue(values, ["name", "full_name", "fullName", "client_name"]) || "Anonymous";
-    const phone = firstValue(values, ["phone", "mobile", "contact_phone"]);
-    const directMessage = firstValue(values, ["message", "your_message", "details"]);
-    const serviceInterest = firstValue(values, ["service_interest", "service_you_re_interested_in"]);
-    const eventType = firstValue(values, ["event_type"]);
-    const dateRange = firstValue(values, ["date_range", "wedding_date___date_range"]);
-
-    const handledKeys = new Set([
-      "name",
-      "full_name",
-      "fullName",
-      "client_name",
-      "email",
-      "phone",
-      "mobile",
-      "contact_phone",
-      "message",
-      "your_message",
-      "details",
-      "service_interest",
-      "service_you_re_interested_in",
-      "event_type",
-      "date_range",
-      "wedding_date___date_range",
-    ]);
-
-    const supplementalLines = Object.entries(values)
-      .filter(([key, value]) => value && !handledKeys.has(key))
-      .map(([key, value]) => `${fieldLabels.get(key) ?? key}: ${value}`);
-
-    const message = [
-      directMessage,
-      supplementalLines.length > 0 ? supplementalLines.join("\n") : "",
-    ]
-      .filter(Boolean)
-      .join(directMessage ? "\n\n" : "");
-
     const now = new Date().toISOString();
-    const inquiryId = generateId();
     const supabase = await createAdminClient();
 
-    // Strip the honeypot field — never persist it. The structured
-    // columns above (name/email/etc) stay for back-compat queries; the
-    // full blob below lets the inbox surface every custom field.
+    // Strip the honeypot field — never persist it.
     const { __hp: _hp, ...submissionValues } = values;
     void _hp;
 
-    const { error: inquiryError } = await supabase.from("inquiries").insert({
-      id: inquiryId,
+    const responseId = generateId();
+    const { error: responseError } = await supabase.from("form_responses").insert({
+      id: responseId,
       workspace_id: form.workspaceId,
-      name,
-      email,
-      phone,
-      message,
-      service_interest: serviceInterest || null,
-      event_type: eventType || null,
-      date_range: dateRange || null,
-      source: "form",
-      status: "new",
       form_id: form.id,
-      submission_values: submissionValues,
-      created_at: now,
-      updated_at: now,
+      values: submissionValues,
+      contact_name: contact.name,
+      contact_email: contact.email,
+      contact_phone: contact.phone,
+      submitted_at: now,
     });
 
-    if (inquiryError) {
-      console.error("[public/inquiry] Insert error:", inquiryError);
+    if (responseError) {
+      console.error("[public/inquiry] form_response insert error:", responseError);
       return NextResponse.json({ error: "Failed to submit inquiry" }, { status: 500 });
+    }
+
+    let inquiryId: string | null = null;
+    if (form.autoPromoteToInquiry) {
+      inquiryId = generateId();
+      const { error: inquiryError } = await supabase.from("inquiries").insert({
+        id: inquiryId,
+        workspace_id: form.workspaceId,
+        name: contact.name,
+        email: contact.email ?? "",
+        phone: contact.phone ?? "",
+        message: contact.message,
+        service_interest: contact.serviceInterest,
+        event_type: contact.eventType,
+        date_range: contact.dateRange,
+        source: "form",
+        status: "new",
+        form_id: form.id,
+        form_response_id: responseId,
+        submission_values: submissionValues,
+        created_at: now,
+        updated_at: now,
+      });
+
+      if (inquiryError) {
+        console.error("[public/inquiry] inquiry insert error:", inquiryError);
+        // The form_response succeeded — surface failure but don't lose the response.
+        return NextResponse.json({ error: "Failed to submit inquiry" }, { status: 500 });
+      }
+
+      // Back-pointer for convenience queries (canonical FK is inquiries.form_response_id).
+      await supabase
+        .from("form_responses")
+        .update({ inquiry_id: inquiryId })
+        .eq("id", responseId)
+        .eq("workspace_id", form.workspaceId);
     }
 
     try {
       await supabase.from("activity_log").insert({
         workspace_id: form.workspaceId,
         type: "create",
-        entity_type: "inquiries",
-        entity_id: inquiryId,
-        description: `Public inquiry submitted via "${form.name}" by ${name}`,
+        entity_type: inquiryId ? "inquiries" : "form_responses",
+        entity_id: inquiryId ?? responseId,
+        description: `Form "${form.name}" submitted by ${contact.name}`,
       });
     } catch {
       // non-critical
+    }
+
+    // Fire-and-forget confirmations (auto-reply email/SMS + owner notify).
+    // Never blocks the response — submission already succeeded.
+    try {
+      const { sendInquiryConfirmation } = await import(
+        "@/lib/server/send-inquiry-confirmation"
+      );
+      await sendInquiryConfirmation({
+        workspaceId: form.workspaceId,
+        form: { id: form.id, name: form.name, branding: form.branding },
+        contact,
+        inquiryId,
+      });
+    } catch (err) {
+      console.error("[public/inquiry] confirmation send error:", err);
     }
 
     return NextResponse.json({ success: true }, { status: 201 });

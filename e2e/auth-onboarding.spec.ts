@@ -7,27 +7,24 @@ async function completeOnboardingSignup(
   businessName: string,
 ) {
   await page.goto("/onboarding");
-  await page.getByRole("button", { name: /get started/i }).click();
-
-  await page.getByPlaceholder("you@example.com").fill(email);
-  await page.getByPlaceholder(/min 8 chars/i).fill(password);
-  await page.getByPlaceholder("e.g. Glow Studio").fill(businessName);
-  await page.getByRole("button", { name: /^Continue$/ }).click();
 
   await page.getByRole("button", { name: /hair stylist/i }).click();
-  await page.getByRole("button", { name: /^Continue$/ }).click();
+  await page.getByRole("button", { name: /^Next$/ }).click();
 
-  await page.getByRole("button", { name: /at my own studio or salon/i }).click();
-  await page.getByRole("button", { name: /^Continue$/ }).click();
+  await page.getByRole("button", { name: /just me/i }).click();
+  await page.getByRole("button", { name: /fixed studio or salon/i }).click();
+  await page.getByRole("button", { name: /^Next$/ }).click();
 
-  await page.getByRole("button", { name: /it's just me/i }).click();
-  await page.getByRole("button", { name: /^Continue$/ }).click();
+  for (let i = 0; i < 4; i += 1) {
+    await page.getByRole("button", { name: /skip for now/i }).click();
+  }
 
-  await page.getByRole("button", { name: /^Continue$/ }).click();
-  await page.getByRole("button", { name: /^Continue$/ }).click();
-  await page.getByRole("button", { name: /^Continue$/ }).click();
+  await expect(page.getByRole("heading", { name: /your workspace is ready/i })).toBeVisible();
+  await page.getByRole("button", { name: /^Next$/ }).click();
 
-  await expect(page.getByText("You're all set!")).toBeVisible();
+  await page.getByPlaceholder("you@example.com").fill(email);
+  await page.getByPlaceholder("Password").fill(password);
+  await page.getByPlaceholder("Business name").fill(businessName);
 
   await page.getByRole("button", { name: /launch dashboard/i }).click();
 }

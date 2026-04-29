@@ -42,7 +42,8 @@ const navGroups: NavGroup[] = [
     label: "Daily Workflow",
     items: [
       { href: "/dashboard/communications", label: "Communications", icon: MessageCircle },
-      { href: "/dashboard/inquiries", label: "Inquiries", icon: Inbox },
+      { href: "/dashboard/forms", label: "Forms and Inquiries", icon: FileText },
+      { href: "/dashboard/leads", label: "Leads", icon: Inbox },
       { href: "/dashboard/bookings", label: "Bookings", icon: FolderKanban },
       { href: "/dashboard/calendar", label: "Calendar", icon: Calendar },
       { href: "/dashboard/clients", label: "Clients", icon: Users },
@@ -58,7 +59,6 @@ const navGroups: NavGroup[] = [
     label: "Setup",
     items: [
       { href: "/dashboard/services", label: "Services", icon: Package },
-      { href: "/dashboard/forms", label: "Forms", icon: FileText },
       { href: "/dashboard/automations", label: "Automations", icon: Zap },
       { href: "/dashboard/teams", label: "Teams", icon: UsersRound },
     ],

@@ -44,18 +44,20 @@ const INTEGRATIONS: Integration[] = [
   {
     id: "email-resend",
     name: "Email (Resend)",
-    description: "Send invoices and notifications via email",
+    description:
+      "Sends booking confirmations, inquiry auto-replies, and owner notifications. Auto-replies go from bookings@magiccrm.app with your business name and reply-to set to your contact email.",
     icon: Mail,
     iconColor: "text-violet-600",
     iconBg: "bg-violet-50",
     status: "available",
-    note: "Configured by your administrator",
+    note: "Use your own domain — coming soon",
     hasConnect: false,
   },
   {
     id: "sms-twilio",
     name: "SMS (Twilio)",
-    description: "Send booking reminders and follow-ups via SMS",
+    description:
+      "Sends booking reminders, inquiry auto-replies (when enabled per-form), and follow-ups via SMS. Uses the workspace's configured Twilio number.",
     icon: MessageSquare,
     iconColor: "text-emerald-600",
     iconBg: "bg-emerald-50",

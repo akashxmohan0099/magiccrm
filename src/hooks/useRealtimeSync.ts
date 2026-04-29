@@ -4,9 +4,11 @@ import { useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase";
 import { useClientsStore } from "@/store/clients";
 import { useBookingsStore } from "@/store/bookings";
+import { useCalendarBlocksStore } from "@/store/calendar-blocks";
 import { useServicesStore } from "@/store/services";
 import { usePaymentsStore } from "@/store/payments";
 import { useInquiriesStore } from "@/store/inquiries";
+import { useFormResponsesStore } from "@/store/form-responses";
 import { useCommunicationStore } from "@/store/communication";
 
 /**
@@ -43,12 +45,16 @@ export function useRealtimeSync({
         () => debouncedReload("clients", () => useClientsStore.getState().loadFromSupabase(workspaceId)))
       .on("postgres_changes", { event: "*", schema: "public", table: "bookings", filter: `workspace_id=eq.${workspaceId}` },
         () => debouncedReload("bookings", () => useBookingsStore.getState().loadFromSupabase(workspaceId)))
+      .on("postgres_changes", { event: "*", schema: "public", table: "calendar_blocks", filter: `workspace_id=eq.${workspaceId}` },
+        () => debouncedReload("calendar_blocks", () => useCalendarBlocksStore.getState().loadFromSupabase(workspaceId)))
       .on("postgres_changes", { event: "*", schema: "public", table: "services", filter: `workspace_id=eq.${workspaceId}` },
         () => debouncedReload("services", () => useServicesStore.getState().loadFromSupabase(workspaceId)))
       .on("postgres_changes", { event: "*", schema: "public", table: "payment_documents", filter: `workspace_id=eq.${workspaceId}` },
         () => debouncedReload("payments", () => usePaymentsStore.getState().loadFromSupabase(workspaceId)))
       .on("postgres_changes", { event: "*", schema: "public", table: "inquiries", filter: `workspace_id=eq.${workspaceId}` },
         () => debouncedReload("inquiries", () => useInquiriesStore.getState().loadFromSupabase(workspaceId)))
+      .on("postgres_changes", { event: "*", schema: "public", table: "form_responses", filter: `workspace_id=eq.${workspaceId}` },
+        () => debouncedReload("form_responses", () => useFormResponsesStore.getState().loadFromSupabase(workspaceId)))
       .on("postgres_changes", { event: "*", schema: "public", table: "conversations", filter: `workspace_id=eq.${workspaceId}` },
         () => debouncedReload("conversations", () => useCommunicationStore.getState().loadFromSupabase(workspaceId)))
       .on("postgres_changes", { event: "*", schema: "public", table: "messages", filter: `workspace_id=eq.${workspaceId}` },

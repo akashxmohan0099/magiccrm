@@ -27,7 +27,7 @@ export function SiteFooter() {
           transition={{ duration: 0.5 }}
           className="mb-5"
         >
-          <span className="text-[13px] font-medium" style={{ color: "var(--logo-green)" }}>Built for beauty professionals</span>
+          <span className="text-[13px] font-medium" style={{ color: "var(--logo-green)" }}>Built for beauty operators</span>
         </motion.div>
         <motion.h2
           variants={sectionHeadingVariants}
@@ -38,7 +38,7 @@ export function SiteFooter() {
           className="text-[1.75rem] sm:text-[2.5rem] font-bold mb-5 leading-[1.1]"
           style={{ color: "#fff" }}
         >
-          Stop juggling apps.<br />Start growing your business.
+          Stop losing bookings in DMs.<br />Start turning inquiries into clients.
         </motion.h2>
         <motion.p
           initial={{ opacity: 0, y: 20 }}
@@ -48,7 +48,7 @@ export function SiteFooter() {
           className="mb-10 text-[15px] max-w-md mx-auto"
           style={{ color: "#888" }}
         >
-          Everything your beauty business needs. One login. One price. No per-staff surprises.
+          Bookings, deposits, reminders, follow-ups, and client history in one connected workspace.
         </motion.p>
         <motion.div variants={ctaPulseVariants} initial="hidden" whileInView="visible" viewport={viewportConfig}>
           <button
@@ -56,7 +56,7 @@ export function SiteFooter() {
             onClick={openWaitlist}
             className="inline-flex items-center justify-center gap-2.5 rounded-full bg-primary px-10 py-3.5 text-[15px] font-semibold tracking-[-0.01em] text-foreground transition-colors hover:bg-primary-hover cta-glow"
           >
-            Join the waitlist <ArrowRight className="w-5 h-5" />
+            Get early access <ArrowRight className="w-5 h-5" />
           </button>
         </motion.div>
       </div>

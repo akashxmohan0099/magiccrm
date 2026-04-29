@@ -16,6 +16,7 @@ export function mapFormFromDB(row: Record<string, unknown>): Form {
     branding: (row.branding ?? {}) as FormBranding,
     slug: (row.slug as string) || undefined,
     enabled: row.enabled as boolean,
+    autoPromoteToInquiry: (row.auto_promote_to_inquiry as boolean) ?? false,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };
@@ -35,6 +36,7 @@ function mapFormToDB(
   if (data.branding !== undefined) row.branding = data.branding;
   if (data.slug !== undefined) row.slug = data.slug || null;
   if (data.enabled !== undefined) row.enabled = data.enabled;
+  if (data.autoPromoteToInquiry !== undefined) row.auto_promote_to_inquiry = data.autoPromoteToInquiry;
   if (data.createdAt !== undefined) row.created_at = data.createdAt;
   if (data.updatedAt !== undefined) row.updated_at = data.updatedAt;
 

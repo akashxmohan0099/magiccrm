@@ -112,14 +112,27 @@ export interface Inquiry {
   status: InquiryStatus;
   conversationId?: string;
   formId?: string;
+  formResponseId?: string;
   bookingId?: string;
   clientId?: string;
   notes?: string;
-  // Full form submission keyed by field.name. Lets the inbox surface every
-  // field a form collects, not just the structured columns above.
   submissionValues?: Record<string, string>;
   createdAt: string;
   updatedAt: string;
+}
+
+// ── Form Response ───────────────────────────────────
+
+export interface FormResponse {
+  id: string;
+  workspaceId: string;
+  formId?: string;
+  values: Record<string, string>;
+  contactName?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  inquiryId?: string;
+  submittedAt: string;
 }
 
 // ── Booking ─────────────────────────────────────────
@@ -194,14 +207,71 @@ export interface PaymentLineItem {
 
 export type FormType = 'booking' | 'inquiry';
 
+export type FormFieldType =
+  | 'text'
+  | 'email'
+  | 'phone'
+  | 'url'
+  | 'number'
+  | 'textarea'
+  | 'select'
+  | 'multi_select'
+  | 'radio'
+  | 'checkbox'
+  | 'file'
+  | 'date'
+  | 'date_range'
+  | 'time'
+  | 'service'
+  | 'hidden';
+
+// Conditional show rule. The field renders only when the referenced field's
+// answer matches one of the listed values.
+//   operator 'equals'   — value must be one of `values`
+//   operator 'not_equals' — value must NOT be any of `values`
+//   operator 'includes' — for multi-value answers (multi_select/checkbox), at
+//                         least one selection must be in `values`
+export interface FormFieldCondition {
+  fieldName: string;
+  operator: 'equals' | 'not_equals' | 'includes';
+  values: string[];
+}
+
 export interface FormFieldConfig {
   name: string;
-  type: 'text' | 'email' | 'phone' | 'textarea' | 'select' | 'date' | 'date_range';
+  type: FormFieldType;
   label: string;
   required: boolean;
-  options?: string[];         // for select fields
+  options?: string[];         // for select / multi_select / radio / checkbox
   placeholder?: string;       // optional placeholder, falls back to label
   helpText?: string;          // small supporting text under the field
+  // ── File upload (type === 'file') ──
+  acceptedFileTypes?: string; // e.g. 'image/*' or '.pdf,.jpg'
+  multipleFiles?: boolean;
+  maxFileSizeMb?: number;     // per-file limit, default 5
+  // ── Hidden field (type === 'hidden') ──
+  // Auto-populated from URL params on the public page. Comma-separated keys
+  // tried in order; first match wins.
+  paramKeys?: string;         // e.g. 'utm_source,source,ref'
+  defaultValue?: string;      // fallback when no param matches
+  // ── Conditional show ──
+  showWhen?: FormFieldCondition;
+}
+
+export type FormTemplate = 'classic' | 'minimal' | 'editorial' | 'slides';
+export type FormFontFamily = 'sans' | 'serif' | 'display' | 'mono';
+export type FormTheme = 'light' | 'dark' | 'auto';
+
+// Variant thank-you screen, picked by matching an answer to a chosen field.
+export interface FormSuccessVariant {
+  id: string;
+  label: string;             // operator-facing label, e.g. "Wedding"
+  matchValues: string[];     // values of the routing field that activate this variant
+  message?: string;
+  ctaLabel?: string;
+  ctaUrl?: string;
+  redirectUrl?: string;
+  redirectDelaySeconds?: number;
 }
 
 export interface FormBranding {
@@ -212,6 +282,39 @@ export interface FormBranding {
   // form-presentation settings that travel with the form's visual identity.
   description?: string;       // shown under form name on the public page
   successMessage?: string;    // custom thank-you copy after submit
+  template?: FormTemplate;    // visual layout — defaults to 'classic'
+  fontFamily?: FormFontFamily; // typography — defaults to 'sans'
+  theme?: FormTheme;          // 'light' | 'dark' | 'auto' — defaults to 'light'
+  coverImage?: string;        // hero image URL shown above form title
+
+  // ── Welcome screen (intro before fields) ──
+  welcomeEnabled?: boolean;
+  welcomeTitle?: string;
+  welcomeSubtitle?: string;
+  welcomeCtaLabel?: string;   // e.g. "Get started" — defaults to "Start"
+
+  // ── Post-submission (success screen) ──
+  successCtaLabel?: string;            // e.g. "Book a consultation"
+  successCtaUrl?: string;              // absolute URL the CTA opens
+  successRedirectUrl?: string;         // optional auto-redirect after submit
+  successRedirectDelaySeconds?: number; // seconds before redirect (default 5)
+  // Routed thank-you screens. When set, the renderer picks the first variant
+  // whose matchValues overlap the answer to `successRouteFieldName`. Falls
+  // back to the default success screen above when nothing matches.
+  successRouteFieldName?: string;
+  successVariants?: FormSuccessVariant[];
+
+  // ── Auto-reply to the person who submitted ──
+  autoReplyEnabled?: boolean;          // email auto-reply toggle
+  autoReplySubject?: string;           // e.g. "We got your inquiry"
+  autoReplyBody?: string;              // plain text, supports {{name}} {{businessName}} {{serviceInterest}}
+  autoReplyDelayMinutes?: number;      // 0 = send immediately. Honored by the scheduler.
+  autoReplySmsEnabled?: boolean;       // SMS auto-reply toggle (only if phone captured)
+  autoReplySmsBody?: string;           // SMS text, same {{vars}}
+  autoReplySmsDelayMinutes?: number;   // 0 = send immediately. Honored by the scheduler.
+
+  // ── Owner notification ──
+  notifyOwnerEmail?: boolean;          // also email the workspace owner
 }
 
 export interface Form {
@@ -223,6 +326,7 @@ export interface Form {
   branding: FormBranding;
   slug?: string;
   enabled: boolean;
+  autoPromoteToInquiry: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -474,16 +578,41 @@ export interface WorkspaceSettings {
 
 // ── Platform Feature Types ──────────────────────────
 
+export type BlockKind =
+  | 'break'
+  | 'cleanup'
+  | 'lunch'
+  | 'travel'
+  | 'prep'
+  | 'blocked'
+  | 'unavailable'
+  | 'admin'
+  | 'training'
+  | 'personal'
+  | 'sick'
+  | 'vacation'
+  | 'deep_clean'
+  | 'delivery'
+  | 'holiday'
+  | 'custom';
+
 export interface CalendarBlock {
   id: string;
   workspaceId: string;
   teamMemberId?: string;
-  startTime: string;
-  endTime: string;
-  label: string;
+  kind: BlockKind;
+  date: string;               // YYYY-MM-DD (local day of startTime)
+  startTime: string;          // ISO timestamp
+  endTime: string;            // ISO timestamp
+  label?: string;             // optional override of the kind's default label
+  reason?: string;            // private note (e.g. "Doctor", "Kids")
+  isPrivate: boolean;         // when true, public booking page shows only "Unavailable"
   isRecurring: boolean;
-  recurrencePattern?: 'daily' | 'weekdays' | 'weekly';
+  recurrencePattern?: 'daily' | 'weekdays' | 'weekly' | 'fortnightly' | 'monthly';
+  recurrenceEndDate?: string; // YYYY-MM-DD
+  color?: string;             // hex override of kind default
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface ClientTag {
