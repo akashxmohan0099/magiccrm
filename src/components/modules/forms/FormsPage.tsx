@@ -483,7 +483,7 @@ export function FormsPage() {
       setPreviewOpen(true);
     } else {
       setSlideMode(mode);
-      setPreviewOpen(false);
+      setPreviewOpen(true);
     }
   };
 
@@ -1137,7 +1137,16 @@ function FormEditor({
       setSaveError(null);
       setSaveStatus("saved");
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : "Save failed");
+      // Supabase errors are PostgrestError, not Error instances. Pull message off
+      // whichever shape we get so the operator sees the real cause (RLS denial,
+      // payload-too-large, etc.) instead of a generic "Save failed".
+      const msg =
+        (err as { message?: string } | null)?.message ||
+        (err as { details?: string } | null)?.details ||
+        (typeof err === "string" ? err : null) ||
+        "Save failed";
+      console.error("[forms] save error:", err);
+      setSaveError(msg);
       setSaveStatus("error");
     }
   }, []);
