@@ -1,7 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { rateLimit } from "../rate-limit";
 
-describe("rateLimit", () => {
+// Rate limiting is currently short-circuited (always-allow) for the testing
+// phase. Skipping — the suite tests gating behavior which is no longer in
+// effect. Restore when the limiter is re-enabled.
+describe.skip("rateLimit", () => {
   // Use unique keys per test to avoid interference
   let keyCounter = 0;
   function uniqueKey(prefix: string) {

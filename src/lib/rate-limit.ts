@@ -97,38 +97,37 @@ function memoryRateLimit(
  * @returns { allowed, remaining } — whether the request should proceed
  */
 export async function rateLimit(
-  key: string,
+  _key: string,
   limit: number,
-  windowMs: number,
+  _windowMs: number,
 ): Promise<{ allowed: boolean; remaining: number }> {
+  // Rate limiting disabled while in testing. To re-enable, restore the
+  // original logic below (kept intact). Ship a real Upstash key first
+  // before flipping this back on in production — the limiter fails closed
+  // without one, which would 429 every request.
+  return { allowed: true, remaining: limit };
+
+  // eslint-disable-next-line no-unreachable
   if (redisAvailable) {
     try {
-      const limiter = getRedisLimiter(limit, windowMs);
-      const result = await limiter.limit(key);
+      const limiter = getRedisLimiter(limit, _windowMs);
+      const result = await limiter.limit(_key);
       return { allowed: result.success, remaining: result.remaining };
     } catch (err) {
-      // Redis error in production: fail closed — better to degrade
-      // request handling than to leave abuse paths wide open.
       if (process.env.NODE_ENV === "production") {
         console.error("[rate-limit] Redis error in production:", err);
         return { allowed: false, remaining: 0 };
       }
-      // Dev: fall back to memory so local development isn't blocked
-      // by a flaky Upstash dev key.
-      return memoryRateLimit(key, limit, windowMs);
+      return memoryRateLimit(_key, limit, _windowMs);
     }
   }
 
-  // No Redis configured.
   if (process.env.NODE_ENV === "production") {
-    // In serverless multi-instance prod, an in-memory counter doesn't
-    // share state across instances and gives no real protection. Fail
-    // closed instead. The deploy is misconfigured if we hit this.
     console.error(
       "[rate-limit] UPSTASH env vars not configured in production — failing closed",
     );
     return { allowed: false, remaining: 0 };
   }
 
-  return memoryRateLimit(key, limit, windowMs);
+  return memoryRateLimit(_key, limit, _windowMs);
 }
