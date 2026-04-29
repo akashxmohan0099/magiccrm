@@ -43,13 +43,14 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     const isDevelopment = process.env.NODE_ENV === "development";
-    // Production: 'unsafe-inline' is needed because Next.js (App Router) emits
-    // inline hydration/prefetch scripts that aren't covered by a single hash.
-    // The proper hardening is a per-request nonce via middleware + 'strict-dynamic';
-    // until that's wired up, 'unsafe-inline' keeps the app working.
+    // Next.js App Router emits inline hydration/prefetch scripts that aren't
+    // covered by a single hash, so 'unsafe-inline' is required. Note that a
+    // hash in the source list disables 'unsafe-inline' in modern browsers,
+    // so we deliberately omit themeScriptHash here. Proper hardening is a
+    // per-request nonce + 'strict-dynamic' via middleware.
     const scriptSrc = isDevelopment
       ? ["'self'", "https://js.stripe.com", "'unsafe-inline'", "'unsafe-eval'"].join(" ")
-      : ["'self'", `'sha256-${themeScriptHash}'`, "https://js.stripe.com", "'unsafe-inline'"].join(" ");
+      : ["'self'", "https://js.stripe.com", "'unsafe-inline'"].join(" ");
 
     const baseHeaders = [
       { key: "X-Content-Type-Options", value: "nosniff" },
