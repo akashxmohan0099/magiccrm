@@ -408,7 +408,7 @@ export function FormsPage() {
   const searchParams = useSearchParams();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [slideMode, setSlideMode] = useState<SlideMode>("edit");
-  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(true);
   // Holds the editor's in-progress draft so the preview renders unsaved
   // edits live. Falls back to the saved form when no draft is in flight.
   const [draftForm, setDraftForm] = useState<Form | null>(null);
