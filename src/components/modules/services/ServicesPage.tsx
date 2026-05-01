@@ -45,7 +45,7 @@ import { useServicesStore } from "@/store/services";
 import { useTeamStore } from "@/store/team";
 import { useAuth } from "@/hooks/useAuth";
 import { Service, TeamMember } from "@/types/models";
-import { minPrice, isFromPriced, resolveBuffer } from "@/lib/services/price";
+import { minPrice, minDuration, isFromPriced, resolveBuffer } from "@/lib/services/price";
 import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -337,9 +337,26 @@ export function ServicesPage() {
     setDrawerOpen(true);
   };
 
+  // Tracks a category that was just created via "Add Category" and immediately
+  // chained into the New Service drawer. If the user cancels the drawer
+  // without saving a service into it, the category is rolled back so the list
+  // doesn't accumulate empty categories the user has to discover-and-clean.
+  const [pendingCategoryName, setPendingCategoryName] = useState<string | null>(null);
+
   const closeDrawer = () => {
     setDrawerOpen(false);
     setEditingService(undefined);
+    if (pendingCategoryName) {
+      const name = pendingCategoryName;
+      setPendingCategoryName(null);
+      const stillEmpty = !services.some(
+        (s) => (s.category || UNCATEGORIZED) === name,
+      );
+      if (stillEmpty) {
+        const cat = categoryByName.get(name);
+        if (cat) deleteCategory(cat.id, workspaceId || undefined);
+      }
+    }
   };
 
   const handleAddCategory = () => {
@@ -350,7 +367,9 @@ export function ServicesPage() {
       return;
     }
     // Persist as a first-class category row so it has stable identity, color,
-    // and sortOrder even before any service is added to it.
+    // and sortOrder even before any service is added to it. The category is
+    // rolled back in closeDrawer if the user cancels the chained drawer
+    // without saving a service into it.
     addCategory(
       {
         workspaceId: workspaceId ?? "",
@@ -361,6 +380,7 @@ export function ServicesPage() {
     );
     setNewCategoryOpen(false);
     setNewCategoryName("");
+    setPendingCategoryName(name);
     openAdd(name);
   };
 
@@ -558,6 +578,7 @@ export function ServicesPage() {
               }
             }}
             placeholder="Category name (e.g. Hair, Nails, Skin)"
+            maxLength={60}
             className="flex-1 px-3 py-2 bg-surface border border-border-light rounded-lg text-[14px] text-foreground outline-none"
           />
           <button
@@ -689,6 +710,7 @@ export function ServicesPage() {
                           <input
                             autoFocus
                             value={renameValue}
+                            maxLength={60}
                             onChange={(e) => setRenameValue(e.target.value)}
                             onKeyDown={(e) => {
                               if (e.key === "Enter") handleRenameCategory(cat);
@@ -911,21 +933,33 @@ export function ServicesPage() {
               </p>
             </div>
             <div className="max-h-72 overflow-auto py-2">
-              {[...allCategories, UNCATEGORIZED]
-                .filter((c, i, arr) => arr.indexOf(c) === i)
-                .map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => bulkMoveTo(cat)}
-                    className="w-full text-left px-5 py-2.5 text-[13px] text-foreground hover:bg-surface cursor-pointer flex items-center gap-2"
-                  >
-                    <span
-                      className="w-2 h-2 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: categoryStripeColor(cat) }}
-                    />
-                    {cat}
-                  </button>
-                ))}
+              {(() => {
+                // Hide the category every selected service is already in —
+                // moving to your current category is a no-op.
+                const selectedSources = new Set(
+                  services
+                    .filter((s) => selectedIds.has(s.id))
+                    .map((s) => s.category || UNCATEGORIZED),
+                );
+                const onlySource =
+                  selectedSources.size === 1 ? [...selectedSources][0] : null;
+                return [...allCategories, UNCATEGORIZED]
+                  .filter((c, i, arr) => arr.indexOf(c) === i)
+                  .filter((c) => c !== onlySource)
+                  .map((cat) => (
+                    <button
+                      key={cat}
+                      onClick={() => bulkMoveTo(cat)}
+                      className="w-full text-left px-5 py-2.5 text-[13px] text-foreground hover:bg-surface cursor-pointer flex items-center gap-2"
+                    >
+                      <span
+                        className="w-2 h-2 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: categoryStripeColor(cat) }}
+                      />
+                      {cat}
+                    </button>
+                  ));
+              })()}
             </div>
             <div className="px-5 py-3 border-t border-border-light flex justify-end">
               <Button variant="ghost" size="sm" onClick={() => setBulkMoveOpen(false)}>
@@ -1068,75 +1102,94 @@ function ServiceRow({
           {selected && <Check className="w-3 h-3" strokeWidth={3} />}
         </button>
       )}
-      <button
-        onClick={selectionMode ? onToggleSelected : onEdit}
-        className="flex items-center gap-4 flex-1 min-w-0 text-left cursor-pointer"
-      >
-        <ServiceLetterCard name={service.name} category={service.category} />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-x-5 gap-y-1 flex-wrap">
-            <p className="text-[14px] font-medium text-foreground truncate">
-              {service.name}
-            </p>
-            <div className="flex items-center gap-3 flex-shrink-0">
-              <span className="text-[12px] text-text-tertiary tabular-nums flex items-center gap-1">
-                <Clock className="w-3 h-3" /> {service.duration}min
-                {(() => {
-                  const { before, after } = resolveBuffer(service);
-                  const total = before + after;
-                  return total > 0 ? `+${total}` : "";
-                })()}
-              </span>
-              <span className="text-[12px] font-semibold text-foreground tabular-nums whitespace-nowrap">
-                {isFromPriced(service) && (
-                  <span className="text-[10px] text-text-tertiary font-medium mr-0.5">From</span>
+      {/*
+       * In selection mode the whole row is a toggle target so picking is fast.
+       * Outside selection mode the row is a passive container — only the
+       * explicit Edit button (right side) opens the drawer. Previously a stray
+       * click anywhere on the row launched Edit, which was easy to do by
+       * accident and silently appended typed text to whatever field the
+       * drawer focused on save.
+       */}
+      {(() => {
+        const inner = (
+          <>
+            <ServiceLetterCard name={service.name} category={service.category} />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-x-5 gap-y-1 flex-wrap">
+                <p className="text-[14px] font-medium text-foreground truncate">
+                  {service.name}
+                </p>
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  <span className="text-[12px] text-text-tertiary tabular-nums flex items-center gap-1">
+                    <Clock className="w-3 h-3" /> {minDuration(service)}min
+                    {(() => {
+                      const { before, after } = resolveBuffer(service);
+                      const total = before + after;
+                      return total > 0 ? `+${total}` : "";
+                    })()}
+                  </span>
+                  <span className="text-[12px] font-semibold text-foreground tabular-nums whitespace-nowrap">
+                    {isFromPriced(service) && (
+                      <span className="text-[10px] text-text-tertiary font-medium mr-0.5">From</span>
+                    )}
+                    ${minPrice(service)}
+                  </span>
+                </div>
+                {displayMembers.length > 0 && (
+                  <MemberAvatarStack members={displayMembers} isAnyone={isAnyone} />
                 )}
-                ${minPrice(service)}
-              </span>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {!service.enabled && (
+                    <span className="text-[9px] font-semibold text-text-tertiary bg-surface px-1.5 py-0.5 rounded">
+                      Inactive
+                    </span>
+                  )}
+                  {service.isPackage && (
+                    <span className="text-[9px] font-semibold text-fuchsia-600 bg-fuchsia-50 px-1.5 py-0.5 rounded">
+                      Bundle
+                    </span>
+                  )}
+                  {service.requiresConfirmation && (
+                    <span className="text-[9px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">
+                      Approval
+                    </span>
+                  )}
+                  {service.depositType !== "none" && (
+                    <span className="text-[9px] font-semibold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
+                      Deposit
+                    </span>
+                  )}
+                  {service.locationType === "mobile" && (
+                    <span className="text-[9px] font-semibold text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded">
+                      Mobile
+                    </span>
+                  )}
+                  {service.locationType === "both" && (
+                    <span className="text-[9px] font-semibold text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded">
+                      Studio + Mobile
+                    </span>
+                  )}
+                </div>
+              </div>
+              {service.description && (
+                <p className="text-[12px] text-text-tertiary truncate mt-1">
+                  {service.description}
+                </p>
+              )}
             </div>
-            {displayMembers.length > 0 && (
-              <MemberAvatarStack members={displayMembers} isAnyone={isAnyone} />
-            )}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {!service.enabled && (
-                <span className="text-[9px] font-semibold text-text-tertiary bg-surface px-1.5 py-0.5 rounded">
-                  Inactive
-                </span>
-              )}
-              {service.isPackage && (
-                <span className="text-[9px] font-semibold text-fuchsia-600 bg-fuchsia-50 px-1.5 py-0.5 rounded">
-                  Bundle
-                </span>
-              )}
-              {service.requiresConfirmation && (
-                <span className="text-[9px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">
-                  Approval
-                </span>
-              )}
-              {service.depositType !== "none" && (
-                <span className="text-[9px] font-semibold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
-                  Deposit
-                </span>
-              )}
-              {service.locationType === "mobile" && (
-                <span className="text-[9px] font-semibold text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded">
-                  Mobile
-                </span>
-              )}
-              {service.locationType === "both" && (
-                <span className="text-[9px] font-semibold text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded">
-                  Studio + Mobile
-                </span>
-              )}
-            </div>
-          </div>
-          {service.description && (
-            <p className="text-[12px] text-text-tertiary truncate mt-1">
-              {service.description}
-            </p>
-          )}
-        </div>
-      </button>
+          </>
+        );
+        return selectionMode ? (
+          <button
+            onClick={onToggleSelected}
+            className="flex items-center gap-4 flex-1 min-w-0 text-left cursor-pointer"
+          >
+            {inner}
+          </button>
+        ) : (
+          <div className="flex items-center gap-4 flex-1 min-w-0">{inner}</div>
+        );
+      })()}
 
       {/* Settings — far right */}
       <div className={`flex items-center gap-1 flex-shrink-0 ${selectionMode ? "hidden" : ""}`}>

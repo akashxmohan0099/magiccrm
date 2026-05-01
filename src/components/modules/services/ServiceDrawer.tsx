@@ -382,12 +382,33 @@ function ServiceDrawerFields({
   const validate = () => {
     const e: Record<string, string> = {};
     if (!form.name.trim()) e.name = "Name is required";
-    if (form.priceType === "variants" && form.variants.length === 0) {
-      e.variants = "Add at least one variant or switch to a different price type";
+
+    // Negative prices are nonsense and previously slipped through because
+    // `min={0}` on the input only constrains arrow controls, not typed input.
+    if (form.priceType === "fixed" || form.priceType === "from") {
+      if (form.price && Number(form.price) < 0) {
+        e.price = "Price must be 0 or greater";
+      }
     }
-    if (form.priceType === "tiered" && form.priceTiers.length === 0) {
-      e.tiers = "Add at least one tier or switch to a different price type";
+
+    if (form.priceType === "variants") {
+      if (form.variants.length === 0) {
+        e.variants = "Add at least one variant or switch to a different price type";
+      } else if (form.variants.some((v) => v.price && Number(v.price) < 0)) {
+        e.variants = "Variant prices must be 0 or greater";
+      }
     }
+    if (form.priceType === "tiered") {
+      if (form.priceTiers.length === 0) {
+        e.tiers = "Add at least one tier or switch to a different price type";
+      } else if (form.priceTiers.some((t) => t.price && Number(t.price) < 0)) {
+        e.tiers = "Tier prices must be 0 or greater";
+      }
+    }
+    if (form.addons.some((a) => a.price && Number(a.price) < 0)) {
+      e.addons = "Add-on prices must be 0 or greater";
+    }
+
     if (!form.durationSplit) {
       if (form.duration && Number(form.duration) < 5) {
         e.duration = "Must be at least 5 minutes";
@@ -630,8 +651,19 @@ function ServiceDrawerFields({
     });
   };
 
+  // Drop a stale validation error so the red helper text disappears the
+  // moment the user starts fixing the underlying issue, not on next submit.
+  const clearError = (key: string) =>
+    setErrors((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+
   // ── Pricing helpers ──
-  const addVariant = () =>
+  const addVariant = () => {
+    clearError("variants");
     setForm((p) => ({
       ...p,
       variants: [
@@ -639,15 +671,21 @@ function ServiceDrawerFields({
         { id: generateId(), name: "", price: "", duration: p.duration || "60" },
       ],
     }));
-  const updateVariant = (id: string, patch: Partial<VariantInput>) =>
+  };
+  const updateVariant = (id: string, patch: Partial<VariantInput>) => {
+    clearError("variants");
     setForm((p) => ({
       ...p,
       variants: p.variants.map((v) => (v.id === id ? { ...v, ...patch } : v)),
     }));
-  const removeVariant = (id: string) =>
+  };
+  const removeVariant = (id: string) => {
+    clearError("variants");
     setForm((p) => ({ ...p, variants: p.variants.filter((v) => v.id !== id) }));
+  };
 
-  const addTier = () =>
+  const addTier = () => {
+    clearError("tiers");
     setForm((p) => ({
       ...p,
       priceTiers: [
@@ -655,13 +693,18 @@ function ServiceDrawerFields({
         { id: generateId(), name: "", price: "", duration: "", memberIds: [] },
       ],
     }));
-  const updateTier = (id: string, patch: Partial<TierInput>) =>
+  };
+  const updateTier = (id: string, patch: Partial<TierInput>) => {
+    clearError("tiers");
     setForm((p) => ({
       ...p,
       priceTiers: p.priceTiers.map((t) => (t.id === id ? { ...t, ...patch } : t)),
     }));
-  const removeTier = (id: string) =>
+  };
+  const removeTier = (id: string) => {
+    clearError("tiers");
     setForm((p) => ({ ...p, priceTiers: p.priceTiers.filter((t) => t.id !== id) }));
+  };
 
   const toggleTierMember = (tierId: string, memberId: string) => {
     setForm((p) => ({
@@ -1155,6 +1198,9 @@ function ServiceDrawerFields({
                 placeholder="0"
                 className={smallInputClass}
               />
+              {errors.price && (
+                <p className="text-[11px] text-red-500 mt-1">{errors.price}</p>
+              )}
               {form.priceType === "from" && (
                 <p className="text-[11px] text-text-tertiary mt-1">
                   Menu shows “From ${form.price || "X"}”. You confirm the exact price after booking.
@@ -2367,6 +2413,9 @@ function ServiceDrawerFields({
           Add-ons
         </p>
         <div className="space-y-2">
+          {errors.addons && (
+            <p className="text-[11px] text-red-500">{errors.addons}</p>
+          )}
           {form.addons.length > 0 && (
             <div className={`grid ${form.addonGroups.length > 0 ? "grid-cols-[1fr_120px_70px_70px_auto]" : "grid-cols-[1fr_80px_80px_auto]"} gap-2 px-0.5 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider`}>
               <span>Name</span>

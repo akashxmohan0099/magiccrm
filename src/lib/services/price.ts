@@ -73,19 +73,59 @@ export function minPrice(
   service: Service,
   opts: { memberOverrides?: number[] } = {},
 ): number {
-  const candidates: number[] = [service.price];
+  const candidates: number[] = [];
 
-  if (service.priceType === "variants") {
+  // For variants/tiered, the service-level price is unused — including it
+  // would let an unset 0 win and make the menu show "From $0" even when
+  // every variant/tier is priced. Only fall back to service.price when
+  // there are no children to draw from.
+  const hasVariants =
+    service.priceType === "variants" && (service.variants?.length ?? 0) > 0;
+  const hasTiers =
+    service.priceType === "tiered" && (service.priceTiers?.length ?? 0) > 0;
+
+  if (hasVariants) {
     for (const v of service.variants ?? []) candidates.push(v.price);
-  }
-  if (service.priceType === "tiered") {
+  } else if (hasTiers) {
     for (const t of service.priceTiers ?? []) candidates.push(t.price);
+  } else {
+    candidates.push(service.price);
   }
   for (const o of opts.memberOverrides ?? []) {
     if (typeof o === "number") candidates.push(o);
   }
 
   return Math.min(...candidates);
+}
+
+/**
+ * Shortest plausible duration for a service across its variants/tiers. Used
+ * by the menu list and preview where no member/variant has been picked yet —
+ * we want to show the smallest honest duration, not the unused base.
+ */
+export function minDuration(service: Service): number {
+  const before = service.durationActiveBefore ?? 0;
+  const proc = service.durationProcessing ?? 0;
+  const after = service.durationActiveAfter ?? 0;
+  const split = before + proc + after;
+  const baseDuration = split > 0 ? split : service.duration;
+
+  const hasVariants =
+    service.priceType === "variants" && (service.variants?.length ?? 0) > 0;
+  const hasTiers =
+    service.priceType === "tiered" && (service.priceTiers?.length ?? 0) > 0;
+
+  if (hasVariants) {
+    const ds = (service.variants ?? []).map((v) => v.duration).filter((d) => d > 0);
+    if (ds.length > 0) return Math.min(...ds);
+  }
+  if (hasTiers) {
+    const ds = (service.priceTiers ?? [])
+      .map((t) => t.duration ?? 0)
+      .filter((d) => d > 0);
+    if (ds.length > 0) return Math.min(...ds);
+  }
+  return baseDuration;
 }
 
 /**

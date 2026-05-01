@@ -5,6 +5,7 @@ import { Plus, Trash2, X, MapPin } from "lucide-react";
 import { useLocationsStore } from "@/store/locations";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/Button";
+import { toast } from "@/components/ui/Toast";
 
 interface Props {
   open: boolean;
@@ -23,6 +24,15 @@ export function LocationsManagerModal({ open, onClose }: Props) {
   const handleAdd = () => {
     const trimmed = name.trim();
     if (!trimmed) return;
+    // Same dedupe behavior as categories — without it, two locations with
+    // identical names are visually indistinguishable in the row UI.
+    const existing = locations.some(
+      (l) => l.name.trim().toLowerCase() === trimmed.toLowerCase(),
+    );
+    if (existing) {
+      toast(`A location named "${trimmed}" already exists`, "error");
+      return;
+    }
     addLocation(
       {
         workspaceId: workspaceId ?? "",
@@ -70,20 +80,35 @@ export function LocationsManagerModal({ open, onClose }: Props) {
               {locations.map((loc) => (
                 <div
                   key={loc.id}
-                  className="flex items-center gap-3 bg-surface border border-border-light rounded-lg px-3 py-2.5"
+                  className="flex items-start gap-3 bg-surface border border-border-light rounded-lg px-3 py-2.5"
                 >
-                  <input
-                    type="text"
-                    value={loc.name}
-                    onChange={(e) =>
-                      updateLocation(
-                        loc.id,
-                        { name: e.target.value },
-                        workspaceId || undefined,
-                      )
-                    }
-                    className="flex-1 bg-transparent outline-none text-[13px] font-medium text-foreground"
-                  />
+                  <div className="flex-1 min-w-0 space-y-0.5">
+                    <input
+                      type="text"
+                      value={loc.name}
+                      onChange={(e) =>
+                        updateLocation(
+                          loc.id,
+                          { name: e.target.value },
+                          workspaceId || undefined,
+                        )
+                      }
+                      className="w-full bg-transparent outline-none text-[13px] font-medium text-foreground"
+                    />
+                    <input
+                      type="text"
+                      value={loc.address ?? ""}
+                      placeholder="Address (optional)"
+                      onChange={(e) =>
+                        updateLocation(
+                          loc.id,
+                          { address: e.target.value || undefined },
+                          workspaceId || undefined,
+                        )
+                      }
+                      className="w-full bg-transparent outline-none text-[12px] text-text-tertiary placeholder:text-text-tertiary"
+                    />
+                  </div>
                   <select
                     value={loc.kind}
                     onChange={(e) =>
@@ -93,7 +118,7 @@ export function LocationsManagerModal({ open, onClose }: Props) {
                         workspaceId || undefined,
                       )
                     }
-                    className="bg-card-bg border border-border-light rounded text-[12px] px-1.5 py-0.5"
+                    className="bg-card-bg border border-border-light rounded text-[12px] px-1.5 py-0.5 mt-0.5"
                   >
                     <option value="studio">Studio</option>
                     <option value="mobile">Mobile</option>
@@ -102,7 +127,7 @@ export function LocationsManagerModal({ open, onClose }: Props) {
                     onClick={() =>
                       deleteLocation(loc.id, workspaceId || undefined)
                     }
-                    className="p-1 text-text-tertiary hover:text-red-500 cursor-pointer"
+                    className="p-1 text-text-tertiary hover:text-red-500 cursor-pointer mt-0.5"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>

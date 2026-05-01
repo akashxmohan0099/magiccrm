@@ -1584,3 +1584,16 @@ ALTER TABLE bookings ADD COLUMN IF NOT EXISTS resolved_price NUMERIC(12,2);
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS gift_card_code TEXT;
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS membership_id UUID
   REFERENCES client_memberships(id) ON DELETE SET NULL;
+
+-- Negative prices are nonsense and were previously slipping through because
+-- the HTML `min={0}` attribute only constrains arrow controls, not typed
+-- input. Enforce non-negative prices at the database level so a malformed
+-- client write can never persist.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'services_price_nonneg'
+  ) THEN
+    ALTER TABLE services ADD CONSTRAINT services_price_nonneg CHECK (price >= 0);
+  END IF;
+END $$;

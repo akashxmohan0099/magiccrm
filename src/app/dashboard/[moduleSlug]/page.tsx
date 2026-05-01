@@ -65,6 +65,13 @@ const TAB_COMPONENTS: Record<string, React.ComponentType> = {
       default: m.FormsPage,
     }))
   ),
+  // Alias: the page is labelled "Forms and Inquiries" in nav; users (and
+  // older bookmarks) sometimes hit the slugified form. Route both to FormsPage.
+  "forms-and-inquiries": dynamic(() =>
+    import("@/components/modules/forms/FormsPage").then((m) => ({
+      default: m.FormsPage,
+    }))
+  ),
   automations: dynamic(() =>
     import("@/components/modules/automations/AutomationsPage").then((m) => ({
       default: m.AutomationsPage,

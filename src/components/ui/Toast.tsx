@@ -77,7 +77,7 @@ function ToastItem({ item }: { item: ToastItem }) {
       }}
     >
       <Icon className={`w-5 h-5 flex-shrink-0 ${colors.text}`} />
-      <p className={`text-[13px] flex-1 font-medium ${colors.text}`}>{item.message}</p>
+      <p className={`text-[13px] flex-1 font-medium [overflow-wrap:anywhere] ${colors.text}`}>{item.message}</p>
       <button
         onClick={() => {
           markExiting(item.id);

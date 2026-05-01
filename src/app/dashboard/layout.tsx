@@ -119,6 +119,30 @@ function DashboardShell({ children }: { children: ReactNode }) {
   const [searchFocused, setSearchFocused] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const notifPanelRef = useRef<HTMLDivElement | null>(null);
+
+  // Standard popover dismissal: click outside the panel or hit Escape.
+  // Previously the popover relied on a fixed-overlay catcher that didn't
+  // sit above all stacking contexts, so clicks "fell through" onto rows
+  // below and triggered unintended actions.
+  useEffect(() => {
+    if (!notifOpen) return;
+    const onDocMouseDown = (e: MouseEvent) => {
+      const el = notifPanelRef.current;
+      if (el && e.target instanceof Node && !el.contains(e.target)) {
+        setNotifOpen(false);
+      }
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setNotifOpen(false);
+    };
+    document.addEventListener("mousedown", onDocMouseDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onDocMouseDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [notifOpen]);
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [repairingWorkspace, setRepairingWorkspace] = useState(false);
   const [repairWorkspaceError, setRepairWorkspaceError] = useState("");
@@ -377,7 +401,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
             </div>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-            <div className="relative">
+            <div className="relative" ref={notifPanelRef}>
               <button
                 onClick={() => setNotifOpen((o) => !o)}
                 className="relative p-2 text-text-secondary hover:text-foreground rounded-lg hover:bg-surface cursor-pointer transition-colors"
@@ -385,19 +409,16 @@ function DashboardShell({ children }: { children: ReactNode }) {
                 <Bell className="w-[17px] h-[17px]" />
               </button>
               {notifOpen && (
-                <>
-                  <div className="fixed inset-0 z-30" onClick={() => setNotifOpen(false)} />
-                  <div className="absolute right-0 top-full mt-1 w-[calc(100vw-2rem)] sm:w-72 max-w-sm bg-card-bg border border-border-light rounded-xl shadow-lg z-40 overflow-hidden">
-                    <div className="px-4 py-3 border-b border-border-light">
-                      <p className="text-[13px] font-semibold text-foreground">Notifications</p>
-                    </div>
-                    <div className="px-4 py-6 text-center">
-                      <Bell className="w-6 h-6 text-text-tertiary mx-auto mb-2" />
-                      <p className="text-[13px] text-text-tertiary">No new notifications</p>
-                      <p className="text-[11px] text-text-tertiary mt-1">You&apos;re all caught up.</p>
-                    </div>
+                <div className="absolute right-0 top-full mt-1 w-[calc(100vw-2rem)] sm:w-72 max-w-sm bg-card-bg border border-border-light rounded-xl shadow-lg z-40 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-border-light">
+                    <p className="text-[13px] font-semibold text-foreground">Notifications</p>
                   </div>
-                </>
+                  <div className="px-4 py-6 text-center">
+                    <Bell className="w-6 h-6 text-text-tertiary mx-auto mb-2" />
+                    <p className="text-[13px] text-text-tertiary">No new notifications</p>
+                    <p className="text-[11px] text-text-tertiary mt-1">You&apos;re all caught up.</p>
+                  </div>
+                </div>
               )}
             </div>
             <div className="w-px h-5 bg-border-light mx-1" />

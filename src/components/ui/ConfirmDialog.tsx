@@ -26,7 +26,12 @@ export function ConfirmDialog({
   const messageId = useId();
   return (
     <Modal open={open} onClose={onClose} title={title} role="alertdialog" aria-describedby={messageId}>
-      <p id={messageId} className="text-sm text-text-secondary mb-6">{message}</p>
+      <p
+        id={messageId}
+        className="text-sm text-text-secondary mb-6 [overflow-wrap:anywhere] break-words"
+      >
+        {message}
+      </p>
       <div className="flex justify-end gap-2">
         <Button variant="ghost" onClick={onClose}>Cancel</Button>
         <Button

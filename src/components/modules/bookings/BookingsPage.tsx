@@ -145,14 +145,23 @@ export function BookingsPage() {
       key: "serviceId" as keyof Booking,
       label: "Service",
       sortable: false,
-      render: (b) => (
-        <InlineSelect
-          value={b.serviceId || ""}
-          options={services.map((s) => ({ value: s.id, label: s.name }))}
-          onChange={(v) => handleServiceChange(b.id, v)}
-          placeholder="Select service"
-        />
-      ),
+      // When the booking has no service, surface a snippet of the operator's
+      // notes as the placeholder so the row tells the user something useful
+      // instead of just "Select service" + $— + —m + Unassigned.
+      render: (b) => {
+        const noServicePlaceholder =
+          !b.serviceId && b.notes?.trim()
+            ? b.notes.trim().slice(0, 40) + (b.notes.trim().length > 40 ? "…" : "")
+            : "Select service";
+        return (
+          <InlineSelect
+            value={b.serviceId || ""}
+            options={services.map((s) => ({ value: s.id, label: s.name }))}
+            onChange={(v) => handleServiceChange(b.id, v)}
+            placeholder={noServicePlaceholder}
+          />
+        );
+      },
     },
     {
       key: "clientId",

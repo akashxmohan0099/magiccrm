@@ -33,6 +33,7 @@ import {
 import {
   resolvePrice,
   resolveDuration,
+  minDuration,
   isFromPriced,
   isPromoActive,
   displayPrice,
@@ -1699,7 +1700,7 @@ function ServiceCardPreview({
           )}
           <div className="flex items-center gap-3 text-[12px] text-text-tertiary">
             <span className="flex items-center gap-1 tabular-nums">
-              <Clock className="w-3 h-3" /> {service.duration} min
+              <Clock className="w-3 h-3" /> {minDuration(service)} min
             </span>
             {providers.length > 0 && (
               <span className="flex items-center gap-1">
@@ -2666,7 +2667,7 @@ function ServiceCardCompact({
         <p className={`text-[14px] font-semibold text-foreground truncate ${headingClass}`}>{service.name}</p>
         <div className="flex items-center gap-3 text-[12px] text-text-tertiary mt-0.5">
           <span className="tabular-nums flex items-center gap-1">
-            <Clock className="w-3 h-3" /> {service.duration} min
+            <Clock className="w-3 h-3" /> {minDuration(service)} min
           </span>
           {providers.length > 0 && (
             <span className="flex items-center gap-1">
@@ -2728,7 +2729,7 @@ function ServiceCardGrid({
       <div className="p-3 flex-1 flex flex-col">
         <p className={`text-[14px] font-semibold text-foreground truncate ${headingClass}`}>{service.name}</p>
         <div className="flex items-center gap-2 text-[11px] text-text-tertiary mt-0.5">
-          <span className="tabular-nums">{service.duration}min</span>
+          <span className="tabular-nums">{minDuration(service)}min</span>
           <span>·</span>
           <span>
             {isAnyone ? "Any" : providers.length === 1 ? providers[0].name : `${providers.length}`}
