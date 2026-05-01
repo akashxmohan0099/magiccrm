@@ -1201,7 +1201,7 @@ function ServiceDrawerFields({
               {errors.price && (
                 <p className="text-[11px] text-red-500 mt-1">{errors.price}</p>
               )}
-              {form.priceType === "from" && (
+              {form.priceType === "from" && !errors.price && (
                 <p className="text-[11px] text-text-tertiary mt-1">
                   Menu shows “From ${form.price || "X"}”. You confirm the exact price after booking.
                 </p>
@@ -1274,13 +1274,20 @@ function ServiceDrawerFields({
               {errors.variants && (
                 <p className="text-[11px] text-red-500 mt-1.5">{errors.variants}</p>
               )}
-              <p className="text-[11px] text-text-tertiary mt-2">
-                Menu shows “From $
-                {form.variants.length > 0
-                  ? Math.min(...form.variants.map((v) => Number(v.price) || 0))
-                  : "X"}
-                ”. Each variant has its own price and duration.
-              </p>
+              {!errors.variants && (
+                <p className="text-[11px] text-text-tertiary mt-2">
+                  Menu shows “From $
+                  {(() => {
+                    // Skip negative draft values so the preview doesn't echo a
+                    // value the validator just rejected.
+                    const valid = form.variants
+                      .map((v) => Number(v.price) || 0)
+                      .filter((p) => p >= 0);
+                    return valid.length > 0 ? Math.min(...valid) : "X";
+                  })()}
+                  ”. Each variant has its own price and duration.
+                </p>
+              )}
             </div>
           )}
 
