@@ -8,6 +8,7 @@ import {
   dbUpdateFormResponse,
   dbDeleteFormResponse,
 } from "@/lib/db/form-responses";
+import { surfaceDbError } from "./_db-error";
 
 interface FormResponsesStore {
   formResponses: FormResponse[];
@@ -41,7 +42,7 @@ export const useFormResponsesStore = create<FormResponsesStore>()(
           dbCreateFormResponse(
             workspaceId,
             response as unknown as Record<string, unknown>
-          ).catch(console.error);
+          ).catch(surfaceDbError("form-responses.add"));
         }
         return response;
       },
@@ -57,7 +58,7 @@ export const useFormResponsesStore = create<FormResponsesStore>()(
             workspaceId,
             id,
             data as Record<string, unknown>
-          ).catch(console.error);
+          ).catch(surfaceDbError("form-responses.update"));
         }
       },
 
@@ -66,7 +67,7 @@ export const useFormResponsesStore = create<FormResponsesStore>()(
           formResponses: s.formResponses.filter((r) => r.id !== id),
         }));
         if (workspaceId) {
-          dbDeleteFormResponse(workspaceId, id).catch(console.error);
+          dbDeleteFormResponse(workspaceId, id).catch(surfaceDbError("form-responses.delete"));
         }
       },
 

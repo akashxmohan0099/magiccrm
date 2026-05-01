@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams } from "next/navigation";
 import posthog from "posthog-js";
+import { CardOnFileForm } from "./CardOnFileForm";
 import {
   CheckCircle2,
   Loader2,
@@ -24,6 +25,12 @@ interface Service {
   duration: number;
   price: number;
   category?: string;
+  depositType?: "none" | "percentage" | "fixed";
+  depositAmount?: number;
+  rebookAfterDays?: number;
+  allowGroupBooking?: boolean;
+  maxGroupSize?: number;
+  requiresCardOnFile?: boolean;
 }
 
 interface AvailabilitySlot {
@@ -119,6 +126,16 @@ export default function PublicBookingPage() {
   const [clientEmail, setClientEmail] = useState("");
   const [clientPhone, setClientPhone] = useState("");
   const [notes, setNotes] = useState("");
+  // Group booking — extra guest names attached to the same time slot.
+  const [guestNames, setGuestNames] = useState<string[]>([]);
+  // Card-on-file: when service requires it, capture before submit.
+  const [cardOnFile, setCardOnFile] = useState<{ customerId: string; setupIntentId: string } | null>(null);
+  // Gift card redemption — entered code + validated balance.
+  const [giftCardCode, setGiftCardCode] = useState("");
+  const [giftCardCheck, setGiftCardCheck] = useState<
+    { status: "valid"; balance: number } | { status: "invalid"; reason: string } | null
+  >(null);
+  const [checkingGift, setCheckingGift] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<BookingConfirmation | null>(null);
@@ -184,23 +201,64 @@ export default function PublicBookingPage() {
       e.preventDefault();
       if (!workspaceId || !selectedService || !selectedDate || !selectedTime) return;
 
+      // Card-on-file gate: refuse to submit without a saved SetupIntent
+      // when the service requires one. The error is reported in-form
+      // rather than swallowed so the user knows to fill the card panel.
+      if (selectedService.requiresCardOnFile && !cardOnFile) {
+        setSubmitError("Please add a card on file before continuing.");
+        return;
+      }
+
       setSubmitting(true);
       setSubmitError(null);
 
       try {
-        const res = await fetch("/api/public/book", {
+        // Group bookings → basket endpoint. Each cleaned guest name becomes
+        // a parallel item attached to the primary booking.
+        const cleanGuests = guestNames.map((g) => g.trim()).filter(Boolean);
+        const useBasket = cleanGuests.length > 0;
+        const url = useBasket ? "/api/public/book/basket" : "/api/public/book";
+        const body = useBasket
+          ? {
+              slug,
+              clientName: clientName.trim(),
+              clientEmail: clientEmail.trim(),
+              clientPhone: clientPhone.trim() || undefined,
+              notes: notes.trim() || undefined,
+              date: selectedDate,
+              time: selectedTime,
+              items: [
+                { serviceId: selectedService.id },
+                ...cleanGuests.map((name) => ({
+                  serviceId: selectedService.id,
+                  guestName: name,
+                  guestOf: 0,
+                })),
+              ],
+              stripeCustomerId: cardOnFile?.customerId,
+              stripeSetupIntentId: cardOnFile?.setupIntentId,
+            }
+          : {
+              slug,
+              serviceId: selectedService.id,
+              date: selectedDate,
+              time: selectedTime,
+              clientName: clientName.trim(),
+              clientEmail: clientEmail.trim(),
+              clientPhone: clientPhone.trim() || undefined,
+              notes: notes.trim() || undefined,
+              stripeCustomerId: cardOnFile?.customerId,
+              stripeSetupIntentId: cardOnFile?.setupIntentId,
+              giftCardCode:
+                giftCardCheck?.status === "valid"
+                  ? giftCardCode.trim().toUpperCase()
+                  : undefined,
+            };
+
+        const res = await fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            slug,
-            serviceId: selectedService.id,
-            date: selectedDate,
-            time: selectedTime,
-            clientName: clientName.trim(),
-            clientEmail: clientEmail.trim(),
-            clientPhone: clientPhone.trim() || undefined,
-            notes: notes.trim() || undefined,
-          }),
+          body: JSON.stringify(body),
         });
 
         const data = await res.json();
@@ -208,6 +266,11 @@ export default function PublicBookingPage() {
         if (!res.ok) {
           setSubmitError(data.error || "Failed to create booking. Please try again.");
           return;
+        }
+        // Basket response uses `bookings[]`; normalize to the same shape the
+        // confirmation step expects (single booking → use the first/lead).
+        if (useBasket && Array.isArray(data.bookings) && data.bookings.length > 0) {
+          data.booking = data.bookings[0];
         }
 
         posthog.capture("public_booking_submitted", {
@@ -217,6 +280,50 @@ export default function PublicBookingPage() {
           time: selectedTime,
           business_slug: slug,
         });
+
+        // Redirect to Stripe deposit checkout when the service requires a
+        // deposit. Single-service path always considers the selected service;
+        // basket path defers to the server's `requiresDeposit` + `leadBookingId`
+        // because guests under the lead don't get a separate deposit.
+        const needsDeposit = useBasket
+          ? !!data.requiresDeposit
+          : selectedService.depositType !== "none" &&
+            !!selectedService.depositAmount &&
+            selectedService.depositAmount > 0;
+        const depositBookingId = useBasket
+          ? (data.leadBookingId as string | undefined)
+          : data.booking?.id;
+        const depositServiceId = useBasket
+          ? (data.depositServiceId as string | undefined) ?? selectedService.id
+          : selectedService.id;
+
+        if (needsDeposit && depositBookingId) {
+          try {
+            const dRes = await fetch("/api/public/book/deposit", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                slug,
+                bookingId: depositBookingId,
+                serviceId: depositServiceId,
+                customerEmail: clientEmail.trim(),
+                returnUrl: window.location.href,
+              }),
+            });
+            const dData = await dRes.json();
+            if (dRes.ok && dData.url) {
+              window.location.href = dData.url;
+              return;
+            }
+            // Deposit setup failed (e.g. workspace hasn't onboarded with
+            // Stripe). Treat the booking as confirmed and surface a soft
+            // notice rather than blocking the customer.
+            console.warn("[book] deposit checkout skipped:", dData.error);
+          } catch (err) {
+            console.warn("[book] deposit checkout error:", err);
+          }
+        }
+
         setConfirmation(data.booking);
         setStep("confirmation");
       } catch {
@@ -225,7 +332,7 @@ export default function PublicBookingPage() {
         setSubmitting(false);
       }
     },
-    [workspaceId, slug, selectedService, selectedDate, selectedTime, clientName, clientEmail, clientPhone, notes]
+    [workspaceId, slug, selectedService, selectedDate, selectedTime, clientName, clientEmail, clientPhone, notes, guestNames, cardOnFile, giftCardCode, giftCardCheck]
   );
 
   // ---- calendar navigation ----
@@ -332,6 +439,38 @@ export default function PublicBookingPage() {
             <Calendar className="w-4 h-4" />
             Add to Google Calendar
           </a>
+          {selectedService?.rebookAfterDays && selectedService.rebookAfterDays > 0 && (
+            (() => {
+              // Suggested next-visit date = appointment date + cadence.
+              const suggested = new Date(confirmation.date);
+              suggested.setDate(suggested.getDate() + selectedService.rebookAfterDays);
+              const suggestedStr = suggested.toISOString().slice(0, 10);
+              return (
+                <div className="bg-white border border-gray-200 rounded-2xl p-4 text-left">
+                  <p className="text-[11px] uppercase tracking-wider text-gray-500 mb-1">
+                    Book your next
+                  </p>
+                  <p className="text-[13px] text-gray-700 mb-3">
+                    Most clients rebook this around <strong>{formatDisplayDate(suggestedStr)}</strong>. Lock it in now while it's fresh.
+                  </p>
+                  <button
+                    onClick={() => {
+                      // Reset the flow back to date-pick with the same service
+                      // pre-selected and the suggested date pre-filled.
+                      setStep("date");
+                      setSelectedDate(suggestedStr);
+                      setSelectedTime(null);
+                      setConfirmation(null);
+                    }}
+                    className="text-[13px] font-medium px-3 py-2 rounded-lg cursor-pointer"
+                    style={{ backgroundColor: brandColor, color: "#fff" }}
+                  >
+                    Pick a time on {formatDisplayDate(suggestedStr)}
+                  </button>
+                </div>
+              );
+            })()
+          )}
           <p className="text-xs text-gray-400">
             A confirmation has been sent to {clientEmail}.
           </p>
@@ -612,6 +751,143 @@ export default function PublicBookingPage() {
                     className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400 transition"
                   />
                 </div>
+
+                {/* Gift card */}
+                {selectedService && selectedService.price > 0 && (
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                      Gift card <span className="text-gray-400 font-normal">(optional)</span>
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={giftCardCode}
+                        onChange={(e) => {
+                          setGiftCardCode(e.target.value.toUpperCase());
+                          setGiftCardCheck(null);
+                        }}
+                        placeholder="ABCD-EFGH-1234"
+                        className="flex-1 px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm font-mono uppercase tracking-wider text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400 transition"
+                      />
+                      <button
+                        type="button"
+                        disabled={!giftCardCode.trim() || checkingGift}
+                        onClick={async () => {
+                          setCheckingGift(true);
+                          try {
+                            const res = await fetch("/api/public/gift-cards/redeem", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({
+                                slug,
+                                code: giftCardCode.trim().toUpperCase(),
+                              }),
+                            });
+                            const data = await res.json();
+                            if (!res.ok) {
+                              setGiftCardCheck({
+                                status: "invalid",
+                                reason: data.error ?? "Invalid code",
+                              });
+                            } else {
+                              setGiftCardCheck({
+                                status: "valid",
+                                balance: data.remainingBalance,
+                              });
+                            }
+                          } catch {
+                            setGiftCardCheck({ status: "invalid", reason: "Lookup failed" });
+                          } finally {
+                            setCheckingGift(false);
+                          }
+                        }}
+                        className="px-3 py-2 rounded-lg text-xs font-medium border border-gray-200 text-gray-700 hover:border-gray-300 disabled:opacity-50 cursor-pointer"
+                      >
+                        {checkingGift ? "Checking…" : "Apply"}
+                      </button>
+                    </div>
+                    {giftCardCheck?.status === "valid" && (
+                      <p className="text-[11px] text-emerald-700 mt-1.5">
+                        ✓ Card applied · ${giftCardCheck.balance.toFixed(2)} balance available
+                      </p>
+                    )}
+                    {giftCardCheck?.status === "invalid" && (
+                      <p className="text-[11px] text-red-600 mt-1.5">
+                        {giftCardCheck.reason}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Card on file */}
+                {selectedService?.requiresCardOnFile && clientEmail.trim() && (
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                      Card on file <span className="text-red-500">*</span>
+                    </label>
+                    <CardOnFileForm
+                      slug={slug as string}
+                      customerEmail={clientEmail.trim()}
+                      customerName={clientName.trim() || undefined}
+                      brandColor={brandColor}
+                      onReady={(d) => setCardOnFile(d)}
+                      onError={(msg) => setSubmitError(msg)}
+                    />
+                  </div>
+                )}
+
+                {/* Guests (group booking) */}
+                {selectedService?.allowGroupBooking && (
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                      Guests <span className="text-gray-400 font-normal">(optional)</span>
+                    </label>
+                    {guestNames.map((name, i) => (
+                      <div key={i} className="flex gap-2 mb-2">
+                        <input
+                          type="text"
+                          value={name}
+                          onChange={(e) =>
+                            setGuestNames((g) =>
+                              g.map((v, idx) => (idx === i ? e.target.value : v)),
+                            )
+                          }
+                          placeholder={`Guest ${i + 1} name`}
+                          className="flex-1 px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400 transition"
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setGuestNames((g) => g.filter((_, idx) => idx !== i))
+                          }
+                          className="px-3 py-2.5 text-xs text-gray-500 hover:text-red-500 cursor-pointer"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                    {(() => {
+                      const cap = selectedService.maxGroupSize ?? 4;
+                      const canAdd = guestNames.length + 1 < cap;
+                      if (!canAdd) {
+                        return (
+                          <p className="text-[11px] text-gray-400 mt-1">
+                            Up to {cap - 1} additional guests.
+                          </p>
+                        );
+                      }
+                      return (
+                        <button
+                          type="button"
+                          onClick={() => setGuestNames((g) => [...g, ""])}
+                          className="text-xs text-gray-700 hover:text-gray-900 cursor-pointer underline"
+                        >
+                          + Add a guest
+                        </button>
+                      );
+                    })()}
+                  </div>
+                )}
 
                 {/* Notes */}
                 <div>

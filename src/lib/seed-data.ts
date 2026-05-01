@@ -88,9 +88,16 @@ export function seedAllStores(
 
   // Default behaviour (called from dashboard layout on first mount): only
   // seed if stores are empty. /dev launcher passes force:true to override.
+  // Bail only when every key seed-owned store already has data — old
+  // logic bailed on ANY store having data, which left services empty
+  // after a persist version bump (clients still cached, services wiped).
   if (!force) {
-    if (useClientsStore.getState().clients.length > 0) return;
-    if (useServicesStore.getState().services.length > 0) return;
+    const hasClients = useClientsStore.getState().clients.length > 0;
+    const hasServices = useServicesStore.getState().services.length > 0;
+    const hasTeam = useTeamStore.getState().members.length > 0;
+    if (hasClients && hasServices && hasTeam) return;
+    // Partial state — clear and re-seed cleanly.
+    clearAllStores();
   }
 
   // Empty everything first when forcing — guarantees the new persona
@@ -120,7 +127,7 @@ export function seedAllStores(
 
 function clearAllStores() {
   useClientsStore.setState({ clients: [] });
-  useServicesStore.setState({ services: [] });
+  useServicesStore.setState({ services: [], memberServices: [] });
   useBookingsStore.setState({ bookings: [] });
   useCommunicationStore.setState({ conversations: [], messages: {} });
   useInquiriesStore.setState({ inquiries: [] });
@@ -225,18 +232,132 @@ function seedHairSalon(role: DevRole) {
   const svcDefaults = { bufferMinutes: 0, requiresConfirmation: false, depositType: "none" as const, depositAmount: 0, locationType: "studio" as const };
 
   const services = [
-    { id: svcCutBlowdry, workspaceId: WS, name: "Cut & Blow Dry", description: "Precision cut with professional blow dry styling", duration: 60, price: 85, category: "Hair", enabled: true, sortOrder: 0, ...svcDefaults, createdAt: daysAgo(90), updatedAt: now },
-    { id: svcColour, workspaceId: WS, name: "Full Colour", description: "Root to tip single-process colour", duration: 120, price: 180, category: "Hair", enabled: true, sortOrder: 1, ...svcDefaults, createdAt: daysAgo(90), updatedAt: now },
-    { id: svcBalayage, workspaceId: WS, name: "Balayage", description: "Hand-painted highlights for a natural sun-kissed look", duration: 180, price: 320, category: "Hair", enabled: true, sortOrder: 2, ...svcDefaults, createdAt: daysAgo(90), updatedAt: now },
-    { id: svcKeratin, workspaceId: WS, name: "Keratin Treatment", description: "Smoothing treatment for frizz-free, glossy hair", duration: 150, price: 280, category: "Hair", enabled: true, sortOrder: 3, ...svcDefaults, createdAt: daysAgo(90), updatedAt: now },
+    // Tiered pricing demo — Junior/Senior/Master, each artist in a tier.
+    {
+      id: svcCutBlowdry, workspaceId: WS, name: "Cut & Blow Dry",
+      description: "Precision cut with professional blow dry styling",
+      duration: 60, price: 65, category: "Hair", enabled: true, sortOrder: 0,
+      ...svcDefaults,
+      priceType: "tiered" as const,
+      priceTiers: [
+        { id: "tier-cut-jr", name: "Junior", price: 65, memberIds: [stylist2Id], sortOrder: 0 },
+        { id: "tier-cut-sr", name: "Senior", price: 85, memberIds: [stylist1Id], sortOrder: 1 },
+        { id: "tier-cut-master", name: "Master", price: 120, memberIds: [ownerMemberId], sortOrder: 2 },
+      ],
+      createdAt: daysAgo(90), updatedAt: now,
+    },
+    // Add-ons + intake questions demo — Full Colour with extras + colour history.
+    {
+      id: svcColour, workspaceId: WS, name: "Full Colour",
+      description: "Root to tip single-process colour",
+      duration: 120, price: 180, category: "Hair", enabled: true, sortOrder: 1,
+      ...svcDefaults,
+      addons: [
+        { id: "addon-toner", name: "Toner", price: 25, duration: 15, sortOrder: 0 },
+        { id: "addon-deep-cond", name: "Deep conditioner", price: 15, duration: 10, sortOrder: 1 },
+        { id: "addon-scalp", name: "Scalp massage", price: 20, duration: 10, sortOrder: 2 },
+      ],
+      intakeQuestions: [
+        {
+          id: "q-colour-history", label: "Have you coloured your hair in the last 6 weeks?",
+          type: "yesno" as const, required: true, sortOrder: 0,
+        },
+        {
+          id: "q-allergies", label: "Any allergies to dye?",
+          type: "text" as const, required: false,
+          hint: "Helps us patch test before the service",
+          sortOrder: 1,
+        },
+      ],
+      createdAt: daysAgo(90), updatedAt: now,
+    },
+    // Variants demo — client picks Short/Medium/Long, each with its own price + duration.
+    {
+      id: svcBalayage, workspaceId: WS, name: "Balayage",
+      description: "Hand-painted highlights for a natural sun-kissed look",
+      duration: 180, price: 320, category: "Hair", enabled: true, sortOrder: 2,
+      ...svcDefaults,
+      priceType: "variants" as const,
+      variants: [
+        { id: "v-bal-short", name: "Short hair", price: 320, duration: 120, sortOrder: 0 },
+        { id: "v-bal-medium", name: "Medium hair", price: 400, duration: 150, sortOrder: 1 },
+        { id: "v-bal-long", name: "Long hair", price: 500, duration: 180, sortOrder: 2 },
+      ],
+      createdAt: daysAgo(90), updatedAt: now,
+    },
+    // Time split + weekday restriction demo — Keratin has long processing time
+    // and is only bookable Mon–Thu (Fri/weekend reserved for higher-margin work).
+    {
+      id: svcKeratin, workspaceId: WS, name: "Keratin Treatment",
+      description: "Smoothing treatment for frizz-free, glossy hair",
+      duration: 150, price: 280, category: "Hair", enabled: true, sortOrder: 3,
+      ...svcDefaults,
+      durationActiveBefore: 30,
+      durationProcessing: 60,
+      durationActiveAfter: 60,
+      availableWeekdays: [1, 2, 3, 4], // Mon–Thu
+      createdAt: daysAgo(90), updatedAt: now,
+    },
     { id: svcManiPedi, workspaceId: WS, name: "Mani & Pedi Combo", description: "Classic manicure and pedicure with polish", duration: 75, price: 95, category: "Nails", enabled: true, sortOrder: 4, ...svcDefaults, createdAt: daysAgo(90), updatedAt: now },
     { id: svcGelNails, workspaceId: WS, name: "Gel Nails – Full Set", description: "Long-lasting gel overlay or extensions", duration: 90, price: 120, category: "Nails", enabled: true, sortOrder: 5, ...svcDefaults, createdAt: daysAgo(90), updatedAt: now },
-    { id: svcLashLift, workspaceId: WS, name: "Lash Lift & Tint", description: "Natural lash curl with darkening tint", duration: 60, price: 90, category: "Lashes & Brows", enabled: true, sortOrder: 6, ...svcDefaults, createdAt: daysAgo(90), updatedAt: now },
-    { id: svcBrowLamination, workspaceId: WS, name: "Brow Lamination", description: "Brow restructuring for a fluffy, full look", duration: 45, price: 75, category: "Lashes & Brows", enabled: true, sortOrder: 7, ...svcDefaults, createdAt: daysAgo(90), updatedAt: now },
-    { id: svcFacial, workspaceId: WS, name: "Signature Facial", description: "Deep cleanse, exfoliation, mask, and hydration", duration: 60, price: 130, category: "Skin", enabled: true, sortOrder: 8, ...svcDefaults, createdAt: daysAgo(90), updatedAt: now },
+    {
+      id: svcLashLift, workspaceId: WS, name: "Lash Lift & Tint",
+      description: "Natural lash curl with darkening tint",
+      duration: 60, price: 90, category: "Lashes & Brows", enabled: true, sortOrder: 6,
+      ...svcDefaults,
+      tags: ["lash", "popular"],
+      createdAt: daysAgo(90), updatedAt: now,
+    },
+    {
+      id: svcBrowLamination, workspaceId: WS, name: "Brow Lamination",
+      description: "Brow restructuring for a fluffy, full look",
+      duration: 45, price: 75, category: "Lashes & Brows", enabled: true, sortOrder: 7,
+      ...svcDefaults,
+      tags: ["brow"],
+      createdAt: daysAgo(90), updatedAt: now,
+    },
+    // Featured / promo demo — Signature Facial pinned to "Today's offers"
+    // with a 30% discount and tags for the public-page filter chips.
+    {
+      id: svcFacial, workspaceId: WS, name: "Signature Facial",
+      description: "Deep cleanse, exfoliation, mask, and hydration",
+      duration: 60, price: 130, category: "Skin", enabled: true, sortOrder: 8,
+      ...svcDefaults,
+      addons: [
+        { id: "addon-led", name: "LED therapy", price: 35, duration: 15, sortOrder: 0 },
+        { id: "addon-hand-massage", name: "Hand massage", price: 20, duration: 10, sortOrder: 1 },
+      ],
+      featured: true,
+      promoLabel: "Today's offer",
+      promoPrice: 89,
+      tags: ["facial", "skin", "popular"],
+      createdAt: daysAgo(90), updatedAt: now,
+    },
     { id: svcWaxing, workspaceId: WS, name: "Full Leg & Bikini Wax", description: "Smooth full leg and bikini line wax", duration: 45, price: 85, category: "Skin", enabled: true, sortOrder: 9, ...svcDefaults, createdAt: daysAgo(90), updatedAt: now },
   ];
-  useServicesStore.setState({ services });
+
+  // Member ↔ service assignments. Empty list for a service = "Anyone"
+  // (any active team member can deliver it). Only add rows when a
+  // service is genuinely restricted to a subset.
+  // - Cut & Blow Dry, Full Colour, Facial, Waxing: Anyone (no rows)
+  // - Balayage: Sophie + Mia
+  // - Keratin: Sophie + Liam
+  // - Mani/Pedi + Gel Nails: Liam only
+  // - Lash Lift + Brow Lamination: Mia only
+  const ms = (memberId: string, serviceId: string) => ({
+    id: id(), memberId, serviceId, workspaceId: WS,
+  });
+  const memberServices = [
+    ms(ownerMemberId, svcBalayage),
+    ms(stylist1Id, svcBalayage),
+    ms(ownerMemberId, svcKeratin),
+    ms(stylist2Id, svcKeratin),
+    ms(stylist2Id, svcManiPedi),
+    ms(stylist2Id, svcGelNails),
+    ms(stylist1Id, svcLashLift),
+    ms(stylist1Id, svcBrowLamination),
+  ];
+  useServicesStore.setState({ services, memberServices });
 
   const clientEmma = id();
   const clientJess = id();
@@ -431,7 +552,7 @@ function seedSoloLash(role: DevRole) {
     { name: "Brow Lamination", desc: "Brow restructuring with tint", duration: 45, price: 75, category: "Brow" },
     { name: "Lash Removal", desc: "Safe removal of existing extensions", duration: 30, price: 40, category: "Lash" },
   ]);
-  useServicesStore.setState({ services });
+  useServicesStore.setState({ services, memberServices: [] });
 
   const clientNames = [
     "Sarah M.", "Mia L.", "Jess T.", "Chloe F.", "Ruby K.",
@@ -528,7 +649,7 @@ function seedSpa(role: DevRole) {
     { name: "Pedicure", desc: "Classic pedicure with polish", duration: 60, price: 85, category: "Nails" },
     { name: "Body Scrub", desc: "Full body exfoliation + hydration", duration: 60, price: 110, category: "Body" },
   ]);
-  useServicesStore.setState({ services });
+  useServicesStore.setState({ services, memberServices: [] });
 
   const clientNames = [
     "Holly P.", "Aisha M.", "Sienna B.", "Pearl V.", "Lila K.",
@@ -619,7 +740,7 @@ function seedSoloMua(role: DevRole) {
     { name: "Photoshoot", desc: "Editorial / commercial makeup", duration: 90, price: 220, category: "Makeup" },
     { name: "Lesson", desc: "1:1 makeup lesson", duration: 90, price: 150, category: "Lesson" },
   ]);
-  useServicesStore.setState({ services });
+  useServicesStore.setState({ services, memberServices: [] });
 
   const clientNames = [
     "Aurora L.", "Ines M.", "Belle K.", "Cora T.", "Dahlia R.",

@@ -6,6 +6,8 @@ import {
   getAvailableTimeSlots,
   resolveBookingWorkspaceBySlug,
 } from "@/lib/server/public-booking";
+import { maxDuration } from "@/lib/services/price";
+import { mapServiceFromDB } from "@/lib/db/services";
 
 /**
  * Public booking info endpoint. No auth required.
@@ -48,22 +50,29 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: "Invalid bookingsDate" }, { status: 400 });
       }
 
-      const { data: service } = await supabase
+      const { data: serviceRow } = await supabase
         .from("services")
-        .select("id, duration")
+        .select("*")
         .eq("id", serviceId)
         .eq("workspace_id", workspaceId)
         .maybeSingle();
 
-      if (!service) {
+      if (!serviceRow) {
         return NextResponse.json({ error: "Service not found" }, { status: 404 });
       }
+
+      // Conservative slot duration: take the longest possible duration across
+      // all tiers/variants so a Junior who's slower than base never gets booked
+      // into a slot too short for them. The actual booking duration is
+      // recomputed once we auto-assign the member at insert time.
+      const service = mapServiceFromDB(serviceRow);
+      const slotDuration = maxDuration(service);
 
       const availableSlots = await getAvailableTimeSlots({
         workspaceId,
         serviceId,
         date: bookingsDate,
-        durationMinutes: Number(service.duration ?? 60),
+        durationMinutes: slotDuration,
         defaultAvailability: availability,
       });
 

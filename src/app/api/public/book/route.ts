@@ -7,6 +7,10 @@ import {
   getAvailableMembersForSlot,
   resolveBookingWorkspaceBySlug,
 } from "@/lib/server/public-booking";
+import { maxDuration, resolveDuration } from "@/lib/services/price";
+import { mapServiceFromDB } from "@/lib/db/services";
+import { mapClientFromDB } from "@/lib/db/clients";
+import { checkPatchTest } from "@/lib/services/patch-test";
 import { runAutomationRules } from "@/lib/server/automation-runner";
 
 /**
@@ -28,7 +32,22 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { slug, serviceId, date, time, clientName, clientEmail, clientPhone, notes } = body;
+    const {
+      slug,
+      serviceId,
+      date,
+      time,
+      clientName,
+      clientEmail,
+      clientPhone,
+      notes,
+      locationId,
+      stripeCustomerId,
+      stripeSetupIntentId,
+      variantId,
+      addonIds,
+      giftCardCode,
+    } = body;
 
     // ---- validation ----
     if (!slug || !serviceId || !date || !time || !clientName || !clientEmail) {
@@ -69,32 +88,67 @@ export async function POST(req: NextRequest) {
     const availability = await fetchWorkspaceAvailability(workspaceId);
 
     // ---- fetch the service ----
-    const { data: service } = await supabase
+    const { data: serviceRow } = await supabase
       .from("services")
-      .select("id, name, duration, price")
+      .select("*")
       .eq("id", serviceId)
       .eq("workspace_id", workspaceId)
       .maybeSingle();
 
-    if (!service) {
+    if (!serviceRow) {
       return NextResponse.json({ error: "Service not found" }, { status: 404 });
     }
 
-    const durationMinutes = service.duration || 60;
-    const endMinutes = parseInt(time.split(":")[0]) * 60 + parseInt(time.split(":")[1]) + durationMinutes;
-    const endHours = String(Math.floor(endMinutes / 60)).padStart(2, "0");
-    const endMins = String(endMinutes % 60).padStart(2, "0");
-    const endTime = `${endHours}:${endMins}`;
+    const service = mapServiceFromDB(serviceRow);
+
+    // Card-on-file gate: services flagged requiresCardOnFile must arrive
+    // with a Stripe customer + SetupIntent id. The booking page collects
+    // these via /api/public/book/setup-card before submitting.
+    if (service.requiresCardOnFile && !stripeCustomerId) {
+      return NextResponse.json(
+        { error: "This service requires a card on file. Please add a card and try again." },
+        { status: 400 },
+      );
+    }
+
+    // Patch-test gate: when required, the client must have a non-expired
+    // matching test on file. Anonymous bookings (no existing client row)
+    // are always rejected — we have no history to consult.
+    if (service.requiresPatchTest) {
+      const { data: clientRow } = await supabase
+        .from("clients")
+        .select("*")
+        .eq("workspace_id", workspaceId)
+        .eq("email", clientEmail)
+        .maybeSingle();
+      const client = clientRow ? mapClientFromDB(clientRow) : null;
+      const status = checkPatchTest(service, client, `${date}T${time}:00`);
+      if (!status.passes) {
+        return NextResponse.json(
+          { error: status.reason ?? "Patch test required.", patchTestRequired: true },
+          { status: 400 },
+        );
+      }
+    }
+
+    // Slot reservation: hold the longest possible duration so the chosen
+    // member is guaranteed to fit. The actual stored duration is recomputed
+    // below from the assigned member's tier.
+    const slotDuration = maxDuration(service);
+    const startMinutes = parseInt(time.split(":")[0]) * 60 + parseInt(time.split(":")[1]);
+    const slotEndMinutes = startMinutes + slotDuration;
+    const slotEndHours = String(Math.floor(slotEndMinutes / 60)).padStart(2, "0");
+    const slotEndMins = String(slotEndMinutes % 60).padStart(2, "0");
+    const slotEndTime = `${slotEndHours}:${slotEndMins}`;
 
     const startAt = `${date}T${time}:00`;
-    const endAt = `${date}T${endTime}:00`;
 
     const availableMembers = await getAvailableMembersForSlot({
       workspaceId,
       serviceId,
       date,
       startTime: time,
-      endTime,
+      endTime: slotEndTime,
       defaultAvailability: availability,
     });
 
@@ -104,6 +158,18 @@ export async function POST(req: NextRequest) {
         { status: 409 }
       );
     }
+
+    // Now that we know which member is taking it, resolve the actual
+    // duration for that member's tier. A Master with a faster duration
+    // gets a tighter booking; the slack between slotDuration and
+    // durationMinutes is left free on the calendar.
+    const assignedMemberId = availableMembers[0].id;
+    const durationMinutes = resolveDuration(service, { memberId: assignedMemberId });
+    const endMinutes = startMinutes + durationMinutes;
+    const endHours = String(Math.floor(endMinutes / 60)).padStart(2, "0");
+    const endMins = String(endMinutes % 60).padStart(2, "0");
+    const endTime = `${endHours}:${endMins}`;
+    const endAt = `${date}T${endTime}:00`;
 
     // ---- find or create client ----
     let clientId: string | null = null;
@@ -134,21 +200,70 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // ---- pre-compute membership eligibility (read-only) ----
+    // Find a candidate active membership covering this service with sessions
+    // remaining. Actual decrement happens AFTER the booking insert succeeds
+    // so a slot conflict (race) doesn't leave a debited but uncreated booking.
+    let membershipCandidate: { id: string; sessions_used: number } | null = null;
+    if (clientId) {
+      const { data: activeMems } = await supabase
+        .from("client_memberships")
+        .select("id, plan_id, sessions_used")
+        .eq("workspace_id", workspaceId)
+        .eq("client_id", clientId)
+        .eq("status", "active");
+      if (activeMems && activeMems.length > 0) {
+        const planIds = activeMems.map((m) => m.plan_id as string);
+        const { data: plans } = await supabase
+          .from("membership_plans")
+          .select("id, sessions_per_period, service_ids")
+          .in("id", planIds);
+        const found = (activeMems as Array<{
+          id: string;
+          plan_id: string;
+          sessions_used: number;
+        }>).find((m) => {
+          const plan = plans?.find((p) => p.id === m.plan_id);
+          if (!plan) return false;
+          const ids = (plan.service_ids ?? []) as string[];
+          if (!ids.includes(service.id)) return false;
+          const limit = (plan.sessions_per_period as number) ?? 0;
+          return limit === 0 || m.sessions_used < limit;
+        });
+        if (found) membershipCandidate = { id: found.id, sessions_used: found.sessions_used };
+      }
+    }
+
     // ---- create the booking ----
     const bookingId = generateId();
     const now = new Date().toISOString();
 
+    // Pending vs confirmed: a service marked `requiresConfirmation` always
+    // lands as 'pending' — the operator approves manually before it locks.
+    const status = service.requiresConfirmation ? "pending" : "confirmed";
+
     const { error: bookingErr } = await supabase.from("bookings").insert({
       id: bookingId,
       workspace_id: workspaceId,
-      assigned_to_id: availableMembers[0].id,
+      assigned_to_id: assignedMemberId,
       client_id: clientId,
       service_id: serviceId,
       date,
       start_at: startAt,
       end_at: endAt,
-      status: "confirmed",
+      status,
       notes: notes || "",
+      // locationType is the legacy free-text field; only set when caller passes
+      // a location id we can dereference. Dedicated location_id column lands
+      // when the bookings table picks up the multi-location columns.
+      location_type: locationId || null,
+      stripe_customer_id: stripeCustomerId || null,
+      stripe_setup_intent_id: stripeSetupIntentId || null,
+      selected_variant_id: variantId || null,
+      selected_addon_ids:
+        Array.isArray(addonIds) && addonIds.length > 0 ? addonIds : null,
+      gift_card_code: giftCardCode || null,
+      membership_id: membershipCandidate?.id ?? null,
       created_at: now,
       updated_at: now,
     });
@@ -171,17 +286,57 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Failed to create booking" }, { status: 500 });
     }
 
-    // ---- log activity (non-critical) ----
+    // ---- post-insert side effects: membership debit, gift card draw-down ----
+    // Both are best-effort: the booking is already real; failing to debit
+    // either is logged but doesn't roll back. Operator can manually correct
+    // if needed.
+    if (membershipCandidate) {
+      await supabase
+        .from("client_memberships")
+        .update({
+          sessions_used: membershipCandidate.sessions_used + 1,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", membershipCandidate.id)
+        .then(({ error }) => {
+          if (error) console.warn("[public/book] membership debit failed:", error.message);
+        });
+    }
+    if (giftCardCode && service.price > 0) {
+      const { data: card } = await supabase
+        .from("gift_cards")
+        .select("id, remaining_balance, status")
+        .eq("workspace_id", workspaceId)
+        .eq("code", giftCardCode)
+        .maybeSingle();
+      if (card && card.status === "active") {
+        const draw = Math.min(Number(card.remaining_balance), service.price);
+        const remaining = Number(card.remaining_balance) - draw;
+        await supabase
+          .from("gift_cards")
+          .update({
+            remaining_balance: remaining,
+            status: remaining <= 0 ? "redeemed" : "active",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", card.id);
+      }
+    }
+
+    // ---- log activity (non-critical, but logged on failure) ----
     try {
-      await supabase.from("activity_log").insert({
+      const { error: logError } = await supabase.from("activity_log").insert({
         workspace_id: workspaceId,
         type: "create",
         entity_type: "bookings",
         entity_id: bookingId,
         description: `Online booking: "${service.name}" by ${clientName} on ${date} at ${time}`,
       });
-    } catch {
-      // non-critical
+      if (logError) {
+        console.warn("[public/book] activity_log insert failed:", logError);
+      }
+    } catch (err) {
+      console.warn("[public/book] activity_log insert threw:", err);
     }
 
     // ---- fire automation trigger (non-critical) ----

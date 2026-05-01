@@ -1,21 +1,23 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { WorkspaceSettings } from "@/types/models";
-import { toast } from "@/components/ui/Toast";
 import {
   fetchWorkspaceSettings,
   dbUpsertWorkspaceSettings,
 } from "@/lib/db/settings";
+import { surfaceDbError } from "./_db-error";
 
 interface SettingsStore {
   settings: WorkspaceSettings | null;
   enabledAddons: string[];
+  sidebarOrder: string[];
   updateSettings: (
     data: Partial<WorkspaceSettings>,
     workspaceId?: string
   ) => void;
   toggleAddon: (addonId: string, workspaceId?: string) => void;
   isAddonEnabled: (addonId: string) => boolean;
+  setSidebarOrder: (order: string[]) => void;
   loadFromSupabase: (workspaceId: string) => Promise<void>;
 }
 
@@ -24,6 +26,7 @@ export const useSettingsStore = create<SettingsStore>()(
     (set, get) => ({
       settings: null,
       enabledAddons: [],
+      sidebarOrder: [],
 
       updateSettings: (data, workspaceId) => {
         const now = new Date().toISOString();
@@ -55,12 +58,11 @@ export const useSettingsStore = create<SettingsStore>()(
                 updatedAt: now,
               } as WorkspaceSettings),
         }));
-        toast("Settings updated");
         if (workspaceId) {
           dbUpsertWorkspaceSettings(
             workspaceId,
             data as Record<string, unknown>
-          ).catch(console.error);
+          ).catch(surfaceDbError("settings"));
         }
       },
 
@@ -82,12 +84,16 @@ export const useSettingsStore = create<SettingsStore>()(
           dbUpsertWorkspaceSettings(workspaceId, {
             enabledAddons: get().enabledAddons,
             updatedAt: new Date().toISOString(),
-          }).catch(console.error);
+          }).catch(surfaceDbError("settings"));
         }
       },
 
       isAddonEnabled: (addonId) => {
         return get().enabledAddons.includes(addonId);
+      },
+
+      setSidebarOrder: (order) => {
+        set({ sidebarOrder: order });
       },
 
       loadFromSupabase: async (workspaceId) => {

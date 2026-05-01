@@ -68,14 +68,38 @@ export async function POST(req: NextRequest) {
     });
 
     if (inquiryError) {
+      // 23505 = unique violation on idx_inquiries_form_response_unique. A
+      // concurrent promotion already created the inquiry — look it up and
+      // return that id so the caller is idempotent. The earlier inquiry_id
+      // check at line 31 handles the *committed* duplicate; this catches
+      // the race window between that check and our insert.
+      if (
+        (inquiryError as { code?: string }).code === "23505" ||
+        /idx_inquiries_form_response_unique/i.test(inquiryError.message ?? "")
+      ) {
+        const { data: existing } = await supabase
+          .from("inquiries")
+          .select("id")
+          .eq("form_response_id", response.id)
+          .maybeSingle();
+        if (existing?.id) {
+          return NextResponse.json({ inquiryId: existing.id }, { status: 200 });
+        }
+      }
       console.error("[promote-form-response] inquiry insert:", inquiryError);
       return NextResponse.json({ error: "Failed to promote" }, { status: 500 });
     }
 
-    await supabase
+    // Best-effort back-pointer. The canonical FK is inquiries.form_response_id
+    // (now uniquely indexed); this update is just a convenience for queries
+    // that go the other direction. Non-fatal if it fails.
+    const { error: backPointerError } = await supabase
       .from("form_responses")
       .update({ inquiry_id: inquiryId })
       .eq("id", response.id);
+    if (backPointerError) {
+      console.warn("[promote-form-response] back-pointer update failed:", backPointerError);
+    }
 
     return NextResponse.json({ inquiryId }, { status: 201 });
   } catch (error) {

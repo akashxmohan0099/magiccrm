@@ -1,43 +1,55 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback, useRef, useSyncExternalStore } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { FileText, Plus, Globe, Code, Eye, Inbox, ToggleLeft, ToggleRight, Pencil, Trash2, Copy, Check, GripVertical, Download, ChevronDown, ChevronRight, Zap, X, ImagePlus, Type, Mail, Phone, Link as LinkIcon, Hash, AlignLeft, ChevronsUpDown, Calendar, CalendarRange, Clock, Maximize2, Minimize2, Sparkles, MessageSquare, Bell, ExternalLink, HelpCircle, CheckSquare, CircleDot, ListChecks, Upload, EyeOff, Filter, Sun, Moon, Monitor } from "lucide-react";
+import { FileText, Plus, Globe, Code, Eye, Inbox, ToggleLeft, ToggleRight, Pencil, Trash2, Copy, Check, GripVertical, Download, ChevronDown, ChevronRight, Zap, X, ImagePlus, Type, Mail, Phone, Link as LinkIcon, Hash, AlignLeft, ChevronsUpDown, Calendar, CalendarRange, Clock, Maximize2, Minimize2, Sparkles, MessageSquare, Bell, ExternalLink, HelpCircle, CheckSquare, CircleDot, ListChecks, Upload, EyeOff, Filter, Sun, Moon, Monitor, ArrowRight, Send, Loader2, Smartphone, Tablet, PenLine } from "lucide-react";
+import { FORM_STARTERS, STARTER_CATEGORY_STYLE, type FormStarter } from "@/lib/forms/starters";
 import { useFormsStore } from "@/store/forms";
 import { useFormResponsesStore } from "@/store/form-responses";
 import { Form, FormFieldConfig, FormFieldCondition, FormResponse, FormTemplate, FormFontFamily, FormSuccessVariant, FormTheme } from "@/types/models";
+import { withoutTestFormResponses } from "@/lib/forms/test-submission";
+import { validateFormDraft } from "@/lib/forms/validate-form-draft";
+import {
+  useFormDraft,
+  buildBrandingFromDraft,
+} from "@/lib/forms/use-form-draft";
+import {
+  useMounted,
+  slugify,
+  formatRelativeTime,
+  formatTimestamp,
+  matchFontPair,
+  csvEscape,
+  fieldHasOptions,
+  eligibleConditionFields,
+  seedCondition,
+} from "./helpers";
+import { FormEmbed } from "./share/FormEmbed";
+import { FormResponses } from "./responses/FormResponses";
 import { FormPreviewRenderer } from "@/components/forms/FormRenderer";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { SlideOver } from "@/components/ui/SlideOver";
+import { DataTable, type Column } from "@/components/ui/DataTable";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { InlineDropdown } from "@/components/ui/InlineDropdown";
+import { ColorField } from "@/components/ui/ColorField";
 import { toast } from "@/components/ui/Toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useSettingsStore } from "@/store/settings";
+import {
+  buildInquiryAutoReplyEmail,
+  buildInquiryAutoReplySms,
+} from "@/lib/integrations/email";
 import { useServicesStore } from "@/store/services";
 
 // SSR-safe mount detection — same pattern SlideOver uses so the preview
-// portal doesn't try to render against document.body before hydration.
-const emptySubscribe = () => () => {};
-function useMounted() {
-  return useSyncExternalStore(emptySubscribe, () => true, () => false);
-}
-
 // Tabs inside the slide-over are mutually exclusive (edit ↔ embed).
 // Preview is separate — it opens as its own expandable panel next to the
 // slide-over, independent of which tab is selected.
 type SlideMode = "edit" | "after" | "reply" | "style" | "embed";
-
-function slugify(s: string) {
-  return s
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 60);
-}
 
 const TEMPLATE_OPTIONS: { id: FormTemplate; label: string; description: string }[] = [
   { id: "classic", label: "Classic", description: "Card with branded header — versatile default." },
@@ -46,19 +58,65 @@ const TEMPLATE_OPTIONS: { id: FormTemplate; label: string; description: string }
   { id: "slides", label: "Slides", description: "One question at a time, Typeform-style." },
 ];
 
-const FONT_OPTIONS: { id: FormFontFamily; label: string; previewClass: string }[] = [
-  { id: "sans", label: "Sans", previewClass: "font-sans" },
-  { id: "serif", label: "Serif", previewClass: "font-serif" },
-  { id: "display", label: "Display", previewClass: "[font-family:'Optima','Avenir','Futura','Helvetica_Neue',sans-serif] tracking-wide" },
-  { id: "mono", label: "Mono", previewClass: "font-mono" },
+// Per-family preview class — used by the pair preview cards below.
+const FONT_PREVIEW_CLASS: Record<FormFontFamily, string> = {
+  sans: "font-sans",
+  serif: "font-serif",
+  display:
+    "[font-family:'Optima','Avenir','Futura','Helvetica_Neue',sans-serif] tracking-wide",
+  mono: "font-mono",
+};
+
+// Named font pairings — replaces the old generic Sans/Serif/Display/Mono
+// picker. Each preset sets BOTH the heading font and the body font so the
+// operator picks a feel, not a typography taxonomy.
+const FONT_PAIR_PRESETS: {
+  id: string;
+  label: string;
+  description: string;
+  heading: FormFontFamily;
+  body: FormFontFamily;
+}[] = [
+  {
+    id: "soft-romantic",
+    label: "Soft & Romantic",
+    description: "Serif heading, sans body — bridal default.",
+    heading: "serif",
+    body: "sans",
+  },
+  {
+    id: "modern-editorial",
+    label: "Modern Editorial",
+    description: "Display heading, serif body — magazine feel.",
+    heading: "display",
+    body: "serif",
+  },
+  {
+    id: "luxe-minimal",
+    label: "Luxe Minimal",
+    description: "Display heading, sans body — clean and quiet.",
+    heading: "display",
+    body: "sans",
+  },
+  {
+    id: "classic",
+    label: "Classic",
+    description: "Sans throughout — versatile, neutral.",
+    heading: "sans",
+    body: "sans",
+  },
 ];
 
 // Per-form theme picker. Scoped to the rendered form only — does not change
 // the operator's dashboard theme. "Auto" follows the visitor's system pref.
-const THEME_OPTIONS: { id: FormTheme; label: string; icon: React.ComponentType<{ className?: string }>; swatchClass: string }[] = [
+// Dark/Auto are gated as `comingSoon` until the public-form dark surfaces
+// (logo backplate, gradient header, etc.) are properly tuned — the renderer
+// honours the token swap but visual polish isn't there yet, so we don't
+// ship the option until it looks right.
+const THEME_OPTIONS: { id: FormTheme; label: string; icon: React.ComponentType<{ className?: string }>; swatchClass: string; comingSoon?: boolean }[] = [
   { id: "light", label: "Light", icon: Sun, swatchClass: "bg-white border-border-light text-foreground" },
-  { id: "dark", label: "Dark", icon: Moon, swatchClass: "bg-[#141414] border-[#2A2A2A] text-white" },
-  { id: "auto", label: "Auto", icon: Monitor, swatchClass: "bg-gradient-to-br from-white to-[#141414] border-border-light text-foreground" },
+  { id: "dark", label: "Dark", icon: Moon, swatchClass: "bg-[#141414] border-[#2A2A2A] text-white", comingSoon: true },
+  { id: "auto", label: "Auto", icon: Monitor, swatchClass: "bg-gradient-to-br from-white to-[#141414] border-border-light text-foreground", comingSoon: true },
 ];
 
 // Tiny visual hint of each template — three short bars laid out the way
@@ -413,12 +471,143 @@ export function FormsPage() {
   // edits live. Falls back to the saved form when no draft is in flight.
   const [draftForm, setDraftForm] = useState<Form | null>(null);
   const [previewView, setPreviewView] = useState<"welcome" | "form" | "success">("form");
+  // Lets the operator preview each routed-thank-you variant without having
+  // to fake submissions. "" = renderer falls through to value-based match
+  // (which is empty in the editor — so the default thank-you renders).
+  const [previewVariantId, setPreviewVariantId] = useState<string>("");
   const [previewFullscreen, setPreviewFullscreen] = useState(false);
+  // Device-width preview in fullscreen. Constrains the inner wrapper so the
+  // operator can sanity-check responsive layout without resizing the browser.
+  // "Desktop" lets the form occupy whatever the fullscreen container gives it.
+  const [previewDevice, setPreviewDevice] = useState<"desktop" | "tablet" | "mobile">("desktop");
   const mounted = useMounted();
   const [pendingAutoFlowFormId, setPendingAutoFlowFormId] = useState<string | null>(null);
   const pendingAutoFlowForm = pendingAutoFlowFormId
     ? forms.find((f) => f.id === pendingAutoFlowFormId) ?? null
     : null;
+  const [starterGalleryOpen, setStarterGalleryOpen] = useState(false);
+  const [testSubmitPending, setTestSubmitPending] = useState(false);
+  // Editor's autosave state, lifted up so the slide-over header can gate
+  // the Send test button — testing a form whose latest edits haven't
+  // persisted produces a "Form not found" race against the DB lookup.
+  const [editorSaveStatus, setEditorSaveStatus] = useState<"idle" | "pending" | "saving" | "saved" | "error">("idle");
+  const [editorBlockingError, setEditorBlockingError] = useState<string | null>(null);
+  // Form pending deletion — drives the confirm dialog. Cleared on confirm
+  // or cancel. Form is only removed once the operator clicks through.
+  const [pendingDeleteFormId, setPendingDeleteFormId] = useState<string | null>(null);
+  const pendingDeleteForm = pendingDeleteFormId
+    ? forms.find((f) => f.id === pendingDeleteFormId) ?? null
+    : null;
+
+  const sendTestSubmission = useCallback(async (formId: string) => {
+    setTestSubmitPending(true);
+    try {
+      const res = await fetch(`/api/forms/${formId}/test-submit`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast(data.error || "Test submission failed");
+        return;
+      }
+      toast(
+        data.autoPromoted
+          ? "Test sent — auto-reply on its way, test lead added to Leads"
+          : "Test sent — auto-reply on its way",
+      );
+    } catch (err) {
+      console.error("[forms] test submit error:", err);
+      toast("Test submission failed");
+    } finally {
+      setTestSubmitPending(false);
+    }
+  }, []);
+
+  // Auto-suffix the starter's default name + slug if either is already in
+  // use. Saves the operator from the slug-conflict toast on day one and
+  // makes the list view honest ("Wedding inquiry" vs "Wedding inquiry 2"
+  // rather than two identical rows).
+  const dedupeNameAndSlug = useCallback(
+    (baseName: string, baseSlug: string) => {
+      const namesTaken = new Set(
+        forms.map((f) => f.name.trim().toLowerCase()),
+      );
+      const slugsTaken = new Set(
+        forms.map((f) => (f.slug ?? "").trim().toLowerCase()).filter(Boolean),
+      );
+
+      let name = baseName;
+      if (namesTaken.has(name.trim().toLowerCase())) {
+        let n = 2;
+        while (namesTaken.has(`${baseName} ${n}`.toLowerCase())) n++;
+        name = `${baseName} ${n}`;
+      }
+
+      let slug = baseSlug;
+      if (slug && slugsTaken.has(slug.toLowerCase())) {
+        let n = 2;
+        while (slugsTaken.has(`${baseSlug}-${n}`.toLowerCase())) n++;
+        slug = `${baseSlug}-${n}`;
+      }
+
+      return { name, slug };
+    },
+    [forms],
+  );
+
+  const createFromStarter = useCallback(
+    (starter: FormStarter) => {
+      const { name, slug } = dedupeNameAndSlug(starter.formName, starter.slug);
+      const f = addForm(
+        {
+          workspaceId: workspaceId ?? "",
+          type: "inquiry",
+          name,
+          fields: starter.fields,
+          branding: starter.branding,
+          slug,
+          enabled: false,
+          autoPromoteToInquiry: starter.autoPromoteToInquiry,
+        },
+        workspaceId || undefined,
+      );
+      setStarterGalleryOpen(false);
+      if (f) {
+        setSelectedId(f.id);
+        setSlideMode("edit");
+        setPreviewOpen(true);
+      }
+    },
+    [addForm, workspaceId, dedupeNameAndSlug],
+  );
+
+  const createBlankForm = useCallback(() => {
+    const { name, slug } = dedupeNameAndSlug("New Form", "new-form");
+    const f = addForm(
+      {
+        workspaceId: workspaceId ?? "",
+        type: "inquiry",
+        name,
+        fields: [
+          { name: "name", type: "text", label: "Full Name", required: true },
+          { name: "email", type: "email", label: "Email", required: true },
+          { name: "message", type: "textarea", label: "Message", required: true },
+        ],
+        branding: {},
+        slug,
+        enabled: false,
+        autoPromoteToInquiry: false,
+      },
+      workspaceId || undefined,
+    );
+    setStarterGalleryOpen(false);
+    if (f) {
+      setSelectedId(f.id);
+      setSlideMode("edit");
+      setPreviewOpen(true);
+    }
+  }, [addForm, workspaceId, dedupeNameAndSlug]);
 
   // Stable so it can sit in the useEffect dep array below without
   // re-firing on every render.
@@ -467,24 +656,49 @@ export function FormsPage() {
   const mainInquiryForms = forms.filter((f) => f.type === "inquiry" && f.autoPromoteToInquiry);
   const additionalInquiryForms = forms.filter((f) => f.type === "inquiry" && !f.autoPromoteToInquiry);
 
+  // Filter test submissions out of every list, count, and table on this page.
+  // The /api/forms/[id]/test-submit endpoint tags rows with values.__test so
+  // they round-trip through the same pipeline (auto-reply, automation rules)
+  // without polluting Lead counts or the operator's view of real submissions.
+  const realFormResponses = useMemo(
+    () => withoutTestFormResponses(formResponses),
+    [formResponses],
+  );
+
   // Submissions per form, used to render the live count chip on each card.
   const submissionsByFormId = useMemo(() => {
     const map = new Map<string, number>();
-    for (const r of formResponses) {
+    for (const r of realFormResponses) {
       if (!r.formId) continue;
       map.set(r.formId, (map.get(r.formId) ?? 0) + 1);
     }
     return map;
-  }, [formResponses]);
+  }, [realFormResponses]);
+
+  // Most-recent submission per form. Drives the "last 2h ago" tail in the
+  // collapsed row so a stale form is visible without expanding.
+  const lastSubmittedAtByFormId = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const r of realFormResponses) {
+      if (!r.formId) continue;
+      const prev = map.get(r.formId);
+      if (!prev || r.submittedAt > prev) map.set(r.formId, r.submittedAt);
+    }
+    return map;
+  }, [realFormResponses]);
 
   const openForm = (id: string, mode: "preview" | SlideMode) => {
     setSelectedId(id);
     if (mode === "preview") {
       setPreviewOpen(true);
-    } else {
-      setSlideMode(mode);
-      setPreviewOpen(true);
+      return;
     }
+    setSlideMode(mode);
+    // Share tab focus: collapse the live preview so the URL / embed / QR
+    // panel takes the spotlight. The QA report flagged that clicking Share
+    // looked like it opened the preview — this is why. Other tabs benefit
+    // from the side-by-side preview, so they keep it open by default.
+    setPreviewOpen(mode !== "embed");
   };
 
   const toggleEnabled = (form: Form, e: React.MouseEvent) => {
@@ -498,23 +712,7 @@ export function FormsPage() {
         title="Forms and Inquiries"
         description="Forms for your website. Submissions appear inline — Main forms flow into Leads automatically."
         actions={
-          <Button variant="primary" size="sm" onClick={() => {
-            const f = addForm({
-              workspaceId: workspaceId ?? "",
-              type: "inquiry",
-              name: "New Form",
-              fields: [
-                { name: "name", type: "text", label: "Full Name", required: true },
-                { name: "email", type: "email", label: "Email", required: true },
-                { name: "message", type: "textarea", label: "Message", required: true },
-              ],
-              branding: {},
-              slug: "",
-              enabled: false,
-              autoPromoteToInquiry: false,
-            }, workspaceId || undefined);
-            if (f) openForm(f.id, "edit");
-          }}>
+          <Button variant="primary" size="sm" onClick={() => setStarterGalleryOpen(true)}>
             <Plus className="w-4 h-4 mr-1.5" /> Create Form
           </Button>
         }
@@ -529,23 +727,7 @@ export function FormsPage() {
           <p className="text-[13px] text-text-secondary mb-5">
             Create a form to collect inquiries from your website, social bio, or email signature.
           </p>
-          <Button variant="primary" size="sm" onClick={() => {
-            const f = addForm({
-              workspaceId: workspaceId ?? "",
-              type: "inquiry",
-              name: "New Form",
-              fields: [
-                { name: "name", type: "text", label: "Full Name", required: true },
-                { name: "email", type: "email", label: "Email", required: true },
-                { name: "message", type: "textarea", label: "Message", required: true },
-              ],
-              branding: {},
-              slug: "",
-              enabled: false,
-              autoPromoteToInquiry: false,
-            }, workspaceId || undefined);
-            if (f) openForm(f.id, "edit");
-          }}>
+          <Button variant="primary" size="sm" onClick={() => setStarterGalleryOpen(true)}>
             <Plus className="w-4 h-4 mr-1.5" /> Create your first form
           </Button>
         </div>
@@ -558,6 +740,7 @@ export function FormsPage() {
               icon={<Inbox className="w-4 h-4 text-text-secondary" />}
               forms={mainInquiryForms}
               submissionsByFormId={submissionsByFormId}
+              lastSubmittedAtByFormId={lastSubmittedAtByFormId}
               onOpen={openForm}
               onToggle={toggleEnabled}
               onToggleAutoFlow={(form) => setPendingAutoFlowFormId(form.id)}
@@ -570,6 +753,7 @@ export function FormsPage() {
               icon={<FileText className="w-4 h-4 text-text-secondary" />}
               forms={additionalInquiryForms}
               submissionsByFormId={submissionsByFormId}
+              lastSubmittedAtByFormId={lastSubmittedAtByFormId}
               onOpen={openForm}
               onToggle={toggleEnabled}
               onToggleAutoFlow={(form) => setPendingAutoFlowFormId(form.id)}
@@ -587,14 +771,59 @@ export function FormsPage() {
           title={
             <div className="min-w-0">
               <h3 className="text-lg font-bold text-foreground tracking-tight truncate">{selected.name}</h3>
-              <p className="text-[11px] font-normal text-text-secondary mt-0.5 truncate">{selected.type} form · {selected.fields.length} fields</p>
+              <p className="text-[11px] font-normal text-text-secondary mt-0.5 truncate">
+                {selected.type} form · {selected.fields.length} {selected.fields.length === 1 ? "field" : "fields"}
+                {(() => {
+                  const required = selected.fields.filter((f) => f.required).length;
+                  return required > 0 ? ` · ${required} required` : "";
+                })()}
+              </p>
             </div>
           }
-          headerExtra={
-            <Button variant="ghost" size="sm" onClick={() => { deleteForm(selected.id, workspaceId || undefined); setSelectedId(null); setPreviewOpen(false); setDraftForm(null); setPreviewView("form"); setPreviewFullscreen(false); }}>
-              <Trash2 className="w-3.5 h-3.5" />
-            </Button>
-          }
+          headerExtra={(() => {
+            // Test-submit needs a clean DB state. We block when autosave
+            // is mid-flight, errored, or held by a validation problem
+            // (typically a slug conflict). The endpoint looks up the form
+            // by id from the DB — testing before save lands produces a
+            // confusing "Form not found".
+            const saveBlocked =
+              editorSaveStatus === "pending" ||
+              editorSaveStatus === "saving" ||
+              editorSaveStatus === "error" ||
+              !!editorBlockingError;
+            const testDisabled = testSubmitPending || saveBlocked;
+            const testTooltip = saveBlocked
+              ? editorBlockingError
+                ? `Save blocked — ${editorBlockingError}`
+                : "Save in progress — try again in a moment."
+              : "Fire a test submission through the live pipeline. Auto-reply lands in your inbox; the entry is tagged [TEST] in Leads.";
+            return (
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => sendTestSubmission(selected.id)}
+                  disabled={testDisabled}
+                  title={testTooltip}
+                >
+                  {testSubmitPending ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Send className="w-3.5 h-3.5" />
+                  )}
+                  <span className="ml-1.5">Send test</span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setPendingDeleteFormId(selected.id)}
+                  title="Delete this form"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            );
+          })()}
         >
           <div className="-mt-2">
             <div className="flex items-center justify-between gap-2 border-b border-border-light mb-5 -mx-1">
@@ -641,6 +870,10 @@ export function FormsPage() {
                 workspaceLogo={workspaceLogo}
                 onUpdate={(data) => updateForm(selected.id, data, workspaceId || undefined)}
                 onDraftChange={setDraftForm}
+                onSaveStatusChange={(status, blockingError) => {
+                  setEditorSaveStatus(status);
+                  setEditorBlockingError(blockingError);
+                }}
               />
             )}
             {slideMode === "embed" && (
@@ -694,6 +927,33 @@ export function FormsPage() {
                       </button>
                     ))}
                   </div>
+                  {previewFullscreen && (
+                    <div className="inline-flex bg-surface border border-border-light rounded-lg p-0.5">
+                      {([
+                        { id: "desktop" as const, icon: Monitor, label: "Desktop" },
+                        { id: "tablet" as const, icon: Tablet, label: "Tablet" },
+                        { id: "mobile" as const, icon: Smartphone, label: "Mobile" },
+                      ]).map((d) => {
+                        const active = previewDevice === d.id;
+                        const Icon = d.icon;
+                        return (
+                          <button
+                            key={d.id}
+                            onClick={() => setPreviewDevice(d.id)}
+                            title={d.label}
+                            aria-label={d.label}
+                            className={`px-2 py-1 rounded-md cursor-pointer transition-colors ${
+                              active
+                                ? "bg-card-bg text-foreground shadow-sm"
+                                : "text-text-tertiary hover:text-foreground"
+                            }`}
+                          >
+                            <Icon className="w-3.5 h-3.5" />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                   <button
                     onClick={() => setPreviewFullscreen((v) => !v)}
                     className="p-1.5 rounded-lg hover:bg-surface text-text-secondary cursor-pointer"
@@ -715,9 +975,84 @@ export function FormsPage() {
                   </button>
                 </div>
               </div>
-              <div className="flex-1 overflow-y-auto">
-                <FormPreviewRenderer form={draftForm ?? selected} view={previewView} workspaceLogo={workspaceLogo} services={renderableServices} />
-              </div>
+              {(() => {
+                // Variant chip row — only renders on the Success view when
+                // the form has routed thank-you variants configured. Picking
+                // a chip pins that variant in the renderer; "Default" (empty
+                // sentinel) falls through to the fallback message.
+                const previewedForm = draftForm ?? selected;
+                const variants = previewedForm.branding.successVariants ?? [];
+                const showChips =
+                  previewView === "success" &&
+                  !!previewedForm.branding.successRouteFieldName &&
+                  variants.length > 0;
+                if (!showChips) return null;
+                return (
+                  <div className="px-6 py-2.5 border-b border-border-light flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[10.5px] font-semibold text-text-tertiary uppercase tracking-wider mr-1">
+                      Variant
+                    </span>
+                    {[
+                      { id: "__default__", label: "Default" },
+                      ...variants.map((v) => ({ id: v.id, label: v.label || "Untitled" })),
+                    ].map((opt) => {
+                      const active = (previewVariantId || "__default__") === opt.id;
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => setPreviewVariantId(opt.id === "__default__" ? "" : opt.id)}
+                          className={`px-2.5 py-1 rounded-full border text-[11.5px] font-medium cursor-pointer transition-colors ${
+                            active
+                              ? "bg-primary/10 border-primary text-primary"
+                              : "bg-surface border-border-light text-text-secondary hover:border-text-tertiary hover:text-foreground"
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+              {(() => {
+                // In fullscreen the operator can pick a device width to
+                // sanity-check responsive layout. The wrapper centres the
+                // form and gives it a soft device-frame outline so the
+                // intent is obvious. Desktop = no constraint, the form
+                // takes whatever the viewport gives it.
+                const constrainWidth =
+                  previewFullscreen && previewDevice !== "desktop";
+                const widthPx = previewDevice === "mobile" ? 390 : 768;
+                return (
+                  <div
+                    className={`flex-1 overflow-y-auto ${
+                      constrainWidth ? "py-6 bg-surface/40" : ""
+                    }`}
+                  >
+                    <div
+                      className={
+                        constrainWidth
+                          ? "mx-auto bg-card-bg shadow-lg shadow-black/5 border border-border-light rounded-2xl overflow-hidden"
+                          : ""
+                      }
+                      style={
+                        constrainWidth
+                          ? { width: `${widthPx}px`, maxWidth: "calc(100vw - 32px)" }
+                          : undefined
+                      }
+                    >
+                      <FormPreviewRenderer
+                        form={draftForm ?? selected}
+                        view={previewView}
+                        workspaceLogo={workspaceLogo}
+                        services={renderableServices}
+                        forceSuccessVariantId={previewView === "success" ? (previewVariantId || "__default__") : undefined}
+                      />
+                    </div>
+                  </div>
+                );
+              })()}
             </motion.div>
           )}
         </AnimatePresence>,
@@ -757,18 +1092,194 @@ export function FormsPage() {
           variant="primary"
         />
       )}
+
+      {/* Delete confirmation — destructive, no easy undo (submissions and
+          inquiry references would orphan), so we always confirm first.
+          Lists submission count so the operator knows what they're losing. */}
+      {pendingDeleteForm && (
+        <ConfirmDialog
+          open
+          onClose={() => setPendingDeleteFormId(null)}
+          onConfirm={() => {
+            const submissionCount = submissionsByFormId.get(pendingDeleteForm.id) ?? 0;
+            deleteForm(pendingDeleteForm.id, workspaceId || undefined);
+            setPendingDeleteFormId(null);
+            // Close the slide-over if the deleted form was open in it.
+            if (selectedId === pendingDeleteForm.id) {
+              setSelectedId(null);
+              setPreviewOpen(false);
+              setDraftForm(null);
+              setPreviewView("form");
+              setPreviewFullscreen(false);
+            }
+            toast(
+              submissionCount > 0
+                ? `Form deleted. ${submissionCount} submission${submissionCount === 1 ? "" : "s"} archived.`
+                : "Form deleted.",
+            );
+          }}
+          title={`Delete "${pendingDeleteForm.name}"?`}
+          message={(() => {
+            const submissionCount = submissionsByFormId.get(pendingDeleteForm.id) ?? 0;
+            const baseLine =
+              "This form, its public URL, and any embed code will stop working immediately. This can't be undone.";
+            if (submissionCount > 0) {
+              return `${baseLine} ${submissionCount} submission${submissionCount === 1 ? "" : "s"} will be unlinked from this form but kept in your records (so existing leads aren't lost).`;
+            }
+            return baseLine;
+          })()}
+          confirmLabel="Delete form"
+          variant="danger"
+        />
+      )}
+
+      <StarterGallery
+        open={starterGalleryOpen}
+        onClose={() => setStarterGalleryOpen(false)}
+        onPick={createFromStarter}
+        onStartBlank={createBlankForm}
+      />
     </div>
+  );
+}
+
+// ── Starter gallery — modal shown when creating a new form. Lists all
+// FORM_STARTERS so the operator picks an opinionated preset instead of
+// landing on a generic blank form.
+
+function StarterGallery({
+  open,
+  onClose,
+  onPick,
+  onStartBlank,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onPick: (starter: FormStarter) => void;
+  onStartBlank: () => void;
+}) {
+  useEffect(() => {
+    if (!open) return;
+    const onEsc = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", onEsc);
+    return () => {
+      document.body.style.overflow = "";
+      document.removeEventListener("keydown", onEsc);
+    };
+  }, [open, onClose]);
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-overlay z-[110]"
+            onClick={onClose}
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.97, y: 4 }}
+            transition={{ type: "spring", damping: 26, stiffness: 280 }}
+            className="fixed inset-0 z-[120] flex items-start justify-center p-4 sm:p-8 overflow-y-auto"
+            onClick={(e) => e.target === e.currentTarget && onClose()}
+          >
+            <div role="dialog" aria-modal="true" aria-labelledby="starter-gallery-title" className="bg-card-bg rounded-2xl shadow-xl shadow-black/8 w-full max-w-3xl my-auto">
+              <div className="flex items-start justify-between px-7 pt-6 pb-4 border-b border-border-light">
+                <div>
+                  <h2 id="starter-gallery-title" className="text-[19px] font-semibold text-foreground tracking-tight">Create a form</h2>
+                  <p className="text-[13.5px] text-text-secondary mt-1 leading-snug">
+                    Pick a starting point — edit anything after.
+                  </p>
+                </div>
+                <motion.button
+                  whileHover={{ scale: 1.1, rotate: 90 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={onClose}
+                  className="p-1.5 rounded-lg hover:bg-surface text-text-secondary cursor-pointer flex-shrink-0 -mt-1"
+                  aria-label="Close"
+                >
+                  <X className="w-5 h-5" />
+                </motion.button>
+              </div>
+
+              <div className="px-7 py-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {FORM_STARTERS.map((s) => {
+                    const Icon = s.icon;
+                    const style = STARTER_CATEGORY_STYLE[s.category];
+                    return (
+                      <button
+                        key={s.id}
+                        onClick={() => onPick(s)}
+                        className={`group relative text-left rounded-2xl border border-border-light bg-card-bg overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer ${style.hoverBorder}`}
+                      >
+                        <div
+                          className="absolute top-0 left-0 right-0 h-24 opacity-[0.06] group-hover:opacity-[0.1] transition-opacity"
+                          style={{ background: `linear-gradient(to bottom, ${style.hex}, transparent)` }}
+                        />
+                        <div className="relative p-5">
+                          <div
+                            className="w-10 h-10 rounded-xl flex items-center justify-center mb-3"
+                            style={{ backgroundColor: style.hex + "18" }}
+                          >
+                            <Icon className="w-5 h-5" style={{ color: style.hex }} />
+                          </div>
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-[15px] font-semibold text-foreground">{s.name}</p>
+                            <ArrowRight className="w-4 h-4 text-text-tertiary group-hover:text-foreground group-hover:translate-x-0.5 transition flex-shrink-0" />
+                          </div>
+                          <p className="text-[12.5px] text-text-secondary leading-snug mt-1.5">{s.description}</p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                  <button
+                    onClick={onStartBlank}
+                    className="group relative text-left rounded-2xl border border-border-light bg-card-bg overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer hover:border-slate-200"
+                  >
+                    <div
+                      className="absolute top-0 left-0 right-0 h-24 opacity-[0.06] group-hover:opacity-[0.1] transition-opacity"
+                      style={{ background: "linear-gradient(to bottom, #64748B, transparent)" }}
+                    />
+                    <div className="relative p-5">
+                      <div
+                        className="w-10 h-10 rounded-xl flex items-center justify-center mb-3"
+                        style={{ backgroundColor: "#64748B18" }}
+                      >
+                        <Plus className="w-5 h-5" style={{ color: "#64748B" }} />
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-[15px] font-semibold text-foreground">Start from scratch</p>
+                        <ArrowRight className="w-4 h-4 text-text-tertiary group-hover:text-foreground group-hover:translate-x-0.5 transition flex-shrink-0" />
+                      </div>
+                      <p className="text-[12.5px] text-text-secondary leading-snug mt-1.5">Blank form — build it field by field.</p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
   );
 }
 
 // ── Form Accordion Section ──
 
-function FormAccordionSection({ label, sublabel, icon, forms, submissionsByFormId, onOpen, onToggle, onToggleAutoFlow }: {
+function FormAccordionSection({ label, sublabel, icon, forms, submissionsByFormId, lastSubmittedAtByFormId, onOpen, onToggle, onToggleAutoFlow }: {
   label: string;
   sublabel?: string;
   icon: React.ReactNode;
   forms: Form[];
   submissionsByFormId: Map<string, number>;
+  lastSubmittedAtByFormId: Map<string, string>;
   onOpen: (id: string, mode: "preview" | SlideMode) => void;
   onToggle: (form: Form, e: React.MouseEvent) => void;
   onToggleAutoFlow: (form: Form) => void;
@@ -834,21 +1345,24 @@ function FormAccordionSection({ label, sublabel, icon, forms, submissionsByFormI
                       {form.name}
                     </p>
                     <p className="text-[12px] text-text-tertiary truncate">
-                      {form.fields.length} fields
-                      {count > 0 && (
+                      {count > 0 ? (
                         <>
-                          {" · "}
                           <span className="text-foreground font-medium">
                             {count} response{count === 1 ? "" : "s"}
                           </span>
+                          {lastSubmittedAtByFormId.get(form.id) && (
+                            <> · last {formatRelativeTime(lastSubmittedAtByFormId.get(form.id)!)}</>
+                          )}
                         </>
-                      )}
-                      {form.slug && (
+                      ) : (
+                        // Empty-state subline. Shows form-creation date so a row
+                        // with no submissions still carries a real signal —
+                        // useful when the operator is auditing stale forms.
+                        // The "(disabled)" tail flags forms that aren't live
+                        // yet, which is the most common reason for 0 responses.
                         <>
-                          {" · "}
-                          <span className="font-mono inline-flex items-center gap-1">
-                            <Globe className="w-3 h-3" />/{form.slug}
-                          </span>
+                          Created {formatRelativeTime(form.createdAt)}
+                          {!form.enabled && <> · disabled</>}
                         </>
                       )}
                     </p>
@@ -926,6 +1440,8 @@ function FormAccordionSection({ label, sublabel, icon, forms, submissionsByFormI
 
 // ── Form Editor ──
 
+type FormSaveStatus = "idle" | "pending" | "saving" | "saved" | "error";
+
 function FormEditor({
   form,
   allForms,
@@ -933,6 +1449,7 @@ function FormEditor({
   workspaceLogo,
   onUpdate,
   onDraftChange,
+  onSaveStatusChange,
 }: {
   form: Form;
   allForms: Form[];
@@ -946,76 +1463,210 @@ function FormEditor({
   onUpdate: (data: Partial<Form>) => void;
   /** Fires on every draft change so the live preview can render unsaved edits. */
   onDraftChange?: (draft: Form) => void;
+  /** Bubbles save state up so the parent can gate header actions
+   *  (e.g. "Send test") that depend on the latest persisted form. */
+  onSaveStatusChange?: (status: FormSaveStatus, blockingError: string | null) => void;
 }) {
-  const [name, setName] = useState(form.name);
-  const [color, setColor] = useState(form.branding.primaryColor || "#8B5CF6");
-  const [description, setDescription] = useState(form.branding.description ?? "");
-  const [successMessage, setSuccessMessage] = useState(form.branding.successMessage ?? "");
-  const [template, setTemplate] = useState<FormTemplate>(form.branding.template ?? "classic");
-  const [fontFamily, setFontFamily] = useState<FormFontFamily>(form.branding.fontFamily ?? "sans");
-  const [theme, setTheme] = useState<FormTheme>(form.branding.theme ?? "light");
-  const [logo, setLogo] = useState<string | undefined>(form.branding.logo);
-  const [coverImage, setCoverImage] = useState<string | undefined>(form.branding.coverImage);
-  const [welcomeEnabled, setWelcomeEnabled] = useState<boolean>(form.branding.welcomeEnabled ?? false);
-  const [welcomeTitle, setWelcomeTitle] = useState(form.branding.welcomeTitle ?? "");
-  const [welcomeSubtitle, setWelcomeSubtitle] = useState(form.branding.welcomeSubtitle ?? "");
-  const [welcomeCtaLabel, setWelcomeCtaLabel] = useState(form.branding.welcomeCtaLabel ?? "");
-  const [successRouteFieldName, setSuccessRouteFieldName] = useState<string | undefined>(form.branding.successRouteFieldName);
-  const [successVariants, setSuccessVariants] = useState<FormSuccessVariant[]>(form.branding.successVariants ?? []);
-  const [fields, setFields] = useState<FormFieldConfig[]>(form.fields);
+  // All editable form state lives in one place. The hook also handles the
+  // load-time uniquify of duplicate field names (legacy data) and exposes
+  // `didUniquifyOnLoad` so the autosave code below can choose whether to
+  // skip the first save. The destructure-with-aliases below keeps every
+  // existing JSX expression in this file working without rewriting hundreds
+  // of `value=`/`onChange=` props — a setter like `setColor(v)` becomes a
+  // tiny shim that calls `updateBranding({ primaryColor: v })`.
+  const { draft, updateDraft, updateBranding, fieldOps, didUniquifyOnLoad } =
+    useFormDraft(form);
+  const { name, slugTouched, fields, branding } = draft;
+  const userSlug = draft.slug;
+  const {
+    primaryColor: color,
+    accentColor,
+    description,
+    successMessage,
+    template,
+    fontFamily,
+    headingFontFamily,
+    theme,
+    logo,
+    coverImage,
+    welcomeEnabled,
+    welcomeTitle,
+    welcomeSubtitle,
+    welcomeCtaLabel,
+    successRouteFieldName,
+    successVariants,
+    successCtaLabel,
+    successCtaUrl,
+    successRedirectUrl,
+    successRedirectDelaySeconds,
+    autoReplyEnabled,
+    autoReplySubject,
+    autoReplyBody,
+    autoReplyDelayMinutes,
+    autoReplySmsEnabled,
+    autoReplySmsBody,
+    autoReplySmsDelayMinutes,
+    notifyOwnerEmail,
+  } = branding;
+  const setFields = fieldOps.setFields;
+  const setName = useCallback((v: string) => updateDraft({ name: v }), [updateDraft]);
+  const setUserSlug = useCallback(
+    (v: string) => updateDraft({ slug: v }),
+    [updateDraft],
+  );
+  const setSlugTouched = useCallback(
+    (v: boolean) => updateDraft({ slugTouched: v }),
+    [updateDraft],
+  );
+  const setColor = useCallback(
+    (v: string) => updateBranding({ primaryColor: v }),
+    [updateBranding],
+  );
+  const setAccentColor = useCallback(
+    (v: string) => updateBranding({ accentColor: v }),
+    [updateBranding],
+  );
+  const setDescription = useCallback(
+    (v: string) => updateBranding({ description: v }),
+    [updateBranding],
+  );
+  const setSuccessMessage = useCallback(
+    (v: string) => updateBranding({ successMessage: v }),
+    [updateBranding],
+  );
+  const setTemplate = useCallback(
+    (v: FormTemplate) => updateBranding({ template: v }),
+    [updateBranding],
+  );
+  const setFontFamily = useCallback(
+    (v: FormFontFamily) => updateBranding({ fontFamily: v }),
+    [updateBranding],
+  );
+  const setHeadingFontFamily = useCallback(
+    (v: FormFontFamily) => updateBranding({ headingFontFamily: v }),
+    [updateBranding],
+  );
+  const setTheme = useCallback(
+    (v: FormTheme) => updateBranding({ theme: v }),
+    [updateBranding],
+  );
+  const setLogo = useCallback(
+    (v: string | undefined) => updateBranding({ logo: v }),
+    [updateBranding],
+  );
+  const setCoverImage = useCallback(
+    (v: string | undefined) => updateBranding({ coverImage: v }),
+    [updateBranding],
+  );
+  const setWelcomeEnabled = useCallback(
+    (v: boolean) => updateBranding({ welcomeEnabled: v }),
+    [updateBranding],
+  );
+  const setWelcomeTitle = useCallback(
+    (v: string) => updateBranding({ welcomeTitle: v }),
+    [updateBranding],
+  );
+  const setWelcomeSubtitle = useCallback(
+    (v: string) => updateBranding({ welcomeSubtitle: v }),
+    [updateBranding],
+  );
+  const setWelcomeCtaLabel = useCallback(
+    (v: string) => updateBranding({ welcomeCtaLabel: v }),
+    [updateBranding],
+  );
+  const setSuccessRouteFieldName = useCallback(
+    (v: string | undefined) => updateBranding({ successRouteFieldName: v }),
+    [updateBranding],
+  );
+  const setSuccessVariants = useCallback(
+    (v: FormSuccessVariant[]) => updateBranding({ successVariants: v }),
+    [updateBranding],
+  );
+  const setSuccessCtaLabel = useCallback(
+    (v: string) => updateBranding({ successCtaLabel: v }),
+    [updateBranding],
+  );
+  const setSuccessCtaUrl = useCallback(
+    (v: string) => updateBranding({ successCtaUrl: v }),
+    [updateBranding],
+  );
+  const setSuccessRedirectUrl = useCallback(
+    (v: string) => updateBranding({ successRedirectUrl: v }),
+    [updateBranding],
+  );
+  const setSuccessRedirectDelaySeconds = useCallback(
+    (v: number) => updateBranding({ successRedirectDelaySeconds: v }),
+    [updateBranding],
+  );
+  const setAutoReplyEnabled = useCallback(
+    (v: boolean) => updateBranding({ autoReplyEnabled: v }),
+    [updateBranding],
+  );
+  const setAutoReplySubject = useCallback(
+    (v: string) => updateBranding({ autoReplySubject: v }),
+    [updateBranding],
+  );
+  const setAutoReplyBody = useCallback(
+    (v: string) => updateBranding({ autoReplyBody: v }),
+    [updateBranding],
+  );
+  const setAutoReplyDelayMinutes = useCallback(
+    (v: number) => updateBranding({ autoReplyDelayMinutes: v }),
+    [updateBranding],
+  );
+  const setAutoReplySmsEnabled = useCallback(
+    (v: boolean) => updateBranding({ autoReplySmsEnabled: v }),
+    [updateBranding],
+  );
+  const setAutoReplySmsBody = useCallback(
+    (v: string) => updateBranding({ autoReplySmsBody: v }),
+    [updateBranding],
+  );
+  const setAutoReplySmsDelayMinutes = useCallback(
+    (v: number) => updateBranding({ autoReplySmsDelayMinutes: v }),
+    [updateBranding],
+  );
+  const setNotifyOwnerEmail = useCallback(
+    (v: boolean) => updateBranding({ notifyOwnerEmail: v }),
+    [updateBranding],
+  );
+
+  // ── UI state (not part of the persisted draft) ──
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
-
-  // ── After-submission settings (success CTA, email/SMS auto-reply, owner notify) ──
-  const [successCtaLabel, setSuccessCtaLabel] = useState(form.branding.successCtaLabel ?? "");
-  const [successCtaUrl, setSuccessCtaUrl] = useState(form.branding.successCtaUrl ?? "");
-  const [successRedirectUrl, setSuccessRedirectUrl] = useState(form.branding.successRedirectUrl ?? "");
-  const [successRedirectDelaySeconds, setSuccessRedirectDelaySeconds] = useState<number>(
-    form.branding.successRedirectDelaySeconds ?? 5,
-  );
-  const [autoReplyEnabled, setAutoReplyEnabled] = useState<boolean>(
-    form.branding.autoReplyEnabled ?? true,
-  );
-  const [autoReplySubject, setAutoReplySubject] = useState(form.branding.autoReplySubject ?? "");
-  const [autoReplyBody, setAutoReplyBody] = useState(form.branding.autoReplyBody ?? "");
-  const [autoReplyDelayMinutes, setAutoReplyDelayMinutes] = useState<number>(
-    form.branding.autoReplyDelayMinutes ?? 0,
-  );
-  const [autoReplySmsEnabled, setAutoReplySmsEnabled] = useState<boolean>(
-    form.branding.autoReplySmsEnabled ?? false,
-  );
-  const [autoReplySmsBody, setAutoReplySmsBody] = useState(form.branding.autoReplySmsBody ?? "");
-  const [autoReplySmsDelayMinutes, setAutoReplySmsDelayMinutes] = useState<number>(
-    form.branding.autoReplySmsDelayMinutes ?? 0,
-  );
-  const [notifyOwnerEmail, setNotifyOwnerEmail] = useState<boolean>(
-    form.branding.notifyOwnerEmail ?? true,
-  );
-
-  // Slug: track what the user explicitly typed separately from the
-  // suggestion derived from the name. Until the user edits the field,
-  // the displayed slug is derived during render — no useEffect needed.
-  const [userSlug, setUserSlug] = useState(form.slug || "");
-  const [slugTouched, setSlugTouched] = useState(!!form.slug);
+  // Per-field-name disclosure state for the validation block. Defaults are
+  // computed at render time: open if a value already exists, closed if not,
+  // unless the operator has explicitly toggled.
+  const [validationOpen, setValidationOpen] = useState<Record<string, boolean>>({});
   const slug = slugTouched ? userSlug : slugify(name);
 
   const trimmedSlug = slug.trim();
-  const slugCollides = useMemo(() => {
-    if (!trimmedSlug) return false;
-    return allForms.some(
-      (f) => f.id !== form.id && f.slug === trimmedSlug,
-    );
-  }, [allForms, form.id, trimmedSlug]);
-  const slugMissing = !trimmedSlug;
-  const slugInvalid = !!trimmedSlug && !/^[a-z0-9-]+$/.test(trimmedSlug);
-  const slugError = slugMissing
-    ? "Slug is required — this is the form's public URL."
-    : slugCollides
-    ? "Another form already uses this slug."
-    : slugInvalid
-    ? "Use lowercase letters, numbers, and dashes only."
-    : "";
-  const canSave = !slugError;
+
+  // All editor-side validation (name uniqueness, slug shape + collision,
+  // option-field placeholder detection, field-name duplicates) lives in
+  // a single helper so each rule is unit-testable in isolation. The save
+  // pill, the input-level error messages, and the per-field error pins
+  // all read from the same returned shape.
+  const draftValidation = useMemo(
+    () =>
+      validateFormDraft({
+        name,
+        slug: trimmedSlug,
+        fields,
+        allForms,
+        formId: form.id,
+      }),
+    [name, trimmedSlug, fields, allForms, form.id],
+  );
+  const {
+    nameError,
+    slugError,
+    fieldOptionErrors,
+    fieldNameDuplicates,
+    optionsError,
+    fieldNameError,
+    canSave,
+  } = draftValidation;
 
   // Emit the in-progress draft on every state change so the live preview can
   // render unsaved edits. The Save button is still the canonical commit;
@@ -1025,47 +1676,15 @@ function FormEditor({
   // `form` only changes on save, and the parent remounts FormEditor via
   // `key={selected.id}` when switching forms. Including `form` would refire
   // the effect after every save with no semantic change.
-  // Build the branding object from current draft state. Centralised so the
-  // live preview, save, and confirmation tab all see the same shape.
-  const buildBranding = useCallback(() => ({
-    ...form.branding,
-    primaryColor: color,
-    description: description.trim() || undefined,
-    successMessage: successMessage.trim() || undefined,
-    template,
-    fontFamily,
-    theme,
-    logo,
-    coverImage,
-    welcomeEnabled,
-    welcomeTitle: welcomeTitle.trim() || undefined,
-    welcomeSubtitle: welcomeSubtitle.trim() || undefined,
-    welcomeCtaLabel: welcomeCtaLabel.trim() || undefined,
-    successCtaLabel: successCtaLabel.trim() || undefined,
-    successCtaUrl: successCtaUrl.trim() || undefined,
-    successRedirectUrl: successRedirectUrl.trim() || undefined,
-    successRedirectDelaySeconds:
-      successRedirectUrl.trim() && Number.isFinite(successRedirectDelaySeconds)
-        ? Math.max(0, Math.min(60, successRedirectDelaySeconds))
-        : undefined,
-    successRouteFieldName: successRouteFieldName || undefined,
-    successVariants: successVariants.length > 0 ? successVariants : undefined,
-    autoReplyEnabled,
-    autoReplySubject: autoReplySubject.trim() || undefined,
-    autoReplyBody: autoReplyBody.trim() || undefined,
-    autoReplyDelayMinutes: clampDelay(autoReplyDelayMinutes),
-    autoReplySmsEnabled,
-    autoReplySmsBody: autoReplySmsBody.trim() || undefined,
-    autoReplySmsDelayMinutes: clampDelay(autoReplySmsDelayMinutes),
-    notifyOwnerEmail,
-  }), [
-    form.branding, color, description, successMessage, template, fontFamily, theme, logo, coverImage,
-    welcomeEnabled, welcomeTitle, welcomeSubtitle, welcomeCtaLabel,
-    successCtaLabel, successCtaUrl, successRedirectUrl, successRedirectDelaySeconds,
-    successRouteFieldName, successVariants,
-    autoReplyEnabled, autoReplySubject, autoReplyBody, autoReplyDelayMinutes,
-    autoReplySmsEnabled, autoReplySmsBody, autoReplySmsDelayMinutes, notifyOwnerEmail,
-  ]);
+  // Build the persisted FormBranding shape from the draft. The pure
+  // helper does the empty-string-to-undefined coercion that determines
+  // whether per-field defaults take effect on the public form. Memoised
+  // on `branding` + the form's base branding so the live-preview effect
+  // below has a stable identity to depend on.
+  const buildBranding = useCallback(
+    () => buildBrandingFromDraft(branding, form.branding),
+    [branding, form.branding],
+  );
 
   useEffect(() => {
     if (!onDraftChange) return;
@@ -1095,11 +1714,22 @@ function FormEditor({
     onUpdateRef.current = onUpdate;
   });
 
-  const [saveStatus, setSaveStatus] = useState<
-    "idle" | "pending" | "saving" | "saved" | "error"
-  >("idle");
+  const [saveStatus, setSaveStatus] = useState<FormSaveStatus>("idle");
   const [saveError, setSaveError] = useState<string | null>(null);
-  const skipFirstSaveRef = useRef(true);
+
+  // Bubble save state to the parent so the slide-over header can gate
+  // actions (Send test) that need a clean DB state. Slug errors are part
+  // of the gate — autosave is held until they clear, so the form on disk
+  // is stale until then.
+  useEffect(() => {
+    if (!onSaveStatusChange) return;
+    onSaveStatusChange(saveStatus, slugError || nameError || saveError);
+  }, [saveStatus, slugError, nameError, saveError, onSaveStatusChange]);
+  // Skip the first autosave run because mount-time state matches the DB.
+  // EXCEPT when we mutated state during init (e.g. uniquifying duplicate
+  // field names from a legacy form): then the in-memory state and DB
+  // diverge, and skipping would leave the bad row in place forever.
+  const skipFirstSaveRef = useRef(!didUniquifyOnLoad);
   // Stash the latest snapshot so the unmount-flush has the freshest values
   // without closing over stale state. Updated on every render.
   const latestDraftRef = useRef({
@@ -1201,6 +1831,36 @@ function FormEditor({
   }, [saveStatus]);
 
   const [fieldPickerOpen, setFieldPickerOpen] = useState(false);
+  const [fieldPickerBottomOpen, setFieldPickerBottomOpen] = useState(false);
+
+  // Collapsible field cards. Keyed by field.name (best stable handle we
+  // have without adding ids to FormFieldConfig). Long forms (>=6 fields)
+  // start fully collapsed so the editor is scannable; shorter forms
+  // expand-by-default so the user lands on familiar territory. Newly
+  // added fields auto-expand because addField doesn't push their name
+  // into this set.
+  const [collapsedFieldNames, setCollapsedFieldNames] = useState<Set<string>>(() => {
+    if (form.fields.length >= 6) {
+      return new Set(form.fields.map((f) => f.name));
+    }
+    return new Set();
+  });
+
+  const toggleFieldCollapsed = (name: string) => {
+    setCollapsedFieldNames((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+  };
+
+  const collapseAllFields = () => {
+    setCollapsedFieldNames(new Set(fields.map((f) => f.name)));
+  };
+  const expandAllFields = () => {
+    setCollapsedFieldNames(new Set());
+  };
   // Tracks the index of the most recently added field so the post-render
   // effect can scroll + focus it. A ref (not state) so we don't re-render
   // just to clear the signal — and so the lint rule against setState-in-effect
@@ -1213,8 +1873,19 @@ function FormEditor({
     setFields((prev) => {
       const nextIdx = prev.length;
       pendingFocusIdxRef.current = nextIdx;
+      // Unique name keyed off existing field names. Index alone collides if
+      // the operator deletes a middle field then re-adds — both end up as
+      // e.g. "text_2", and the second silently overwrites the first's
+      // submission values. Suffix-on-collision matches what we do for slugs.
+      const taken = new Set(prev.map((f) => f.name));
+      let candidate = `${type}_${nextIdx + 1}`;
+      let suffix = nextIdx + 1;
+      while (taken.has(candidate)) {
+        suffix += 1;
+        candidate = `${type}_${suffix}`;
+      }
       const base: FormFieldConfig = {
-        name: `${type}_${nextIdx}`,
+        name: candidate,
         type,
         label: meta.defaultLabel,
         required: false,
@@ -1258,6 +1929,28 @@ function FormEditor({
 
   const removeField = (idx: number) => {
     setFields((p) => p.filter((_, i) => i !== idx));
+  };
+
+  // Insert a copy of `fields[idx]` directly after the source. Field name
+  // must be unique because submission values are keyed by name; suffix
+  // "-copy", then "-copy-2", "-copy-3" if the user duplicates repeatedly.
+  const duplicateField = (idx: number) => {
+    setFields((p) => {
+      const src = p[idx];
+      const taken = new Set(p.map((f) => f.name));
+      let candidate = `${src.name}-copy`;
+      let n = 2;
+      while (taken.has(candidate)) {
+        candidate = `${src.name}-copy-${n}`;
+        n++;
+      }
+      const dup: FormFieldConfig = {
+        ...src,
+        name: candidate,
+        label: `${src.label} (copy)`,
+      };
+      return [...p.slice(0, idx + 1), dup, ...p.slice(idx + 1)];
+    });
   };
 
   return (
@@ -1313,8 +2006,18 @@ function FormEditor({
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider block mb-1">Form Name</label>
-          <input value={name} onChange={(e) => setName(e.target.value)}
-            className="w-full px-3 py-2.5 bg-surface border border-border-light rounded-lg text-[14px] text-foreground outline-none focus:ring-2 focus:ring-primary/20" />
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className={`w-full px-3 py-2.5 bg-surface border rounded-lg text-[14px] text-foreground outline-none focus:ring-2 ${
+              nameError
+                ? "border-red-300 focus:ring-red-200"
+                : "border-border-light focus:ring-primary/20"
+            }`}
+          />
+          {nameError && (
+            <p className="text-[11px] text-red-600 mt-1">{nameError}</p>
+          )}
         </div>
         <div>
           <label className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider block mb-1">URL Slug</label>
@@ -1346,30 +2049,10 @@ function FormEditor({
       </>)}
 
       {mode === "style" && (<>
-      {/* Logo — per-form override that falls back to the workspace logo */}
-      <FormLogoUpload
-        logo={logo}
-        workspaceLogo={workspaceLogo}
-        onChange={setLogo}
-      />
-
-      {/* Cover image — full-width hero photo above the form title */}
-      <CoverImageUpload value={coverImage} onChange={setCoverImage} />
-
-      {/* Brand color */}
+      {/* Layout — surfaces first because it shapes everything else.
+          Operators usually pick a layout before fiddling with colours. */}
       <div>
-        <label className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider block mb-1">Brand Color</label>
-        <div className="flex items-center gap-3">
-          <input type="color" value={color} onChange={(e) => setColor(e.target.value)}
-            className="w-10 h-10 rounded-lg border border-border-light cursor-pointer" />
-          <input value={color} onChange={(e) => setColor(e.target.value)}
-            className="px-3 py-2 bg-surface border border-border-light rounded-lg text-[13px] font-mono text-foreground outline-none w-28" />
-        </div>
-      </div>
-
-      {/* Template + font — visual presets, not a full builder */}
-      <div>
-        <label className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider block mb-2">Template</label>
+        <label className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider block mb-2">Layout</label>
         <div className="grid grid-cols-2 gap-2">
           {TEMPLATE_OPTIONS.map((opt) => {
             const active = template === opt.id;
@@ -1398,24 +2081,59 @@ function FormEditor({
         </div>
       </div>
 
+      {/* Logo — per-form override that falls back to the workspace logo */}
+      <FormLogoUpload
+        logo={logo}
+        workspaceLogo={workspaceLogo}
+        onChange={setLogo}
+      />
+
+      {/* Cover image — full-width hero photo above the form title */}
+      <CoverImageUpload value={coverImage} onChange={setCoverImage} />
+
+      {/* Colours — brand + accent. Brand drives primary actions; accent
+          is the secondary surface, falls back to brand on the public form
+          when blank. Same component the Services Style panel uses. */}
+      <ColorField
+        label="Brand color"
+        hint="Submit button, header strip, focus ring."
+        value={color}
+        onChange={setColor}
+      />
+      <ColorField
+        label="Accent color"
+        hint="Radio dots, chip highlights."
+        value={accentColor}
+        onChange={setAccentColor}
+        allowEmpty
+        onReset={() => setAccentColor("")}
+      />
+
       <div>
-        <label className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider block mb-2">Font</label>
-        <div className="grid grid-cols-4 gap-2">
-          {FONT_OPTIONS.map((opt) => {
-            const active = fontFamily === opt.id;
+        <label className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider block mb-2">Font Pairing</label>
+        <div className="grid grid-cols-2 gap-2">
+          {FONT_PAIR_PRESETS.map((preset) => {
+            const active = matchFontPair(headingFontFamily, fontFamily) === preset.id;
             return (
               <button
-                key={opt.id}
+                key={preset.id}
                 type="button"
-                onClick={() => setFontFamily(opt.id)}
-                className={`rounded-lg border py-2.5 px-3 cursor-pointer transition-all ${
+                onClick={() => {
+                  setHeadingFontFamily(preset.heading);
+                  setFontFamily(preset.body);
+                }}
+                className={`text-left rounded-lg border py-3 px-3.5 cursor-pointer transition-all ${
                   active
                     ? "border-primary ring-2 ring-primary/20 bg-primary/5"
                     : "border-border-light hover:border-text-tertiary bg-surface"
                 }`}
               >
-                <p className={`text-[15px] font-semibold text-foreground ${opt.previewClass}`}>Aa</p>
-                <p className="text-[10px] text-text-tertiary mt-0.5">{opt.label}</p>
+                <div className="flex items-baseline gap-2 mb-1.5">
+                  <span className={`text-[18px] font-semibold text-foreground ${FONT_PREVIEW_CLASS[preset.heading]}`}>Aa</span>
+                  <span className={`text-[12.5px] text-text-secondary ${FONT_PREVIEW_CLASS[preset.body]}`}>the quick brown fox</span>
+                </div>
+                <p className="text-[12px] font-semibold text-foreground">{preset.label}</p>
+                <p className="text-[10.5px] text-text-tertiary leading-snug">{preset.description}</p>
               </button>
             );
           })}
@@ -1430,31 +2148,37 @@ function FormEditor({
           {THEME_OPTIONS.map((opt) => {
             const active = theme === opt.id;
             const Icon = opt.icon;
+            const disabled = !!opt.comingSoon;
             return (
               <button
                 key={opt.id}
                 type="button"
-                onClick={() => setTheme(opt.id)}
-                className={`rounded-lg border py-2.5 px-3 cursor-pointer transition-all flex flex-col items-center gap-1 ${
-                  active
-                    ? "border-primary ring-2 ring-primary/20 bg-primary/5"
-                    : "border-border-light hover:border-text-tertiary bg-surface"
+                onClick={() => { if (!disabled) setTheme(opt.id); }}
+                disabled={disabled}
+                title={disabled ? "Coming soon — public-form dark surfaces still need polish." : undefined}
+                className={`relative rounded-lg border py-2.5 px-3 transition-all flex flex-col items-center gap-1 ${
+                  disabled
+                    ? "border-border-light bg-surface/40 opacity-60 cursor-not-allowed"
+                    : active
+                    ? "border-primary ring-2 ring-primary/20 bg-primary/5 cursor-pointer"
+                    : "border-border-light hover:border-text-tertiary bg-surface cursor-pointer"
                 }`}
               >
                 <div className={`w-8 h-8 rounded-md border flex items-center justify-center ${opt.swatchClass}`}>
                   <Icon className="w-3.5 h-3.5" />
                 </div>
                 <p className="text-[11px] font-semibold text-foreground">{opt.label}</p>
+                {disabled && (
+                  <span className="absolute top-1 right-1 text-[8.5px] uppercase tracking-wider px-1 py-px rounded bg-surface border border-border-light text-text-tertiary font-semibold">
+                    Soon
+                  </span>
+                )}
               </button>
             );
           })}
         </div>
         <p className="text-[11px] text-text-tertiary mt-1.5">
-          {theme === "auto"
-            ? "Matches the visitor's system setting."
-            : theme === "dark"
-            ? "Form always renders in dark mode."
-            : "Form always renders in light mode."}
+          This form renders in light mode. Dark and Auto are coming soon.
         </p>
       </div>
 
@@ -1492,7 +2216,24 @@ function FormEditor({
       {/* Fields */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <label className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider">Fields ({fields.length})</label>
+          <div className="flex items-center gap-3">
+            <label className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider">Fields ({fields.length})</label>
+            {fields.length > 1 && (() => {
+              // "Expand all" when at least one field is collapsed; otherwise
+              // "Collapse all". Single click flips the bulk state of every
+              // field, useful on long templates like the 16-field Wedding.
+              const anyCollapsed = fields.some((f) => collapsedFieldNames.has(f.name));
+              return (
+                <button
+                  type="button"
+                  onClick={anyCollapsed ? expandAllFields : collapseAllFields}
+                  className="text-[11px] text-text-tertiary hover:text-foreground cursor-pointer transition-colors"
+                >
+                  {anyCollapsed ? "Expand all" : "Collapse all"}
+                </button>
+              );
+            })()}
+          </div>
           <button
             onClick={() => setFieldPickerOpen((v) => !v)}
             className="text-[12px] text-primary font-medium hover:underline cursor-pointer flex items-center gap-1"
@@ -1519,44 +2260,121 @@ function FormEditor({
               onDragEnd={() => { setDragIdx(null); setDragOverIdx(null); }}
               className={`bg-surface rounded-lg border p-3 transition-all ${dragOverIdx === idx ? "border-primary/40 bg-primary/5" : "border-border-light"} ${dragIdx === idx ? "opacity-40" : ""}`}
             >
-              <div className="flex items-start gap-2 mb-2">
-                {(() => {
-                  const tint = FIELD_TYPE_TINT[field.type];
-                  const Icon = FIELD_TYPE_META[field.type].icon;
+              {(() => {
+                const tint = FIELD_TYPE_TINT[field.type];
+                const Icon = FIELD_TYPE_META[field.type].icon;
+                const collapsed = collapsedFieldNames.has(field.name);
+                if (collapsed) {
                   return (
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => toggleFieldCollapsed(field.name)}
+                        className="text-text-tertiary hover:text-foreground cursor-pointer p-0.5 flex-shrink-0"
+                        aria-label="Expand field"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                      <div className={`w-7 h-7 rounded-md border flex items-center justify-center flex-shrink-0 ${tint.bg}`}>
+                        <Icon className={`w-3.5 h-3.5 ${tint.icon}`} />
+                      </div>
+                      <GripVertical className="w-4 h-4 text-text-tertiary cursor-grab active:cursor-grabbing flex-shrink-0" />
+                      <div className="flex-1 min-w-0 flex items-center gap-1.5">
+                        <span className="text-[13px] font-medium text-foreground truncate">
+                          {field.label || FIELD_TYPE_META[field.type].defaultLabel}
+                        </span>
+                        {field.required && (
+                          <span className="text-[11px] text-text-tertiary flex-shrink-0">*</span>
+                        )}
+                        {field.showWhen && (
+                          <span title="Conditional" className="text-primary flex-shrink-0">
+                            <Filter className="w-3 h-3" />
+                          </span>
+                        )}
+                        <span className="text-[11px] text-text-tertiary flex-shrink-0 ml-1">
+                          · {FIELD_TYPE_META[field.type].label}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => duplicateField(idx)}
+                        title="Duplicate field"
+                        aria-label="Duplicate field"
+                        className="text-text-tertiary hover:text-foreground cursor-pointer p-1"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => removeField(idx)}
+                        className="text-text-tertiary hover:text-red-500 cursor-pointer p-1"
+                        aria-label="Remove field"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="flex items-start gap-2 mb-2">
+                    <button
+                      type="button"
+                      onClick={() => toggleFieldCollapsed(field.name)}
+                      className="text-text-tertiary hover:text-foreground cursor-pointer p-0.5 mt-1.5 flex-shrink-0"
+                      aria-label="Collapse field"
+                    >
+                      <ChevronDown className="w-4 h-4" />
+                    </button>
                     <div className={`w-7 h-7 rounded-md border flex items-center justify-center flex-shrink-0 mt-0.5 ${tint.bg}`}>
                       <Icon className={`w-3.5 h-3.5 ${tint.icon}`} />
                     </div>
-                  );
-                })()}
-                <GripVertical className="w-4 h-4 text-text-tertiary mt-2 cursor-grab active:cursor-grabbing flex-shrink-0" />
-                <div className="grid grid-cols-3 gap-2 flex-1">
-                  <input
-                    data-field-label
-                    value={field.label}
-                    onChange={(e) => updateField(idx, { label: e.target.value, name: e.target.value.toLowerCase().replace(/\s/g, "_") })}
-                    placeholder="Field label"
-                    className="col-span-2 px-2.5 py-2 bg-card-bg border border-border-light rounded-lg text-[13px] text-foreground outline-none"
-                  />
-                  <select value={field.type} onChange={(e) => updateField(idx, { type: e.target.value as FormFieldConfig["type"] })}
-                    className="px-2 py-2 bg-card-bg border border-border-light rounded-lg text-[13px] text-foreground outline-none">
-                    {FIELD_TYPE_ORDER.map((t) => (
-                      <option key={t} value={t}>{FIELD_TYPE_META[t].label}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+                    <GripVertical className="w-4 h-4 text-text-tertiary mt-2 cursor-grab active:cursor-grabbing flex-shrink-0" />
+                    <div className="grid grid-cols-3 gap-2 flex-1">
+                      <input
+                        data-field-label
+                        value={field.label}
+                        // Update the visible label only. The internal `name`
+                        // is the storage key for submission values, conditional
+                        // logic, and routed thank-you rules — rewriting it on
+                        // every keystroke silently broke all three. Name is
+                        // assigned once at creation and stays stable; the
+                        // operator can rename a field's label freely.
+                        onChange={(e) => updateField(idx, { label: e.target.value })}
+                        placeholder="Field label"
+                        className="col-span-2 px-2.5 py-2 bg-card-bg border border-border-light rounded-lg text-[13px] text-foreground outline-none"
+                      />
+                      <select value={field.type} onChange={(e) => updateField(idx, { type: e.target.value as FormFieldConfig["type"] })}
+                        className="px-2 py-2 bg-card-bg border border-border-light rounded-lg text-[13px] text-foreground outline-none">
+                        {FIELD_TYPE_ORDER.map((t) => (
+                          <option key={t} value={t}>{FIELD_TYPE_META[t].label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                );
+              })()}
+              {fieldNameDuplicates[field.name] && (
+                <p className="text-[11px] text-red-600 mt-1.5 ml-7">
+                  {fieldNameDuplicates[field.name]} Delete one of the duplicate fields to continue.
+                </p>
+              )}
+              {!collapsedFieldNames.has(field.name) && (<>
               <div className="flex items-center justify-between pl-6">
                 {field.type === "hidden" ? (
                   <span className="text-[11px] text-text-tertiary inline-flex items-center gap-1">
                     <EyeOff className="w-3 h-3" /> Hidden — auto-captured from URL
                   </span>
                 ) : (
-                  <label className="flex items-center gap-2 text-[12px] text-text-secondary cursor-pointer">
-                    <input type="checkbox" checked={field.required} onChange={(e) => updateField(idx, { required: e.target.checked })}
-                      className="rounded" />
-                    Required
-                  </label>
+                  <button
+                    type="button"
+                    onClick={() => updateField(idx, { required: !field.required })}
+                    aria-pressed={field.required}
+                    className={`px-2.5 py-1 rounded-full border text-[11.5px] font-medium cursor-pointer transition-colors ${
+                      field.required
+                        ? "bg-primary/10 border-primary text-primary"
+                        : "bg-surface border-border-light text-text-secondary hover:border-text-tertiary hover:text-foreground"
+                    }`}
+                  >
+                    Required{field.required ? " ✓" : ""}
+                  </button>
                 )}
                 <div className="flex items-center gap-0.5">
                   <ConditionToggle
@@ -1565,15 +2383,82 @@ function FormEditor({
                     onSeed={() => updateField(idx, { showWhen: seedCondition(fields, idx) })}
                     onClear={() => updateField(idx, { showWhen: undefined })}
                   />
+                  <button
+                    onClick={() => duplicateField(idx)}
+                    title="Duplicate field"
+                    aria-label="Duplicate field"
+                    className="text-text-tertiary hover:text-foreground cursor-pointer p-1"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                  </button>
                   <button onClick={() => removeField(idx)} className="text-text-tertiary hover:text-red-500 cursor-pointer p-1" aria-label="Remove field">
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
               {fieldHasOptions(field.type) && (
-                <input value={field.options?.join(", ") || ""} onChange={(e) => updateField(idx, { options: e.target.value.split(",").map((o) => o.trim()).filter(Boolean) })}
-                  placeholder="Options (comma separated)"
-                  className="w-full mt-2 px-2.5 py-2 bg-card-bg border border-border-light rounded-lg text-[12px] text-foreground outline-none" />
+                <div className="mt-2 space-y-1.5">
+                  {(field.options ?? []).map((opt, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <span className="w-5 flex items-center justify-center text-text-tertiary flex-shrink-0">
+                        {field.type === "radio" ? (
+                          <span className="w-3.5 h-3.5 rounded-full border-2 border-text-tertiary" />
+                        ) : field.type === "checkbox" || field.type === "multi_select" ? (
+                          <span className="w-3.5 h-3.5 rounded-sm border-2 border-text-tertiary" />
+                        ) : (
+                          <span className="text-[12px]">{i + 1}.</span>
+                        )}
+                      </span>
+                      <input
+                        value={opt}
+                        onChange={(e) => {
+                          const next = [...(field.options ?? [])];
+                          next[i] = e.target.value;
+                          updateField(idx, { options: next });
+                        }}
+                        placeholder={`Option ${i + 1}`}
+                        className="flex-1 px-2.5 py-2 bg-card-bg border border-border-light rounded-lg text-[12px] text-foreground outline-none"
+                      />
+                      <button
+                        onClick={() => {
+                          const next = (field.options ?? []).filter((_, j) => j !== i);
+                          updateField(idx, { options: next });
+                        }}
+                        className="text-text-tertiary hover:text-red-500 cursor-pointer p-1 flex-shrink-0"
+                        aria-label="Remove option"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => {
+                      const current = field.options ?? [];
+                      updateField(idx, { options: [...current, `Option ${current.length + 1}`] });
+                    }}
+                    className="text-[12px] text-primary hover:underline cursor-pointer inline-flex items-center gap-1 ml-7 mt-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Add option
+                  </button>
+                  {fieldOptionErrors[field.name] && (
+                    <p className="text-[11px] text-red-600 mt-1.5 ml-7">
+                      {fieldOptionErrors[field.name]}
+                    </p>
+                  )}
+                  {(field.type === "multi_select" || field.type === "checkbox") && (
+                    <div className="flex items-center gap-1.5 ml-7 mt-2">
+                      <span className="text-[11px] text-text-tertiary">Max selections</span>
+                      <input
+                        type="number"
+                        min={1}
+                        value={field.maxSelections ?? ""}
+                        onChange={(e) => updateField(idx, { maxSelections: e.target.value === "" ? undefined : Math.max(1, Number(e.target.value)) })}
+                        placeholder="No limit"
+                        className="w-20 px-2 py-1.5 bg-card-bg border border-border-light rounded-lg text-[12px] text-foreground placeholder:text-text-tertiary outline-none"
+                      />
+                    </div>
+                  )}
+                </div>
               )}
               {field.type === "file" && (
                 <div className="grid grid-cols-3 gap-2 pl-6 mt-2 items-center">
@@ -1616,33 +2501,157 @@ function FormEditor({
                   />
                 </div>
               )}
-              {field.type !== "hidden" && (
-                <div className="grid grid-cols-2 gap-2 pl-6 mt-2">
-                  <input
-                    value={field.placeholder ?? ""}
-                    onChange={(e) => updateField(idx, { placeholder: e.target.value || undefined })}
-                    placeholder="Placeholder (optional)"
-                    className="px-2.5 py-2 bg-card-bg border border-border-light rounded-lg text-[12px] text-foreground placeholder:text-text-tertiary outline-none"
-                  />
-                  <input
-                    value={field.helpText ?? ""}
-                    onChange={(e) => updateField(idx, { helpText: e.target.value || undefined })}
-                    placeholder="Help text (optional)"
-                    className="px-2.5 py-2 bg-card-bg border border-border-light rounded-lg text-[12px] text-foreground placeholder:text-text-tertiary outline-none"
-                  />
-                </div>
-              )}
+              {field.type !== "hidden" && (() => {
+                const showPlaceholder =
+                  field.type !== "radio" &&
+                  field.type !== "checkbox" &&
+                  field.type !== "multi_select" &&
+                  field.type !== "file";
+                return (
+                  <div className={`grid ${showPlaceholder ? "grid-cols-2" : "grid-cols-1"} gap-2 pl-6 mt-2`}>
+                    {showPlaceholder && (
+                      <input
+                        value={field.placeholder ?? ""}
+                        onChange={(e) => updateField(idx, { placeholder: e.target.value || undefined })}
+                        placeholder="Placeholder (optional)"
+                        className="px-2.5 py-2 bg-card-bg border border-border-light rounded-lg text-[12px] text-foreground placeholder:text-text-tertiary outline-none"
+                      />
+                    )}
+                    <input
+                      value={field.helpText ?? ""}
+                      onChange={(e) => updateField(idx, { helpText: e.target.value || undefined })}
+                      placeholder="Help text (optional)"
+                      className="px-2.5 py-2 bg-card-bg border border-border-light rounded-lg text-[12px] text-foreground placeholder:text-text-tertiary outline-none"
+                    />
+                  </div>
+                );
+              })()}
+              {(() => {
+                // Validation row, hidden behind a per-field disclosure so the
+                // 95% of operators who never set min/max/char-limits aren't
+                // staring at extra inputs they don't need. Auto-opens when
+                // the field already has a value set so existing rules stay
+                // visible. Only renders for field types where validation
+                // actually applies.
+                const hasValidation =
+                  field.type === "number" ||
+                  field.type === "textarea" ||
+                  (field.type === "file" && field.multipleFiles);
+                if (!hasValidation) return null;
+                const hasValue =
+                  field.min !== undefined ||
+                  field.max !== undefined ||
+                  field.maxLength !== undefined ||
+                  field.maxFiles !== undefined;
+                const explicit = validationOpen[field.name];
+                const open = explicit ?? hasValue;
+                return (
+                  <div className="pl-6 mt-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setValidationOpen((prev) => ({ ...prev, [field.name]: !open }))
+                      }
+                      className="inline-flex items-center gap-1 text-[11px] font-medium text-text-tertiary hover:text-foreground cursor-pointer transition-colors"
+                    >
+                      {open ? (
+                        <ChevronDown className="w-3 h-3" />
+                      ) : (
+                        <ChevronRight className="w-3 h-3" />
+                      )}
+                      Validation
+                      {hasValue && !open && <span className="text-primary ml-1">·</span>}
+                    </button>
+                    {open && (
+                      <div className="mt-1.5">
+                        {field.type === "number" && (
+                          <div className="grid grid-cols-2 gap-2">
+                            <input
+                              type="number"
+                              value={field.min ?? ""}
+                              onChange={(e) => updateField(idx, { min: e.target.value === "" ? undefined : Number(e.target.value) })}
+                              placeholder="Min value (optional)"
+                              className="px-2.5 py-2 bg-card-bg border border-border-light rounded-lg text-[12px] text-foreground placeholder:text-text-tertiary outline-none"
+                            />
+                            <input
+                              type="number"
+                              value={field.max ?? ""}
+                              onChange={(e) => updateField(idx, { max: e.target.value === "" ? undefined : Number(e.target.value) })}
+                              placeholder="Max value (optional)"
+                              className="px-2.5 py-2 bg-card-bg border border-border-light rounded-lg text-[12px] text-foreground placeholder:text-text-tertiary outline-none"
+                            />
+                          </div>
+                        )}
+                        {field.type === "textarea" && (
+                          <input
+                            type="number"
+                            min={1}
+                            value={field.maxLength ?? ""}
+                            onChange={(e) => updateField(idx, { maxLength: e.target.value === "" ? undefined : Math.max(1, Number(e.target.value)) })}
+                            placeholder="Character limit (optional)"
+                            className="w-1/2 px-2.5 py-2 bg-card-bg border border-border-light rounded-lg text-[12px] text-foreground placeholder:text-text-tertiary outline-none"
+                          />
+                        )}
+                        {field.type === "file" && field.multipleFiles && (
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="number"
+                              min={1}
+                              max={20}
+                              value={field.maxFiles ?? ""}
+                              onChange={(e) => updateField(idx, { maxFiles: e.target.value === "" ? undefined : Math.max(1, Math.min(20, Number(e.target.value))) })}
+                              placeholder="Max files"
+                              className="w-20 px-2 py-2 bg-card-bg border border-border-light rounded-lg text-[12px] text-foreground placeholder:text-text-tertiary outline-none"
+                            />
+                            <span className="text-[11px] text-text-tertiary">files max (default unlimited)</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
               <ConditionEditor
                 fields={fields}
                 idx={idx}
                 onChange={(showWhen) => updateField(idx, { showWhen })}
               />
+              </>)}
             </div>
           ))}
         </div>
+
+        {fields.length > 0 && (
+          <div className="mt-3">
+            <button
+              onClick={() => setFieldPickerBottomOpen((v) => !v)}
+              className="w-full px-3 py-2.5 rounded-lg border border-dashed border-border-light text-[12.5px] text-text-secondary hover:text-primary hover:border-primary/40 hover:bg-primary/5 transition cursor-pointer flex items-center justify-center gap-1.5"
+            >
+              {fieldPickerBottomOpen ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+              {fieldPickerBottomOpen ? "Cancel" : "Add field"}
+            </button>
+            <FieldTypePickerInline
+              open={fieldPickerBottomOpen}
+              onPick={(type) => {
+                addField(type);
+                setFieldPickerBottomOpen(false);
+              }}
+              onClose={() => setFieldPickerBottomOpen(false)}
+            />
+          </div>
+        )}
       </div>
 
       </>)}
+
+      {mode === "edit" && (
+        <div className="mt-6 pt-4 border-t border-border-light text-[11.5px] text-text-tertiary flex flex-wrap gap-x-3 gap-y-1">
+          <span>Created {formatTimestamp(form.createdAt)}</span>
+          {form.updatedAt && form.updatedAt !== form.createdAt && (
+            <span>· Last edited {formatRelativeTime(form.updatedAt)}</span>
+          )}
+        </div>
+      )}
 
       {/* Autosave status — replaces the explicit Save button. Edits commit
           on a short debounce; this pill is the visible signal that work isn't
@@ -1652,6 +2661,9 @@ function FormEditor({
         status={saveStatus}
         canSave={canSave}
         slugError={slugError}
+        nameError={nameError}
+        optionsError={optionsError}
+        fieldNameError={fieldNameError}
         saveError={saveError}
         onRetry={() => void commit()}
       />
@@ -1665,20 +2677,27 @@ function SaveStatusIndicator({
   status,
   canSave,
   slugError,
+  nameError,
+  optionsError,
+  fieldNameError,
   saveError,
   onRetry,
 }: {
   status: "idle" | "pending" | "saving" | "saved" | "error";
   canSave: boolean;
   slugError: string;
+  nameError: string;
+  optionsError: string;
+  fieldNameError: string;
   saveError: string | null;
   onRetry: () => void;
 }) {
   if (!canSave) {
+    const blocker = nameError || slugError || optionsError || fieldNameError || "fix the errors above";
     return (
       <div className="flex items-center justify-center gap-1.5 text-[12.5px] text-red-600 py-2">
         <X className="w-3.5 h-3.5" />
-        <span>Can&apos;t autosave — {slugError || "fix the errors above"}</span>
+        <span>Can&apos;t autosave — {blocker}</span>
       </div>
     );
   }
@@ -1851,6 +2870,10 @@ function MergeTagBar({ onInsert }: { onInsert: (token: string) => void }) {
 // number input. "Send immediately" maps to undefined on save (clampDelay).
 const DELAY_PRESETS: Array<{ label: string; minutes: number }> = [
   { label: "Send immediately", minutes: 0 },
+  // Tiny breathing room so the auto-reply doesn't feel robotically instant —
+  // a real person can't reply in seconds. The 2-min option is the "still
+  // feels human" preset most beauty pros are reaching for.
+  { label: "2 minutes after submit", minutes: 2 },
   { label: "5 minutes after submit", minutes: 5 },
   { label: "15 minutes after submit", minutes: 15 },
   { label: "30 minutes after submit", minutes: 30 },
@@ -2020,16 +3043,40 @@ function RoutedThankYouSection({
     ]);
   };
 
+  // Active = the operator picked a route field. Most forms never need this
+  // (one thank-you screen is fine), so the whole block is hidden behind a
+  // disclosure. Auto-opens when configured so existing variants stay visible.
+  const active = !!routeFieldName;
+  const [userExpanded, setUserExpanded] = useState(false);
+  const expanded = active || userExpanded;
+
+  // Collapsed state — single line, click to expand. Skipped when there are
+  // no eligible fields since we'd just be teasing a feature they can't use.
+  if (!expanded && eligible.length > 0) {
+    return (
+      <div className="border-t border-border-light pt-5">
+        <button
+          type="button"
+          onClick={() => setUserExpanded(true)}
+          className="inline-flex items-center gap-2 text-[13px] font-medium text-text-secondary hover:text-foreground cursor-pointer transition-colors"
+        >
+          <Filter className="w-4 h-4 text-violet-700" />
+          <span>Show a different thank-you per answer</span>
+          <ChevronRight className="w-3.5 h-3.5 text-text-tertiary" />
+        </button>
+      </div>
+    );
+  }
+
+  // No eligible fields — the feature is unavailable. Keep the existing
+  // hint, but render it as a thin one-liner instead of a heading block.
   if (eligible.length === 0) {
     return (
       <div className="border-t border-border-light pt-5">
-        <div className="flex items-center gap-2">
-          <Filter className="w-[18px] h-[18px] text-violet-700 flex-shrink-0" />
-          <p className="text-[17px] font-semibold text-foreground">Routed thank-you screens</p>
-        </div>
-        <p className="text-[13.5px] text-text-secondary mt-1 leading-snug">
+        <p className="text-[12.5px] text-text-tertiary inline-flex items-center gap-1.5">
+          <Filter className="w-3.5 h-3.5 text-violet-700/70" />
           Add a Dropdown, Radio, Multi-select, or Service field to route the thank-you
-          screen based on the visitor&apos;s answer.
+          screen by answer.
         </p>
       </div>
     );
@@ -2038,9 +3085,22 @@ function RoutedThankYouSection({
   return (
     <div className="border-t border-border-light pt-5 space-y-4">
       <div>
-        <div className="flex items-center gap-2">
-          <Filter className="w-[18px] h-[18px] text-violet-700 flex-shrink-0" />
-          <p className="text-[17px] font-semibold text-foreground">Routed thank-you screens</p>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Filter className="w-[18px] h-[18px] text-violet-700 flex-shrink-0" />
+            <p className="text-[17px] font-semibold text-foreground">Routed thank-you screens</p>
+          </div>
+          {!active && (
+            <button
+              type="button"
+              onClick={() => setUserExpanded(false)}
+              className="text-text-tertiary hover:text-foreground cursor-pointer p-0.5"
+              aria-label="Collapse"
+              title="Hide"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
         <p className="text-[13.5px] text-text-secondary mt-1 leading-snug">
           Show a different message based on the visitor&apos;s answer to one field.
@@ -2192,6 +3252,35 @@ function AutoReplySection(props: {
   const hasEmailField = props.formFields.some((f) => f.type === "email");
   const emailBodyRef = useRef<HTMLTextAreaElement | null>(null);
   const smsBodyRef = useRef<HTMLTextAreaElement | null>(null);
+  // Resolve a real businessName for the preview interpolation. Falls back
+  // to the placeholder string the auto-reply uses when no business name is
+  // configured — matches the runtime fallback in send-inquiry-confirmation.
+  const businessName = useSettingsStore((s) => s.settings?.businessName?.trim() || "Our team");
+  const contactEmail = useSettingsStore((s) => s.settings?.contactEmail ?? "");
+  const updateSettings = useSettingsStore((s) => s.updateSettings);
+  const { workspaceId } = useAuth();
+  const [editingNotifyEmail, setEditingNotifyEmail] = useState(false);
+  const [notifyEmailDraft, setNotifyEmailDraft] = useState(contactEmail);
+
+  // Snapshot the current contactEmail into the draft whenever the user enters
+  // edit mode. The earlier implementation mirrored contactEmail into the
+  // draft via useEffect, which the lint rule flags as setState-in-effect
+  // (causes cascading renders). Now the sync only happens on the click path
+  // that actually needs it; non-edit renders read contactEmail directly.
+  const startEditingNotifyEmail = () => {
+    setNotifyEmailDraft(contactEmail);
+    setEditingNotifyEmail(true);
+  };
+
+  const saveNotifyEmail = () => {
+    const next = notifyEmailDraft.trim();
+    if (!next || next === contactEmail) {
+      setEditingNotifyEmail(false);
+      return;
+    }
+    updateSettings({ contactEmail: next }, workspaceId || undefined);
+    setEditingNotifyEmail(false);
+  };
 
   const insertToken = (
     ref: React.RefObject<HTMLTextAreaElement | null>,
@@ -2268,6 +3357,11 @@ function AutoReplySection(props: {
                 insertToken(emailBodyRef, props.autoReplyBody, props.setAutoReplyBody, token)
               }
             />
+            <EmailPreview
+              subject={props.autoReplySubject}
+              body={props.autoReplyBody}
+              businessName={businessName}
+            />
             <DelayPicker
               value={props.autoReplyDelayMinutes}
               onChange={props.setAutoReplyDelayMinutes}
@@ -2320,6 +3414,7 @@ function AutoReplySection(props: {
                 {props.autoReplySmsBody.length}/320
               </span>
             </div>
+            <SmsPreview body={props.autoReplySmsBody} businessName={businessName} />
             <DelayPicker
               value={props.autoReplySmsDelayMinutes}
               onChange={props.setAutoReplySmsDelayMinutes}
@@ -2330,24 +3425,59 @@ function AutoReplySection(props: {
 
       {/* Owner notification */}
       <div className="border-t border-border-light pt-4">
-        <button
-          type="button"
-          onClick={() => props.setNotifyOwnerEmail(!props.notifyOwnerEmail)}
-          className="w-full flex items-center justify-between text-left cursor-pointer"
-        >
-          <div className="flex items-center gap-2">
-            <Bell className="w-3.5 h-3.5 text-text-secondary" />
-            <div>
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-2 min-w-0 flex-1">
+            <Bell className="w-3.5 h-3.5 text-text-secondary mt-0.5 flex-shrink-0" />
+            <div className="min-w-0 flex-1">
               <span className="text-[13px] font-semibold text-foreground">Email me when I get an inquiry</span>
-              <p className="text-[12.5px] text-text-secondary mt-0.5 leading-snug">Sent to your contact email in Settings.</p>
+              <div className="mt-1 flex items-center gap-1.5 text-[12.5px] text-text-secondary leading-snug">
+                <span className="flex-shrink-0">Sent to</span>
+                {editingNotifyEmail ? (
+                  <input
+                    type="email"
+                    autoFocus
+                    value={notifyEmailDraft}
+                    onChange={(e) => setNotifyEmailDraft(e.target.value)}
+                    onBlur={saveNotifyEmail}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        saveNotifyEmail();
+                      } else if (e.key === "Escape") {
+                        setEditingNotifyEmail(false);
+                      }
+                    }}
+                    placeholder="you@example.com"
+                    className="flex-1 min-w-0 px-2 py-1 bg-surface border border-border-light rounded-md text-[12.5px] text-foreground placeholder:text-text-tertiary outline-none focus:border-primary"
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={startEditingNotifyEmail}
+                    className="group inline-flex items-center gap-1 text-foreground font-medium hover:text-primary transition-colors cursor-pointer min-w-0"
+                  >
+                    <span className="truncate">
+                      {contactEmail || "set an address"}
+                    </span>
+                    <Pencil className="w-3 h-3 text-text-tertiary group-hover:text-primary flex-shrink-0" />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-          {props.notifyOwnerEmail ? (
-            <ToggleRight className="w-7 h-7 text-primary" />
-          ) : (
-            <ToggleLeft className="w-7 h-7 text-text-tertiary" />
-          )}
-        </button>
+          <button
+            type="button"
+            onClick={() => props.setNotifyOwnerEmail(!props.notifyOwnerEmail)}
+            className="cursor-pointer flex-shrink-0"
+            aria-label={props.notifyOwnerEmail ? "Disable owner email" : "Enable owner email"}
+          >
+            {props.notifyOwnerEmail ? (
+              <ToggleRight className="w-7 h-7 text-primary" />
+            ) : (
+              <ToggleLeft className="w-7 h-7 text-text-tertiary" />
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Sender disclosure */}
@@ -2358,6 +3488,85 @@ function AutoReplySection(props: {
           <span className="font-mono">bookings@magiccrm.app</span> on your behalf,
           with replies routed to your contact email. Custom domain — coming soon.
         </span>
+      </div>
+    </div>
+  );
+}
+
+// Email preview — renders the same HTML the bride will receive, using the
+// shared `buildInquiryAutoReplyEmail` helper. Live-updates as the operator
+// types so they can see merge-tags resolve and tone land before sending a
+// real test. Uses sample placeholder values for {{name}} / {{businessName}}
+// so the preview reads like a real email rather than literal merge tags.
+function EmailPreview({
+  subject,
+  body,
+  businessName,
+}: {
+  subject: string;
+  body: string;
+  businessName: string;
+}) {
+  const built = buildInquiryAutoReplyEmail(
+    {
+      clientName: "Sarah",
+      businessName,
+      serviceInterest: undefined,
+      eventType: undefined,
+    },
+    { subject: subject || undefined, body: body || undefined },
+  );
+  return (
+    <div className="rounded-lg border border-border-light bg-card-bg overflow-hidden">
+      <div className="px-3 py-2 bg-surface border-b border-border-light flex items-center justify-between">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-text-tertiary">
+          Preview
+        </span>
+        <span className="text-[10.5px] text-text-tertiary">
+          To: Sarah · From: {businessName}
+        </span>
+      </div>
+      <div className="px-3 py-2 border-b border-border-light">
+        <p className="text-[12px] font-semibold text-foreground truncate">
+          {built.subject}
+        </p>
+      </div>
+      <div
+        className="px-1 py-1 max-h-72 overflow-y-auto bg-[#f9f9f9]"
+        dangerouslySetInnerHTML={{ __html: built.html }}
+      />
+    </div>
+  );
+}
+
+// SMS preview — phone-bubble styling. Resolves merge tags so the operator
+// sees the final text length (carriers split at 160 chars; the input cap
+// is 320). Uses the same sample identity as EmailPreview for consistency.
+function SmsPreview({
+  body,
+  businessName,
+}: {
+  body: string;
+  businessName: string;
+}) {
+  const text = buildInquiryAutoReplySms(
+    { clientName: "Sarah", businessName },
+    { body: body || undefined },
+  );
+  return (
+    <div className="rounded-lg border border-border-light bg-card-bg overflow-hidden">
+      <div className="px-3 py-2 bg-surface border-b border-border-light flex items-center justify-between">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-text-tertiary">
+          Preview
+        </span>
+        <span className="text-[10.5px] text-text-tertiary">
+          To: Sarah · {text.length} chars
+        </span>
+      </div>
+      <div className="p-3 bg-surface/40">
+        <div className="max-w-[80%] bg-emerald-500 text-white rounded-2xl rounded-bl-md px-3.5 py-2 text-[13px] leading-snug shadow-sm whitespace-pre-wrap">
+          {text}
+        </div>
       </div>
     </div>
   );
@@ -2430,24 +3639,6 @@ function WelcomeScreenEditor({
   );
 }
 
-// Returns the list of fields a given field can gate itself on. Rules can
-// only reference fields that come *earlier* in the form — gating on
-// something the visitor hasn't seen yet would be confusing.
-function eligibleConditionFields(fields: FormFieldConfig[], idx: number): FormFieldConfig[] {
-  return fields
-    .slice(0, idx)
-    .filter((f) => f.type !== "hidden" && f.type !== "file" && f.type !== "date_range");
-}
-
-// Default rule seeded when the user first turns conditional logic on for a
-// field. Picks the most recent eligible field — almost always what they meant.
-function seedCondition(fields: FormFieldConfig[], idx: number): FormFieldCondition | undefined {
-  const eligible = eligibleConditionFields(fields, idx);
-  if (eligible.length === 0) return undefined;
-  const ref = eligible[eligible.length - 1];
-  return { fieldName: ref.name, operator: "equals", values: [] };
-}
-
 // Small icon toggle that switches a field's conditional logic on or off.
 // Hidden when there's nothing earlier in the form to gate on, since the
 // rule would have no valid reference.
@@ -2473,15 +3664,16 @@ function ConditionToggle({
     <button
       type="button"
       onClick={() => (on ? onClear() : onSeed())}
-      title={on ? "Conditional — click to remove" : "Make this a conditional field"}
+      title={on ? "Logic on — click to remove" : "Show this field only when another answer matches"}
       aria-pressed={on}
-      className={`p-1 rounded transition-colors cursor-pointer ${
+      className={`inline-flex items-center gap-1 px-1.5 py-1 rounded text-[11px] font-medium transition-colors cursor-pointer ${
         on
           ? "text-primary bg-primary/10 hover:bg-primary/15"
           : "text-text-tertiary hover:text-foreground hover:bg-card-bg"
       }`}
     >
-      <Filter className="w-3.5 h-3.5" />
+      <Filter className="w-3 h-3" />
+      <span>{on ? "Logic on" : "Add logic"}</span>
     </button>
   );
 }
@@ -2571,6 +3763,11 @@ function ConditionEditor({
           />
         )}
       </div>
+      {rule.values.length === 0 && (
+        <p className="text-[10.5px] text-text-tertiary leading-snug">
+          e.g. Show <span className="font-mono">Trial date</span> only when <span className="font-mono">Services</span> <span className="italic">includes</span> <span className="font-mono">Trial</span>.
+        </p>
+      )}
     </div>
   );
 }
@@ -2594,6 +3791,7 @@ const FIELD_TYPE_META: Record<
   date: { label: "Date", description: "Single calendar date", defaultLabel: "Date", icon: Calendar },
   date_range: { label: "Date Range", description: "Start and end date", defaultLabel: "Date Range", icon: CalendarRange },
   time: { label: "Time", description: "A specific time of day", defaultLabel: "Time", icon: Clock },
+  signature: { label: "Signature", description: "Sign with finger or pointer; stored as image", defaultLabel: "Signature", icon: PenLine },
   hidden: { label: "Hidden", description: "Auto-captured from URL — UTM, source, ref", defaultLabel: "Source", icon: EyeOff },
 };
 
@@ -2613,6 +3811,7 @@ const FIELD_TYPE_ORDER: FormFieldConfig["type"][] = [
   "date",
   "date_range",
   "time",
+  "signature",
   "hidden",
 ];
 
@@ -2641,7 +3840,7 @@ const FIELD_TYPE_CATEGORIES: { label: string; types: FormFieldConfig["type"][]; 
   },
   {
     label: "Advanced",
-    types: ["service", "hidden"],
+    types: ["service", "signature", "hidden"],
     tint: { bg: "bg-gradient-to-br from-slate-100 to-slate-200/60 border-slate-200", icon: "text-slate-600" },
   },
 ];
@@ -2653,11 +3852,6 @@ const FIELD_TYPE_TINT: Record<FormFieldConfig["type"], FieldTint> = (() => {
   }
   return map;
 })();
-
-// Field types that present a list of selectable options to the visitor.
-function fieldHasOptions(type: FormFieldConfig["type"]): boolean {
-  return type === "select" || type === "multi_select" || type === "radio" || type === "checkbox";
-}
 
 function FieldTypePickerInline({
   open,
@@ -2728,350 +3922,5 @@ function FieldTypePickerInline({
   );
 }
 
-// ── Form Embed ──
+// FormEmbed + FormQrCode live in ./share/FormEmbed.tsx now.
 
-function FormEmbed({
-  form,
-  bookingPageSlug,
-}: {
-  form: Form;
-  bookingPageSlug?: string;
-}) {
-  const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-
-  // Standalone URL: a full-page experience for direct sharing.
-  // Embed URL: stripped-down iframe-friendly route (X-Frame-Options bypassed).
-  const { formUrl, embedUrl } = (() => {
-    if (form.type === "booking" && bookingPageSlug) {
-      return {
-        formUrl: `${baseUrl}/book/${bookingPageSlug}`,
-        embedUrl: `${baseUrl}/embed/book/${bookingPageSlug}`,
-      };
-    }
-    if (form.type === "inquiry" && form.slug) {
-      return {
-        formUrl: `${baseUrl}/inquiry/${form.slug}`,
-        embedUrl: `${baseUrl}/embed/inquiry/${form.slug}`,
-      };
-    }
-    return { formUrl: "", embedUrl: "" };
-  })();
-
-  const embedCode = embedUrl
-    ? `<iframe src="${embedUrl}" width="100%" height="700" frameborder="0" style="border-radius: 12px; border: 1px solid #eee;"></iframe>`
-    : "";
-
-  const copy = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    toast(`${label} copied!`);
-  };
-
-  if (!formUrl) {
-    const isBooking = form.type === "booking";
-    return (
-      <div className="rounded-lg border border-border-light bg-surface p-4">
-        <h4 className="text-[13px] font-semibold text-foreground">
-          {isBooking ? "Booking page slug required" : "Inquiry form slug required"}
-        </h4>
-        <p className="mt-1 text-[12px] text-text-secondary">
-          {isBooking
-            ? "Set your booking page slug in Settings before sharing or embedding the public booking page."
-            : "Set a slug on this form in the Edit tab before sharing or embedding it."}
-        </p>
-      </div>
-    );
-  }
-
-  const needsEnable = form.type === "inquiry" && !form.enabled;
-
-  return (
-    <div className="space-y-5">
-      {needsEnable && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
-          <p className="text-[12px] text-amber-900">
-            This form is disabled. Toggle it on from the forms list before the public URL will load.
-          </p>
-        </div>
-      )}
-
-      {/* Public URL */}
-      <div className="bg-surface rounded-lg p-4 border border-border-light">
-        <h4 className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider mb-2">Public URL</h4>
-        <div className="flex items-center gap-2">
-          <p className="flex-1 text-[13px] font-mono text-foreground bg-card-bg rounded-lg px-3 py-2 border border-border-light truncate">{formUrl}</p>
-          <button onClick={() => copy(formUrl, "Link")}
-            className="flex items-center gap-1.5 px-3 py-2 bg-foreground text-background rounded-lg text-[13px] font-medium cursor-pointer hover:opacity-90">
-            <Copy className="w-3.5 h-3.5" /> Copy
-          </button>
-          <a href={formUrl} target="_blank" rel="noopener noreferrer"
-            className="flex items-center gap-1.5 px-3 py-2 bg-card-bg border border-border-light rounded-lg text-[13px] font-medium text-foreground hover:bg-surface cursor-pointer">
-            <Globe className="w-3.5 h-3.5" /> Open
-          </a>
-        </div>
-        <p className="text-[11px] text-text-tertiary mt-2">
-          {form.type === "booking"
-            ? "Share this booking page directly with clients."
-            : "Share this inquiry form directly with clients."}
-        </p>
-      </div>
-
-      {/* Embed Code */}
-      <div className="bg-surface rounded-lg p-4 border border-border-light">
-        <h4 className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider mb-2">Embed Code</h4>
-        <div className="relative">
-          <pre className="text-[11px] font-mono text-foreground bg-card-bg rounded-lg px-3 py-3 border border-border-light overflow-x-auto whitespace-pre-wrap break-all">{embedCode}</pre>
-          <button onClick={() => copy(embedCode, "Embed code")}
-            className="absolute top-2 right-2 p-1.5 text-text-tertiary hover:text-foreground rounded-lg hover:bg-surface cursor-pointer">
-            <Copy className="w-3.5 h-3.5" />
-          </button>
-        </div>
-        <p className="text-[11px] text-text-tertiary mt-2">Paste this into your website HTML to embed the form.</p>
-      </div>
-
-      {/* QR code — for in-store kiosks, table cards, printed flyers, business cards. */}
-      <FormQrCode formUrl={formUrl} formName={form.name} />
-    </div>
-  );
-}
-
-// QR code generator + download. Generated client-side via the `qrcode`
-// package — no third-party API call, so the URL never leaves the browser.
-function FormQrCode({ formUrl, formName }: { formUrl: string; formName: string }) {
-  const [dataUrl, setDataUrl] = useState<string>("");
-
-  useEffect(() => {
-    let cancelled = false;
-    void import("qrcode").then((QR) => {
-      QR.toDataURL(formUrl, {
-        margin: 1,
-        width: 320,
-        color: { dark: "#0f0f0f", light: "#ffffff" },
-      })
-        .then((url) => {
-          if (!cancelled) setDataUrl(url);
-        })
-        .catch(() => {
-          if (!cancelled) setDataUrl("");
-        });
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [formUrl]);
-
-  const download = () => {
-    if (!dataUrl) return;
-    const a = document.createElement("a");
-    a.href = dataUrl;
-    a.download = `${formName.toLowerCase().replace(/\s+/g, "-") || "form"}-qr.png`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  };
-
-  return (
-    <div className="bg-surface rounded-lg p-4 border border-border-light">
-      <h4 className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider mb-2">QR Code</h4>
-      <div className="flex items-center gap-4">
-        <div className="w-32 h-32 rounded-lg bg-card-bg border border-border-light flex items-center justify-center overflow-hidden flex-shrink-0">
-          {dataUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={dataUrl} alt="QR code for form URL" className="w-full h-full" />
-          ) : (
-            <span className="text-[11px] text-text-tertiary">Generating…</span>
-          )}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-[12.5px] text-text-secondary leading-snug">
-            Print on table cards, business cards, or in-store signage. Scans straight to the form.
-          </p>
-          <div className="flex items-center gap-2 mt-2.5">
-            <button
-              onClick={download}
-              disabled={!dataUrl}
-              className="flex items-center gap-1.5 px-3 py-2 bg-foreground text-background rounded-lg text-[12.5px] font-medium cursor-pointer hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Download className="w-3.5 h-3.5" /> Download PNG
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Form Responses ──
-
-function csvEscape(value: string) {
-  if (value === "") return "";
-  if (/[",\n\r]/.test(value)) {
-    return `"${value.replace(/"/g, '""')}"`;
-  }
-  return value;
-}
-
-function FormResponses({ form }: { form: Form }) {
-  const { formResponses, updateFormResponse } = useFormResponsesStore();
-  const { workspaceId } = useAuth();
-  const router = useRouter();
-  const [promoting, setPromoting] = useState<string | null>(null);
-
-  const responses = useMemo(
-    () =>
-      formResponses
-        .filter((r) => r.formId === form.id)
-        .sort((a, b) => b.submittedAt.localeCompare(a.submittedAt)),
-    [formResponses, form.id],
-  );
-
-  const fmtDate = (iso: string) =>
-    new Date(iso).toLocaleDateString("en-AU", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
-
-  const fieldLabel = (name: string) =>
-    form.fields.find((f) => f.name === name)?.label ?? name;
-
-  const promote = async (response: FormResponse) => {
-    if (response.inquiryId) {
-      router.push(`/dashboard/leads`);
-      return;
-    }
-    setPromoting(response.id);
-    try {
-      const res = await fetch("/api/inquiries/promote-form-response", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ formResponseId: response.id }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        toast(data.error || "Failed to mark as lead");
-        return;
-      }
-      updateFormResponse(
-        response.id,
-        { inquiryId: data.inquiryId },
-        workspaceId || undefined,
-      );
-      toast("Marked as lead");
-      router.push(`/dashboard/leads`);
-    } finally {
-      setPromoting(null);
-    }
-  };
-
-  const exportCSV = () => {
-    if (responses.length === 0) return;
-    const fieldNames = form.fields.map((f) => f.name);
-    const headers = ["Submitted", "Name", "Email", "Phone", ...form.fields.map((f) => f.label)];
-    const rows = responses.map((r) => [
-      new Date(r.submittedAt).toISOString(),
-      r.contactName ?? "",
-      r.contactEmail ?? "",
-      r.contactPhone ?? "",
-      ...fieldNames.map((name) => r.values[name] ?? ""),
-    ]);
-    const csv = [headers, ...rows]
-      .map((row) => row.map((cell) => csvEscape(String(cell))).join(","))
-      .join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    const safeName =
-      form.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") ||
-      "form";
-    a.href = url;
-    a.download = `${safeName}-responses-${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    toast("Responses exported");
-  };
-
-  if (responses.length === 0) {
-    return (
-      <div className="text-center py-12">
-        <Inbox className="w-8 h-8 text-text-tertiary mx-auto mb-3" />
-        <p className="text-[14px] text-text-tertiary">No responses yet.</p>
-        <p className="text-[12px] text-text-tertiary mt-1">
-          Submissions from this form will appear here.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <p className="text-[12px] text-text-tertiary">
-          {responses.length} response{responses.length !== 1 ? "s" : ""}
-        </p>
-        <button
-          onClick={exportCSV}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 bg-surface border border-border-light rounded-lg text-[12px] font-medium text-text-secondary hover:text-foreground hover:bg-card-bg cursor-pointer transition-colors"
-        >
-          <Download className="w-3.5 h-3.5" /> Export CSV
-        </button>
-      </div>
-      {responses.map((r) => {
-        const supplementalEntries = Object.entries(r.values).filter(
-          ([key, value]) =>
-            value &&
-            !["name", "full_name", "fullName", "client_name", "email", "phone", "mobile", "contact_phone"].includes(
-              key,
-            ),
-        );
-        return (
-          <div
-            key={r.id}
-            className="bg-surface rounded-lg border border-border-light p-4 space-y-2"
-          >
-            <div className="flex items-center justify-between">
-              <p className="text-[14px] font-semibold text-foreground">
-                {r.contactName || "Anonymous"}
-              </p>
-              <span className="text-[11px] text-text-tertiary">{fmtDate(r.submittedAt)}</span>
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-[12px]">
-              {r.contactEmail && (
-                <div>
-                  <span className="text-text-tertiary">Email: </span>
-                  <span className="text-foreground">{r.contactEmail}</span>
-                </div>
-              )}
-              {r.contactPhone && (
-                <div>
-                  <span className="text-text-tertiary">Phone: </span>
-                  <span className="text-foreground">{r.contactPhone}</span>
-                </div>
-              )}
-            </div>
-            {supplementalEntries.length > 0 && (
-              <div className="grid grid-cols-1 gap-1 text-[12px] bg-card-bg rounded-lg px-3 py-2">
-                {supplementalEntries.map(([key, value]) => (
-                  <div key={key}>
-                    <span className="text-text-tertiary">{fieldLabel(key)}: </span>
-                    <span className="text-foreground whitespace-pre-wrap">{value}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-            <div className="flex items-center justify-end pt-1">
-              <button
-                onClick={() => promote(r)}
-                disabled={promoting === r.id}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[12px] font-medium text-text-secondary hover:text-foreground hover:bg-card-bg cursor-pointer transition-colors disabled:opacity-50"
-              >
-                {r.inquiryId ? "View lead →" : promoting === r.id ? "Marking…" : "Mark as lead"}
-              </button>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}

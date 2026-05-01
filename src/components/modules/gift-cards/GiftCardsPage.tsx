@@ -10,6 +10,7 @@ import {
   Copy,
 } from "lucide-react";
 import { useGiftCardStore } from "@/store/gift-cards";
+import { useAuth } from "@/hooks/useAuth";
 import { GiftCardStatus } from "@/types/models";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/Button";
@@ -43,6 +44,7 @@ function formatDate(iso: string) {
 
 export function GiftCardsPage() {
   const { cards, addCard, redeemCard, getCard } = useGiftCardStore();
+  const { workspaceId } = useAuth();
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<GiftCardStatus | "all">("all");
@@ -110,15 +112,18 @@ export function GiftCardsPage() {
       return;
     }
 
-    addCard({
-      workspaceId: "",
-      originalAmount: amount,
-      purchaserName: purchaserName.trim(),
-      purchaserEmail: purchaserEmail.trim() || undefined,
-      recipientName: recipientName.trim() || undefined,
-      recipientEmail: recipientEmail.trim() || undefined,
-      expiresAt: expiryDate || undefined,
-    });
+    addCard(
+      {
+        workspaceId: workspaceId ?? "",
+        originalAmount: amount,
+        purchaserName: purchaserName.trim(),
+        purchaserEmail: purchaserEmail.trim() || undefined,
+        recipientName: recipientName.trim() || undefined,
+        recipientEmail: recipientEmail.trim() || undefined,
+        expiresAt: expiryDate || undefined,
+      },
+      workspaceId || undefined,
+    );
 
     setCreateOpen(false);
     resetCreateForm();
@@ -135,7 +140,7 @@ export function GiftCardsPage() {
       toast("Amount exceeds remaining balance", "error");
       return;
     }
-    const result = redeemCard(detailCard.code, amount);
+    const result = redeemCard(detailCard.code, amount, workspaceId || undefined);
     if (result.success) {
       setRedeemAmount("");
       if (result.remaining <= 0) {
@@ -226,8 +231,8 @@ export function GiftCardsPage() {
         </div>
       ) : (
         <div className="bg-card-bg border border-border-light rounded-xl overflow-hidden">
-          {/* Table Header */}
-          <div className="hidden sm:grid sm:grid-cols-[1fr_100px_100px_100px_1fr_120px] gap-4 px-5 py-3 border-b border-border-light bg-surface/50">
+          {/* Table Header — px-5 py-4 to match the shared DataTable header. */}
+          <div className="hidden sm:grid sm:grid-cols-[1fr_100px_100px_100px_1fr_120px] gap-4 px-5 py-4 border-b border-border-light bg-surface/50">
             <span className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider">Code</span>
             <span className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider">Amount</span>
             <span className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider">Balance</span>

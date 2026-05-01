@@ -24,6 +24,17 @@ export function mapBookingFromDB(row: Record<string, unknown>): Booking {
     reminderSentAt: (row.reminder_sent_at as string) || undefined,
     followupSentAt: (row.followup_sent_at as string) || undefined,
     reviewRequestSentAt: (row.review_request_sent_at as string) || undefined,
+    intakeFormSentAt: (row.intake_form_sent_at as string) || undefined,
+    groupParentBookingId: (row.group_parent_booking_id as string | null) ?? undefined,
+    groupGuestName: (row.group_guest_name as string | null) ?? undefined,
+    selectedVariantId: (row.selected_variant_id as string | null) ?? undefined,
+    selectedAddonIds: (row.selected_addon_ids as string[] | null) ?? undefined,
+    resolvedPrice:
+      row.resolved_price === null || row.resolved_price === undefined
+        ? undefined
+        : Number(row.resolved_price),
+    giftCardCode: (row.gift_card_code as string | null) ?? undefined,
+    membershipId: (row.membership_id as string | null) ?? undefined,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };
@@ -51,6 +62,14 @@ function mapBookingToDB(
   if (data.reminderSentAt !== undefined) row.reminder_sent_at = data.reminderSentAt || null;
   if (data.followupSentAt !== undefined) row.followup_sent_at = data.followupSentAt || null;
   if (data.reviewRequestSentAt !== undefined) row.review_request_sent_at = data.reviewRequestSentAt || null;
+  if (data.intakeFormSentAt !== undefined) row.intake_form_sent_at = data.intakeFormSentAt || null;
+  if (data.groupParentBookingId !== undefined) row.group_parent_booking_id = data.groupParentBookingId || null;
+  if (data.groupGuestName !== undefined) row.group_guest_name = data.groupGuestName || null;
+  if (data.selectedVariantId !== undefined) row.selected_variant_id = data.selectedVariantId || null;
+  if (data.selectedAddonIds !== undefined) row.selected_addon_ids = data.selectedAddonIds;
+  if (data.resolvedPrice !== undefined) row.resolved_price = data.resolvedPrice;
+  if (data.giftCardCode !== undefined) row.gift_card_code = data.giftCardCode || null;
+  if (data.membershipId !== undefined) row.membership_id = data.membershipId || null;
   if (data.createdAt !== undefined) row.created_at = data.createdAt;
   if (data.updatedAt !== undefined) row.updated_at = data.updatedAt;
 

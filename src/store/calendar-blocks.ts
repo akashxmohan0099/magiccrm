@@ -9,6 +9,7 @@ import {
   dbUpdateCalendarBlock,
   dbDeleteCalendarBlock,
 } from "@/lib/db/calendar-blocks";
+import { surfaceDbError } from "./_db-error";
 
 interface CalendarBlocksStore {
   blocks: CalendarBlock[];
@@ -43,7 +44,7 @@ export const useCalendarBlocksStore = create<CalendarBlocksStore>()(
           dbCreateCalendarBlock(
             workspaceId,
             block as unknown as Record<string, unknown>
-          ).catch(console.error);
+          ).catch(surfaceDbError("calendar-blocks"));
         }
         return block;
       },
@@ -60,7 +61,7 @@ export const useCalendarBlocksStore = create<CalendarBlocksStore>()(
             workspaceId,
             id,
             data as Record<string, unknown>
-          ).catch(console.error);
+          ).catch(surfaceDbError("calendar-blocks"));
         }
       },
 
@@ -68,7 +69,7 @@ export const useCalendarBlocksStore = create<CalendarBlocksStore>()(
         set((s) => ({ blocks: s.blocks.filter((b) => b.id !== id) }));
         toast("Block removed");
         if (workspaceId) {
-          dbDeleteCalendarBlock(workspaceId, id).catch(console.error);
+          dbDeleteCalendarBlock(workspaceId, id).catch(surfaceDbError("calendar-blocks"));
         }
         // Quiet getter to satisfy linter
         get();

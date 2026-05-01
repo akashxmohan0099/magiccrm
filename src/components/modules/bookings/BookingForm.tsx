@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useBookingsStore } from "@/store/bookings";
 import { useClientsStore } from "@/store/clients";
 import { useServicesStore } from "@/store/services";
+import { resolveDuration } from "@/lib/services/price";
 import { Booking, BookingStatus } from "@/types/models";
 import { useVocabulary } from "@/hooks/useVocabulary";
 import { SlideOver } from "@/components/ui/SlideOver";
@@ -190,9 +191,12 @@ export function BookingForm({ open, onClose, booking, defaultDate, prefill }: Bo
     set("serviceId", serviceId);
     const svc = services.find((s) => s.id === serviceId);
     if (svc) {
-      // Auto-calculate end time from service duration
+      // Auto-calculate end time from service duration. Honors tier-specific
+      // duration when an artist is already assigned (Master tier might be
+      // 25% faster than Junior on the same cut).
+      const duration = resolveDuration(svc, { memberId: assignedToId ?? null });
       const startMinutes = parseInt(form.startAt.split(":")[0]) * 60 + parseInt(form.startAt.split(":")[1]);
-      const endMinutes = startMinutes + svc.duration;
+      const endMinutes = startMinutes + duration;
       const endHours = String(Math.floor(endMinutes / 60)).padStart(2, "0");
       const endMins = String(endMinutes % 60).padStart(2, "0");
       setForm((f) => ({

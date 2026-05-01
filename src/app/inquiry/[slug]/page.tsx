@@ -9,18 +9,27 @@ import {
   submitPublicInquiry,
   type PublicInquiryForm,
 } from "@/lib/public-inquiry-fallback";
-import { captureHiddenFieldValues, isFieldVisible } from "@/lib/form-logic";
+import { captureHiddenFieldValues } from "@/lib/form-logic";
+import { validatePublicInquirySubmission } from "@/lib/forms/public-validation";
+
+type LoadState =
+  | { status: "loading" }
+  | { status: "ok"; form: PublicInquiryForm }
+  | { status: "disabled" }
+  | { status: "not_found" }
+  | { status: "error" };
 
 export default function InquiryFormPage() {
   const { slug } = useParams<{ slug: string }>();
   const searchParams = useSearchParams();
-  const [form, setForm] = useState<PublicInquiryForm | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [load, setLoad] = useState<LoadState>({ status: "loading" });
+  const form = load.status === "ok" ? load.form : null;
 
   const [values, setValues] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   // Capture URL params (UTMs, source, ref) into hidden fields once the
   // form definition loads. Also lets the operator pre-fill any field via
@@ -45,27 +54,14 @@ export default function InquiryFormPage() {
     let cancelled = false;
 
     const loadForm = async () => {
+      setLoad({ status: "loading" });
       try {
-        setLoading(true);
-        setError("");
-
         const resolved = await resolvePublicInquiryForm(slug);
         if (cancelled) return;
-        if (!resolved) {
-          setForm(null);
-          setError("Form not found");
-          return;
-        }
-        setForm(resolved);
+        if (resolved.status === "ok") setLoad({ status: "ok", form: resolved.form });
+        else setLoad({ status: resolved.status });
       } catch {
-        if (!cancelled) {
-          setForm(null);
-          setError("Failed to load form");
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        if (!cancelled) setLoad({ status: "error" });
       }
     };
 
@@ -76,7 +72,18 @@ export default function InquiryFormPage() {
     };
   }, [slug]);
 
-  if (loading) {
+  // Browser tab title — generic dashboard title is wrong for a public form.
+  useEffect(() => {
+    if (load.status === "ok") {
+      document.title = load.form.name;
+    } else if (load.status === "disabled") {
+      document.title = "Form unavailable";
+    } else if (load.status === "not_found") {
+      document.title = "Form not found";
+    }
+  }, [load]);
+
+  if (load.status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Loader2 className="w-6 h-6 animate-spin text-text-tertiary" />
@@ -84,12 +91,29 @@ export default function InquiryFormPage() {
     );
   }
 
-  if (!form) {
+  if (load.status === "disabled") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div className="text-center max-w-sm">
+          <h1 className="text-xl font-bold text-foreground mb-2">Not accepting responses</h1>
+          <p className="text-sm text-text-secondary">
+            This form isn&apos;t accepting responses right now. Check back soon, or get in touch directly.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (load.status === "not_found" || load.status === "error" || !form) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <div className="text-center max-w-sm">
           <h1 className="text-xl font-bold text-foreground mb-2">Form not found</h1>
-          <p className="text-sm text-text-secondary">{error || "This form doesn't exist or has been disabled."}</p>
+          <p className="text-sm text-text-secondary">
+            {load.status === "error"
+              ? "Something went wrong loading this form. Please try again in a moment."
+              : "We couldn't find this form. Double-check the link."}
+          </p>
         </div>
       </div>
     );
@@ -98,19 +122,26 @@ export default function InquiryFormPage() {
   const handleSubmit = async () => {
     if (submitting) return;
 
-    for (const field of form.fields) {
-      if (!field.required) continue;
-      if (field.type === "hidden") continue;
-      if (!isFieldVisible(field, values, form.fields)) continue;
-      if (!values[field.name]?.trim()) {
-        setError(`${field.label} is required`);
-        return;
+    const { fieldErrors: errs, firstErrorField } = validatePublicInquirySubmission(
+      form.fields,
+      values,
+    );
+    if (firstErrorField) {
+      setFieldErrors(errs);
+      setError("Please fix the highlighted fields.");
+      // Scroll to the first error so visitors don't need to hunt for what's wrong.
+      if (typeof document !== "undefined") {
+        const el = document.getElementById(`f-${firstErrorField}`);
+        el?.scrollIntoView({ behavior: "smooth", block: "center" });
+        if (el && "focus" in el) (el as HTMLElement).focus({ preventScroll: true });
       }
+      return;
     }
 
     try {
       setSubmitting(true);
       setError("");
+      setFieldErrors({});
 
       const result = await submitPublicInquiry(slug, values);
       if (!result.ok) {
@@ -133,11 +164,21 @@ export default function InquiryFormPage() {
         onChange={(name, value) => {
           setValues((p) => ({ ...p, [name]: value }));
           setError("");
+          // Clear the per-field error as soon as the user starts editing the
+          // offending field — feels less punitive than waiting until resubmit.
+          if (fieldErrors[name]) {
+            setFieldErrors((prev) => {
+              const next = { ...prev };
+              delete next[name];
+              return next;
+            });
+          }
         }}
         onSubmit={handleSubmit}
         submitting={submitting}
         submitted={submitted}
         error={error}
+        fieldErrors={fieldErrors}
         workspaceLogo={form.workspaceLogo}
         services={form.services}
         showPoweredBy

@@ -8,6 +8,7 @@ import {
   dbCreateForm,
   dbUpdateForm,
   dbDeleteForm,
+  FormSlugConflictError,
 } from "@/lib/db/forms";
 
 interface FormsStore {
@@ -44,33 +45,67 @@ export const useFormsStore = create<FormsStore>()(
         set((s) => ({ forms: [form, ...s.forms] }));
         toast("Form created");
         if (workspaceId) {
-          dbCreateForm(
-            workspaceId,
-            form as unknown as Record<string, unknown>
-          ).catch(console.error);
+          dbCreateForm(workspaceId, form).catch((err) => {
+            // Slug conflict from a concurrent writer — revert the optimistic
+            // insert so the operator isn't looking at a row that doesn't exist
+            // server-side. They'll need to pick a different slug.
+            if (err instanceof FormSlugConflictError) {
+              set((s) => ({ forms: s.forms.filter((f) => f.id !== form.id) }));
+              toast(err.message, "error");
+              return;
+            }
+            console.error("[forms.addForm] DB write failed:", err);
+            toast("Couldn't save form to the server. Reload and try again.", "error");
+          });
         }
         return form;
       },
 
       updateForm: async (id, data, workspaceId) => {
         const now = new Date().toISOString();
+        // Snapshot the prior row so we can revert on a hard failure (e.g.
+        // slug collision the local client didn't catch).
+        const prior = useFormsStore.getState().forms.find((f) => f.id === id);
         set((s) => ({
           forms: s.forms.map((f) =>
             f.id === id ? { ...f, ...data, updatedAt: now } : f
           ),
         }));
         if (!workspaceId) return;
-        // Bubble DB errors so callers (autosave) can react. Local state stays
-        // optimistically updated regardless — reverting it would feel worse
-        // than showing an error and letting the next save retry.
-        await dbUpdateForm(workspaceId, id, data as Record<string, unknown>);
+        try {
+          await dbUpdateForm(workspaceId, id, data);
+        } catch (err) {
+          if (err instanceof FormSlugConflictError && prior) {
+            // Hard revert just the slug — the operator's other edits stay so
+            // they can fix the slug and the next autosave retry lands clean.
+            set((s) => ({
+              forms: s.forms.map((f) =>
+                f.id === id ? { ...f, slug: prior.slug } : f
+              ),
+            }));
+            toast(err.message, "error");
+          }
+          throw err;
+        }
       },
 
       deleteForm: (id, workspaceId) => {
+        const prior = useFormsStore.getState().forms.find((f) => f.id === id);
         set((s) => ({ forms: s.forms.filter((f) => f.id !== id) }));
-        toast("Form deleted");
+        // Caller fires the user-facing toast — they know the surrounding
+        // context (e.g. submission count) and can word the message better
+        // than this generic store-level message would.
         if (workspaceId) {
-          dbDeleteForm(workspaceId, id).catch(console.error);
+          dbDeleteForm(workspaceId, id).catch((err) => {
+            // Restore the row if the server delete failed — better to show
+            // it back than to leave the operator thinking it's gone while
+            // the form keeps accepting public submissions.
+            console.error("[forms.deleteForm] DB delete failed:", err);
+            if (prior) {
+              set((s) => ({ forms: [prior, ...s.forms] }));
+              toast("Couldn't delete form on the server. Restored.", "error");
+            }
+          });
         }
       },
 

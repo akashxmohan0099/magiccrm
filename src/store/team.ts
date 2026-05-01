@@ -9,6 +9,7 @@ import {
   dbUpdateTeamMember,
   dbDeleteTeamMember,
 } from "@/lib/db/team";
+import { surfaceDbError } from "./_db-error";
 
 interface TeamStore {
   members: TeamMember[];
@@ -45,7 +46,7 @@ export const useTeamStore = create<TeamStore>()(
           dbCreateTeamMember(
             workspaceId,
             member as unknown as Record<string, unknown>
-          ).catch(console.error);
+          ).catch(surfaceDbError("team"));
         }
         return member;
       },
@@ -62,7 +63,7 @@ export const useTeamStore = create<TeamStore>()(
             workspaceId,
             id,
             data as Record<string, unknown>
-          ).catch(console.error);
+          ).catch(surfaceDbError("team"));
         }
       },
 
@@ -70,7 +71,7 @@ export const useTeamStore = create<TeamStore>()(
         set((s) => ({ members: s.members.filter((m) => m.id !== id) }));
         toast("Team member removed");
         if (workspaceId) {
-          dbDeleteTeamMember(workspaceId, id).catch(console.error);
+          dbDeleteTeamMember(workspaceId, id).catch(surfaceDbError("team"));
         }
       },
 

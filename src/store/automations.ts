@@ -8,6 +8,7 @@ import {
   dbCreateAutomationRule,
   dbUpdateAutomationRule,
 } from "@/lib/db/automations";
+import { surfaceDbError } from "./_db-error";
 
 const DEFAULT_RULES: {
   type: AutomationType;
@@ -97,7 +98,7 @@ export const useAutomationsStore = create<AutomationsStore>()(
             workspaceId,
             id,
             data as Record<string, unknown>
-          ).catch(console.error);
+          ).catch(surfaceDbError("automations"));
         }
       },
 
@@ -117,7 +118,7 @@ export const useAutomationsStore = create<AutomationsStore>()(
         if (workspaceId) {
           dbUpdateAutomationRule(workspaceId, id, {
             enabled: newEnabled,
-          } as unknown as Record<string, unknown>).catch(console.error);
+          } as unknown as Record<string, unknown>).catch(surfaceDbError("automations"));
         }
       },
 
@@ -152,7 +153,7 @@ export const useAutomationsStore = create<AutomationsStore>()(
               dbCreateAutomationRule(
                 workspaceId,
                 rule as unknown as Record<string, unknown>
-              ).catch(console.error);
+              ).catch(surfaceDbError("automations"));
             }
           }
         }

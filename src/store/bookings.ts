@@ -10,6 +10,7 @@ import {
   dbDeleteBooking,
 } from "@/lib/db/bookings";
 import { fireAutomationForBooking } from "@/lib/automation-trigger";
+import { surfaceDbError } from "./_db-error";
 
 interface BookingsStore {
   bookings: Booking[];
@@ -46,7 +47,7 @@ export const useBookingsStore = create<BookingsStore>()(
           dbCreateBooking(
             workspaceId,
             booking as unknown as Record<string, unknown>
-          ).catch(console.error);
+          ).catch(surfaceDbError("bookings"));
         }
         return booking;
       },
@@ -64,7 +65,7 @@ export const useBookingsStore = create<BookingsStore>()(
             workspaceId,
             id,
             data as Record<string, unknown>
-          ).catch(console.error);
+          ).catch(surfaceDbError("bookings"));
         }
 
         // Fire event-driven automations on status transitions.
@@ -77,7 +78,7 @@ export const useBookingsStore = create<BookingsStore>()(
         set((s) => ({ bookings: s.bookings.filter((b) => b.id !== id) }));
         toast("Booking deleted");
         if (workspaceId) {
-          dbDeleteBooking(workspaceId, id).catch(console.error);
+          dbDeleteBooking(workspaceId, id).catch(surfaceDbError("bookings"));
         }
       },
 

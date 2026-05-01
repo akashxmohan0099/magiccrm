@@ -13,6 +13,8 @@ interface CalendarViewProps {
   bookings: Booking[];
   onDateSelect: (date: string) => void;
   onBookingClick: (booking: Booking) => void;
+  /** Drag-to-move on the day view. New start/end ISO strings (same date). */
+  onBookingMove?: (booking: Booking, newStartAt: string, newEndAt: string) => void;
   onTimeSelect?: (date: string, startTime: string, endTime: string) => void;
   // Quick-create a block of the given kind. If openForm is true, the parent
   // should open the BlockForm so the user can fill out reason/recurrence —
@@ -100,6 +102,7 @@ export function CalendarView({
   bookings,
   onDateSelect,
   onBookingClick,
+  onBookingMove,
   onTimeSelect,
   onBlockCreate,
   onBlockClick,
@@ -284,6 +287,18 @@ export function CalendarView({
   const [previewBooking, setPreviewBooking] = useState<Booking | null>(null);
   const [previewPos, setPreviewPos] = useState({ x: 0, y: 0 });
 
+  // ── Day-view drag-to-move state ──
+  // dragMove tracks the active drag; we offset the booking's rendered top
+  // by `offsetMin` (snapped to 15-min increments) and commit on pointer up.
+  // movedRef squelches the click handler when a drag actually happened, so
+  // releasing the drag doesn't also open the booking detail.
+  const [dragMove, setDragMove] = useState<{
+    bookingId: string;
+    originY: number;
+    offsetMin: number;
+  } | null>(null);
+  const movedRef = useRef(false);
+
   const handleBookingPreview = useCallback((b: Booking, e: React.MouseEvent) => {
     e.stopPropagation();
     setPreviewBooking(b);
@@ -445,10 +460,60 @@ export function CalendarView({
                     )}
                     <button
                       key={b.id}
-                      onClick={(e) => handleBookingPreview(b, e)}
+                      onClick={(e) => {
+                        if (movedRef.current) {
+                          // Drag just released; consume the synthetic click.
+                          movedRef.current = false;
+                          e.preventDefault();
+                          return;
+                        }
+                        handleBookingPreview(b, e);
+                      }}
                       onMouseDown={(e) => e.stopPropagation()}
-                      className={`absolute left-[56px] sm:left-[72px] right-3 rounded-lg border px-3 py-1.5 cursor-pointer hover:shadow-md transition-shadow z-[5] ${style}`}
-                      style={{ top: Math.max(top, 0), height }}
+                      onPointerDown={(e) => {
+                        if (!onBookingMove) return;
+                        // Drag-to-move: capture the pointer, freeze origin.
+                        e.stopPropagation();
+                        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+                        setDragMove({ bookingId: b.id, originY: e.clientY, offsetMin: 0 });
+                        movedRef.current = false;
+                      }}
+                      onPointerMove={(e) => {
+                        if (!dragMove || dragMove.bookingId !== b.id) return;
+                        const deltaPx = e.clientY - dragMove.originY;
+                        // PX_PER_HOUR = 64 → 1 minute = 64/60 px. Snap to 15.
+                        const rawMin = (deltaPx * 60) / PX_PER_HOUR;
+                        const snapped = Math.round(rawMin / 15) * 15;
+                        if (snapped !== dragMove.offsetMin) {
+                          setDragMove({ ...dragMove, offsetMin: snapped });
+                        }
+                        if (Math.abs(deltaPx) > 4) movedRef.current = true;
+                      }}
+                      onPointerUp={() => {
+                        if (!dragMove || dragMove.bookingId !== b.id) return;
+                        const offset = dragMove.offsetMin;
+                        setDragMove(null);
+                        if (offset !== 0 && onBookingMove) {
+                          // Compute new ISO timestamps; clamp to day window.
+                          const startD = new Date(b.startAt);
+                          const endD = new Date(b.endAt);
+                          const newStart = new Date(startD.getTime() + offset * 60000);
+                          const newEnd = new Date(endD.getTime() + offset * 60000);
+                          onBookingMove(b, newStart.toISOString(), newEnd.toISOString());
+                        }
+                      }}
+                      onPointerCancel={() => setDragMove(null)}
+                      className={`absolute left-[56px] sm:left-[72px] right-3 rounded-lg border px-3 py-1.5 cursor-pointer hover:shadow-md transition-shadow z-[5] ${style} ${
+                        dragMove?.bookingId === b.id ? "shadow-xl ring-2 ring-primary/40" : ""
+                      }`}
+                      style={{
+                        top:
+                          Math.max(top, 0) +
+                          (dragMove?.bookingId === b.id
+                            ? (dragMove.offsetMin / 60) * PX_PER_HOUR
+                            : 0),
+                        height,
+                      }}
                     >
                       <div className="flex items-center gap-1.5">
                         <p className="text-xs font-semibold truncate">{label}</p>

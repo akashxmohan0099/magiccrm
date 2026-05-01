@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useState, useEffect, useRef } from "react";
+import { ReactNode, useState, useEffect, useRef, useMemo } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -10,8 +10,24 @@ import {
   Settings, Bell, Search, Command, Menu,
   FileText, UsersRound, Megaphone, BarChart3, Ticket,
   Gift, Lightbulb, UserCheck, ScrollText, Crown, FileSignature,
-  LogOut, Loader2, Puzzle,
+  LogOut, Loader2, Puzzle, GripVertical,
 } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type Modifier,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { useSettingsStore } from "@/store/settings";
 import { ADDON_MODULES } from "@/lib/addon-modules";
 import { useHydration } from "@/hooks/useHydration";
@@ -30,39 +46,29 @@ const ADDON_ICON_MAP: Record<string, React.ComponentType<{ className?: string }>
   BarChart3, Megaphone, Ticket, Gift, Lightbulb, UserCheck, ScrollText, Crown, FileSignature,
 };
 
-// ── Fixed navigation groups ────────────────────────────────
-const navGroups: NavGroup[] = [
-  {
-    label: "",
-    items: [
-      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    ],
-  },
-  {
-    label: "Daily Workflow",
-    items: [
-      { href: "/dashboard/communications", label: "Communications", icon: MessageCircle },
-      { href: "/dashboard/forms", label: "Forms and Inquiries", icon: FileText },
-      { href: "/dashboard/leads", label: "Leads", icon: Inbox },
-      { href: "/dashboard/bookings", label: "Bookings", icon: FolderKanban },
-      { href: "/dashboard/calendar", label: "Calendar", icon: Calendar },
-      { href: "/dashboard/clients", label: "Clients", icon: Users },
-    ],
-  },
-  {
-    label: "Operations",
-    items: [
-      { href: "/dashboard/payments", label: "Payments", icon: CreditCard },
-    ],
-  },
-  {
-    label: "Setup",
-    items: [
-      { href: "/dashboard/services", label: "Services", icon: Package },
-      { href: "/dashboard/automations", label: "Automations", icon: Zap },
-      { href: "/dashboard/teams", label: "Teams", icon: UsersRound },
-    ],
-  },
+// Lock sidebar drag to vertical movement only — without this the row
+// follows the pointer horizontally and escapes the sidebar.
+const restrictToVerticalAxis: Modifier = ({ transform }) => ({
+  ...transform,
+  x: 0,
+});
+
+// ── Default flat order for the main sidebar items.
+// User can drag to reorder; result persists via the settings store.
+// Items previously gated by "Setup" group (Services, Automations, Teams)
+// are flagged so the staff-role filter still hides them.
+const navItems: (NavItem & { setupOnly?: boolean })[] = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard/communications", label: "Communications", icon: MessageCircle },
+  { href: "/dashboard/forms", label: "Forms and Inquiries", icon: FileText },
+  { href: "/dashboard/leads", label: "Leads", icon: Inbox },
+  { href: "/dashboard/bookings", label: "Bookings", icon: FolderKanban },
+  { href: "/dashboard/calendar", label: "Calendar", icon: Calendar },
+  { href: "/dashboard/clients", label: "Clients", icon: Users },
+  { href: "/dashboard/payments", label: "Payments", icon: CreditCard },
+  { href: "/dashboard/services", label: "Services", icon: Package, setupOnly: true },
+  { href: "/dashboard/automations", label: "Automations", icon: Zap, setupOnly: true },
+  { href: "/dashboard/teams", label: "Teams", icon: UsersRound, setupOnly: true },
 ];
 
 const bottomItems: NavItem[] = [
@@ -84,11 +90,6 @@ interface NavItem {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   badge?: string;
-}
-
-interface NavGroup {
-  label: string;
-  items: NavItem[];
 }
 
 // ── Root layout ────────────────────────────────────────────
@@ -345,7 +346,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
       {/* Main */}
       <main className="flex-1 ml-0 lg:ml-[240px] min-w-0 overflow-hidden">
         {/* Header */}
-        <header className="bg-background/50 backdrop-blur-sm border-b border-border-light px-4 lg:px-8 py-3.5 flex items-center justify-between sticky top-0 z-10">
+        <header className="bg-background/50 backdrop-blur-sm border-b border-border-light px-4 lg:px-8 h-[64px] flex items-center justify-between sticky top-0 z-10">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <button
               onClick={() => setSidebarOpen(true)}
@@ -497,27 +498,57 @@ function SidebarContent({
   const teamSize = useSettingsStore((s) => s.settings?.teamSize);
   const role = useSettingsStore((s) => s.settings?.role);
   const enabledAddons = useSettingsStore((s) => s.enabledAddons);
+  const sidebarOrder = useSettingsStore((s) => s.sidebarOrder);
+  const setSidebarOrder = useSettingsStore((s) => s.setSidebarOrder);
   const activeAddons = ADDON_MODULES.filter((addon) =>
     enabledAddons.includes(addon.id)
   );
   const showTeams = teamSize ? teamSize !== "solo" : true;
-  // Staff role hides the entire Setup group (Services, Forms, Automations,
-  // Teams) and the bottom Settings link. Owner / undefined sees everything.
+  // Staff role hides setup-only items (Services, Automations, Teams) and
+  // the bottom Settings link. Owner / undefined sees everything.
   const isStaff = role === "staff";
-  const displayGroups = navGroups
-    .filter((group) => !isStaff || group.label !== "Setup")
-    .map((group) => ({
-      ...group,
-      items: group.items.filter((item) => showTeams || item.href !== "/dashboard/teams"),
-    }));
+
+  // Apply role / team filters, then user's saved drag order.
+  // New items unknown to the saved order are appended at the end so they
+  // never go missing after a release adds a tab.
+  const orderedItems = useMemo(() => {
+    const filtered = navItems.filter((item) => {
+      if (isStaff && item.setupOnly) return false;
+      if (!showTeams && item.href === "/dashboard/teams") return false;
+      return true;
+    });
+    if (sidebarOrder.length === 0) return filtered;
+    const byHref = new Map(filtered.map((i) => [i.href, i]));
+    const ordered = sidebarOrder
+      .map((href) => byHref.get(href))
+      .filter((i): i is (typeof filtered)[number] => Boolean(i));
+    const seen = new Set(ordered.map((i) => i.href));
+    return [...ordered, ...filtered.filter((i) => !seen.has(i.href))];
+  }, [isStaff, showTeams, sidebarOrder]);
+
   const visibleBottomItems = bottomItems.filter(
     (item) => !isStaff || item.href !== "/dashboard/settings",
   );
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+  );
+
+  const handleDragEnd = (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const oldIdx = orderedItems.findIndex((i) => i.href === active.id);
+    const newIdx = orderedItems.findIndex((i) => i.href === over.id);
+    if (oldIdx === -1 || newIdx === -1) return;
+    const next = arrayMove(orderedItems, oldIdx, newIdx).map((i) => i.href);
+    setSidebarOrder(next);
+  };
+
   return (
     <>
-      {/* Logo */}
-      <div className="px-5 py-4 border-b border-border-light">
+      {/* Logo — fixed 64px height so the bottom border aligns with the
+          dashboard top header on the right (which is also h-[64px]). */}
+      <div className="px-5 h-[64px] flex items-center border-b border-border-light">
         <Link href="/dashboard" className="flex items-center gap-2.5 group" onClick={onNavClick}>
           <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ backgroundColor: "var(--logo-green)" }}>
             <div className="w-3 h-3 bg-card-bg rounded-[3px]" />
@@ -528,54 +559,36 @@ function SidebarContent({
         </Link>
       </div>
 
-      {/* Nav groups */}
+      {/* Nav — flat, drag-sortable list */}
       <nav className="flex-1 px-3 py-2 overflow-y-auto relative">
-        {displayGroups.map((group, gi) => (
-          <div key={gi} className={gi > 0 ? "mt-6" : ""}>
-            {group.label && (
-              <p className="px-3 mb-2 text-[11px] font-semibold text-text-tertiary uppercase tracking-wider">
-                {group.label}
-              </p>
-            )}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          modifiers={[restrictToVerticalAxis]}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={orderedItems.map((i) => i.href)}
+            strategy={verticalListSortingStrategy}
+          >
             <div className="space-y-1">
-              {group.items.map((item) => {
+              {orderedItems.map((item) => {
                 const isActive =
                   item.href === "/dashboard"
                     ? pathname === "/dashboard"
                     : pathname.startsWith(item.href);
                 return (
-                  <Link
+                  <SortableNavRow
                     key={item.href}
-                    href={item.href}
-                    onClick={onNavClick}
-                    className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14px] font-medium transition-all duration-150 group ${
-                      isActive
-                        ? "text-foreground"
-                        : "text-text-secondary hover:text-foreground"
-                    }`}
-                  >
-                    {isActive && (
-                      <motion.div
-                        layoutId="sidebar-active"
-                        className="absolute inset-0 bg-primary-muted rounded-xl"
-                        transition={{ type: "spring", duration: 0.35, bounce: 0.15 }}
-                      />
-                    )}
-                    {isActive && (
-                      <motion.div
-                        className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 bg-primary rounded-r-full"
-                        layoutId="sidebar-indicator"
-                        transition={{ type: "spring", duration: 0.35, bounce: 0.15 }}
-                      />
-                    )}
-                    <item.icon className="w-[17px] h-[17px] relative z-10 flex-shrink-0" />
-                    <span className="relative z-10 truncate">{item.label}</span>
-                  </Link>
+                    item={item}
+                    isActive={isActive}
+                    onNavClick={onNavClick}
+                  />
                 );
               })}
             </div>
-          </div>
-        ))}
+          </SortableContext>
+        </DndContext>
         {/* Addon modules (dynamic) */}
         {activeAddons.length > 0 && (
           <div className="mt-6">
@@ -645,5 +658,64 @@ function SidebarContent({
         })}
       </div>
     </>
+  );
+}
+
+// Sortable wrapper for one nav row. Drag listeners live on a small grip
+// handle that fades in on hover, so clicking the row navigates as usual.
+function SortableNavRow({
+  item,
+  isActive,
+  onNavClick,
+}: {
+  item: NavItem;
+  isActive: boolean;
+  onNavClick: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: item.href });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : undefined,
+    opacity: isDragging ? 0.6 : undefined,
+  };
+  return (
+    <div ref={setNodeRef} style={style} className="relative group/navrow">
+      <Link
+        href={item.href}
+        onClick={onNavClick}
+        className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14px] font-medium transition-all duration-150 ${
+          isActive ? "text-foreground" : "text-text-secondary hover:text-foreground"
+        }`}
+      >
+        {isActive && (
+          <motion.div
+            layoutId="sidebar-active"
+            className="absolute inset-0 bg-primary-muted rounded-xl"
+            transition={{ type: "spring", duration: 0.35, bounce: 0.15 }}
+          />
+        )}
+        {isActive && (
+          <motion.div
+            className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 bg-primary rounded-r-full"
+            layoutId="sidebar-indicator"
+            transition={{ type: "spring", duration: 0.35, bounce: 0.15 }}
+          />
+        )}
+        <item.icon className="w-[17px] h-[17px] relative z-10 flex-shrink-0" />
+        <span className="relative z-10 truncate">{item.label}</span>
+      </Link>
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        title="Drag to reorder"
+        aria-label="Drag to reorder"
+        className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 text-text-tertiary opacity-0 group-hover/navrow:opacity-100 hover:text-foreground cursor-grab active:cursor-grabbing transition-opacity z-20"
+      >
+        <GripVertical className="w-3.5 h-3.5" />
+      </button>
+    </div>
   );
 }

@@ -43,34 +43,66 @@ export function CommunicationPage() {
     return [...result].sort((a, b) => (b.lastMessageAt || b.createdAt).localeCompare(a.lastMessageAt || a.createdAt));
   }, [conversations, channelFilter, search, getMessages]);
 
+  // Unread totals per filter chip — drives the small count badges.
+  const unreadCounts = useMemo(() => {
+    const totals: Partial<Record<Channel | "all", number>> = { all: 0 };
+    for (const c of conversations) {
+      const u = c.unreadCount ?? 0;
+      if (u <= 0) continue;
+      totals.all = (totals.all ?? 0) + u;
+      totals[c.channel] = (totals[c.channel] ?? 0) + u;
+    }
+    return totals;
+  }, [conversations]);
+
   const handleConversationCreated = (convo: Conversation) => {
     setSelectedId(convo.id);
   };
 
+  // Cancel out the dashboard's page padding (p-4 / lg:p-8) so the inbox
+  // panes run flush to the chrome edges. The result reads like an app
+  // workspace rather than a boxed widget on a page.
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h1 className="text-xl font-bold text-foreground">Messages</h1>
-          <p className="text-sm text-text-secondary mt-0.5">All your client conversations in one place.</p>
-        </div>
-        <Button variant="primary" size="sm" onClick={() => setNewConvoOpen(true)}>
-          <Plus className="w-4 h-4 mr-1.5" />
-          New Conversation
-        </Button>
-      </div>
-
-      <div className="flex gap-0 bg-card-bg rounded-xl border border-border-light overflow-hidden" style={{ height: "calc(100vh - 200px)", minHeight: "500px" }}>
+    <div
+      className="-m-4 lg:-m-8 flex flex-col"
+      style={{ height: "calc(100vh - 64px)" }}
+    >
+      {/* Two-pane workspace */}
+      <div className="flex flex-1 min-h-0">
         {/* Conversation list sidebar */}
-        <div className="w-[380px] shrink-0 border-r border-border-light flex flex-col">
-          <div className="p-3 border-b border-border-light space-y-2">
+        <div className="w-[380px] shrink-0 border-r border-border-light flex flex-col bg-card-bg">
+          {/* Sidebar header — title + new conversation lives with the inbox,
+              the way real mail apps put compose next to the list. Padding
+              matches the dashboard top header (px-4 lg:px-8) so left edges
+              line up with the global search bar above. */}
+          <div className="px-4 lg:px-8 pt-4 pb-3 flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <h1 className="text-[16px] font-bold text-foreground tracking-tight">Messages</h1>
+              <p className="text-[11px] text-text-tertiary mt-0.5 truncate">
+                All your client conversations in one place
+              </p>
+            </div>
+            <Button variant="primary" size="sm" onClick={() => setNewConvoOpen(true)}>
+              <Plus className="w-4 h-4" />
+              <span className="hidden xl:inline ml-1">New</span>
+            </Button>
+          </div>
+
+          {/* Search + filters */}
+          <div className="px-4 lg:px-8 pb-3 space-y-2 border-b border-border-light">
             <SearchInput
               value={search}
               onChange={setSearch}
-              placeholder="Search conversations..."
+              placeholder="Search conversations…"
             />
-            <ChannelFilter selectedChannel={channelFilter} onChange={setChannelFilter} />
+            <ChannelFilter
+              selectedChannel={channelFilter}
+              onChange={setChannelFilter}
+              unreadCounts={unreadCounts}
+            />
           </div>
+
+          {/* List */}
           <div className="flex-1 overflow-y-auto">
             {filtered.length === 0 ? (
               <div className="flex items-center justify-center h-full">
@@ -87,15 +119,19 @@ export function CommunicationPage() {
         </div>
 
         {/* Message thread */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col bg-surface/30 min-w-0">
           {selectedId ? (
             <MessageThread conversationId={selectedId} />
           ) : (
             <div className="flex-1 flex items-center justify-center">
-              <div className="text-center">
-                <MessageSquare className="w-10 h-10 text-text-tertiary/40 mx-auto mb-3" />
-                <p className="text-[14px] font-medium text-text-secondary">Select a conversation</p>
-                <p className="text-[12px] text-text-tertiary mt-1">Choose from the list to view messages.</p>
+              <div className="text-center max-w-xs px-6">
+                <div className="w-12 h-12 rounded-full bg-card-bg border border-border-light flex items-center justify-center mx-auto mb-3">
+                  <MessageSquare className="w-5 h-5 text-text-tertiary" />
+                </div>
+                <p className="text-[13px] font-medium text-foreground">Select a conversation</p>
+                <p className="text-[12px] text-text-tertiary mt-1">
+                  Choose a thread from the list to read and reply.
+                </p>
               </div>
             </div>
           )}

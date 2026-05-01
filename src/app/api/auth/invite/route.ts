@@ -6,7 +6,7 @@ import { inviteTeamMember } from "@/lib/auth/invite";
  * POST /api/auth/invite
  * Invites a new team member to a workspace.
  *
- * Body: { email, name, role, workspaceId }
+ * Body: { email, name, role, workspaceId, phone?, workingHours?, daysOff? }
  *
  * Requires the caller to be an authenticated owner or admin of the workspace.
  */
@@ -14,7 +14,6 @@ export async function POST(request: Request) {
   try {
     const supabase = await createClient();
 
-    // Verify the caller is authenticated
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -24,9 +23,8 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { email, name, role, workspaceId } = body;
+    const { email, name, role, workspaceId, phone, workingHours, daysOff, avatarUrl, bio, socialLinks } = body;
 
-    // Validate required fields
     if (!email || !name || !role || !workspaceId) {
       return NextResponse.json(
         { error: "Missing required fields: email, name, role, workspaceId" },
@@ -34,14 +32,13 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!["admin", "staff"].includes(role)) {
+    if (!["owner", "staff"].includes(role)) {
       return NextResponse.json(
-        { error: "Role must be 'admin' or 'staff'" },
+        { error: "Role must be 'owner' or 'staff'" },
         { status: 400 }
       );
     }
 
-    // Verify the caller is an owner or admin of the workspace
     const { data: callerMember } = await supabase
       .from("workspace_members")
       .select("role")
@@ -56,12 +53,23 @@ export async function POST(request: Request) {
       );
     }
 
-    // Perform the invite
+    const origin =
+      process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ??
+      new URL(request.url).origin;
+    const redirectTo = `${origin}/auth/callback?next=/team/onboard`;
+
     const result = await inviteTeamMember({
       email,
       name,
       role,
       workspaceId,
+      phone,
+      workingHours,
+      daysOff,
+      avatarUrl,
+      bio,
+      socialLinks,
+      redirectTo,
     });
 
     if (!result.success) {

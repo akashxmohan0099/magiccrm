@@ -147,7 +147,7 @@ export function BookingDetail({ open, onClose, bookingId, onEdit }: BookingDetai
               </div>
             </div>
             <Button variant="ghost" size="sm" onClick={() => setDeleteOpen(true)}>
-              <Trash2 className="w-3.5 h-3.5" />
+              <Trash2 className="w-4 h-4" />
             </Button>
           </div>
 

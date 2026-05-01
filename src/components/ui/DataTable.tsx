@@ -37,6 +37,10 @@ interface DataTableProps<T> {
   getCustomData?: (item: T) => Record<string, unknown>;
   /** Callback to update custom data (enables inline editing of custom columns) */
   onUpdateCustomData?: (itemKey: string, data: Record<string, unknown>) => void;
+  /** Hide the "+ Add column" affordance. Default true. Pages that don't wire
+   *  a real getCustomData/onUpdateCustomData should set this false — added
+   *  columns would otherwise be local-only shells with no place to persist. */
+  allowCustomColumns?: boolean;
 }
 
 // ── Storage helpers ──────────────────────────────────────────
@@ -374,7 +378,7 @@ function TableAddColumnModal({ onAddCustomColumn }: { onAddCustomColumn: (col: C
 
 // ── DataTable ────────────────────────────────────────────────
 
-export function DataTable<T>({ columns, data, onRowClick, keyExtractor, storageKey, getCustomData, onUpdateCustomData }: DataTableProps<T>) {
+export function DataTable<T>({ columns, data, onRowClick, keyExtractor, storageKey, getCustomData, onUpdateCustomData, allowCustomColumns = true }: DataTableProps<T>) {
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
@@ -384,9 +388,13 @@ export function DataTable<T>({ columns, data, onRowClick, keyExtractor, storageK
     return loadVisibleKeys(storageKey, columns as Column<unknown>[]);
   });
 
-  // Custom columns (only active when storageKey is provided)
+  // Custom columns (only active when storageKey is provided AND the consumer
+  // permits them). When custom columns are disabled but localStorage already
+  // has some (from a prior session that allowed them), we drop them on load
+  // so they don't render as read-only shells the user can't fill.
   const [customColumns, setCustomColumns] = useState<CustomColumnDef[]>(() => {
     if (!storageKey) return [];
+    if (!allowCustomColumns) return [];
     return loadCustomCols(storageKey);
   });
 
@@ -564,12 +572,14 @@ export function DataTable<T>({ columns, data, onRowClick, keyExtractor, storageK
                 </th>
               ))}
 
-              {/* Custom column headers */}
+              {/* Custom column headers — match built-in header padding so the
+                  built-in and custom halves of a hybrid table sit on the same
+                  baseline. */}
               {visibleCustomColumns.map((col) => (
                 <th
                   key={col.id}
                   scope="col"
-                  className="text-left text-xs font-semibold text-text-secondary uppercase tracking-wider px-4 py-3 group/header"
+                  className="text-left text-[11px] font-semibold text-text-secondary uppercase tracking-wider px-5 py-4 group/header"
                   style={{ minWidth: col.minWidth }}
                 >
                   <div className="flex items-center gap-1.5">
@@ -596,7 +606,9 @@ export function DataTable<T>({ columns, data, onRowClick, keyExtractor, storageK
                       customColumns={customColumns}
                       onRemoveCustomColumn={handleRemoveCustomColumn}
                     />
-                    <TableAddColumnModal onAddCustomColumn={handleAddCustomColumn} />
+                    {allowCustomColumns && (
+                      <TableAddColumnModal onAddCustomColumn={handleAddCustomColumn} />
+                    )}
                   </div>
                 </th>
               )}

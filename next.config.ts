@@ -29,6 +29,11 @@ function buildCsp(scriptSrc: string, frameAncestors: string): string {
 
 const nextConfig: NextConfig = {
   skipTrailingSlashRedirect: true,
+  // Hide the Next.js dev-only floating indicator (the "1 Issue" / build
+  // activity pill that pins itself to the viewport corner). Useful console
+  // logs still land in DevTools; we just don't want a chrome element
+  // sitting over the form preview while we're designing.
+  devIndicators: false,
   async rewrites() {
     return [
       {

@@ -83,6 +83,143 @@ export async function createSubscription(params: {
   });
 }
 
+/**
+ * Create a Stripe Checkout session for a service deposit at booking time.
+ * Uses Stripe Connect's `on_behalf_of` so funds settle directly to the
+ * workspace's connected account; the platform takes its cut via
+ * `application_fee_amount`.
+ *
+ * `connectedAccountId` is required — it's the workspace's stripe_account_id
+ * from workspace_settings. If the workspace hasn't completed onboarding,
+ * skip the deposit charge entirely (caller responsibility).
+ */
+export async function createDepositCheckoutSession(params: {
+  bookingId: string;
+  workspaceId: string;
+  connectedAccountId: string;
+  serviceName: string;
+  /** Deposit amount in cents. */
+  amountCents: number;
+  /** Platform fee (cents) taken from the deposit. Optional. */
+  applicationFeeCents?: number;
+  currency?: string;
+  customerEmail: string;
+  successUrl: string;
+  cancelUrl: string;
+}) {
+  const client = getStripeClient();
+  return client.checkout.sessions.create({
+    mode: "payment",
+    payment_method_types: ["card"],
+    customer_email: params.customerEmail,
+    line_items: [
+      {
+        price_data: {
+          currency: params.currency ?? "aud",
+          product_data: { name: `Deposit · ${params.serviceName}` },
+          unit_amount: params.amountCents,
+        },
+        quantity: 1,
+      },
+    ],
+    payment_intent_data: {
+      application_fee_amount: params.applicationFeeCents,
+      on_behalf_of: params.connectedAccountId,
+      transfer_data: { destination: params.connectedAccountId },
+      metadata: {
+        bookingId: params.bookingId,
+        workspaceId: params.workspaceId,
+        kind: "deposit",
+      },
+    },
+    success_url: params.successUrl,
+    cancel_url: params.cancelUrl,
+    metadata: {
+      bookingId: params.bookingId,
+      workspaceId: params.workspaceId,
+      kind: "deposit",
+    },
+  });
+}
+
+/**
+ * Create a SetupIntent for card-on-file. Used when a service charges a
+ * no-show fee or when the operator wants to charge the card later for
+ * cancellation outside the window. The card is attached to a Customer on
+ * the workspace's connected account.
+ */
+export async function createCardOnFileSetupIntent(params: {
+  workspaceId: string;
+  connectedAccountId: string;
+  customerEmail: string;
+  customerName?: string;
+  /** Booking the card-on-file is associated with (for later charges). */
+  bookingId?: string;
+}) {
+  const client = getStripeClient();
+  // Create a Customer on the connected account and attach the SetupIntent to it.
+  const customer = await client.customers.create(
+    {
+      email: params.customerEmail,
+      name: params.customerName,
+      metadata: {
+        workspaceId: params.workspaceId,
+        bookingId: params.bookingId ?? "",
+      },
+    },
+    { stripeAccount: params.connectedAccountId },
+  );
+
+  const setupIntent = await client.setupIntents.create(
+    {
+      customer: customer.id,
+      payment_method_types: ["card"],
+      usage: "off_session",
+      metadata: {
+        workspaceId: params.workspaceId,
+        bookingId: params.bookingId ?? "",
+        kind: "card_on_file",
+      },
+    },
+    { stripeAccount: params.connectedAccountId },
+  );
+
+  return { customerId: customer.id, clientSecret: setupIntent.client_secret };
+}
+
+/**
+ * Charge a stored card off-session — used for no-show fees / late cancellations.
+ * Throws if Stripe rejects the charge (declined card, etc.).
+ */
+export async function chargeCardOnFile(params: {
+  connectedAccountId: string;
+  customerId: string;
+  amountCents: number;
+  currency?: string;
+  description: string;
+  bookingId: string;
+  applicationFeeCents?: number;
+}) {
+  const client = getStripeClient();
+  // Default payment method on the customer is what the SetupIntent attached.
+  return client.paymentIntents.create(
+    {
+      amount: params.amountCents,
+      currency: params.currency ?? "aud",
+      customer: params.customerId,
+      off_session: true,
+      confirm: true,
+      description: params.description,
+      application_fee_amount: params.applicationFeeCents,
+      metadata: {
+        bookingId: params.bookingId,
+        kind: "no_show_fee",
+      },
+    },
+    { stripeAccount: params.connectedAccountId },
+  );
+}
+
 /** Verify a webhook signature */
 export function verifyWebhookSignature(
   payload: string | Buffer,

@@ -22,6 +22,7 @@ export function mapClientFromDB(row: Record<string, unknown>): Client {
     addressPostcode: (row.address_postcode as string) || undefined,
     addressState: (row.address_state as string) || undefined,
     stripePaymentMethodId: (row.stripe_payment_method_id as string) || undefined,
+    patchTests: (row.patch_tests as Client["patchTests"]) || undefined,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };
@@ -47,6 +48,7 @@ function mapClientToDB(
   if (data.addressPostcode !== undefined) row.address_postcode = data.addressPostcode;
   if (data.addressState !== undefined) row.address_state = data.addressState;
   if (data.stripePaymentMethodId !== undefined) row.stripe_payment_method_id = data.stripePaymentMethodId;
+  if (data.patchTests !== undefined) row.patch_tests = data.patchTests;
   if (data.createdAt !== undefined) row.created_at = data.createdAt;
   if (data.updatedAt !== undefined) row.updated_at = data.updatedAt;
 

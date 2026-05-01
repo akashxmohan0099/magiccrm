@@ -16,7 +16,7 @@ import { BookingDetail } from "@/components/modules/bookings/BookingDetail";
 import { BlockForm } from "@/components/modules/bookings/BlockForm";
 
 export function CalendarPage() {
-  const { bookings } = useBookingsStore();
+  const { bookings, updateBooking } = useBookingsStore();
   const { members } = useTeamStore();
   const { addBlock } = useCalendarBlocksStore();
   const { workspaceId } = useAuth();
@@ -124,6 +124,17 @@ export function CalendarPage() {
         bookings={filtered}
         onDateSelect={handleDateSelect}
         onBookingClick={handleBookingClick}
+        onBookingMove={(booking, newStartAt, newEndAt) => {
+          // Drag-to-move on the day view. Recompute the date string from the
+          // ISO so a drop near midnight could in theory cross days (though
+          // current handler keeps it within the same day).
+          const newDate = newStartAt.slice(0, 10);
+          updateBooking(
+            booking.id,
+            { startAt: newStartAt, endAt: newEndAt, date: newDate },
+            workspaceId || undefined,
+          );
+        }}
         onTimeSelect={handleTimeSelect}
         onBlockCreate={handleBlockCreate}
         onBlockClick={handleBlockClick}

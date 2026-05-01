@@ -10,6 +10,7 @@ import {
   fetchMessages,
   dbCreateMessage,
 } from "@/lib/db/communication";
+import { surfaceDbError } from "./_db-error";
 
 interface CommunicationStore {
   conversations: Conversation[];
@@ -55,7 +56,7 @@ export const useCommunicationStore = create<CommunicationStore>()(
           dbCreateConversation(
             workspaceId,
             conversation as unknown as Record<string, unknown>
-          ).catch(console.error);
+          ).catch(surfaceDbError("communication"));
         }
         return conversation;
       },
@@ -72,7 +73,7 @@ export const useCommunicationStore = create<CommunicationStore>()(
             workspaceId,
             id,
             data as Record<string, unknown>
-          ).catch(console.error);
+          ).catch(surfaceDbError("communication"));
         }
       },
 
@@ -97,7 +98,7 @@ export const useCommunicationStore = create<CommunicationStore>()(
           dbCreateMessage(
             workspaceId,
             message as unknown as Record<string, unknown>
-          ).catch(console.error);
+          ).catch(surfaceDbError("communication"));
         }
         return message;
       },

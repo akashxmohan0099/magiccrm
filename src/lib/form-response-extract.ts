@@ -11,15 +11,19 @@ export interface ExtractedContact {
 }
 
 const NAME_KEYS = ["name", "full_name", "fullName", "client_name"];
+const FIRST_NAME_KEYS = ["firstName", "first_name"];
+const LAST_NAME_KEYS = ["lastName", "last_name"];
 const EMAIL_KEYS = ["email"];
 const PHONE_KEYS = ["phone", "mobile", "contact_phone"];
-const MESSAGE_KEYS = ["message", "your_message", "details"];
+const MESSAGE_KEYS = ["message", "your_message", "details", "vision"];
 const SERVICE_INTEREST_KEYS = ["service_interest", "service_you_re_interested_in"];
-const EVENT_TYPE_KEYS = ["event_type"];
-const DATE_RANGE_KEYS = ["date_range", "wedding_date___date_range"];
+const EVENT_TYPE_KEYS = ["event_type", "eventType"];
+const DATE_RANGE_KEYS = ["date_range", "wedding_date___date_range", "weddingDate"];
 
 const HANDLED_KEYS = new Set<string>([
   ...NAME_KEYS,
+  ...FIRST_NAME_KEYS,
+  ...LAST_NAME_KEYS,
   ...EMAIL_KEYS,
   ...PHONE_KEYS,
   ...MESSAGE_KEYS,
@@ -50,7 +54,15 @@ export function extractContactFromValues(
     .map((f) => f.name);
   const serviceFromTypedField = firstValue(values, serviceFieldNames);
 
-  const name = firstValue(values, NAME_KEYS) || "Anonymous";
+  // Prefer a single "name" field. If the form splits first/last (industry
+  // standard for bridal — 100% of audited Gold Coast MUA sites), combine
+  // them so the auto-reply still has a usable {{name}} and the inquiry row
+  // gets the full name without the operator having to look at submission
+  // values.
+  const directName = firstValue(values, NAME_KEYS);
+  const first = firstValue(values, FIRST_NAME_KEYS);
+  const last = firstValue(values, LAST_NAME_KEYS);
+  const name = directName || [first, last].filter(Boolean).join(" ") || "Anonymous";
   const email = firstValue(values, EMAIL_KEYS) || null;
   const phone = firstValue(values, PHONE_KEYS) || null;
   const directMessage = firstValue(values, MESSAGE_KEYS);

@@ -1,10 +1,19 @@
 import { createAdminClient } from "@/lib/supabase-server";
+import type { TeamRole, TeamMemberSocialLinks, WorkingHours } from "@/types/models";
 
 interface InviteParams {
   email: string;
   name: string;
-  role: "admin" | "staff";
+  role: TeamRole;
   workspaceId: string;
+  phone?: string;
+  workingHours?: Record<string, WorkingHours>;
+  daysOff?: string[];
+  avatarUrl?: string;
+  bio?: string;
+  socialLinks?: TeamMemberSocialLinks;
+  /** Absolute URL to redirect the invitee to after they click the email link. */
+  redirectTo?: string;
 }
 
 /**
@@ -12,7 +21,7 @@ interface InviteParams {
  * Uses the service role key to call admin APIs — server-side only.
  *
  * Steps:
- *   1. Sends an invite email via Supabase Auth admin
+ *   1. Sends an invite email via Supabase Auth admin (redirects to /team/onboard)
  *   2. Creates a workspace_members record with status 'invited'
  */
 export async function inviteTeamMember({
@@ -20,10 +29,16 @@ export async function inviteTeamMember({
   name,
   role,
   workspaceId,
+  phone,
+  workingHours,
+  daysOff,
+  avatarUrl,
+  bio,
+  socialLinks,
+  redirectTo,
 }: InviteParams) {
   const supabase = await createAdminClient();
 
-  // 1. Invite user via Supabase Auth
   const { data: inviteData, error: inviteError } = await supabase.auth.admin.inviteUserByEmail(
     email,
     {
@@ -31,6 +46,7 @@ export async function inviteTeamMember({
         full_name: name,
         invited_to_workspace: workspaceId,
       },
+      ...(redirectTo ? { redirectTo } : {}),
     }
   );
 
@@ -40,7 +56,6 @@ export async function inviteTeamMember({
 
   const authUserId = inviteData.user.id;
 
-  // 2. Create workspace_members record
   const { data: member, error: memberError } = await supabase
     .from("workspace_members")
     .insert({
@@ -50,6 +65,12 @@ export async function inviteTeamMember({
       email,
       role,
       status: "invited",
+      phone: phone ?? null,
+      working_hours: workingHours ?? {},
+      days_off: daysOff ?? [],
+      avatar_url: avatarUrl ?? null,
+      bio: bio ?? null,
+      social_links: socialLinks ?? {},
     })
     .select("id")
     .single();

@@ -12,6 +12,7 @@ import {
 import { useMembershipsStore } from "@/store/memberships";
 import { useClientsStore } from "@/store/clients";
 import { useServicesStore } from "@/store/services";
+import { useAuth } from "@/hooks/useAuth";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { SearchInput } from "@/components/ui/SearchInput";
@@ -32,6 +33,7 @@ export function MembershipsPage() {
   const { plans, memberships, addPlan, deletePlan, addMembership, updateMembership, recordSession } = useMembershipsStore();
   const { clients } = useClientsStore();
   const { services } = useServicesStore();
+  const { workspaceId } = useAuth();
 
   const [tab, setTab] = useState<"plans" | "members">("plans");
   const [search, setSearch] = useState("");
@@ -75,16 +77,19 @@ export function MembershipsPage() {
 
   const handleCreatePlan = () => {
     if (!planName.trim()) { toast("Plan name is required", "error"); return; }
-    addPlan({
-      workspaceId: "",
-      name: planName.trim(),
-      description: planDesc.trim(),
-      serviceIds: planServiceIds,
-      sessionsPerPeriod: Number(planSessions) || 0,
-      price: Number(planPrice) || 0,
-      billingCycle: planCycle,
-      enabled: true,
-    });
+    addPlan(
+      {
+        workspaceId: workspaceId ?? "",
+        name: planName.trim(),
+        description: planDesc.trim(),
+        serviceIds: planServiceIds,
+        sessionsPerPeriod: Number(planSessions) || 0,
+        price: Number(planPrice) || 0,
+        billingCycle: planCycle,
+        enabled: true,
+      },
+      workspaceId || undefined,
+    );
     setCreatePlanOpen(false);
     resetPlanForm();
   };
@@ -98,15 +103,18 @@ export function MembershipsPage() {
     if (plan?.billingCycle === "weekly") nextRenewal.setDate(nextRenewal.getDate() + 7);
     else nextRenewal.setMonth(nextRenewal.getMonth() + 1);
 
-    addMembership({
-      workspaceId: "",
-      clientId: memberClientId,
-      planId: memberPlanId,
-      status: "active",
-      sessionsUsed: 0,
-      currentPeriodStart: now,
-      nextRenewalDate: nextRenewal.toISOString(),
-    });
+    addMembership(
+      {
+        workspaceId: workspaceId ?? "",
+        clientId: memberClientId,
+        planId: memberPlanId,
+        status: "active",
+        sessionsUsed: 0,
+        currentPeriodStart: now,
+        nextRenewalDate: nextRenewal.toISOString(),
+      },
+      workspaceId || undefined,
+    );
     setAddMemberOpen(false);
     setMemberClientId(""); setMemberPlanId("");
   };
@@ -180,7 +188,7 @@ export function MembershipsPage() {
                       <h3 className="text-[15px] font-semibold text-foreground">{plan.name}</h3>
                       {plan.description && <p className="text-[12px] text-text-secondary mt-0.5">{plan.description}</p>}
                     </div>
-                    <button onClick={() => deletePlan(plan.id)} className="p-1.5 text-text-tertiary hover:text-red-500 cursor-pointer">
+                    <button onClick={() => deletePlan(plan.id, workspaceId || undefined)} className="p-1.5 text-text-tertiary hover:text-red-500 cursor-pointer">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
@@ -366,17 +374,17 @@ export function MembershipsPage() {
               <div className="space-y-2 pt-3 border-t border-border-light">
                 {detailMembership.status === "active" && (
                   <>
-                    <Button variant="secondary" className="w-full justify-start" onClick={() => recordSession(detailMembership.id)}>
+                    <Button variant="secondary" className="w-full justify-start" onClick={() => recordSession(detailMembership.id, workspaceId || undefined)}>
                       <Zap className="w-4 h-4 mr-2" /> Record Session
                     </Button>
                     <Button variant="secondary" className="w-full justify-start" onClick={() => {
-                      updateMembership(detailMembership.id, { status: "paused" });
+                      updateMembership(detailMembership.id, { status: "paused" }, workspaceId || undefined);
                       toast("Membership paused");
                     }}>
                       <RotateCcw className="w-4 h-4 mr-2" /> Pause Membership
                     </Button>
                     <Button variant="danger" className="w-full justify-start" onClick={() => {
-                      updateMembership(detailMembership.id, { status: "cancelled" });
+                      updateMembership(detailMembership.id, { status: "cancelled" }, workspaceId || undefined);
                       toast("Membership cancelled");
                     }}>
                       <Trash2 className="w-4 h-4 mr-2" /> Cancel Membership
@@ -385,7 +393,7 @@ export function MembershipsPage() {
                 )}
                 {detailMembership.status === "paused" && (
                   <Button variant="secondary" className="w-full justify-start" onClick={() => {
-                    updateMembership(detailMembership.id, { status: "active" });
+                    updateMembership(detailMembership.id, { status: "active" }, workspaceId || undefined);
                     toast("Membership resumed");
                   }}>
                     <RotateCcw className="w-4 h-4 mr-2" /> Resume Membership

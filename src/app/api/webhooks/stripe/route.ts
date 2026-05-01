@@ -30,6 +30,43 @@ export async function POST(req: NextRequest) {
         let workspaceId = metadata?.workspaceId;
         const amountTotal = session.amount_total as number | undefined;
 
+        // Booking deposit checkout completed → flip the booking from
+        // 'pending' to 'confirmed' and log the deposit. We key on
+        // metadata.kind='deposit' set by createDepositCheckoutSession so
+        // legacy invoice flows aren't affected.
+        if (metadata?.kind === "deposit" && metadata.bookingId && workspaceId) {
+          const bookingId = metadata.bookingId;
+          const { error: bookingErr } = await supabase
+            .from("bookings")
+            .update({
+              status: "confirmed",
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", bookingId)
+            .eq("workspace_id", workspaceId);
+          if (bookingErr) {
+            console.error("[Stripe] deposit → booking confirm failed:", bookingErr.message);
+          } else {
+            console.log(`[Stripe] Deposit captured · booking ${bookingId} confirmed`);
+          }
+
+          await supabase
+            .from("activity_log")
+            .insert({
+              workspace_id: workspaceId,
+              type: "update",
+              entity_type: "bookings",
+              entity_id: bookingId,
+              description: `Deposit received via Stripe — $${
+                amountTotal ? (amountTotal / 100).toFixed(2) : "0.00"
+              }`,
+            })
+            .then(({ error: logErr }) => {
+              if (logErr) console.error("[Stripe] Activity log failed:", logErr.message);
+            });
+          break;
+        }
+
         if (invoiceId && !workspaceId) {
           const { data: invoice, error: invoiceLookupError } = await supabase
             .from("payment_documents")

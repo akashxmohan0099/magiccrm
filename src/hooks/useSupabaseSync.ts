@@ -14,6 +14,11 @@ import { useFormsStore } from "@/store/forms";
 import { useFormResponsesStore } from "@/store/form-responses";
 import { useSettingsStore } from "@/store/settings";
 import { useCalendarBlocksStore } from "@/store/calendar-blocks";
+import { useLocationsStore } from "@/store/locations";
+import { useResourcesStore } from "@/store/resources";
+import { useTreatmentNotesStore } from "@/store/treatment-notes";
+import { useMembershipsStore } from "@/store/memberships";
+import { useGiftCardStore } from "@/store/gift-cards";
 
 /**
  * Loads workspace data from Supabase once auth is ready.
@@ -62,6 +67,11 @@ export function useSupabaseSync({
       ["forms", () => useFormsStore.getState().loadFromSupabase(workspaceId)],
       ["form-responses", () => useFormResponsesStore.getState().loadFromSupabase(workspaceId)],
       ["settings", () => useSettingsStore.getState().loadFromSupabase(workspaceId)],
+      ["locations", () => useLocationsStore.getState().loadFromSupabase(workspaceId)],
+      ["resources", () => useResourcesStore.getState().loadFromSupabase(workspaceId)],
+      ["treatment-notes", () => useTreatmentNotesStore.getState().loadFromSupabase(workspaceId)],
+      ["memberships", () => useMembershipsStore.getState().loadFromSupabase(workspaceId)],
+      ["gift-cards", () => useGiftCardStore.getState().loadFromSupabase(workspaceId)],
     ] as const;
 
     const sync = async () => {

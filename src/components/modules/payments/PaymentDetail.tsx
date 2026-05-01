@@ -79,7 +79,7 @@ export function PaymentDetail({
             <p className="text-[12px] text-text-secondary mt-0.5"><span onClick={onViewClient} className="text-primary font-medium cursor-pointer hover:underline">{clientName || "—"}</span> · {fmtDate(doc.createdAt)}</p>
             <div className="mt-2"><StatusBadge status={doc.status} /></div>
           </div>
-          <Button variant="ghost" size="sm" onClick={onDelete}><Trash2 className="w-3.5 h-3.5" /></Button>
+          <Button variant="ghost" size="sm" onClick={onDelete}><Trash2 className="w-4 h-4" /></Button>
         </div>
 
         {/* Total */}
@@ -92,7 +92,7 @@ export function PaymentDetail({
 
         {/* Line items */}
         <div className="bg-surface rounded-lg border border-border-light overflow-hidden">
-          <div className="px-4 py-2.5 border-b border-border-light">
+          <div className="px-4 py-3 border-b border-border-light">
             <h4 className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider">Line Items</h4>
           </div>
           {items.length === 0 ? (

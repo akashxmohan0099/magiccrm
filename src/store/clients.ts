@@ -9,6 +9,7 @@ import {
   dbUpdateClient,
   dbDeleteClient,
 } from "@/lib/db/clients";
+import { surfaceDbError } from "./_db-error";
 
 interface ClientsStore {
   clients: Client[];
@@ -60,7 +61,7 @@ export const useClientsStore = create<ClientsStore>()(
             );
           }
         };
-        batch().catch(console.error);
+        batch().catch(surfaceDbError("clients"));
 
         return newClients.length;
       },
@@ -79,7 +80,7 @@ export const useClientsStore = create<ClientsStore>()(
           dbCreateClient(
             workspaceId,
             client as unknown as Record<string, unknown>
-          ).catch(console.error);
+          ).catch(surfaceDbError("clients"));
         }
         return client;
       },
@@ -96,7 +97,7 @@ export const useClientsStore = create<ClientsStore>()(
             workspaceId,
             id,
             data as Record<string, unknown>
-          ).catch(console.error);
+          ).catch(surfaceDbError("clients"));
         }
       },
 
@@ -104,7 +105,7 @@ export const useClientsStore = create<ClientsStore>()(
         set((s) => ({ clients: s.clients.filter((c) => c.id !== id) }));
         toast("Client deleted");
         if (workspaceId) {
-          dbDeleteClient(workspaceId, id).catch(console.error);
+          dbDeleteClient(workspaceId, id).catch(surfaceDbError("clients"));
         }
       },
 

@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import { useClientsStore } from "@/store/clients";
 import { useBookingsStore } from "@/store/bookings";
+import { ClientPatchTestsPanel } from "./ClientPatchTestsPanel";
+import { ClientTreatmentNotesPanel } from "./ClientTreatmentNotesPanel";
 import { useServicesStore } from "@/store/services";
 import { useTeamStore } from "@/store/team";
 import { usePaymentsStore } from "@/store/payments";
@@ -168,7 +170,7 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
               <p className="text-[12px] text-text-secondary mt-0.5">Client since {formatDateShort(client.createdAt)}</p>
             </div>
             <Button variant="ghost" size="sm" onClick={() => setDeleteOpen(true)}>
-              <Trash2 className="w-3.5 h-3.5" />
+              <Trash2 className="w-4 h-4" />
             </Button>
           </div>
 
@@ -264,6 +266,12 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
                   <h4 className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider mb-2">Notes</h4>
                   <InlineField value={client.notes} field="notes" clientId={client.id} updateClient={updateClient} workspaceId={workspaceId} placeholder="Click to add notes..." multiline />
                 </div>
+
+                {/* Patch tests */}
+                <ClientPatchTestsPanel client={client} />
+
+                {/* Treatment notes (SOAP) */}
+                <ClientTreatmentNotesPanel clientId={client.id} />
 
                 {/* Quick Actions */}
                 <div className="bg-surface rounded-lg p-4 border border-border-light">

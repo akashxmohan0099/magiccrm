@@ -278,7 +278,7 @@ export function CSVImportWizard({ open, onClose, type, onImportClients, onImport
 
             <div className="flex gap-2">
               <Button variant="secondary" size="sm" onClick={() => { reset(); }} className="flex-1">
-                <ArrowLeft className="w-3.5 h-3.5 mr-1.5" /> Back
+                <ArrowLeft className="w-4 h-4 mr-1.5" /> Back
               </Button>
               <Button
                 variant="primary"
@@ -372,7 +372,7 @@ export function CSVImportWizard({ open, onClose, type, onImportClients, onImport
 
             <div className="flex gap-2">
               <Button variant="secondary" size="sm" onClick={() => setStep("mapping")} className="flex-1">
-                <ArrowLeft className="w-3.5 h-3.5 mr-1.5" /> Back
+                <ArrowLeft className="w-4 h-4 mr-1.5" /> Back
               </Button>
               <Button variant="primary" size="sm" onClick={handleImport} disabled={previewItems.length === 0} className="flex-1">
                 Import {previewItems.length} {type === "clients" ? "Clients" : "Services"}

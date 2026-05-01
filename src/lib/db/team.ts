@@ -16,6 +16,8 @@ export function mapTeamMemberFromDB(row: Record<string, unknown>): TeamMember {
     phone: (row.phone as string) || undefined,
     role: row.role as import("@/types/models").TeamRole,
     avatarUrl: (row.avatar_url as string) || undefined,
+    bio: (row.bio as string) || undefined,
+    socialLinks: (row.social_links as import("@/types/models").TeamMemberSocialLinks) || undefined,
     status: row.status as import("@/types/models").MemberStatus,
     workingHours: (row.working_hours ?? {}) as Record<string, import("@/types/models").WorkingHours>,
     daysOff: (row.days_off ?? []) as string[],
@@ -39,6 +41,8 @@ function mapTeamMemberToDB(
   if (data.phone !== undefined) row.phone = data.phone || null;
   if (data.role !== undefined) row.role = data.role;
   if (data.avatarUrl !== undefined) row.avatar_url = data.avatarUrl || null;
+  if (data.bio !== undefined) row.bio = data.bio || null;
+  if (data.socialLinks !== undefined) row.social_links = data.socialLinks || {};
   if (data.status !== undefined) row.status = data.status;
   if (data.workingHours !== undefined) row.working_hours = data.workingHours;
   if (data.daysOff !== undefined) row.days_off = data.daysOff;

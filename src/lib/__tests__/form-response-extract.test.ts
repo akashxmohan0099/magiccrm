@@ -85,6 +85,30 @@ describe("extractContactFromValues", () => {
     expect(result.dateRange).toBe("May 2026");
   });
 
+  it("combines firstName + lastName when no single name field is present", () => {
+    const fields: FormFieldConfig[] = [
+      { name: "firstName", type: "text", label: "First name", required: true },
+      { name: "lastName", type: "text", label: "Last name", required: true },
+      { name: "email", type: "email", label: "Email", required: true },
+    ];
+    const result = extractContactFromValues(
+      { firstName: "Sarah", lastName: "Smith", email: "s@s.com" },
+      fields,
+    );
+    expect(result.name).toBe("Sarah Smith");
+    // First/last should not also appear in the supplemental message dump.
+    expect(result.message).not.toContain("First name:");
+    expect(result.message).not.toContain("Last name:");
+  });
+
+  it("uses firstName alone when lastName missing", () => {
+    const fields: FormFieldConfig[] = [
+      { name: "firstName", type: "text", label: "First name", required: true },
+    ];
+    const result = extractContactFromValues({ firstName: "Sarah" }, fields);
+    expect(result.name).toBe("Sarah");
+  });
+
   it("ignores empty values when building supplemental lines", () => {
     const fields: FormFieldConfig[] = [
       ...baseFields,

@@ -169,9 +169,10 @@ function IntegrationCard({
       }}
       className="bg-card-bg border border-border-light rounded-2xl p-6 flex items-start gap-4 hover:border-foreground/10 transition-colors"
     >
-      {/* Icon */}
+      {/* Icon — w-10 h-10 to match the other settings/list icon containers
+          (ModulesSettings, GiftCardsPage, ProposalsPage). */}
       <div
-        className={`w-11 h-11 rounded-xl ${integration.iconBg} flex items-center justify-center flex-shrink-0`}
+        className={`w-10 h-10 rounded-xl ${integration.iconBg} flex items-center justify-center flex-shrink-0`}
       >
         <Icon className={`w-5 h-5 ${integration.iconColor}`} />
       </div>
@@ -198,7 +199,7 @@ function IntegrationCard({
       {integration.hasConnect && (
         <div className="flex-shrink-0">
           <Button variant="secondary" size="sm" onClick={handleConnect}>
-            <ExternalLink className="w-3.5 h-3.5" />
+            <ExternalLink className="w-4 h-4" />
             Connect
           </Button>
         </div>

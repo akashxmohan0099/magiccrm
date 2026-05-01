@@ -13,6 +13,7 @@ import type {
   FormType,
 } from "@/types/models";
 import { isFieldVisible, splitMulti } from "@/lib/form-logic";
+import { SignaturePad } from "./SignaturePad";
 
 // Shared shape so editor preview, public inquiry page, and embed page can
 // all hand the same renderer their form. Only the bits the renderer needs.
@@ -54,6 +55,46 @@ export interface FormRendererProps {
   /** Live services from the workspace. Powers the Service field dropdown so
    *  options stay in sync as services are added/renamed. */
   services?: RenderableService[];
+  /** Editor-only: pin a specific success variant on the Success view so the
+   *  operator can preview each routed thank-you without faking submissions.
+   *  When undefined the renderer falls through to value-based variant
+   *  matching (the public-form behaviour). */
+  forceSuccessVariantId?: string;
+  /** Per-field validation errors keyed by field.name. Rendered inline under
+   *  each affected field. Top-level submission errors still go through `error`. */
+  fieldErrors?: Record<string, string>;
+}
+
+// Autocomplete heuristic. Field type wins for email/phone/url/date; for plain
+// text we read keywords from the label so "First name" → given-name etc.
+// Returning undefined means we omit the attribute (browsers fall back to
+// no-autofill). Conservative on purpose — wrong autocomplete is worse than none.
+function autocompleteFor(field: FormFieldConfig): string | undefined {
+  const t = field.type;
+  if (t === "email") return "email";
+  if (t === "phone") return "tel";
+  if (t === "url") return "url";
+  const label = (field.label || field.name || "").toLowerCase();
+  if (t === "text") {
+    if (/(^|\b)(first|given)\b.*name/.test(label)) return "given-name";
+    if (/(^|\b)(last|family|sur)\b.*name|surname/.test(label)) return "family-name";
+    if (/full name|^name$|your name|name$/.test(label)) return "name";
+    if (/company|business|organi[sz]ation/.test(label)) return "organization";
+    if (/street|address(?! line 2)/.test(label)) return "street-address";
+    if (/^city|town$|suburb/.test(label)) return "address-level2";
+    if (/postcode|postal code|zip/.test(label)) return "postal-code";
+    if (/country/.test(label)) return "country-name";
+  }
+  return undefined;
+}
+
+// Normalise the dropdown placeholder. Avoids "Select select an option" when
+// the operator typed a label that already starts with "Select".
+function selectPlaceholderText(field: FormFieldConfig): string {
+  const raw = (field.placeholder ?? field.label ?? "").trim();
+  if (!raw) return "Select an option";
+  if (/^select\b/i.test(raw)) return raw;
+  return `Select ${raw.toLowerCase()}`;
 }
 
 function effectiveLogo(form: RenderableForm, workspaceLogo?: string): string | undefined {
@@ -70,6 +111,18 @@ const FONT_CLASS: Record<FormFontFamily, string> = {
 
 function fontClassFor(branding: FormBranding) {
   return FONT_CLASS[branding.fontFamily ?? "sans"];
+}
+
+// Heading font falls back to body font when not explicitly set, so old forms
+// that only configured `fontFamily` keep rendering uniformly.
+function headingFontClassFor(branding: FormBranding) {
+  return FONT_CLASS[branding.headingFontFamily ?? branding.fontFamily ?? "sans"];
+}
+
+// Accent defaults to brand when unset — operators with one color get a
+// uniform look without having to set both. Returned as a hex string.
+function accentColorFor(branding: FormBranding, brand: string) {
+  return branding.accentColor?.trim() || brand;
 }
 
 function templateFor(branding: FormBranding): FormTemplate {
@@ -181,6 +234,7 @@ function WelcomeView({
 }: FormRendererProps & { onStart: () => void }) {
   const brandColor = brandColorOverride || form.branding.primaryColor || "#34D399";
   const fontClass = fontClassFor(form.branding);
+  const headingFontClass = headingFontClassFor(form.branding);
   const logo = effectiveLogo(form, workspaceLogo);
   const title = form.branding.welcomeTitle?.trim() || form.name;
   const subtitle = form.branding.welcomeSubtitle?.trim();
@@ -208,7 +262,7 @@ function WelcomeView({
                 <LogoBadge src={logo} size={48} />
               </div>
             )}
-            <h1 className="text-[26px] font-bold text-foreground tracking-tight leading-[1.15]">
+            <h1 className={`text-[26px] font-bold text-foreground tracking-tight leading-[1.15] ${headingFontClass}`}>
               {title}
             </h1>
             {subtitle && (
@@ -285,9 +339,18 @@ function pickSuccessVariant(
   return undefined;
 }
 
-function SuccessView({ form, values, compact, brandColorOverride, showPoweredBy, workspaceLogo, preview }: FormRendererProps) {
+function SuccessView({ form, values, compact, brandColorOverride, showPoweredBy, workspaceLogo, preview, forceSuccessVariantId }: FormRendererProps) {
   const brandColor = brandColorOverride || form.branding.primaryColor || "#34D399";
-  const variant = pickSuccessVariant(form, values);
+  // Editor-pinned variant wins over value-derived match. `__default__` is
+  // the sentinel for "show the fallback message" so the editor can flip
+  // off all variants without unsetting routing.
+  const forcedVariant =
+    forceSuccessVariantId && forceSuccessVariantId !== "__default__"
+      ? form.branding.successVariants?.find((v) => v.id === forceSuccessVariantId)
+      : undefined;
+  const variant =
+    forcedVariant ||
+    (forceSuccessVariantId === "__default__" ? undefined : pickSuccessVariant(form, values));
   const successMessage =
     variant?.message?.trim() ||
     form.branding.successMessage?.trim() ||
@@ -426,21 +489,32 @@ function FieldRow({
   field,
   value,
   brandColor,
+  accentColor,
   onChange,
   size = "md",
   preview,
   autoFocus,
   services,
+  fieldId: providedId,
+  error,
 }: {
   field: FormFieldConfig;
   value: string;
   brandColor: string;
+  /** Accent color for secondary surfaces (radio dots, checkbox marks). Defaults to brand. */
+  accentColor?: string;
   onChange: (v: string) => void;
   size?: "sm" | "md" | "lg";
   preview?: boolean;
   autoFocus?: boolean;
   services?: RenderableService[];
+  /** DOM id for the input — controls htmlFor/id linkage. Falls back to a
+   *  derived id if omitted. */
+  fieldId?: string;
+  /** Inline validation error for this field. */
+  error?: string;
 }) {
+  const checkColor = accentColor || brandColor;
   const ringStyle = { "--brand": brandColor } as React.CSSProperties;
   const sizing =
     size === "lg"
@@ -448,23 +522,43 @@ function FieldRow({
       : size === "sm"
       ? "px-3 py-2 text-[13px] rounded-lg"
       : "px-4 py-3 text-[14px] rounded-xl";
-  const inputClass = `w-full bg-surface border border-border-light text-foreground placeholder:text-text-tertiary outline-none transition-colors focus:border-[var(--brand)] ${sizing}`;
+  const errorRing = error ? "border-red-400 focus:border-red-500" : "";
+  const inputClass = `w-full bg-surface border border-border-light text-foreground placeholder:text-text-tertiary outline-none transition-colors focus:border-[var(--brand)] ${sizing} ${errorRing}`.trim();
   const placeholder = field.placeholder ?? field.label;
   const labelSize = size === "lg" ? "text-[14px]" : size === "sm" ? "text-[11px]" : "text-[12px]";
+  const fieldId = providedId ?? `f-${field.name}`;
+  const errorId = error ? `${fieldId}-error` : undefined;
+  const helpId = field.helpText ? `${fieldId}-help` : undefined;
+  const describedBy = [errorId, helpId].filter(Boolean).join(" ") || undefined;
+  const ac = autocompleteFor(field);
 
   // Hidden fields render nothing; they're auto-populated from URL params.
   if (field.type === "hidden") return null;
 
   const selected = splitMulti(value);
+  // For radio/checkbox/multi_select groups we use role=group + aria-labelledby
+  // since the visual label points at a set of inputs, not one input.
+  const isGroup = field.type === "radio" || field.type === "checkbox" || field.type === "multi_select";
+  const labelProps = isGroup
+    ? { id: `${fieldId}-label` }
+    : { htmlFor: fieldId };
 
   return (
     <div>
-      <label className={`${labelSize} font-semibold text-foreground block mb-1.5`}>
+      <label
+        {...labelProps}
+        className={`${labelSize} font-semibold text-foreground block mb-1.5`}
+      >
         {field.label}
         {field.required && <span className="text-text-tertiary font-normal ml-1">*</span>}
       </label>
       {field.type === "radio" ? (
-        <div className="space-y-1.5">
+        <div
+          role="radiogroup"
+          aria-labelledby={`${fieldId}-label`}
+          aria-describedby={describedBy}
+          className="space-y-1.5"
+        >
           {(field.options ?? []).map((opt) => (
             <label key={opt} className="flex items-center gap-2.5 cursor-pointer group">
               <input
@@ -473,37 +567,66 @@ function FieldRow({
                 value={opt}
                 checked={value === opt}
                 onChange={() => onChange(opt)}
-                disabled={preview}
                 className="w-4 h-4 cursor-pointer"
-                style={{ accentColor: brandColor }}
+                style={{ accentColor: checkColor }}
               />
               <span className="text-[14px] text-foreground group-hover:text-foreground">{opt}</span>
             </label>
           ))}
         </div>
       ) : field.type === "checkbox" || field.type === "multi_select" ? (
-        <div className="space-y-1.5">
-          {(field.options ?? []).map((opt) => {
-            const isOn = selected.includes(opt);
-            return (
-              <label key={opt} className="flex items-center gap-2.5 cursor-pointer group">
-                <input
-                  type="checkbox"
-                  checked={isOn}
-                  onChange={(e) => {
-                    const next = e.target.checked
-                      ? [...selected, opt]
-                      : selected.filter((v) => v !== opt);
+        // Chip-style multi-select. Each option is a toggleable pill —
+        // selected pills get a brand-tinted bg + border. Compared to bare
+        // `<input type="checkbox">` rows this scans as obviously
+        // interactive, gives a tap target sized for mobile, and matches
+        // the routed-thank-you variant chip pattern elsewhere in the app.
+        <div role="group" aria-labelledby={`${fieldId}-label`} aria-describedby={describedBy}>
+          <div className="flex flex-wrap gap-1.5">
+            {(field.options ?? []).map((opt) => {
+              const isOn = selected.includes(opt);
+              const atCap = !!field.maxSelections && selected.length >= field.maxSelections && !isOn;
+              return (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => {
+                    if (atCap) return;
+                    const next = isOn
+                      ? selected.filter((v) => v !== opt)
+                      : [...selected, opt];
                     onChange(next.join(", "));
                   }}
-                  disabled={preview}
-                  className="w-4 h-4 cursor-pointer rounded"
-                  style={{ accentColor: brandColor }}
-                />
-                <span className="text-[14px] text-foreground group-hover:text-foreground">{opt}</span>
-              </label>
-            );
-          })}
+                  aria-pressed={isOn}
+                  disabled={atCap}
+                  className={`px-3 py-1.5 rounded-full border text-[13px] font-medium transition-colors ${
+                    atCap
+                      ? "cursor-not-allowed opacity-50 bg-surface border-border-light text-text-tertiary"
+                      : "cursor-pointer"
+                  } ${
+                    isOn || atCap
+                      ? ""
+                      : "bg-surface border-border-light text-text-secondary hover:border-text-tertiary hover:text-foreground"
+                  }`}
+                  style={
+                    isOn
+                      ? {
+                          backgroundColor: `${checkColor}1A`,
+                          borderColor: checkColor,
+                          color: checkColor,
+                        }
+                      : undefined
+                  }
+                >
+                  {opt}
+                </button>
+              );
+            })}
+          </div>
+          {field.maxSelections && (
+            <p className="text-[11px] text-text-tertiary mt-1.5">
+              Select up to {field.maxSelections} ({selected.length}/{field.maxSelections})
+            </p>
+          )}
         </div>
       ) : field.type === "file" ? (
         <FileInput
@@ -515,28 +638,47 @@ function FieldRow({
           brandColor={brandColor}
         />
       ) : field.type === "textarea" ? (
-        <textarea
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          rows={size === "lg" ? 5 : size === "sm" ? 3 : 4}
-          placeholder={placeholder}
-          style={ringStyle}
-          readOnly={preview}
-          autoFocus={autoFocus}
-          className={`${inputClass} resize-none`}
-        />
+        <div>
+          <textarea
+            id={fieldId}
+            name={field.name}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            rows={size === "lg" ? 5 : size === "sm" ? 3 : 4}
+            placeholder={placeholder}
+            style={ringStyle}
+            autoFocus={autoFocus}
+            maxLength={field.maxLength}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={describedBy}
+            className={`${inputClass} resize-none`}
+          />
+          {field.maxLength && (
+            <p
+              className={`text-[11px] mt-1 text-right ${
+                value.length >= field.maxLength
+                  ? "text-red-500 font-medium"
+                  : "text-text-tertiary"
+              }`}
+              aria-live="polite"
+            >
+              {value.length} / {field.maxLength}
+            </p>
+          )}
+        </div>
       ) : field.type === "select" ? (
         <select
+          id={fieldId}
+          name={field.name}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           style={ringStyle}
-          disabled={preview}
           autoFocus={autoFocus}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy}
           className={inputClass}
         >
-          <option value="">
-            {placeholder ? `Select ${placeholder.toLowerCase()}` : `Select ${field.label.toLowerCase()}`}
-          </option>
+          <option value="">{selectPlaceholderText(field)}</option>
           {field.options?.map((opt) => (
             <option key={opt} value={opt}>
               {opt}
@@ -547,16 +689,17 @@ function FieldRow({
         // Live-services dropdown. Always appends "Other" so visitors aren't
         // boxed in if their need doesn't match a configured service.
         <select
+          id={fieldId}
+          name={field.name}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           style={ringStyle}
-          disabled={preview}
           autoFocus={autoFocus}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy}
           className={inputClass}
         >
-          <option value="">
-            {placeholder ? `Select ${placeholder.toLowerCase()}` : `Select ${field.label.toLowerCase()}`}
-          </option>
+          <option value="">{selectPlaceholderText(field)}</option>
           {services?.map((svc) => (
             <option key={svc.id} value={svc.name}>
               {svc.name}
@@ -564,19 +707,29 @@ function FieldRow({
           ))}
           <option value="Other">Other</option>
         </select>
+      ) : field.type === "signature" ? (
+        <SignaturePad
+          value={value}
+          onChange={(dataUrl) => onChange(dataUrl)}
+          invalid={!!error}
+        />
       ) : field.type === "date_range" ? (
         // Two date inputs side by side; values stored as a single
         // "YYYY-MM-DD to YYYY-MM-DD" string so the existing string-based
         // submission pipeline keeps working without schema changes.
         <DateRangeInput
+          fieldId={fieldId}
           value={value}
           onChange={onChange}
           ringStyle={ringStyle}
           inputClass={inputClass}
-          preview={preview}
+          describedBy={describedBy}
+          invalid={!!error}
         />
       ) : (
         <input
+          id={fieldId}
+          name={field.name}
           type={
             field.type === "email"
               ? "email"
@@ -601,6 +754,7 @@ function FieldRow({
               ? "url"
               : undefined
           }
+          autoComplete={ac}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={
@@ -609,30 +763,42 @@ function FieldRow({
               : placeholder
           }
           style={ringStyle}
-          readOnly={preview}
           autoFocus={autoFocus}
+          min={field.type === "number" ? field.min : undefined}
+          max={field.type === "number" ? field.max : undefined}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy}
           className={inputClass}
         />
       )}
       {field.helpText && (
-        <p className={`${size === "sm" ? "text-[10px]" : "text-[11px]"} text-text-tertiary mt-1.5`}>{field.helpText}</p>
+        <p id={helpId} className={`${size === "sm" ? "text-[10px]" : "text-[11px]"} text-text-tertiary mt-1.5`}>{field.helpText}</p>
+      )}
+      {error && (
+        <p id={errorId} role="alert" className="text-[11px] text-red-600 mt-1.5">
+          {error}
+        </p>
       )}
     </div>
   );
 }
 
 function DateRangeInput({
+  fieldId,
   value,
   onChange,
   ringStyle,
   inputClass,
-  preview,
+  describedBy,
+  invalid,
 }: {
+  fieldId: string;
   value: string;
   onChange: (v: string) => void;
   ringStyle: React.CSSProperties;
   inputClass: string;
-  preview?: boolean;
+  describedBy?: string;
+  invalid?: boolean;
 }) {
   const [start = "", end = ""] = value.split(" to ");
   const emit = (next: { start?: string; end?: string }) => {
@@ -645,20 +811,25 @@ function DateRangeInput({
   return (
     <div className="flex items-center gap-2">
       <input
+        id={fieldId}
         type="date"
+        aria-label="Start date"
+        aria-invalid={invalid ? true : undefined}
+        aria-describedby={describedBy}
         value={start}
         onChange={(e) => emit({ start: e.target.value })}
         style={ringStyle}
-        readOnly={preview}
         className={inputClass}
       />
       <span className="text-[12px] text-text-tertiary flex-shrink-0">to</span>
       <input
+        id={`${fieldId}-end`}
         type="date"
+        aria-label="End date"
+        aria-invalid={invalid ? true : undefined}
         value={end}
         onChange={(e) => emit({ end: e.target.value })}
         style={ringStyle}
-        readOnly={preview}
         className={inputClass}
       />
     </div>
@@ -713,12 +884,22 @@ function FileInput({
   const files = useMemo(() => decodeFileValue(value), [value]);
   const maxMb = field.maxFileSizeMb ?? 5;
   const allowMany = !!field.multipleFiles;
+  const maxFiles = allowMany ? field.maxFiles : undefined;
 
   const addFiles = (incoming: FileList | null) => {
     if (!incoming || preview) return;
     const list = Array.from(incoming);
+    // Cap the total uploaded count when the operator set a maxFiles. Trims
+    // the incoming batch so the user gets the first N rather than a hard
+    // rejection of the whole drop.
+    if (maxFiles && files.length >= maxFiles) {
+      setError(`You can upload up to ${maxFiles} file${maxFiles === 1 ? "" : "s"}.`);
+      return;
+    }
+    const remainingSlots = maxFiles ? Math.max(0, maxFiles - files.length) : list.length;
+    const trimmed = list.slice(0, remainingSlots);
     Promise.all(
-      list.map(
+      trimmed.map(
         (f) =>
           new Promise<UploadedFile | null>((resolve) => {
             if (f.size > maxMb * 1024 * 1024) {
@@ -762,8 +943,10 @@ function FileInput({
         <Upload className="w-4 h-4 text-text-tertiary flex-shrink-0" />
         <span className="text-text-tertiary truncate">
           {files.length > 0
-            ? `${files.length} file${files.length > 1 ? "s" : ""} selected — add another`
-            : `Click to upload${allowMany ? " (multiple allowed)" : ""}`}
+            ? maxFiles && files.length >= maxFiles
+              ? `${files.length} of ${maxFiles} file${maxFiles === 1 ? "" : "s"} — at max`
+              : `${files.length} file${files.length > 1 ? "s" : ""} selected — add another${maxFiles ? ` (max ${maxFiles})` : ""}`
+            : `Click to upload${allowMany ? (maxFiles ? ` (up to ${maxFiles})` : " (multiple allowed)") : ""}`}
         </span>
         <input
           type="file"
@@ -868,14 +1051,14 @@ function CoverImage({ src, rounded = "rounded-2xl" }: { src?: string; rounded?: 
 
 // ── Common header content ─────────────────────────────
 
-function FormHeader({ form, variant }: { form: RenderableForm; variant: "card" | "minimal" | "editorial" }) {
+function FormHeader({ form, variant, headingFontClass = "" }: { form: RenderableForm; variant: "card" | "minimal" | "editorial"; headingFontClass?: string }) {
   const description =
     form.branding.description?.trim() || "Fill in the form and we'll be in touch.";
 
   if (variant === "editorial") {
     return (
       <div className="text-center mb-8">
-        <h1 className="text-[36px] sm:text-[44px] font-bold text-foreground tracking-tight leading-[1.1]">
+        <h1 className={`text-[36px] sm:text-[44px] font-bold text-foreground tracking-tight leading-[1.1] ${headingFontClass}`}>
           {form.name}
         </h1>
         <div className="w-12 h-[2px] bg-foreground/20 mx-auto my-5" />
@@ -888,7 +1071,7 @@ function FormHeader({ form, variant }: { form: RenderableForm; variant: "card" |
   if (variant === "minimal") {
     return (
       <div className="mb-6">
-        <h1 className="text-[20px] font-semibold text-foreground tracking-tight">
+        <h1 className={`text-[20px] font-semibold text-foreground tracking-tight ${headingFontClass}`}>
           {form.name}
         </h1>
         <p className="text-[13px] text-text-secondary mt-1 whitespace-pre-wrap">{description}</p>
@@ -898,7 +1081,7 @@ function FormHeader({ form, variant }: { form: RenderableForm; variant: "card" |
   // card
   return (
     <>
-      <h1 className="text-[24px] font-bold text-foreground tracking-tight">{form.name}</h1>
+      <h1 className={`text-[24px] font-bold text-foreground tracking-tight ${headingFontClass}`}>{form.name}</h1>
       <p className="text-[13px] text-text-secondary mt-1.5 whitespace-pre-wrap">{description}</p>
     </>
   );
@@ -908,11 +1091,18 @@ function FormHeader({ form, variant }: { form: RenderableForm; variant: "card" |
 
 function ErrorBanner({ error, size = "md" }: { error?: string; size?: "sm" | "md" }) {
   if (!error) return null;
+  // Tailwind's JIT can't generate classes from runtime template literals,
+  // so the per-size classes have to be picked from a static lookup. The
+  // earlier `mb-${...}`/`px-${...}` strings silently dropped to the browser
+  // default, leaving the banner without spacing or sized text.
+  const sizeClass =
+    size === "sm"
+      ? "mb-3 px-3 py-2 rounded-xl text-[11px]"
+      : "mb-5 px-4 py-3 rounded-xl text-[13px]";
   return (
     <div
-      className={`mb-${size === "sm" ? "3" : "5"} px-${size === "sm" ? "3" : "4"} py-${
-        size === "sm" ? "2" : "3"
-      } rounded-xl text-[${size === "sm" ? "11" : "13"}px]`}
+      role="alert"
+      className={sizeClass}
       style={{
         backgroundColor: "#FEF2F2",
         border: "1px solid #FECACA",
@@ -958,7 +1148,9 @@ function PoweredBy() {
 function ClassicTemplate(props: FormRendererProps) {
   const { form, values, onChange, error, submitting, compact, brandColorOverride, showPoweredBy, submitLabel, preview, workspaceLogo, services } = props;
   const brandColor = brandColorOverride || form.branding.primaryColor || "#34D399";
+  const accentColor = accentColorFor(form.branding, brandColor);
   const fontClass = fontClassFor(form.branding);
+  const headingFontClass = headingFontClassFor(form.branding);
   const logo = effectiveLogo(form, workspaceLogo);
   const handleSubmit = useSubmitHandler(props);
 
@@ -993,7 +1185,7 @@ function ClassicTemplate(props: FormRendererProps) {
                 <LogoBadge src={logo} size={compact ? 36 : 48} />
               </div>
             )}
-            <FormHeader form={form} variant="card" />
+            <FormHeader form={form} variant="card" headingFontClass={headingFontClass} />
           </div>
           <div className={bodyPad}>
             <ErrorBanner error={error} size={compact ? "sm" : "md"} />
@@ -1006,10 +1198,12 @@ function ClassicTemplate(props: FormRendererProps) {
                   field={field}
                   value={values[field.name] || ""}
                   brandColor={brandColor}
+                  accentColor={accentColor}
                   onChange={(v) => onChange(field.name, v)}
                   size={inputSize}
                   preview={preview}
                   services={services}
+                  error={props.fieldErrors?.[field.name]}
                 />
               ))}
               <Honeypot values={values} onChange={onChange} />
@@ -1033,7 +1227,9 @@ function ClassicTemplate(props: FormRendererProps) {
 function MinimalTemplate(props: FormRendererProps) {
   const { form, values, onChange, error, submitting, compact, brandColorOverride, showPoweredBy, submitLabel, preview, workspaceLogo, services } = props;
   const brandColor = brandColorOverride || form.branding.primaryColor || "#34D399";
+  const accentColor = accentColorFor(form.branding, brandColor);
   const fontClass = fontClassFor(form.branding);
+  const headingFontClass = headingFontClassFor(form.branding);
   const logo = effectiveLogo(form, workspaceLogo);
   const handleSubmit = useSubmitHandler(props);
 
@@ -1054,7 +1250,7 @@ function MinimalTemplate(props: FormRendererProps) {
             <LogoBadge src={logo} size={compact ? 32 : 44} />
           </div>
         )}
-        <FormHeader form={form} variant="minimal" />
+        <FormHeader form={form} variant="minimal" headingFontClass={headingFontClass} />
         <ErrorBanner error={error} size={compact ? "sm" : "md"} />
         <form onSubmit={handleSubmit} className="space-y-4">
           {form.fields
@@ -1065,10 +1261,12 @@ function MinimalTemplate(props: FormRendererProps) {
               field={field}
               value={values[field.name] || ""}
               brandColor={brandColor}
+              accentColor={accentColor}
               onChange={(v) => onChange(field.name, v)}
               size={compact ? "sm" : "md"}
               preview={preview}
               services={services}
+              error={props.fieldErrors?.[field.name]}
             />
           ))}
           <Honeypot values={values} onChange={onChange} />
@@ -1090,7 +1288,9 @@ function MinimalTemplate(props: FormRendererProps) {
 function EditorialTemplate(props: FormRendererProps) {
   const { form, values, onChange, error, submitting, compact, brandColorOverride, showPoweredBy, submitLabel, preview, workspaceLogo, services } = props;
   const brandColor = brandColorOverride || form.branding.primaryColor || "#34D399";
+  const accentColor = accentColorFor(form.branding, brandColor);
   const fontClass = fontClassFor(form.branding);
+  const headingFontClass = headingFontClassFor(form.branding);
   const logo = effectiveLogo(form, workspaceLogo);
   const handleSubmit = useSubmitHandler(props);
 
@@ -1116,7 +1316,7 @@ function EditorialTemplate(props: FormRendererProps) {
             <LogoBadge src={logo} size={compact ? 40 : 56} />
           </div>
         )}
-        <FormHeader form={form} variant="editorial" />
+        <FormHeader form={form} variant="editorial" headingFontClass={headingFontClass} />
         <ErrorBanner error={error} size={compact ? "sm" : "md"} />
         <form onSubmit={handleSubmit} className="space-y-5">
           {form.fields
@@ -1127,10 +1327,12 @@ function EditorialTemplate(props: FormRendererProps) {
               field={field}
               value={values[field.name] || ""}
               brandColor={brandColor}
+              accentColor={accentColor}
               onChange={(v) => onChange(field.name, v)}
               size={compact ? "md" : "lg"}
               preview={preview}
               services={services}
+              error={props.fieldErrors?.[field.name]}
             />
           ))}
           <Honeypot values={values} onChange={onChange} />
@@ -1154,7 +1356,9 @@ function EditorialTemplate(props: FormRendererProps) {
 function SlidesTemplate(props: FormRendererProps) {
   const { form, values, onChange, error, submitting, compact, brandColorOverride, showPoweredBy, submitLabel, preview, workspaceLogo, services } = props;
   const brandColor = brandColorOverride || form.branding.primaryColor || "#34D399";
+  const accentColor = accentColorFor(form.branding, brandColor);
   const fontClass = fontClassFor(form.branding);
+  const headingFontClass = headingFontClassFor(form.branding);
   const logo = effectiveLogo(form, workspaceLogo);
 
   // Slides only ever shows visible, user-facing fields. Hidden fields are
@@ -1228,7 +1432,7 @@ function SlidesTemplate(props: FormRendererProps) {
 
   const containerClass = compact
     ? `px-4 py-6 ${fontClass}`
-    : `min-h-full flex flex-col ${fontClass}`;
+    : `min-h-screen flex flex-col ${fontClass}`;
   const containerStyle = compact
     ? undefined
     : ({
@@ -1279,7 +1483,7 @@ function SlidesTemplate(props: FormRendererProps) {
                   <LogoBadge src={logo} size={compact ? 36 : 44} />
                 </div>
               )}
-              <h1 className="text-[20px] sm:text-[22px] font-semibold text-foreground tracking-tight">
+              <h1 className={`text-[20px] sm:text-[22px] font-semibold text-foreground tracking-tight ${headingFontClass}`}>
                 {form.name}
               </h1>
               <p className="text-[13px] text-text-secondary mt-1 whitespace-pre-wrap">{description}</p>
@@ -1303,6 +1507,7 @@ function SlidesTemplate(props: FormRendererProps) {
                   field={current}
                   value={values[current.name] || ""}
                   brandColor={brandColor}
+                  accentColor={accentColor}
                   onChange={(v) => {
                     onChange(current.name, v);
                     if (stepError) setStepError("");
@@ -1311,6 +1516,7 @@ function SlidesTemplate(props: FormRendererProps) {
                   preview={preview}
                   services={services}
                   autoFocus
+                  error={props.fieldErrors?.[current.name]}
                 />
               </div>
               {stepError && (
@@ -1382,12 +1588,14 @@ export function FormPreviewRenderer({
   brandColorOverride,
   workspaceLogo,
   services,
+  forceSuccessVariantId,
 }: {
   form: RenderableForm;
   view: "welcome" | "form" | "success";
   brandColorOverride?: string;
   workspaceLogo?: string;
   services?: RenderableService[];
+  forceSuccessVariantId?: string;
 }) {
   // Reset preview values when fields are added/removed or types change. We
   // intentionally don't key on field.name here — the editor rewrites `name`
@@ -1402,6 +1610,7 @@ export function FormPreviewRenderer({
       brandColorOverride={brandColorOverride}
       workspaceLogo={workspaceLogo}
       services={services}
+      forceSuccessVariantId={forceSuccessVariantId}
     />
   );
 }
@@ -1412,12 +1621,14 @@ function FormPreviewInner({
   brandColorOverride,
   workspaceLogo,
   services,
+  forceSuccessVariantId,
 }: {
   form: RenderableForm;
   view: "welcome" | "form" | "success";
   brandColorOverride?: string;
   workspaceLogo?: string;
   services?: RenderableService[];
+  forceSuccessVariantId?: string;
 }) {
   const [values, setValues] = useState<Record<string, string>>({});
   return (
@@ -1431,6 +1642,7 @@ function FormPreviewInner({
       brandColorOverride={brandColorOverride}
       workspaceLogo={workspaceLogo}
       services={services}
+      forceSuccessVariantId={forceSuccessVariantId}
     />
   );
 }

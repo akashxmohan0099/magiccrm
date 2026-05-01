@@ -96,38 +96,34 @@ function memoryRateLimit(
  * @param windowMs - Window size in milliseconds
  * @returns { allowed, remaining } — whether the request should proceed
  */
-export async function rateLimit(
-  _key: string,
-  limit: number,
-  _windowMs: number,
-): Promise<{ allowed: boolean; remaining: number }> {
-  // Rate limiting disabled while in testing. To re-enable, restore the
-  // original logic below (kept intact). Ship a real Upstash key first
-  // before flipping this back on in production — the limiter fails closed
-  // without one, which would 429 every request.
-  return { allowed: true, remaining: limit };
+let prodWarningLogged = false;
 
-  // eslint-disable-next-line no-unreachable
+export async function rateLimit(
+  key: string,
+  limit: number,
+  windowMs: number,
+): Promise<{ allowed: boolean; remaining: number }> {
   if (redisAvailable) {
     try {
-      const limiter = getRedisLimiter(limit, _windowMs);
-      const result = await limiter.limit(_key);
+      const limiter = getRedisLimiter(limit, windowMs);
+      const result = await limiter.limit(key);
       return { allowed: result.success, remaining: result.remaining };
     } catch (err) {
-      if (process.env.NODE_ENV === "production") {
-        console.error("[rate-limit] Redis error in production:", err);
-        return { allowed: false, remaining: 0 };
-      }
-      return memoryRateLimit(_key, limit, _windowMs);
+      console.error("[rate-limit] Redis call failed; falling back to in-memory:", err);
+      return memoryRateLimit(key, limit, windowMs);
     }
   }
 
-  if (process.env.NODE_ENV === "production") {
-    console.error(
-      "[rate-limit] UPSTASH env vars not configured in production — failing closed",
+  // No Upstash configured. In-memory fallback works for `npm run dev` and
+  // single-instance deploys; on multi-instance Vercel each lambda has its
+  // own counter, so the effective limit per IP scales with instance count.
+  // Log once in prod so it's visible without spamming every request.
+  if (process.env.NODE_ENV === "production" && !prodWarningLogged) {
+    prodWarningLogged = true;
+    console.warn(
+      "[rate-limit] UPSTASH_REDIS_REST_URL/TOKEN not set — using process-local " +
+        "in-memory limiter. Multi-instance deploys will not share counters.",
     );
-    return { allowed: false, remaining: 0 };
   }
-
-  return memoryRateLimit(_key, limit, _windowMs);
+  return memoryRateLimit(key, limit, windowMs);
 }

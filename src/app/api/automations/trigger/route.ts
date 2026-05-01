@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase-server";
 import { runAutomationRules } from "@/lib/server/automation-runner";
 import { rateLimit } from "@/lib/rate-limit";
+import { fanOutWaitlistForBooking } from "@/lib/server/waitlist-fanout";
 
 /**
  * Fire event-driven automation rules for the current user's workspace.
@@ -82,6 +83,35 @@ export async function POST(req: NextRequest) {
       entityId: entityId ?? null,
       entityData: entityData ?? undefined,
     });
+
+    // Side effect: a booking-cancellation also fans out a "slot opened" SMS
+    // to every active waitlist entry that matches the freed slot. Best-effort
+    // — we don't roll back the cancellation if the fanout fails.
+    if (type === "cancellation_confirmation" && entityData?.bookingId) {
+      const bookingId = entityData.bookingId as string;
+      const wsId = member.workspace_id as string;
+      void fanOutWaitlistForBooking(wsId, bookingId).catch((err) => {
+        console.warn("[automations/trigger] waitlist fanout failed:", err);
+      });
+
+      // Cascade: cancelling a group parent cancels every child guest
+      // booking under it. Children inherit the cancellation reason so
+      // operators see the same context everywhere.
+      void admin
+        .from("bookings")
+        .update({
+          status: "cancelled",
+          cancellation_reason: "Cancelled with group parent",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("workspace_id", wsId)
+        .eq("group_parent_booking_id", bookingId)
+        .neq("status", "cancelled")
+        .then(({ error }) => {
+          if (error)
+            console.warn("[automations/trigger] group cascade failed:", error.message);
+        });
+    }
 
     return NextResponse.json({ success: true, ...result });
   } catch (err) {

@@ -20,25 +20,50 @@ export interface PublicInquiryForm {
   services?: { id: string; name: string }[];
 }
 
+export type PublicInquiryLookup =
+  | { status: "ok"; form: PublicInquiryForm }
+  | { status: "disabled" }
+  | { status: "not_found" }
+  | { status: "error"; error: string };
+
 export async function fetchPublicInquiryFormBySlug(
   slug: string,
 ): Promise<PublicInquiryForm | null> {
+  const result = await lookupPublicInquiryFormBySlug(slug);
+  return result.status === "ok" ? result.form : null;
+}
+
+export async function lookupPublicInquiryFormBySlug(
+  slug: string,
+): Promise<PublicInquiryLookup> {
   const trimmedSlug = slug.trim();
-  if (!trimmedSlug) return null;
+  if (!trimmedSlug) return { status: "not_found" };
 
   const supabase = await createAdminClient();
-  const { data } = await supabase
+  // Pull regardless of enabled so we can distinguish "doesn't exist" from
+  // "exists but the operator turned it off" — the renderer shows different
+  // copy for each so visitors aren't told a real form is gone.
+  const { data, error } = await supabase
     .from("forms")
     .select("id, workspace_id, type, name, fields, branding, slug, enabled, auto_promote_to_inquiry, created_at, updated_at")
     .eq("type", "inquiry")
-    .eq("enabled", true)
     .ilike("slug", trimmedSlug)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
 
+  if (error) {
+    // Outage / RLS misconfig / connection failure — surface as 5xx instead of
+    // pretending the form doesn't exist. A 404 here would tell legitimate
+    // visitors their form is gone when the database is just unreachable.
+    console.error("[public-inquiries] forms lookup failed:", error);
+    return { status: "error", error: error.message ?? "Lookup failed" };
+  }
   if (!data) {
-    return null;
+    return { status: "not_found" };
+  }
+  if (data.enabled === false) {
+    return { status: "disabled" };
   }
 
   const form = mapFormFromDB(data);
@@ -63,14 +88,17 @@ export async function fetchPublicInquiryFormBySlug(
   const services = (servicesData ?? []).map((s) => ({ id: s.id as string, name: s.name as string }));
 
   return {
-    id: form.id,
-    workspaceId: form.workspaceId,
-    name: form.name,
-    slug: form.slug,
-    fields: form.fields,
-    branding: form.branding,
-    autoPromoteToInquiry: form.autoPromoteToInquiry,
-    workspaceLogo,
-    services,
+    status: "ok",
+    form: {
+      id: form.id,
+      workspaceId: form.workspaceId,
+      name: form.name,
+      slug: form.slug,
+      fields: form.fields,
+      branding: form.branding,
+      autoPromoteToInquiry: form.autoPromoteToInquiry,
+      workspaceLogo,
+      services,
+    },
   };
 }

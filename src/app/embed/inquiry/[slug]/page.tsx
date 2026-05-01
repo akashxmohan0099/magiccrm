@@ -9,7 +9,8 @@ import {
   submitPublicInquiry,
   type PublicInquiryForm,
 } from "@/lib/public-inquiry-fallback";
-import { captureHiddenFieldValues, isFieldVisible } from "@/lib/form-logic";
+import { captureHiddenFieldValues } from "@/lib/form-logic";
+import { validatePublicInquirySubmission } from "@/lib/forms/public-validation";
 
 /** Post height to parent window so the iframe can auto-resize. */
 function postHeight() {
@@ -29,12 +30,19 @@ export default function EmbedInquiryFormPage() {
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const [form, setForm] = useState<PublicInquiryForm | null>(null);
-  const [loading, setLoading] = useState(true);
+  type LoadState =
+    | { status: "loading" }
+    | { status: "ok"; form: PublicInquiryForm }
+    | { status: "disabled" }
+    | { status: "not_found" }
+    | { status: "error" };
+  const [load, setLoad] = useState<LoadState>({ status: "loading" });
+  const form = load.status === "ok" ? load.form : null;
   const [values, setValues] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   // Auto-resize the iframe to match content height. ResizeObserver only
   // fires on actual layout changes — much cheaper than re-posting on every
@@ -52,24 +60,14 @@ export default function EmbedInquiryFormPage() {
 
     let cancelled = false;
     (async () => {
+      setLoad({ status: "loading" });
       try {
-        setLoading(true);
-        setError("");
         const resolved = await resolvePublicInquiryForm(slug);
         if (cancelled) return;
-        if (!resolved) {
-          setForm(null);
-          setError("Form not found");
-          return;
-        }
-        setForm(resolved);
+        if (resolved.status === "ok") setLoad({ status: "ok", form: resolved.form });
+        else setLoad({ status: resolved.status });
       } catch {
-        if (!cancelled) {
-          setForm(null);
-          setError("Failed to load form");
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setLoad({ status: "error" });
       }
     })();
 
@@ -97,19 +95,23 @@ export default function EmbedInquiryFormPage() {
   const handleSubmit = async () => {
     if (!form || submitting) return;
 
-    for (const field of form.fields) {
-      if (!field.required) continue;
-      if (field.type === "hidden") continue;
-      if (!isFieldVisible(field, values, form.fields)) continue;
-      if (!values[field.name]?.trim()) {
-        setError(`${field.label} is required`);
-        return;
-      }
+    const { fieldErrors: errs, firstErrorField } = validatePublicInquirySubmission(
+      form.fields,
+      values,
+    );
+    if (firstErrorField) {
+      setFieldErrors(errs);
+      setError("Please fix the highlighted fields.");
+      const el = document.getElementById(`f-${firstErrorField}`);
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+      if (el && "focus" in el) (el as HTMLElement).focus({ preventScroll: true });
+      return;
     }
 
     try {
       setSubmitting(true);
       setError("");
+      setFieldErrors({});
       const result = await submitPublicInquiry(slug, values);
       if (!result.ok) {
         setError(result.error);
@@ -128,10 +130,20 @@ export default function EmbedInquiryFormPage() {
     }
   };
 
-  if (loading) {
+  if (load.status === "loading") {
     return (
       <div className="flex items-center justify-center py-16">
         <Loader2 className="w-6 h-6 animate-spin text-text-tertiary" />
+      </div>
+    );
+  }
+
+  if (load.status === "disabled") {
+    return (
+      <div className="flex items-center justify-center py-16 px-4">
+        <p className="text-sm text-text-tertiary text-center">
+          This form isn&apos;t accepting responses right now.
+        </p>
       </div>
     );
   }
@@ -140,7 +152,7 @@ export default function EmbedInquiryFormPage() {
     return (
       <div className="flex items-center justify-center py-16 px-4">
         <p className="text-sm text-text-tertiary text-center">
-          {error || "This form doesn't exist or has been disabled."}
+          We couldn&apos;t find this form.
         </p>
       </div>
     );
@@ -154,11 +166,19 @@ export default function EmbedInquiryFormPage() {
         onChange={(name, value) => {
           setValues((p) => ({ ...p, [name]: value }));
           setError("");
+          if (fieldErrors[name]) {
+            setFieldErrors((prev) => {
+              const next = { ...prev };
+              delete next[name];
+              return next;
+            });
+          }
         }}
         onSubmit={handleSubmit}
         submitting={submitting}
         submitted={submitted}
         error={error}
+        fieldErrors={fieldErrors}
         compact
         brandColorOverride={
           accentOverride ? `#${accentOverride.replace("#", "")}` : undefined

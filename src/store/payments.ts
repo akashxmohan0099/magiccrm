@@ -14,6 +14,7 @@ import {
   dbDeletePaymentLineItem,
 } from "@/lib/db/payments";
 import { fireAutomationForInvoiceSent } from "@/lib/automation-trigger";
+import { surfaceDbError } from "./_db-error";
 
 interface PaymentsStore {
   documents: PaymentDocument[];
@@ -67,7 +68,7 @@ export const usePaymentsStore = create<PaymentsStore>()(
           dbCreatePaymentDocument(
             workspaceId,
             doc as unknown as Record<string, unknown>
-          ).catch(console.error);
+          ).catch(surfaceDbError("payments"));
         }
         // Fire invoice_auto_send if the invoice is created in the "sent" state.
         if (doc.status === "sent") {
@@ -89,7 +90,7 @@ export const usePaymentsStore = create<PaymentsStore>()(
             workspaceId,
             id,
             data as Record<string, unknown>
-          ).catch(console.error);
+          ).catch(surfaceDbError("payments"));
         }
         // Fire invoice_auto_send on draft → sent transition.
         if (prev && data.status === "sent" && prev.status !== "sent") {
@@ -106,7 +107,7 @@ export const usePaymentsStore = create<PaymentsStore>()(
         }));
         toast("Payment document deleted");
         if (workspaceId) {
-          dbDeletePaymentDocument(workspaceId, id).catch(console.error);
+          dbDeletePaymentDocument(workspaceId, id).catch(surfaceDbError("payments"));
         }
       },
 
@@ -129,7 +130,7 @@ export const usePaymentsStore = create<PaymentsStore>()(
           dbCreatePaymentLineItem(
             workspaceId,
             item as unknown as Record<string, unknown>
-          ).catch(console.error);
+          ).catch(surfaceDbError("payments"));
         }
         return item;
       },
@@ -148,7 +149,7 @@ export const usePaymentsStore = create<PaymentsStore>()(
             workspaceId,
             id,
             data as Record<string, unknown>
-          ).catch(console.error);
+          ).catch(surfaceDbError("payments"));
         }
       },
 
@@ -162,7 +163,7 @@ export const usePaymentsStore = create<PaymentsStore>()(
           },
         }));
         if (workspaceId) {
-          dbDeletePaymentLineItem(workspaceId, id).catch(console.error);
+          dbDeletePaymentLineItem(workspaceId, id).catch(surfaceDbError("payments"));
         }
       },
 

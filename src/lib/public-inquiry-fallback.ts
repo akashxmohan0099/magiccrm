@@ -10,6 +10,10 @@ import { useFormResponsesStore } from "@/store/form-responses";
 import { useSettingsStore } from "@/store/settings";
 import { useServicesStore } from "@/store/services";
 import { extractContactFromValues } from "@/lib/form-response-extract";
+import {
+  prepareSubmission,
+  sanitiseAgainstForm,
+} from "@/lib/forms/sanitise-public-submission";
 
 export interface PublicInquiryForm {
   id: string;
@@ -26,27 +30,36 @@ export interface PublicInquiryForm {
 
 const isDev = process.env.NODE_ENV === "development";
 
+export type ResolveResult =
+  | { status: "ok"; form: PublicInquiryForm }
+  | { status: "disabled" }
+  | { status: "not_found" };
+
 /**
  * Resolve a public inquiry form by slug. Tries the Supabase-backed API
  * first; in dev, falls back to the local Zustand forms store so seeded
  * demo forms render without needing real Supabase data.
  *
- * - Returns the form on 200.
- * - Returns null only when the form is genuinely not found (404 + nothing
- *   matched in the dev fallback).
- * - Throws on network failures and 5xx so the page can distinguish "form
- *   doesn't exist" from "server is broken" and show the right message.
+ * - status="ok" + form on 200.
+ * - status="disabled" on 410 — form exists but the operator turned it off.
+ * - status="not_found" on 404 + nothing matched in the dev fallback.
+ * - Throws on network failures and 5xx so the page can distinguish
+ *   "form doesn't exist" from "server is broken" and show the right message.
  */
 export async function resolvePublicInquiryForm(
   slug: string,
-): Promise<PublicInquiryForm | null> {
+): Promise<ResolveResult> {
   let serverFailure = false;
   try {
     const res = await fetch(
       `/api/public/inquiry/info?slug=${encodeURIComponent(slug)}`,
     );
     if (res.ok) {
-      return (await res.json()) as PublicInquiryForm;
+      const form = (await res.json()) as PublicInquiryForm;
+      return { status: "ok", form };
+    }
+    if (res.status === 410) {
+      return { status: "disabled" };
     }
     if (res.status !== 404) {
       // 5xx, 429, etc. — try the dev fallback before surfacing the failure.
@@ -58,13 +71,28 @@ export async function resolvePublicInquiryForm(
   }
 
   // Dev-only Zustand fallback so seeded demo forms render without Supabase.
+  // Loud-log when this path activates: production never hits it (the isDev
+  // guard short-circuits), but during QA the silent fallback was masking
+  // real API failures and a missed slug. Loud is better than clever here.
   if (isDev && typeof window !== "undefined") {
-    const form = useFormsStore
+    const allMatch = useFormsStore
       .getState()
-      .forms.find(
-        (f) => f.type === "inquiry" && f.enabled && f.slug === slug,
+      .forms.find((f) => f.type === "inquiry" && f.slug === slug);
+    if (allMatch && !allMatch.enabled) {
+      console.warn(
+        `[public-inquiry] DEV FALLBACK serving "${slug}" from local Zustand — ` +
+          "form is disabled. The API would return 410. This warning will not " +
+          "fire in production.",
       );
+      return { status: "disabled" };
+    }
+    const form = allMatch && allMatch.enabled ? allMatch : null;
     if (form) {
+      console.warn(
+        `[public-inquiry] DEV FALLBACK serving "${slug}" from local Zustand — ` +
+          "API did not have it. If you expected a real DB hit, check that the " +
+          "form is synced to Supabase. This warning will not fire in production.",
+      );
       const settings = useSettingsStore.getState().settings;
       const services = useServicesStore
         .getState()
@@ -72,14 +100,17 @@ export async function resolvePublicInquiryForm(
         .sort((a, b) => a.sortOrder - b.sortOrder)
         .map((s) => ({ id: s.id, name: s.name }));
       return {
-        id: form.id,
-        name: form.name,
-        slug: form.slug,
-        fields: form.fields,
-        branding: form.branding,
-        autoPromoteToInquiry: form.autoPromoteToInquiry,
-        workspaceLogo: settings?.branding?.logo,
-        services,
+        status: "ok",
+        form: {
+          id: form.id,
+          name: form.name,
+          slug: form.slug,
+          fields: form.fields,
+          branding: form.branding,
+          autoPromoteToInquiry: form.autoPromoteToInquiry,
+          workspaceLogo: settings?.branding?.logo,
+          services,
+        },
       };
     }
   }
@@ -87,7 +118,7 @@ export async function resolvePublicInquiryForm(
   if (serverFailure) {
     throw new Error("Failed to load form");
   }
-  return null;
+  return { status: "not_found" };
 }
 
 /**
@@ -119,18 +150,31 @@ export async function submitPublicInquiry(
   if (!isDev || typeof window === "undefined") {
     return { ok: false, error: "Failed to submit inquiry" };
   }
-  // Mirror the server's honeypot behavior so dev parity stays clean.
-  if (values.__hp) return { ok: true };
+
+  // Same two-phase pipeline as the production route. Step (1) is pure and
+  // doesn't need form fields, so we honeypot-check and key-strip before
+  // looking up the form — matching prod's "no DB read on bot hits" shape.
+  const prepared = prepareSubmission(values);
+  if (prepared.kind === "honeypot") return { ok: true };
+
   const form = useFormsStore
     .getState()
     .forms.find(
       (f) => f.type === "inquiry" && f.enabled && f.slug === slug,
     );
   if (!form) return { ok: false, error: "Form not found" };
+  console.warn(
+    `[public-inquiry] DEV FALLBACK accepting submission for "${slug}" into ` +
+      "local Zustand — the real /api/public/inquiry call did not succeed. " +
+      "This warning will not fire in production.",
+  );
 
-  // Strip the honeypot field — never persist it.
-  const { __hp: _hp, ...submissionValues } = values;
-  void _hp;
+  // Step (2): whitelist + drop hidden + validators. Identical to prod.
+  const sanitised = sanitiseAgainstForm(form.fields, prepared.values);
+  if (!sanitised.ok) {
+    return { ok: false, error: sanitised.error };
+  }
+  const submissionValues = sanitised.values;
 
   const contact = extractContactFromValues(submissionValues, form.fields);
 

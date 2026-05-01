@@ -10,6 +10,7 @@ import { useFormsStore } from "@/store/forms";
 import { useFormResponsesStore } from "@/store/form-responses";
 import { useServicesStore } from "@/store/services";
 import { Inquiry, InquiryStatus } from "@/types/models";
+import { withoutTestInquiries } from "@/lib/forms/test-submission";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { SearchInput } from "@/components/ui/SearchInput";
@@ -92,7 +93,11 @@ export function InquiriesPage() {
   const router = useRouter();
 
   const filtered = useMemo(() => {
-    let result = inquiries;
+    // Test submissions (created via Forms → Send test) carry a "[TEST] "
+    // prefix on the name and `__test:"true"` in submission_values. They
+    // round-trip through the same pipeline as real submissions but should
+    // never appear in the operator's inbox.
+    let result = withoutTestInquiries(inquiries);
     if (statusFilter !== "all") {
       result = result.filter((i) => i.status === statusFilter);
     }
@@ -230,11 +235,17 @@ export function InquiriesPage() {
         }
       />
 
-      <div className="flex items-center gap-3 mb-6">
+      <div className="flex items-center gap-3 mb-6" role="search" aria-label="Filter leads">
         <SearchInput value={search} onChange={setSearch} placeholder="Search leads..." />
-        <div className="flex items-center bg-surface rounded-lg p-1 border border-border-light">
+        <div
+          className="flex items-center bg-surface rounded-lg p-1 border border-border-light"
+          role="radiogroup"
+          aria-label="Status filter"
+        >
           <button
             onClick={() => setStatusFilter("all")}
+            role="radio"
+            aria-checked={statusFilter === "all"}
             className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-colors cursor-pointer ${
               statusFilter === "all" ? "bg-card-bg text-foreground shadow-sm" : "text-text-secondary hover:text-foreground"
             }`}
@@ -245,6 +256,8 @@ export function InquiriesPage() {
             <button
               key={opt.value}
               onClick={() => setStatusFilter(opt.value)}
+              role="radio"
+              aria-checked={statusFilter === opt.value}
               className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-colors cursor-pointer ${
                 statusFilter === opt.value ? "bg-card-bg text-foreground shadow-sm" : "text-text-secondary hover:text-foreground"
               }`}
@@ -300,7 +313,11 @@ export function InquiriesPage() {
           )}
         </div>
       ) : (
-        <div className="bg-card-bg border border-border-light rounded-xl overflow-hidden">
+        <div
+          className="bg-card-bg border border-border-light rounded-xl overflow-hidden"
+          role="region"
+          aria-label={`Leads — ${filtered.length} ${filtered.length === 1 ? "result" : "results"}`}
+        >
           <DataTable<Inquiry>
             storageKey="magic-crm-inquiries"
             columns={columns}
@@ -343,15 +360,15 @@ export function InquiriesPage() {
             <div className="bg-surface rounded-lg p-4 border border-border-light space-y-3">
               <h4 className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider">Contact</h4>
               {selected.email && (
-                <div className="flex items-center gap-3">
-                  <span className="text-[11px] text-text-tertiary w-12">Email</span>
-                  <span className="text-[13px] text-foreground">{selected.email}</span>
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="text-[11px] text-text-tertiary w-12 shrink-0">Email</span>
+                  <span className="text-[13px] text-foreground min-w-0 break-all">{selected.email}</span>
                 </div>
               )}
               {selected.phone && (
-                <div className="flex items-center gap-3">
-                  <span className="text-[11px] text-text-tertiary w-12">Phone</span>
-                  <span className="text-[13px] text-foreground">{selected.phone}</span>
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="text-[11px] text-text-tertiary w-12 shrink-0">Phone</span>
+                  <span className="text-[13px] text-foreground min-w-0 break-all">{selected.phone}</span>
                 </div>
               )}
               {selected.clientId && (

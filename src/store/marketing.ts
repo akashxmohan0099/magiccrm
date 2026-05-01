@@ -9,6 +9,7 @@ import {
   dbUpdateCampaign,
   dbDeleteCampaign,
 } from "@/lib/db/marketing";
+import { surfaceDbError } from "./_db-error";
 
 interface MarketingStore {
   campaigns: Campaign[];
@@ -44,7 +45,7 @@ export const useMarketingStore = create<MarketingStore>()(
           dbCreateCampaign(
             workspaceId,
             campaign as unknown as Record<string, unknown>
-          ).catch(console.error);
+          ).catch(surfaceDbError("marketing"));
         }
         return campaign;
       },
@@ -61,7 +62,7 @@ export const useMarketingStore = create<MarketingStore>()(
             workspaceId,
             id,
             data as Record<string, unknown>
-          ).catch(console.error);
+          ).catch(surfaceDbError("marketing"));
         }
       },
 
@@ -69,7 +70,7 @@ export const useMarketingStore = create<MarketingStore>()(
         set((s) => ({ campaigns: s.campaigns.filter((c) => c.id !== id) }));
         toast("Campaign deleted");
         if (workspaceId) {
-          dbDeleteCampaign(workspaceId, id).catch(console.error);
+          dbDeleteCampaign(workspaceId, id).catch(surfaceDbError("marketing"));
         }
       },
 

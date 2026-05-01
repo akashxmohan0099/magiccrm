@@ -9,6 +9,7 @@ import {
   dbUpdateInquiry,
   dbDeleteInquiry,
 } from "@/lib/db/inquiries";
+import { surfaceDbError } from "./_db-error";
 
 interface InquiriesStore {
   inquiries: Inquiry[];
@@ -44,7 +45,7 @@ export const useInquiriesStore = create<InquiriesStore>()(
           dbCreateInquiry(
             workspaceId,
             inquiry as unknown as Record<string, unknown>
-          ).catch(console.error);
+          ).catch(surfaceDbError("inquiries"));
         }
         return inquiry;
       },
@@ -61,7 +62,7 @@ export const useInquiriesStore = create<InquiriesStore>()(
             workspaceId,
             id,
             data as Record<string, unknown>
-          ).catch(console.error);
+          ).catch(surfaceDbError("inquiries"));
         }
       },
 
@@ -69,7 +70,7 @@ export const useInquiriesStore = create<InquiriesStore>()(
         set((s) => ({ inquiries: s.inquiries.filter((inq) => inq.id !== id) }));
         toast("Inquiry deleted");
         if (workspaceId) {
-          dbDeleteInquiry(workspaceId, id).catch(console.error);
+          dbDeleteInquiry(workspaceId, id).catch(surfaceDbError("inquiries"));
         }
       },
 

@@ -63,11 +63,11 @@ export function BookingPagePreview() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="secondary" size="sm" onClick={() => setShowEmbed(!showEmbed)} disabled={!bookingUrl}>
-            <Code2 className="w-3.5 h-3.5 mr-1.5" />
+            <Code2 className="w-4 h-4 mr-1.5" />
             Embed
           </Button>
           <Button variant="secondary" size="sm" onClick={handleOpenBookingPage} disabled={!bookingUrl}>
-            <ArrowUpRight className="w-3.5 h-3.5 mr-1.5" />
+            <ArrowUpRight className="w-4 h-4 mr-1.5" />
             Open
           </Button>
           <Button variant="secondary" size="sm" onClick={handleCopyLink} disabled={!bookingUrl}>
