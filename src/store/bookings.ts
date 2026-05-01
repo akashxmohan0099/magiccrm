@@ -95,6 +95,12 @@ export const useBookingsStore = create<BookingsStore>()(
         }
       },
     }),
-    { name: "magic-crm-bookings", version: 2 }
+    // Version bump 2 → 3: invalidate cached demo bookings that were saved
+    // before seed-data.ts gave every booking a serviceId. Old persisted
+    // entries showed up as a row of placeholder dashes in the bookings
+    // list (BUG-11 from the v1 QA pass). Bumping forces zustand to drop
+    // the stale localStorage payload so the next dev render reseeds from
+    // the current schema.
+    { name: "magic-crm-bookings", version: 3 }
   )
 );
