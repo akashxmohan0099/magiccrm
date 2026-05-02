@@ -21,7 +21,7 @@ interface FloatingCartPillProps {
  */
 export function FloatingCartPill({ sentinelRef, serviceMap }: FloatingCartPillProps) {
   const items = useBookingCart((s) => s.items);
-  const friends = useBookingCart((s) => s.friends);
+  const guests = useBookingCart((s) => s.guests);
   const [cartOutOfView, setCartOutOfView] = useState(false);
 
   useEffect(() => {
@@ -44,12 +44,17 @@ export function FloatingCartPill({ sentinelRef, serviceMap }: FloatingCartPillPr
     })
     .filter((x): x is { qty: number; price: number; service: PublicService } => x !== null);
 
-  const groupEnabled = computed.length > 0 && computed.every((c) => c.service.allowGroupBooking);
-  const groupCap = groupEnabled ? Math.min(...computed.map((c) => c.service.maxGroupSize ?? 4)) : 1;
-  const visibleFriends = groupEnabled ? friends.slice(0, Math.max(0, groupCap - 1)) : [];
-  const guestMultiplier = visibleFriends.length + 1;
-  const count = computed.reduce((s, c) => s + c.qty, 0);
-  const subtotal = computed.reduce((s, c) => s + c.price * c.qty, 0) * guestMultiplier;
+  // Each guest contributes their own line price (per-guest service +
+  // add-ons), so the cart's running total is primary subtotal + sum of
+  // guest lines — no multiplier.
+  const guestSubtotal = guests.reduce((s, g) => {
+    const svc = serviceMap.get(g.serviceId);
+    if (!svc) return s;
+    return s + computeLine(svc, { addonIds: g.addonIds }).price;
+  }, 0);
+  const count = computed.reduce((s, c) => s + c.qty, 0) + guests.length;
+  const subtotal =
+    computed.reduce((s, c) => s + c.price * c.qty, 0) + guestSubtotal;
 
   const visible = count > 0 && cartOutOfView;
 

@@ -93,7 +93,7 @@ export async function GET(req: NextRequest) {
     const { data: services } = await supabase
       .from("services")
       .select(
-        "id, name, description, image_url, duration, price, category, category_id, price_type, variants, price_tiers, addons, addon_groups, deposit_type, deposit_amount, requires_card_on_file, requires_patch_test, patch_test_validity_days, patch_test_min_lead_hours, intake_questions, allow_group_booking, max_group_size, rebook_after_days, location_ids, available_weekdays, featured, promo_label, promo_price, promo_start, promo_end, tags, is_package, package_items",
+        "id, name, description, image_url, duration, price, price_max, category, category_id, price_type, variants, price_tiers, addons, addon_groups, deposit_type, deposit_amount, deposit_applies_to, deposit_no_show_fee, deposit_auto_cancel_hours, cancellation_window_hours, cancellation_fee, requires_card_on_file, requires_confirmation, min_notice_hours, max_advance_days, requires_patch_test, patch_test_validity_days, patch_test_min_lead_hours, patch_test_category, intake_questions, allow_group_booking, max_group_size, rebook_after_days, location_ids, available_weekdays, featured, promo_label, promo_price, promo_percent, promo_start, promo_end, tags, is_package, package_items",
       )
       .eq("workspace_id", workspaceId)
       .eq("enabled", true)

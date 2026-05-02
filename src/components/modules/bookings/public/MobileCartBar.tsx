@@ -17,7 +17,7 @@ interface MobileCartBarProps {
  */
 export function MobileCartBar({ serviceMap, onContinue }: MobileCartBarProps) {
   const items = useBookingCart((s) => s.items);
-  const friends = useBookingCart((s) => s.friends);
+  const guests = useBookingCart((s) => s.guests);
 
   const lines = items
     .map((it) => {
@@ -32,12 +32,13 @@ export function MobileCartBar({ serviceMap, onContinue }: MobileCartBarProps) {
     })
     .filter((row): row is { qty: number; service: PublicService; price: number } => row !== null);
 
-  const groupEnabled = lines.length > 0 && lines.every((l) => l.service.allowGroupBooking);
-  const groupCap = groupEnabled ? Math.min(...lines.map((l) => l.service.maxGroupSize ?? 4)) : 1;
-  const visibleFriends = groupEnabled ? friends.slice(0, Math.max(0, groupCap - 1)) : [];
-  const guestMultiplier = visibleFriends.length + 1;
-  const count = lines.reduce((s, l) => s + l.qty, 0);
-  const subtotal = lines.reduce((s, l) => s + l.price * l.qty, 0) * guestMultiplier;
+  const guestSubtotal = guests.reduce((s, g) => {
+    const svc = serviceMap.get(g.serviceId);
+    if (!svc) return s;
+    return s + computeLine(svc, { addonIds: g.addonIds }).price;
+  }, 0);
+  const count = lines.reduce((s, l) => s + l.qty, 0) + guests.length;
+  const subtotal = lines.reduce((s, l) => s + l.price * l.qty, 0) + guestSubtotal;
   const visible = count > 0;
 
   return (

@@ -146,11 +146,38 @@ export function BookingDetail({ open, onClose, bookingId }: BookingDetailProps) 
               <h3 className="text-xl font-bold text-foreground tracking-tight">
                 {service?.name || "Booking"} — {client?.name || "Client"}
               </h3>
-              <div className="flex items-center gap-2 mt-1.5">
+              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                 <StatusBadge status={booking.status} />
                 <span className="text-[12px] text-text-tertiary">
                   {fmtDate(booking.date)} · {fmt(booking.startAt)} – {fmt(booking.endAt)}
                 </span>
+                {(() => {
+                  // Group-booking summary: count siblings (other bookings
+                  // sharing the parent id, plus the parent itself) so the
+                  // operator sees "Group of 4" or "Guest of Maya".
+                  if (booking.groupParentBookingId) {
+                    const parent = bookings.find((b) => b.id === booking.groupParentBookingId);
+                    const parentClient = parent?.clientId
+                      ? clients.find((c) => c.id === parent.clientId) ?? null
+                      : null;
+                    return (
+                      <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                        Guest of {parentClient?.name ?? "primary"}
+                      </span>
+                    );
+                  }
+                  const guests = bookings.filter(
+                    (b) => b.groupParentBookingId === booking.id,
+                  );
+                  if (guests.length > 0) {
+                    return (
+                      <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                        Group of {guests.length + 1}
+                      </span>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
             </div>
             <Button variant="ghost" size="sm" onClick={() => setDeleteOpen(true)}>

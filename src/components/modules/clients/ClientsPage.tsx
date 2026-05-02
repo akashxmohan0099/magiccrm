@@ -84,7 +84,24 @@ export function ClientsPage() {
   }, [clients, search]);
 
   const columns: Column<Client>[] = [
-    { key: "name", label: "Name", sortable: true },
+    {
+      key: "name",
+      label: "Name",
+      sortable: true,
+      // Walk-in client rows are auto-created from group bookings (one per
+      // guest). Surface a small badge so operators can spot them and
+      // promote to full clients by adding email/phone.
+      render: (c) => (
+        <span className="inline-flex items-center gap-2">
+          {c.name}
+          {c.source === "walk_in" && !c.email && !c.phone && (
+            <span className="text-[9px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded uppercase tracking-wider">
+              Walk-in
+            </span>
+          )}
+        </span>
+      ),
+    },
     { key: "email", label: "Email", sortable: true },
     { key: "phone", label: "Phone", sortable: true },
     {

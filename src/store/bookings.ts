@@ -68,6 +68,53 @@ export const useBookingsStore = create<BookingsStore>()(
           ).catch(surfaceDbError("bookings"));
         }
 
+        // Group reschedule cascade: when a primary booking moves, shift
+        // every guest by the same time delta so the party stays aligned.
+        // Only fires for time-mutating fields; status/notes/etc. don't
+        // touch the schedule.
+        if (
+          prev &&
+          (data.startAt || data.endAt || data.date) &&
+          // Only the primary cascades — guests update independently.
+          !prev.groupParentBookingId
+        ) {
+          const guests = get().bookings.filter(
+            (b) => b.groupParentBookingId === id,
+          );
+          if (guests.length > 0) {
+            const prevStartMs = new Date(prev.startAt).getTime();
+            const nextStartIso = data.startAt ?? prev.startAt;
+            const deltaMs = new Date(nextStartIso).getTime() - prevStartMs;
+            if (deltaMs !== 0) {
+              for (const g of guests) {
+                const newStart = new Date(
+                  new Date(g.startAt).getTime() + deltaMs,
+                ).toISOString();
+                const newEnd = new Date(
+                  new Date(g.endAt).getTime() + deltaMs,
+                ).toISOString();
+                const newDate = newStart.slice(0, 10);
+                set((s) => ({
+                  bookings: s.bookings.map((b) =>
+                    b.id === g.id
+                      ? { ...b, startAt: newStart, endAt: newEnd, date: newDate, updatedAt: now }
+                      : b,
+                  ),
+                }));
+                if (workspaceId) {
+                  dbUpdateBooking(workspaceId, g.id, {
+                    startAt: newStart,
+                    endAt: newEnd,
+                    date: newDate,
+                  } as Record<string, unknown>).catch(
+                    surfaceDbError("bookings"),
+                  );
+                }
+              }
+            }
+          }
+        }
+
         // Fire event-driven automations on status transitions.
         if (prev && data.status && data.status !== prev.status) {
           fireAutomationForBooking(prev, data.status);

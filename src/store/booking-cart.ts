@@ -21,21 +21,41 @@ export interface CartLineItem {
   guestName?: string;
 }
 
+/**
+ * Group-booking guest. Each guest is a parallel appointment sharing the
+ * primary's time slot but choosing their OWN service / add-ons / artist —
+ * matches Fresha's pattern (lead organizer + N independent sub-appointments).
+ *
+ * `id` is stable so the UI can key list rows without remounting on rename.
+ */
+export interface GuestConfig {
+  id: string;
+  name: string;
+  serviceId: string;
+  addonIds: string[];
+  /** Optional artist preference for this guest. null/undefined = "anyone". */
+  artistId?: string | null;
+}
+
 interface BookingCartStore {
   /** Slug scopes the cart — clearing on slug change keeps state from leaking
    *  between businesses if a visitor opens two booking pages in one tab. */
   slug: string | null;
   items: CartLineItem[];
-  /** Group-booking friends sharing the same time slot. Each friend gets the
-   *  same set of services as the primary client (parallel chairs). */
-  friends: string[];
+  /**
+   * Group-booking guests sharing the same time slot. Each guest carries
+   * their own service + add-ons + optional artist; the primary client's
+   * cart drives the time slot, but the bill is per-guest line items.
+   */
+  guests: GuestConfig[];
 
   setSlug: (slug: string) => void;
   addItem: (input: Omit<CartLineItem, "lineId" | "qty"> & { qty?: number }) => CartLineItem;
   updateItem: (lineId: string, patch: Partial<Omit<CartLineItem, "lineId">>) => void;
   removeItem: (lineId: string) => void;
-  addFriend: (name: string) => void;
-  removeFriend: (index: number) => void;
+  addGuest: (input: Omit<GuestConfig, "id">) => GuestConfig;
+  updateGuest: (id: string, patch: Partial<Omit<GuestConfig, "id">>) => void;
+  removeGuest: (id: string) => void;
   clear: () => void;
 
   itemCount: () => number;
@@ -45,17 +65,21 @@ function makeLineId() {
   return `cart_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function makeGuestId() {
+  return `guest_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
 export const useBookingCart = create<BookingCartStore>()(
   persist(
     (set, get) => ({
       slug: null,
       items: [],
-      friends: [],
+      guests: [],
 
       setSlug: (slug) => {
         const current = get().slug;
         if (current && current !== slug) {
-          set({ slug, items: [], friends: [] });
+          set({ slug, items: [], guests: [] });
         } else {
           set({ slug });
         }
@@ -86,24 +110,38 @@ export const useBookingCart = create<BookingCartStore>()(
         set((s) => ({ items: s.items.filter((it) => it.lineId !== lineId) }));
       },
 
-      addFriend: (name) => {
-        const trimmed = name.trim();
-        if (!trimmed) return;
-        set((s) => ({ friends: [...s.friends, trimmed] }));
+      addGuest: (input) => {
+        const guest: GuestConfig = {
+          id: makeGuestId(),
+          name: input.name.trim(),
+          serviceId: input.serviceId,
+          addonIds: input.addonIds ?? [],
+          artistId: input.artistId,
+        };
+        set((s) => ({ guests: [...s.guests, guest] }));
+        return guest;
       },
 
-      removeFriend: (index) => {
-        set((s) => ({ friends: s.friends.filter((_, i) => i !== index) }));
+      updateGuest: (id, patch) => {
+        set((s) => ({
+          guests: s.guests.map((g) => (g.id === id ? { ...g, ...patch } : g)),
+        }));
       },
 
-      clear: () => set({ items: [], friends: [] }),
+      removeGuest: (id) => {
+        set((s) => ({ guests: s.guests.filter((g) => g.id !== id) }));
+      },
+
+      clear: () => set({ items: [], guests: [] }),
 
       itemCount: () => get().items.reduce((sum, it) => sum + it.qty, 0),
     }),
     {
       name: "magic-booking-cart",
-      version: 1,
-      // Public visitors — no point persisting across browser sessions.
+      // Bump the version so sessions with the old `friends: string[]` shape
+      // don't poison the new state. zustand/persist drops mismatched state
+      // when versions disagree, falling back to the defaults above.
+      version: 2,
       storage: createJSONStorage(() => sessionStorage),
     }
   )

@@ -168,8 +168,19 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
           {/* Header */}
           <div className="flex items-start justify-between mb-1">
             <div className="flex-1 min-w-0">
-              <InlineField value={client.name} field="name" clientId={client.id} updateClient={updateClient} workspaceId={workspaceId} className="text-xl font-bold text-foreground tracking-tight" />
-              <p className="text-[12px] text-text-secondary mt-0.5">Client since {formatDateShort(client.createdAt)}</p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <InlineField value={client.name} field="name" clientId={client.id} updateClient={updateClient} workspaceId={workspaceId} className="text-xl font-bold text-foreground tracking-tight" />
+                {client.source === "walk_in" && !client.email && !client.phone && (
+                  <span className="text-[9px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                    Walk-in
+                  </span>
+                )}
+              </div>
+              <p className="text-[12px] text-text-secondary mt-0.5">
+                {client.source === "walk_in" && !client.email && !client.phone
+                  ? "Auto-created from a group booking. Add an email or phone to promote to a full client."
+                  : `Client since ${formatDateShort(client.createdAt)}`}
+              </p>
             </div>
             <Button variant="ghost" size="sm" onClick={() => setDeleteOpen(true)}>
               <Trash2 className="w-4 h-4" />

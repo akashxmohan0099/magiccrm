@@ -633,11 +633,36 @@ export async function POST(req: NextRequest) {
       const groupParentId =
         typeof guestOf === "number" ? idByPlanIndex[guestOf] : null;
 
+      // For guest items, mint a walk-in client row keyed to the guest's
+      // name so each guest has their own client record (visit history,
+      // intake forms, patch tests). Email/phone are blank by design — the
+      // operator promotes the walk-in to a full record later.
+      let bookingClientId = clientId;
+      if (typeof guestOf === "number" && p.item.guestName) {
+        const guestName = p.item.guestName.trim();
+        if (guestName) {
+          const newClientId = generateId();
+          const { error: walkInErr } = await supabase
+            .from("clients")
+            .insert({
+              id: newClientId,
+              workspace_id: workspaceId,
+              name: guestName,
+              email: "",
+              phone: "",
+              source: "walk_in",
+              created_at: now,
+              updated_at: now,
+            });
+          if (!walkInErr) bookingClientId = newClientId;
+        }
+      }
+
       const { error: bookingErr } = await supabase.from("bookings").insert({
         id: bookingId,
         workspace_id: workspaceId,
         assigned_to_id: p.assignedMemberId,
-        client_id: clientId,
+        client_id: bookingClientId,
         service_id: p.service.id,
         date,
         start_at: `${date}T${p.startTime}:00`,

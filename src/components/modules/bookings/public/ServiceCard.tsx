@@ -69,6 +69,19 @@ export function ServiceCard({ service, selected, onAdd, onRemove }: ServiceCardP
                   {service.promoLabel}
                 </span>
               ) : null}
+              {service.allowGroupBooking ? (
+                <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">
+                  +{(service.maxGroupSize ?? 4) - 1} guests
+                </span>
+              ) : null}
+              {service.tags?.slice(0, 3).map((t) => (
+                <span
+                  key={t}
+                  className="inline-block text-[10px] font-medium px-1.5 py-0.5 rounded bg-surface text-text-tertiary border border-border-light"
+                >
+                  {t}
+                </span>
+              ))}
             </div>
 
             {service.description ? (

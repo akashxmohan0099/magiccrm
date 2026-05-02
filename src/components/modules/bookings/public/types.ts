@@ -57,6 +57,8 @@ export interface PublicService {
   imageUrl: string;
   duration: number;     // minutes
   price: number;        // AUD
+  /** Optional upper bound for "From" pricing — when set, render "$min–$max". */
+  priceMax?: number;
   category: string;     // empty string when uncategorized
   priceType: PublicPriceType;
   variants: PublicVariant[];
@@ -66,17 +68,36 @@ export interface PublicService {
   depositType: PublicDepositType;
   /** Percentage 0–100 when depositType='percentage'; absolute AUD when 'fixed'. */
   depositAmount: number;
+  /** Who the deposit applies to: 'all' | 'new' | 'flagged'. Drives whether
+   *  this deposit is actually collected for the current visitor. */
+  depositAppliesTo?: "all" | "new" | "flagged";
+  /** % of price charged on a no-show. Surfaced in the disclosure copy. */
+  depositNoShowFee?: number;
+  /** Hours after booking before auto-cancel if deposit unpaid. */
+  depositAutoCancelHours?: number;
+  /** Hours before the booking that the client can cancel for free. */
+  cancellationWindowHours?: number;
+  /** % charged when client cancels inside the window. */
+  cancellationFee?: number;
   /** When true, the visitor must save a card via Stripe before submit. */
   requiresCardOnFile: boolean;
+  /** When true, show a "needs approval" notice before submit. */
+  requiresConfirmation?: boolean;
+  /** Min lead time (hrs) — date picker hides slots inside this window. */
+  minNoticeHours?: number;
+  /** Max future window (days) — date picker hides slots beyond this horizon. */
+  maxAdvanceDays?: number;
   /** When true, show a patch-test consent notice in the Details step. */
   requiresPatchTest: boolean;
   /** Days a patch test stays valid — used in the consent notice. */
   patchTestValidityDays?: number;
   /** Minimum hours between patch-test and booking — used in the consent notice. */
   patchTestMinLeadHours?: number;
+  /** Patch-test category clients must have on file. Matches ClientPatchTest.category. */
+  patchTestCategory?: string;
   /** Per-service intake questions rendered in the Details step. */
   intakeQuestions: PublicIntakeQuestion[];
-  /** Group bookings + max party size — needed to gate the friends UI. */
+  /** Group bookings + max party size — needed to gate the guest panel. */
   allowGroupBooking: boolean;
   maxGroupSize?: number;
   /** Used by the Confirmation card to show "book your next" CTA. */
@@ -98,6 +119,8 @@ export interface PublicService {
   promoLabel: string;
   /** Discounted price; undefined = no promo running. */
   promoPrice?: number;
+  /** % off promo, alternative to promoPrice. */
+  promoPercent?: number;
   /** ISO date — promo only applies on/after this date. */
   promoStart?: string;
   /** ISO date — promo only applies on/before this date. */

@@ -159,8 +159,16 @@ export function BookingsPage() {
       label: "Client",
       sortable: false,
       render: (b) => (
-        <span className="text-[13px] text-foreground">
+        <span className="inline-flex items-center gap-1.5 text-[13px] text-foreground">
           {b.clientId ? clientMap[b.clientId] ?? "—" : "—"}
+          {/* Group-booking guests show a small tag pointing back at the
+              primary client so operators can scan a busy list and see who
+              came together. */}
+          {b.groupParentBookingId && (
+            <span className="text-[9px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded uppercase tracking-wider">
+              Guest
+            </span>
+          )}
         </span>
       ),
     },

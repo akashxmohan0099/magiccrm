@@ -13,6 +13,12 @@ interface TimePickerProps {
   durationMinutes: number;
   /** ISO weekdays (0 = Sunday) where the workspace is open. Drives the date strip. */
   enabledWeekdays: Set<number>;
+  /** Earliest date the cart is bookable. Derived from per-service minNoticeHours.
+   *  Anything before this is disabled in the strip. */
+  minDate?: Date;
+  /** Latest date the cart is bookable. Derived from per-service maxAdvanceDays.
+   *  Anything after this is disabled. */
+  maxDate?: Date;
   selectedDate: string | null;
   selectedTime: string | null;
   onChange: (next: { date: string | null; time: string | null }) => void;
@@ -42,6 +48,8 @@ export function TimePicker({
   primaryServiceId,
   durationMinutes,
   enabledWeekdays,
+  minDate,
+  maxDate,
   selectedDate,
   selectedTime,
   onChange,
@@ -104,6 +112,12 @@ export function TimePicker({
 
   const isDateEnabled = (d: Date) => {
     if (d < today) return false;
+    // Per-service min-notice (e.g. "must book 24hrs ahead") narrows the
+    // earliest allowed date. minDate is already date-only (00:00) so the
+    // direct comparison works.
+    if (minDate && d < minDate) return false;
+    // Per-service max-advance (e.g. "can't book more than 60 days out").
+    if (maxDate && d > maxDate) return false;
     return enabledWeekdays.has(d.getDay());
   };
 

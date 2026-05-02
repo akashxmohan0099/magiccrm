@@ -72,10 +72,11 @@ export default function PublicBookingPage() {
 
   const setSlug = useBookingCart((s) => s.setSlug);
   const cartItems = useBookingCart((s) => s.items);
-  const friends = useBookingCart((s) => s.friends);
+  const guests = useBookingCart((s) => s.guests);
   const addItem = useBookingCart((s) => s.addItem);
   const removeItem = useBookingCart((s) => s.removeItem);
   const updateItem = useBookingCart((s) => s.updateItem);
+  const removeGuest = useBookingCart((s) => s.removeGuest);
   const clearCart = useBookingCart((s) => s.clear);
 
   const removeByServiceId = (serviceId: string) => {
@@ -190,16 +191,20 @@ export default function PublicBookingPage() {
     () => new Set(availability.filter((s) => s.enabled).map((s) => s.day)),
     [availability]
   );
+  const selectedServiceIds = useMemo(
+    () => [...cartItems.map((item) => item.serviceId), ...guests.map((guest) => guest.serviceId)],
+    [cartItems, guests],
+  );
 
   // When at least one cart service restricts itself to specific weekdays,
   // intersect that restriction with the workspace's open days. A booking
   // basket only resolves to a slot when EVERY service in it is bookable,
   // so we AND the per-service `availableWeekdays` arrays together.
   const cartEnabledWeekdays = useMemo(() => {
-    if (cartItems.length === 0) return enabledWeekdays;
+    if (selectedServiceIds.length === 0) return enabledWeekdays;
     let allowed: number[] | null = null;
-    for (const item of cartItems) {
-      const svc = serviceMap.get(item.serviceId);
+    for (const serviceId of selectedServiceIds) {
+      const svc = serviceMap.get(serviceId);
       if (!svc) continue;
       const weekdays = svc.availableWeekdays;
       if (!weekdays || weekdays.length === 0) continue;
@@ -216,7 +221,41 @@ export default function PublicBookingPage() {
       if (allowedSet.has(d)) out.add(d);
     }
     return out;
-  }, [cartItems, serviceMap, enabledWeekdays]);
+  }, [selectedServiceIds, serviceMap, enabledWeekdays]);
+
+  // Per-service booking-window gates. The cart binds the customer to the
+  // most restrictive value across all line items: take the MAX minNotice
+  // (latest "earliest bookable" date) and the MIN maxAdvance (earliest
+  // "latest bookable" date).
+  const cartMinDate = useMemo<Date | undefined>(() => {
+    if (selectedServiceIds.length === 0) return undefined;
+    let maxNotice = 0;
+    for (const serviceId of selectedServiceIds) {
+      const svc = serviceMap.get(serviceId);
+      const n = svc?.minNoticeHours;
+      if (typeof n === "number" && n > maxNotice) maxNotice = n;
+    }
+    if (maxNotice <= 0) return undefined;
+    const d = new Date();
+    d.setHours(d.getHours() + maxNotice);
+    d.setHours(0, 0, 0, 0); // round up to start of next day for the strip
+    return d;
+  }, [selectedServiceIds, serviceMap]);
+
+  const cartMaxDate = useMemo<Date | undefined>(() => {
+    if (selectedServiceIds.length === 0) return undefined;
+    let minAdvance = Infinity;
+    for (const serviceId of selectedServiceIds) {
+      const svc = serviceMap.get(serviceId);
+      const a = svc?.maxAdvanceDays;
+      if (typeof a === "number" && a > 0 && a < minAdvance) minAdvance = a;
+    }
+    if (!Number.isFinite(minAdvance)) return undefined;
+    const d = new Date();
+    d.setDate(d.getDate() + minAdvance);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, [selectedServiceIds, serviceMap]);
 
   const editingItem = editingLineId ? cartItems.find((it) => it.lineId === editingLineId) ?? null : null;
   const editingService = editingItem ? serviceMap.get(editingItem.serviceId) ?? null : null;
@@ -244,17 +283,90 @@ export default function PublicBookingPage() {
       .filter((row): row is NonNullable<typeof row> => row !== null);
   }, [cartItems, serviceMap]);
 
-  const totalDuration = cartLines.reduce((sum, l) => sum + l.computed.duration * l.item.qty, 0);
+  const groupEligibleLines = useMemo(
+    () => cartLines.filter((line) => line.service.allowGroupBooking),
+    [cartLines],
+  );
+  const groupCap = groupEligibleLines.length > 0
+    ? Math.min(...groupEligibleLines.map((line) => line.service.maxGroupSize ?? 4))
+    : 1;
+  const activeGuests = useMemo(
+    () => (groupEligibleLines.length > 0 ? guests.slice(0, Math.max(0, groupCap - 1)) : []),
+    [guests, groupCap, groupEligibleLines.length],
+  );
+
+  // Keep persisted guest state aligned with the visible cart. Otherwise a
+  // removed group-capable primary service can leave hidden guests that still
+  // get priced or submitted.
+  useEffect(() => {
+    if (guests.length === 0) return;
+    if (groupEligibleLines.length === 0) {
+      guests.forEach((guest) => removeGuest(guest.id));
+      return;
+    }
+    const maxGuests = Math.max(0, groupCap - 1);
+    guests.slice(maxGuests).forEach((guest) => removeGuest(guest.id));
+  }, [guests, groupEligibleLines.length, groupCap, removeGuest]);
+
+  useEffect(() => {
+    if (guests.length === 0 || services.length === 0) return;
+    for (const guest of guests) {
+      const service = serviceMap.get(guest.serviceId);
+      const unavailableAtLocation =
+        selectedLocationId &&
+        service?.locationIds &&
+        service.locationIds.length > 0 &&
+        !service.locationIds.includes(selectedLocationId);
+      if (!service || service.requiresPatchTest || unavailableAtLocation) {
+        removeGuest(guest.id);
+      }
+    }
+  }, [guests, services.length, serviceMap, selectedLocationId, removeGuest]);
+
+  // Per-guest computed line (service + addons → price + duration). Each
+  // guest is a parallel sub-appointment, so they don't ADD to the slot
+  // length — but we still need their price for the per-guest total and
+  // their duration so the slot is at least as long as the slowest guest.
+  const guestLines = useMemo(() => {
+    return activeGuests
+      .map((g) => {
+        const svc = serviceMap.get(g.serviceId);
+        if (!svc) return null;
+        const computed = computeLine(svc, { addonIds: g.addonIds });
+        return { guest: g, service: svc, computed };
+      })
+      .filter((row): row is NonNullable<typeof row> => row !== null);
+  }, [activeGuests, serviceMap]);
+
+  const bookedLines = useMemo(
+    () => [
+      ...cartLines.map((line) => ({ service: line.service, computed: line.computed })),
+      ...guestLines.map((line) => ({ service: line.service, computed: line.computed })),
+    ],
+    [cartLines, guestLines],
+  );
+
+  // Primary's chain runs sequentially (multi-service basket); guests run
+  // in parallel. Slot must fit whichever is longer.
+  const primaryDuration = cartLines.reduce(
+    (sum, l) => sum + l.computed.duration * l.item.qty,
+    0,
+  );
+  const maxGuestDuration = guestLines.reduce(
+    (m, l) => (l.computed.duration > m ? l.computed.duration : m),
+    0,
+  );
+  const totalDuration = Math.max(primaryDuration, maxGuestDuration);
   // Use the longest line item as the primary serviceId for the slot endpoint —
   // its availability rules are most restrictive; durationMinutes carries the
   // real cart-total window.
   const primaryServiceId = useMemo(() => {
-    if (cartLines.length === 0) return null;
-    const longest = cartLines.reduce((a, b) =>
+    if (bookedLines.length === 0) return null;
+    const longest = bookedLines.reduce((a, b) =>
       a.computed.duration >= b.computed.duration ? a : b
     );
     return longest.service.id;
-  }, [cartLines]);
+  }, [bookedLines]);
 
   // ── Step navigation ─────────────────────────────────────────────
   const stepIndex = STEPS.findIndex((s) => s.key === step);
@@ -290,21 +402,60 @@ export default function PublicBookingPage() {
   };
 
   // Any cart line that needs a card on file gates the Confirm CTA.
-  const needsCardOnFile = cartLines.some((l) => l.service.requiresCardOnFile);
+  const needsCardOnFile = bookedLines.some((l) => l.service.requiresCardOnFile);
   const cardReady = !needsCardOnFile || Boolean(cardOnFile);
+
+  // Booking-policy disclosure shown at the Details step. We collapse the
+  // cart's worst-case terms into one block so the customer sees the actual
+  // numbers they're agreeing to before confirming.
+  const policyDisclosure = useMemo(() => {
+    const needsApproval = bookedLines.some((l) => l.service.requiresConfirmation);
+    let maxCancelWindow = 0;
+    let maxCancelFee = 0;
+    let maxNoShowFee = 0;
+    let minAutoCancel = Infinity;
+    for (const l of bookedLines) {
+      const s = l.service;
+      if (s.cancellationWindowHours && s.cancellationWindowHours > maxCancelWindow) {
+        maxCancelWindow = s.cancellationWindowHours;
+      }
+      if (s.cancellationFee && s.cancellationFee > maxCancelFee) {
+        maxCancelFee = s.cancellationFee;
+      }
+      if (s.depositNoShowFee && s.depositNoShowFee > maxNoShowFee) {
+        maxNoShowFee = s.depositNoShowFee;
+      }
+      if (s.depositAutoCancelHours && s.depositAutoCancelHours > 0 && s.depositAutoCancelHours < minAutoCancel) {
+        minAutoCancel = s.depositAutoCancelHours;
+      }
+    }
+    return {
+      needsApproval,
+      cancelWindowHours: maxCancelWindow > 0 ? maxCancelWindow : null,
+      cancelFeePct: maxCancelFee > 0 ? maxCancelFee : null,
+      noShowFeePct: maxNoShowFee > 0 ? maxNoShowFee : null,
+      autoCancelHours: Number.isFinite(minAutoCancel) ? minAutoCancel : null,
+    };
+  }, [bookedLines]);
+  const hasPolicyToShow =
+    policyDisclosure.needsApproval ||
+    policyDisclosure.cancelWindowHours != null ||
+    policyDisclosure.cancelFeePct != null ||
+    policyDisclosure.noShowFeePct != null ||
+    policyDisclosure.autoCancelHours != null;
 
   // Unique services in the cart that have at least one intake question to
   // render. Used both to draw the section and to gate Confirm.
   const intakeServices = useMemo(() => {
     const seen = new Set<string>();
     const out: PublicService[] = [];
-    for (const line of cartLines) {
+    for (const line of bookedLines) {
       if (seen.has(line.service.id)) continue;
       seen.add(line.service.id);
       if ((line.service.intakeQuestions ?? []).length > 0) out.push(line.service);
     }
     return out;
-  }, [cartLines]);
+  }, [bookedLines]);
 
   const intakeRequiredOk = useMemo(
     () =>
@@ -323,13 +474,13 @@ export default function PublicBookingPage() {
   const patchTestServices = useMemo(() => {
     const seen = new Set<string>();
     const out: PublicService[] = [];
-    for (const line of cartLines) {
+    for (const line of bookedLines) {
       if (seen.has(line.service.id)) continue;
       seen.add(line.service.id);
       if (line.service.requiresPatchTest) out.push(line.service);
     }
     return out;
-  }, [cartLines]);
+  }, [bookedLines]);
 
   const requireAddress = selectedLocation?.kind === "mobile";
   const locationGateOk = locations.length < 2 || Boolean(selectedLocationId);
@@ -355,9 +506,10 @@ export default function PublicBookingPage() {
     setSubmitting(true);
     setSubmitError(null);
     try {
-      // Build basket payload — each cart line becomes a basket item.
-      // Group bookings: each friend gets a parallel copy of every primary item,
-      // with guestName + guestOf pointing back at the matching primary index.
+      // Build basket payload — each cart line becomes a basket item, and
+      // each group-booking guest contributes ONE additional item carrying
+      // its own service + add-ons + artist (Fresha pattern: parallel sub-
+      // appointments under a single group container).
       const primaryItems = cartItems.map((it) => ({
         serviceId: it.serviceId,
         variantId: it.variantId,
@@ -365,9 +517,18 @@ export default function PublicBookingPage() {
         artistId: it.artistId,
         intakeAnswers: intakeAnswersByService[it.serviceId],
       }));
-      const guestItems = friends.flatMap((friendName) =>
-        primaryItems.map((it, primaryIdx) => ({ ...it, guestName: friendName, guestOf: primaryIdx }))
-      );
+      // Anchor every guest to the FIRST primary item — the server enforces
+      // a single time slot per group, so a single anchor index is enough
+      // (and matches the existing server validation that parent isn't a guest).
+      const primaryAnchorIdx = 0;
+      const guestItems = activeGuests.map((g) => ({
+        serviceId: g.serviceId,
+        addonIds: g.addonIds,
+        artistId: g.artistId ?? undefined,
+        guestName: g.name,
+        guestOf: primaryAnchorIdx,
+        intakeAnswers: intakeAnswersByService[g.serviceId],
+      }));
       const items = [...primaryItems, ...guestItems];
 
       const res = await fetch("/api/public/book/basket", {
@@ -397,12 +558,19 @@ export default function PublicBookingPage() {
       }
 
       // Compute end time + assemble confirmation card data.
-      // Friends book parallel chairs, so the slot duration is per-person,
-      // but the bill multiplies by the guest count.
+      // Each guest contributes their own line price (per-guest service +
+      // add-ons), so total = primary subtotal + sum of guest lines.
       const totalMins = totalDuration;
       const endTime = addMinutes(selectedTime, totalMins);
-      const perPerson = cartLines.reduce((s, l) => s + l.computed.price * l.item.qty, 0);
-      const total = perPerson * (friends.length + 1);
+      const primarySubtotal = cartLines.reduce(
+        (s, l) => s + l.computed.price * l.item.qty,
+        0,
+      );
+      const guestSubtotal = guestLines.reduce(
+        (s, l) => s + l.computed.price,
+        0,
+      );
+      const total = primarySubtotal + guestSubtotal;
 
       const confirmationAddress =
         selectedLocation?.kind === "mobile"
@@ -411,15 +579,21 @@ export default function PublicBookingPage() {
       // Largest rebook cadence across booked services anchors the
       // "Plan your next visit" CTA. If no service has one configured,
       // Confirmation falls back to the plain "Book another" link.
-      const rebookAfterDays = cartLines.reduce<number>((max, l) => {
+      const rebookAfterDays = bookedLines.reduce<number>((max, l) => {
         const v = l.service.rebookAfterDays;
         return typeof v === "number" && v > max ? v : max;
       }, 0);
+      // Group-booking summary: append "Guest Name (Service)" for each guest
+      // so the confirmation card lists every appointment under one banner.
+      const primaryNames = cartLines.map((l) => l.service.name);
+      const guestNames = guestLines.map(
+        (gl) => `${gl.guest.name || "Guest"} (${gl.service.name})`,
+      );
       setConfirmed({
         date: selectedDate,
         time: selectedTime,
         endTime,
-        serviceNames: cartLines.map((l) => l.service.name),
+        serviceNames: [...primaryNames, ...guestNames],
         total,
         durationMinutes: totalMins,
         businessName,
@@ -590,6 +764,8 @@ export default function PublicBookingPage() {
                     primaryServiceId={primaryServiceId}
                     durationMinutes={totalDuration}
                     enabledWeekdays={cartEnabledWeekdays}
+                    minDate={cartMinDate}
+                    maxDate={cartMaxDate}
                     selectedDate={selectedDate}
                     selectedTime={selectedTime}
                     locationId={selectedLocationId ?? undefined}
@@ -615,11 +791,29 @@ export default function PublicBookingPage() {
                         Patch test required
                       </p>
                       <p className="text-[12px] text-text-secondary">
-                        {patchTestServices.length === 1
-                          ? `${patchTestServices[0].name} requires a patch test on file before your appointment.`
-                          : `These services require a patch test on file: ${patchTestServices
-                              .map((s) => s.name)
-                              .join(", ")}.`}
+                        {(() => {
+                          // Surface the patch-test category when set so the
+                          // customer knows which test type is required, not
+                          // just "a patch test".
+                          const categories = Array.from(
+                            new Set(
+                              patchTestServices
+                                .map((s) => s.patchTestCategory)
+                                .filter((c): c is string => Boolean(c)),
+                            ),
+                          );
+                          const catText =
+                            categories.length === 1
+                              ? `a ${categories[0]} patch test`
+                              : categories.length > 1
+                                ? `${categories.join(" / ")} patch tests`
+                                : "a patch test";
+                          return patchTestServices.length === 1
+                            ? `${patchTestServices[0].name} requires ${catText} on file before your appointment.`
+                            : `These services require ${catText} on file: ${patchTestServices
+                                .map((s) => s.name)
+                                .join(", ")}.`;
+                        })()}
                         {(() => {
                           // Pull the strictest validity + lead time across
                           // affected services so the wording reflects the
@@ -729,6 +923,58 @@ export default function PublicBookingPage() {
                     </div>
                   ))}
 
+                  {hasPolicyToShow && (
+                    <div className="border-t border-border-light pt-5">
+                      <p className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider mb-2">
+                        Booking policy
+                      </p>
+                      <ul className="text-[12px] text-text-secondary space-y-1.5 leading-snug">
+                        {policyDisclosure.needsApproval && (
+                          <li>
+                            This booking will be <span className="font-medium text-foreground">pending until approved</span>.
+                            You&apos;ll get a confirmation email once accepted.
+                          </li>
+                        )}
+                        {policyDisclosure.cancelWindowHours != null && (
+                          <li>
+                            Cancel for free up to{" "}
+                            <span className="font-medium text-foreground">
+                              {policyDisclosure.cancelWindowHours}h
+                            </span>{" "}
+                            before the appointment.
+                            {policyDisclosure.cancelFeePct != null && (
+                              <>
+                                {" "}Cancellations inside that window are charged{" "}
+                                <span className="font-medium text-foreground">
+                                  {policyDisclosure.cancelFeePct}%
+                                </span>{" "}
+                                of the service price.
+                              </>
+                            )}
+                          </li>
+                        )}
+                        {policyDisclosure.noShowFeePct != null && (
+                          <li>
+                            No-show fee:{" "}
+                            <span className="font-medium text-foreground">
+                              {policyDisclosure.noShowFeePct}%
+                            </span>{" "}
+                            of the service price.
+                          </li>
+                        )}
+                        {policyDisclosure.autoCancelHours != null && (
+                          <li>
+                            If a deposit isn&apos;t paid within{" "}
+                            <span className="font-medium text-foreground">
+                              {policyDisclosure.autoCancelHours}h
+                            </span>
+                            , the booking is automatically released.
+                          </li>
+                        )}
+                      </ul>
+                    </div>
+                  )}
+
                   <div className="border-t border-border-light pt-5">
                     <GiftCardField slug={slug} applied={giftCard} onApplied={setGiftCard} />
                   </div>
@@ -774,6 +1020,8 @@ export default function PublicBookingPage() {
               <CartPane
                 serviceMap={serviceMap}
                 memberMap={memberMap}
+                memberServiceMap={memberServiceMap}
+                members={members}
                 businessName={businessName}
                 onContinue={handleContinue}
                 onEdit={(lineId) => setEditingLineId(lineId)}

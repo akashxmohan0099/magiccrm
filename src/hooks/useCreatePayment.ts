@@ -1,5 +1,7 @@
 import { usePaymentsStore, nextDocNumber } from "@/store/payments";
 import { useServicesStore } from "@/store/services";
+import { useBookingsStore } from "@/store/bookings";
+import { useClientsStore } from "@/store/clients";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/components/ui/Toast";
 import type { PaymentDocLabel } from "@/types/models";
@@ -7,6 +9,8 @@ import type { PaymentDocLabel } from "@/types/models";
 export function useCreatePayment() {
   const { addDocument, addLineItem } = usePaymentsStore();
   const { services } = useServicesStore();
+  const { bookings } = useBookingsStore();
+  const { clients } = useClientsStore();
   const { workspaceId } = useAuth();
 
   const createPayment = ({
@@ -23,15 +27,70 @@ export function useCreatePayment() {
     serviceId?: string;
   }) => {
     const docNumber = nextDocNumber(label);
-    const service = serviceId ? services.find((s) => s.id === serviceId) : null;
-    const total = service ? service.price : 0;
+
+    // For group bookings, walk the parent + every guest so a single
+    // invoice covers the whole party (Fresha-style consolidated bill).
+    // Falls back to the single-service path when bookingId isn't a group.
+    const sourceBooking = bookingId
+      ? bookings.find((b) => b.id === bookingId) ?? null
+      : null;
+    const primaryBooking = sourceBooking?.groupParentBookingId
+      ? bookings.find((b) => b.id === sourceBooking.groupParentBookingId) ??
+        sourceBooking
+      : sourceBooking;
+    const groupBookings = primaryBooking
+      ? [
+          primaryBooking,
+          ...bookings.filter(
+            (b) => b.groupParentBookingId === primaryBooking.id,
+          ),
+        ]
+      : [];
+
+    const lineSpecs: { description: string; unitPrice: number }[] = [];
+    if (groupBookings.length >= 2) {
+      // Group: one line per booking, each priced from its own
+      // resolvedPrice (carries variant + addons + dynamic rules); fall
+      // back to service.price when the older row lacks resolvedPrice.
+      for (const b of groupBookings) {
+        const svc = services.find((s) => s.id === b.serviceId);
+        const isGuest = !!b.groupParentBookingId;
+        const personName = isGuest
+          ? b.groupGuestName ||
+            clients.find((c) => c.id === b.clientId)?.name ||
+            "Guest"
+          : clients.find((c) => c.id === b.clientId)?.name ||
+            clientName ||
+            "Primary";
+        const price =
+          (b.resolvedPrice ?? svc?.price ?? 0) +
+          0;
+        lineSpecs.push({
+          description: `${svc?.name ?? "Service"} — ${personName}`,
+          unitPrice: price,
+        });
+      }
+    } else {
+      // Single-service path: one line item from the explicit serviceId.
+      const service = serviceId
+        ? services.find((s) => s.id === serviceId)
+        : null;
+      if (service) {
+        lineSpecs.push({
+          description: service.name,
+          unitPrice: sourceBooking?.resolvedPrice ?? service.price,
+        });
+      }
+    }
+
+    const total = lineSpecs.reduce((s, l) => s + l.unitPrice, 0);
 
     const doc = addDocument(
       {
         workspaceId: workspaceId ?? "",
         documentNumber: docNumber,
         clientId,
-        bookingId,
+        bookingId: primaryBooking?.id ?? bookingId,
         label,
         status: "draft",
         total,
@@ -40,19 +99,21 @@ export function useCreatePayment() {
       workspaceId || undefined
     );
 
-    if (doc && service) {
-      addLineItem(
-        doc.id,
-        {
-          paymentDocumentId: doc.id,
-          workspaceId: workspaceId ?? "",
-          description: service.name,
-          quantity: 1,
-          unitPrice: service.price,
-          sortOrder: 0,
-        },
-        workspaceId || undefined
-      );
+    if (doc) {
+      lineSpecs.forEach((line, idx) => {
+        addLineItem(
+          doc.id,
+          {
+            paymentDocumentId: doc.id,
+            workspaceId: workspaceId ?? "",
+            description: line.description,
+            quantity: 1,
+            unitPrice: line.unitPrice,
+            sortOrder: idx,
+          },
+          workspaceId || undefined
+        );
+      });
     }
 
     if (doc) {
