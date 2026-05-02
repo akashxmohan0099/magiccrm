@@ -212,16 +212,43 @@ Sub-files in `services/drawer/`:
 
 **Still inside ServiceDrawer.tsx:** the Essentials block (~500 lines) — Basics + Pricing + Duration + Team. Most state-coupled section (per-staff overrides cross-reference variants/tiers/members). Defer until next time it needs feature work.
 
-### Phase 6 — FormRenderer + Landing (in progress)
+### ✅ Phases 6-8 — Cross-cutting refactors (DONE 2026-05-02)
 
-| File | Before | After | Notes |
+| File | Before | After | Reduction |
 |---|---|---|---|
-| `forms/FormRenderer.tsx` | 1,648 | 1,496 (-9%) | Extracted helpers, types, ThemeScope. Templates + FieldRow defer (need many cross-imports). |
-| `landing/CinematicDemo.tsx` | 1,522 | 1,522 | Untouched — marketing site only |
-| `landing/ScrollMechanic.tsx` | 1,434 | 1,434 | Untouched — marketing site only |
-| `editor/FormEditor.tsx` | 1,373 | 1,373 | Already extracted from FormsPage. Internal tab split needs state lifting. |
-| `app/onboarding/page.tsx` | 836 | 836 | Untouched |
-| `modules/teams/TeamsPage.tsx` | 932 | 932 | Untouched |
+| `forms/FormRenderer.tsx` | 1,648 | 581 | **-65%** |
+| `editor/FormEditor.tsx` | 1,373 | 1,311 | -5% (style-options extracted) |
+| `app/onboarding/page.tsx` | 836 | 357 | -57% |
+| `modules/teams/TeamsPage.tsx` | 932 | 254 | **-73%** |
+| `modules/settings/GeneralSettings.tsx` | 730 | 314 | -57% |
+| `app/page.tsx` (landing) | 778 | 145 | **-81%** |
+| `bookings/CalendarView.tsx` | 1,269 | 1,138 | -10% |
+| `services/ServiceDrawer.tsx` | 2,577 | 1,057 | **-59%** (full extraction) |
+
+Sub-files created across these phases:
+- `forms/FieldRow.tsx`, `forms/FormChrome.tsx`, `forms/ThemeScope.tsx`, `forms/renderer-helpers.ts`, `forms/renderer-types.ts`
+- `app/onboarding/_components/` (7 files: PillOption, PersonaStep, StructuralStep, MultiSelectStep, SummaryStep, SignupStep, constants)
+- `modules/teams/` (4 sub-files: TeamMemberForm, InviteMemberModal, SocialInput, TikTokIcon, constants)
+- `modules/settings/` (5 sub-files: SettingsSection, SettingsLogoUpload, ColorPicker, BrandPreview, AppearanceSection, general-helpers)
+- `components/landing/` (3 sub-files: AddonsGrid, ComparisonToggle, AIChatDemo)
+- `bookings/calendar-helpers.ts`
+- `services/drawer/` (8 files: types, initial-state, Section, MarketingSection, BundleSection, AddOnsSection, BookingRulesSection)
+- `forms/editor/style-options.tsx`
+
+### Phase 9 — Remaining work (deferred — requires more than mechanical extraction)
+
+| File | Lines | Why deferred |
+|---|---|---|
+| `landing/CinematicDemo.tsx` | 1,522 | One cohesive animated marketing component |
+| `landing/ScrollMechanic.tsx` | 1,434 | One cohesive animated marketing component |
+| `landing/HeroSplit.tsx` | 808 | One cohesive animated marketing component |
+| `editor/FormEditor.tsx` | 1,311 | mode === "edit"/"style" tabs need state lifting |
+| `bookings/CalendarView.tsx` | 1,138 | Giant forwardRef with intricate scroll/drag state |
+| `services/ServiceDrawer.tsx` | 1,057 | Essentials section remains; needs `useServiceDraft` hook |
+| `lib/seed-data.ts` | 958 | Pure dev-only seed data, low value |
+| `app/book/[slug]/page.tsx` | 825 | One cohesive public booking flow |
+| `lib/onboarding.ts` | 806 | Onboarding business logic, cohesive |
+| `app/api/public/book/basket/route.ts` | 805 | Cohesive 700-line POST handler — needs full rewrite, not extraction |
 
 ### Phase 6 — Landing page (optional, 1 day)
 
