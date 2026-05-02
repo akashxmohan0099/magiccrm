@@ -357,16 +357,35 @@ export default function PublicBookingPage() {
     0,
   );
   const totalDuration = Math.max(primaryDuration, maxGuestDuration);
-  // Use the longest line item as the primary serviceId for the slot endpoint —
-  // its availability rules are most restrictive; durationMinutes carries the
-  // real cart-total window.
-  const primaryServiceId = useMemo(() => {
-    if (bookedLines.length === 0) return null;
-    const longest = bookedLines.reduce((a, b) =>
-      a.computed.duration >= b.computed.duration ? a : b
-    );
-    return longest.service.id;
-  }, [bookedLines]);
+  // Basket items for the new POST /availability/basket endpoint. Each cart
+  // line is expanded by qty so a quantity-3 service slots three sequential
+  // items, matching what the submit handler will validate. Guests are NOT
+  // included — they're parallel (same slot, different artist) and the
+  // server validates them at submit. Single-item carts are passed through
+  // and TimePicker falls back to the legacy single-service GET endpoint.
+  const timePickerBasket = useMemo(() => {
+    const items: Array<{
+      serviceId: string;
+      variantId?: string;
+      extraDurationMinutes?: number;
+      preferredMemberId?: string;
+    }> = [];
+    for (const line of cartLines) {
+      const addons = (line.service.addons ?? []).filter((a) =>
+        line.item.addonIds.includes(a.id),
+      );
+      const extra = addons.reduce((sum, a) => sum + (a.duration || 0), 0);
+      for (let i = 0; i < line.item.qty; i += 1) {
+        items.push({
+          serviceId: line.service.id,
+          variantId: line.item.variantId,
+          extraDurationMinutes: extra > 0 ? extra : undefined,
+          preferredMemberId: line.item.artistId,
+        });
+      }
+    }
+    return items;
+  }, [cartLines]);
 
   // ── Step navigation ─────────────────────────────────────────────
   const stepIndex = STEPS.findIndex((s) => s.key === step);
@@ -757,11 +776,11 @@ export default function PublicBookingPage() {
                 )
               )}
 
-              {step === "time" && primaryServiceId && (
+              {step === "time" && timePickerBasket.length > 0 && (
                 <div className="bg-card-bg border border-border-light rounded-2xl p-5 sm:p-6">
                   <TimePicker
                     slug={slug}
-                    primaryServiceId={primaryServiceId}
+                    basketItems={timePickerBasket}
                     durationMinutes={totalDuration}
                     enabledWeekdays={cartEnabledWeekdays}
                     minDate={cartMinDate}

@@ -512,7 +512,7 @@ function BookingFlow({
 
       {step === "menu" && (
         basketServices.length > 0 ? (
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6">
             <div className="min-w-0 max-w-2xl">
               <Header
                 businessName={businessName}
@@ -677,4 +677,3 @@ function BookingFlow({
 
 
 // ── Style panel + alternative card layouts ──────────────────────────
-

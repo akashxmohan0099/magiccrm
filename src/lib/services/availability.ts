@@ -302,3 +302,297 @@ export function computeAvailability(input: AvailabilityInput): Slot[] {
 
   return slots;
 }
+
+// ─── Basket availability ────────────────────────────────────────────────
+//
+// Multi-service version of computeAvailability. Sequential placement: the
+// basket fits at slot S iff every item placed end-to-end starting at S
+// finds an eligible+free member, with resources free, inside working hours.
+//
+// Why a separate function rather than a loop over computeAvailability:
+//   - Items chain — item N starts when item N-1 ends + bufferAfter, not at
+//     the same time. The single-service engine doesn't model that.
+//   - One artist can take multiple items in sequence — eligibility is
+//     evaluated per item, not per slot.
+//   - Resources are checked per item's envelope, not per the whole basket.
+
+export interface BasketItemInput {
+  /** Pre-loaded service. Caller is responsible for the snake/camel mapping. */
+  service: Service;
+  /** Pinned variant for variants-priced services. */
+  variantId?: string;
+  /** Sum of selected add-on durations (in minutes) added to the item's base. */
+  extraDurationMinutes?: number;
+  /** Customer pinned an artist for THIS item. Empty = "anyone eligible". */
+  preferredMemberId?: string;
+  /** member_services rows scoped to this item's service. Empty = "anyone". */
+  memberServices: MemberService[];
+}
+
+export interface BasketAvailabilityInput {
+  date: string;
+  items: BasketItemInput[];
+  workingHours: Record<string, WorkingHours>;
+  bookings: Booking[];
+  members: TeamMember[];
+  /**
+   * Pre-computed resource busy intervals for the day, keyed by resourceId.
+   * Same shape the single-service engine uses; loader builds it once for the
+   * whole basket from the day's bookings.
+   */
+  resourceBusyByDay?: Map<string, { start: number; end: number }[]>;
+  /** Pinned location applies to every basket item. */
+  locationId?: string;
+  step?: number;
+  limit?: number;
+}
+
+export interface BasketSlot {
+  /** "HH:MM" of the basket's first item start (post pre-buffer). */
+  time: string;
+  /** ISO of basket start. */
+  startAt: string;
+  /** ISO of last item's end (post post-buffer). */
+  endAt: string;
+  /** Per-item placement decisions. Greedy first-eligible-member wins. */
+  assignments: Array<{
+    serviceId: string;
+    memberId: string;
+    startAt: string;
+    endAt: string;
+  }>;
+}
+
+export function computeBasketAvailability(
+  input: BasketAvailabilityInput,
+): BasketSlot[] {
+  const {
+    date,
+    items,
+    workingHours,
+    bookings,
+    members,
+    resourceBusyByDay,
+    locationId,
+    step = 15,
+    limit,
+  } = input;
+
+  if (items.length === 0) return [];
+
+  const weekday = WEEKDAY_KEYS[new Date(`${date}T12:00:00`).getDay()];
+  const workspaceHours = workingHours[weekday];
+  if (!workspaceHours) return [];
+  const dayStart = parseHHMM(workspaceHours.start);
+  const dayEnd = parseHHMM(workspaceHours.end);
+
+  // Pre-compute per-item static metadata (duration, buffers, eligible members,
+  // weekday filter). If any item is unbookable on this date for structural
+  // reasons (weekday excluded, no eligible artist), the whole basket is dead.
+  type ItemPlan = {
+    item: BasketItemInput;
+    duration: number;
+    bufBefore: number;
+    bufAfter: number;
+    eligibleIds: Set<string>;
+    requiredResourceIds: string[];
+  };
+  const plans: ItemPlan[] = [];
+  for (const item of items) {
+    const svc = item.service;
+
+    // Service-level weekday filter — bail early.
+    if (
+      svc.availableWeekdays &&
+      svc.availableWeekdays.length > 0 &&
+      !svc.availableWeekdays.includes(WEEKDAY_KEYS.indexOf(weekday))
+    ) {
+      return [];
+    }
+
+    // Eligibility: assigned-to set, preferred member pin, location filter.
+    const assignedIds = item.memberServices
+      .filter((ms) => ms.serviceId === svc.id)
+      .map((ms) => ms.memberId);
+    const isAnyoneMode = assignedIds.length === 0;
+
+    const eligibleIds = new Set<string>();
+    for (const m of members) {
+      if (m.status === "inactive") continue;
+      if (item.preferredMemberId && m.id !== item.preferredMemberId) continue;
+      if (!isAnyoneMode && !assignedIds.includes(m.id)) continue;
+      if (locationId) {
+        const ms = item.memberServices.find(
+          (x) => x.memberId === m.id && x.serviceId === svc.id,
+        );
+        if (
+          ms?.locationIds &&
+          ms.locationIds.length > 0 &&
+          !ms.locationIds.includes(locationId)
+        ) {
+          continue;
+        }
+      }
+      eligibleIds.add(m.id);
+    }
+    if (eligibleIds.size === 0) return [];
+
+    // Per-artist duration override is only meaningful when an artist is
+    // pinned. For "anyone" mode use maxDuration so a slow artist never
+    // overruns the slot. Mirrors the single-service engine.
+    const baseDuration = item.preferredMemberId
+      ? resolveDuration(svc, {
+          variantId: item.variantId,
+          memberId: item.preferredMemberId,
+          memberDurationOverride: item.memberServices.find(
+            (x) => x.memberId === item.preferredMemberId && x.serviceId === svc.id,
+          )?.durationOverride,
+        })
+      : maxDuration(svc);
+    const duration = baseDuration + Math.max(0, item.extraDurationMinutes ?? 0);
+
+    const buf = resolveBuffer(svc);
+
+    plans.push({
+      item,
+      duration,
+      bufBefore: buf.before,
+      bufAfter: buf.after,
+      eligibleIds,
+      requiredResourceIds: svc.requiredResourceIds ?? [],
+    });
+  }
+
+  // Per-member busy intervals from existing bookings (minutes of day).
+  type Interval = { start: number; end: number };
+  const busyByMember = new Map<string, Interval[]>();
+  for (const b of bookings) {
+    if (b.date !== date) continue;
+    if (!b.assignedToId) continue;
+    const startMin =
+      new Date(b.startAt).getHours() * 60 + new Date(b.startAt).getMinutes();
+    const endMin =
+      new Date(b.endAt).getHours() * 60 + new Date(b.endAt).getMinutes();
+    const list = busyByMember.get(b.assignedToId) ?? [];
+    list.push({ start: startMin, end: endMin });
+    busyByMember.set(b.assignedToId, list);
+  }
+  const memberIsFree = (memberId: string, start: number, end: number): boolean => {
+    const intervals = busyByMember.get(memberId) ?? [];
+    for (const iv of intervals) {
+      if (start < iv.end && end > iv.start) return false;
+    }
+    return true;
+  };
+
+  // Per-member working window for the day. Same logic as single-service path.
+  const memberDayWindow = (memberId: string): { start: number; end: number } | null => {
+    const m = members.find((x) => x.id === memberId);
+    if (!m) return null;
+    const onLeave = (m.leavePeriods ?? []).some(
+      (lp) => date >= lp.start && date <= lp.end,
+    );
+    if (onLeave) return null;
+    if ((m.daysOff ?? []).includes(weekday)) return null;
+    const memberHours = m.workingHours?.[weekday];
+    if (!memberHours) return { start: dayStart, end: dayEnd };
+    return {
+      start: Math.max(parseHHMM(memberHours.start), dayStart),
+      end: Math.min(parseHHMM(memberHours.end), dayEnd),
+    };
+  };
+
+  const resourceFree = (resourceIds: string[], start: number, end: number): boolean => {
+    if (resourceIds.length === 0) return true;
+    if (!resourceBusyByDay) return true;
+    for (const rid of resourceIds) {
+      const busy = resourceBusyByDay.get(rid) ?? [];
+      for (const iv of busy) {
+        if (start < iv.end && end > iv.start) return false;
+      }
+    }
+    return true;
+  };
+
+  // Min-notice gate: take the strictest (largest) min-notice across the basket.
+  const maxMinNoticeHours = Math.max(
+    0,
+    ...items.map((it) => it.service.minNoticeHours ?? 0),
+  );
+  const minNoticeCutoff = (() => {
+    if (!maxMinNoticeHours) return 0;
+    const now = new Date();
+    const target = new Date(`${date}T00:00:00`);
+    const hoursUntilDate = (target.getTime() - now.getTime()) / (1000 * 60 * 60);
+    if (hoursUntilDate < maxMinNoticeHours) {
+      return Math.max(
+        dayStart,
+        now.getHours() * 60 + now.getMinutes() + maxMinNoticeHours * 60,
+      );
+    }
+    return 0;
+  })();
+
+  // Total wall-clock the basket needs (for the outer slot bound).
+  const totalSpan = plans.reduce(
+    (sum, p) => sum + p.bufBefore + p.duration + p.bufAfter,
+    0,
+  );
+
+  const slots: BasketSlot[] = [];
+
+  for (let baseCursor = dayStart; baseCursor + totalSpan <= dayEnd; baseCursor += step) {
+    if (baseCursor < minNoticeCutoff) continue;
+
+    // Walk items sequentially. Each item picks the first eligible+free member.
+    let cursor = baseCursor;
+    const assignments: BasketSlot["assignments"] = [];
+    let placedAll = true;
+
+    for (const plan of plans) {
+      const itemStart = cursor + plan.bufBefore;
+      const itemEnd = itemStart + plan.duration;
+      const envelopeStart = cursor; // includes pre-buffer for member-busy check
+      const envelopeEnd = itemEnd + plan.bufAfter;
+
+      let chosenMember: string | null = null;
+      for (const memberId of plan.eligibleIds) {
+        const window = memberDayWindow(memberId);
+        if (!window) continue;
+        if (envelopeStart < window.start || envelopeEnd > window.end) continue;
+        if (!memberIsFree(memberId, envelopeStart, envelopeEnd)) continue;
+        if (!resourceFree(plan.requiredResourceIds, envelopeStart, envelopeEnd)) continue;
+        chosenMember = memberId;
+        break;
+      }
+
+      if (!chosenMember) {
+        placedAll = false;
+        break;
+      }
+
+      assignments.push({
+        serviceId: plan.item.service.id,
+        memberId: chosenMember,
+        startAt: localIso(date, fmtHHMM(itemStart)),
+        endAt: localIso(date, fmtHHMM(itemEnd)),
+      });
+      cursor = envelopeEnd;
+    }
+
+    if (!placedAll) continue;
+
+    const firstStart = assignments[0].startAt;
+    const lastEnd = assignments[assignments.length - 1].endAt;
+    slots.push({
+      time: fmtHHMM(parseHHMM(firstStart.slice(11, 16))),
+      startAt: firstStart,
+      endAt: lastEnd,
+      assignments,
+    });
+
+    if (limit && slots.length >= limit) break;
+  }
+
+  return slots;
+}

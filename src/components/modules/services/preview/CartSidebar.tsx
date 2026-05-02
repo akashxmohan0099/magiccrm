@@ -1,6 +1,6 @@
 "use client";
 
-import { X } from "lucide-react";
+import { ArrowRight, Clock3, ReceiptText, X } from "lucide-react";
 import type { Service, ServiceAddon } from "@/types/models";
 
 export function CartSidebar({
@@ -27,7 +27,6 @@ export function CartSidebar({
   onRemove: (s: Service) => void;
   onContinue: () => void;
 }) {
-  const continueGradient = `linear-gradient(135deg, ${primaryColor} 0%, ${primaryColor}dd 100%)`;
   const hours = Math.floor(totalDuration / 60);
   const mins = totalDuration % 60;
   const durationLabel =
@@ -47,32 +46,70 @@ export function CartSidebar({
       (it.service.bufferAfter ?? 0),
     0,
   );
+  const dueToday = items.reduce((sum, it) => {
+    const s = it.service;
+    if (s.depositType === "fixed") {
+      return sum + Math.max(0, s.depositAmount);
+    }
+    if (s.depositType === "percentage") {
+      const pct = Math.max(0, Math.min(100, s.depositAmount));
+      return sum + Math.round(it.price * pct) / 100;
+    }
+    return sum;
+  }, 0);
 
   return (
-    <aside className="lg:sticky lg:top-4 self-start">
-      <div className="bg-card-bg border border-border-light rounded-3xl overflow-hidden shadow-[0_24px_60px_-20px_rgba(0,0,0,0.12)]">
-        {/* Header — centered, with a small brand-tinted count chip */}
-        <div className="px-5 pt-6 pb-4 text-center">
-          <p className="text-[10px] font-semibold text-text-tertiary uppercase tracking-[0.12em]">
-            Your booking
-          </p>
+    <aside className="lg:sticky lg:top-5 self-start">
+      <div
+        className="bg-card-bg border rounded-2xl overflow-hidden shadow-[0_14px_34px_-28px_rgba(0,0,0,0.45)]"
+        style={{ borderColor: `${primaryColor}24` }}
+      >
+        <div
+          className="h-1"
+          style={{ backgroundColor: primaryColor }}
+          aria-hidden="true"
+        />
+
+        {/* Header */}
+        <div className="px-5 pt-5 pb-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-semibold text-text-tertiary uppercase tracking-[0.14em]">
+                Booking summary
+              </p>
+              <p className="mt-1 text-[15px] font-semibold text-foreground tracking-tight">
+                {items.length} {items.length === 1 ? "service" : "services"} selected
+              </p>
+            </div>
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center"
+              style={{ backgroundColor: `${primaryColor}12`, color: primaryColor }}
+              aria-hidden="true"
+            >
+              <ReceiptText className="w-4 h-4" />
+            </div>
+          </div>
           <div
-            className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-[11px] font-semibold"
-            style={{ backgroundColor: `${primaryColor}15`, color: primaryColor }}
+            className="mt-4 flex items-center justify-between rounded-xl px-3 py-2"
+            style={{ backgroundColor: `${primaryColor}0f` }}
           >
-            {items.length} {items.length === 1 ? "service" : "services"}
-            <span className="opacity-50">·</span>
-            <span className="tabular-nums">{durationLabel}</span>
+            <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-text-secondary">
+              <Clock3 className="w-3.5 h-3.5" style={{ color: primaryColor }} />
+              Estimated time
+            </span>
+            <span className="text-[12px] font-semibold text-foreground tabular-nums">
+              {durationLabel}
+            </span>
           </div>
           {bufferTotal > 0 && (
-            <p className="text-[10px] text-text-tertiary mt-1.5 tabular-nums">
+            <p className="text-[11px] text-text-tertiary mt-2 tabular-nums">
               + {bufferTotal}m chair buffer
             </p>
           )}
         </div>
 
         {/* Items */}
-        <ul className="px-2 pb-2">
+        <ul className="px-4 pb-4 space-y-2">
           {items.map((item) => {
             const variant = item.variantId
               ? item.service.variants?.find((v) => v.id === item.variantId)
@@ -80,30 +117,42 @@ export function CartSidebar({
             return (
               <li
                 key={item.service.id}
-                className="group px-3 py-2.5 rounded-xl hover:bg-surface/60 transition-colors"
+                className="group rounded-xl border border-border-light bg-surface/35 px-3 py-3 transition-colors hover:bg-surface/60"
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-start gap-3">
+                  <div
+                    className="mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-[12px] font-semibold"
+                    style={{ backgroundColor: `${primaryColor}12`, color: primaryColor }}
+                  >
+                    {item.service.name.charAt(0).toUpperCase()}
+                  </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-medium text-foreground truncate">
+                    <p className="text-[13px] font-semibold text-foreground leading-tight truncate">
                       {item.service.name}
                       {variant && (
                         <span className="text-text-tertiary font-normal"> · {variant.name}</span>
                       )}
                     </p>
-                    <p className="text-[11px] text-text-tertiary tabular-nums">
-                      {item.baseDuration} min · ${item.basePrice}
-                    </p>
+                    <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-text-tertiary">
+                      <span className="tabular-nums">{item.baseDuration} min</span>
+                      <span aria-hidden="true">·</span>
+                      <span className="tabular-nums">${item.basePrice}</span>
+                    </div>
                   </div>
+                  <p className="text-[13px] font-semibold text-foreground tabular-nums">
+                    ${item.price}
+                  </p>
                   <button
                     onClick={() => onRemove(item.service)}
-                    className="p-1.5 rounded-full text-text-tertiary hover:text-foreground hover:bg-card-bg opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
+                    className="p-1 -mr-1 rounded-md text-text-tertiary hover:text-foreground hover:bg-card-bg opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
                     title="Remove"
+                    aria-label={`Remove ${item.service.name}`}
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
                 {item.addons.length > 0 && (
-                  <ul className="mt-1.5 ml-2.5 pl-3 border-l border-border-light space-y-0.5">
+                  <ul className="mt-2 ml-11 pl-3 border-l border-border-light space-y-1">
                     {item.addons.map((a) => (
                       <li
                         key={a.id}
@@ -122,49 +171,33 @@ export function CartSidebar({
           })}
         </ul>
 
-        {/* Total — centered, bold, hero treatment */}
-        <div className="px-5 py-5 border-t border-border-light text-center">
-          <p className="text-[10px] font-semibold text-text-tertiary uppercase tracking-[0.12em] mb-1">
-            Total
-          </p>
-          <p className="text-[28px] font-bold text-foreground tabular-nums leading-none">
-            ${totalPrice}
-          </p>
-          {(() => {
-            // Deposit due today (mocked from per-service depositType /
-            // depositAmount). Mirrors `lineDeposit` from the public helpers
-            // so the preview matches the public flow's payment breakdown.
-            const dueToday = items.reduce((sum, it) => {
-              const s = it.service;
-              if (s.depositType === "fixed") {
-                return sum + Math.max(0, s.depositAmount);
-              }
-              if (s.depositType === "percentage") {
-                const pct = Math.max(0, Math.min(100, s.depositAmount));
-                return sum + Math.round(it.price * pct) / 100;
-              }
-              return sum;
-            }, 0);
-            if (dueToday <= 0) return null;
-            return (
-              <div className="mt-3 flex items-center justify-between bg-surface rounded-xl px-3 py-2 text-left">
-                <p className="text-[12px] text-text-secondary">Pay today (deposit)</p>
+        {/* Footer */}
+        <div className="border-t border-border-light bg-surface/30 px-5 py-4">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="text-[10px] font-semibold text-text-tertiary uppercase tracking-[0.12em]">
+                Total
+              </p>
+              <p className="mt-1 text-[26px] font-bold text-foreground tabular-nums leading-none">
+                ${totalPrice}
+              </p>
+            </div>
+            {dueToday > 0 && (
+              <div className="text-right">
+                <p className="text-[10px] font-medium text-text-tertiary">Due today</p>
                 <p className="text-[13px] font-semibold text-foreground tabular-nums">
                   ${dueToday}
                 </p>
               </div>
-            );
-          })()}
-        </div>
-
-        {/* CTA */}
-        <div className="px-4 pb-4">
+            )}
+          </div>
           <button
             onClick={onContinue}
-            className="w-full py-3 rounded-2xl text-[13px] font-semibold text-white cursor-pointer transition-all hover:opacity-90 hover:-translate-y-px shadow-[0_8px_20px_-8px_rgba(0,0,0,0.25)]"
-            style={{ backgroundImage: continueGradient }}
+            className="mt-4 w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl text-[13px] font-semibold text-white cursor-pointer transition-all hover:opacity-90 active:scale-[0.99] shadow-[0_8px_18px_-12px_rgba(0,0,0,0.35)]"
+            style={{ backgroundColor: primaryColor }}
           >
             Continue
+            <ArrowRight className="w-4 h-4" />
           </button>
         </div>
       </div>

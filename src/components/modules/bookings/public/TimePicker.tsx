@@ -4,12 +4,28 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 
+/**
+ * Basket item the picker forwards to the server. Mirrors `BasketItemRequest`
+ * in `lib/server/public-booking.ts`. Defined here as a structural type so
+ * the public component doesn't pull in a `server-only` module.
+ */
+export interface TimePickerBasketItem {
+  serviceId: string;
+  variantId?: string;
+  /** Sum of selected addon durations for this item (minutes). */
+  extraDurationMinutes?: number;
+  preferredMemberId?: string;
+}
+
 interface TimePickerProps {
   slug: string;
-  /** Service id used to scope availability. For multi-service carts, send the
-   *  longest line item — durationMinutes carries the real total window. */
-  primaryServiceId: string;
-  /** Total contiguous duration the slot must accommodate (sum of all cart items). */
+  /** Full cart. Single-item carts hit the legacy single-service endpoint
+   *  (faster, fewer DB hits). 2+ items hit the basket endpoint that runs
+   *  the same engine the submit handler uses, so the returned slots match
+   *  what will actually pass validation. */
+  basketItems: TimePickerBasketItem[];
+  /** Total contiguous duration for single-item fallback. Ignored when
+   *  basketItems has 2+ entries — the server computes that itself. */
   durationMinutes: number;
   /** ISO weekdays (0 = Sunday) where the workspace is open. Drives the date strip. */
   enabledWeekdays: Set<number>;
@@ -45,7 +61,7 @@ function fmtTime12h(time24: string): string {
 
 export function TimePicker({
   slug,
-  primaryServiceId,
+  basketItems,
   durationMinutes,
   enabledWeekdays,
   minDate,
@@ -55,6 +71,18 @@ export function TimePicker({
   onChange,
   locationId,
 }: TimePickerProps) {
+  // Stable serialised cart for the effect dep list. React's referential
+  // equality on basketItems would re-fetch on every parent render; the
+  // serialised form only changes when the cart actually changes.
+  const basketKey = useMemo(() => {
+    return basketItems
+      .map(
+        (b) =>
+          `${b.serviceId}|${b.variantId ?? ""}|${b.extraDurationMinutes ?? 0}|${b.preferredMemberId ?? ""}`,
+      )
+      .join("~");
+  }, [basketItems]);
+  const primaryServiceId = basketItems[0]?.serviceId ?? "";
   const [stripStart, setStripStart] = useState<Date>(() => {
     const t = new Date();
     t.setHours(0, 0, 0, 0);
@@ -80,23 +108,57 @@ export function TimePicker({
     return t;
   }, []);
 
-  // Fetch slots when date or duration changes. The early-return path is in
-  // an effect cleanup so state mutation stays out of the effect body.
+  // Fetch slots when date or basket changes. Two paths:
+  //   - Single-item cart: hit the legacy GET /book/info endpoint (cheaper,
+  //     keeps the old public flow unchanged).
+  //   - Multi-item cart: POST to /availability/basket so the server
+  //     validates EVERY item against members + resources + buffers. This
+  //     closes the gap where the old single-service estimate would show
+  //     times the submit handler later rejected.
   useEffect(() => {
-    if (!selectedDate || !primaryServiceId || durationMinutes <= 0) {
+    if (!selectedDate || basketItems.length === 0 || durationMinutes <= 0) {
       return () => undefined;
     }
     let cancelled = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- legitimate fetch trigger
     setLoadingSlots(true);
-    const locParam = locationId ? `&locationId=${encodeURIComponent(locationId)}` : "";
-    fetch(
-      `/api/public/book/info?slug=${encodeURIComponent(slug)}&bookingsDate=${selectedDate}&serviceId=${primaryServiceId}&durationMinutes=${durationMinutes}${locParam}`
-    )
-      .then((r) => r.json())
-      .then((data) => {
+
+    const fetchPromise =
+      basketItems.length === 1
+        ? (() => {
+            const locParam = locationId
+              ? `&locationId=${encodeURIComponent(locationId)}`
+              : "";
+            return fetch(
+              `/api/public/book/info?slug=${encodeURIComponent(slug)}&bookingsDate=${selectedDate}&serviceId=${primaryServiceId}&durationMinutes=${durationMinutes}${locParam}`,
+            )
+              .then((r) => r.json())
+              .then((data) =>
+                Array.isArray(data.availableSlots) ? (data.availableSlots as string[]) : [],
+              );
+          })()
+        : fetch(`/api/public/availability/basket`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              slug,
+              date: selectedDate,
+              items: basketItems,
+              locationId,
+            }),
+          })
+            .then((r) => r.json())
+            .then((data) => {
+              if (!Array.isArray(data.slots)) return [] as string[];
+              return data.slots.map(
+                (s: { time: string }) => s.time,
+              );
+            });
+
+    fetchPromise
+      .then((times) => {
         if (cancelled) return;
-        setSlots(Array.isArray(data.availableSlots) ? data.availableSlots : []);
+        setSlots(times);
       })
       .catch(() => {
         if (!cancelled) setSlots([]);
@@ -104,11 +166,17 @@ export function TimePicker({
       .finally(() => {
         if (!cancelled) setLoadingSlots(false);
       });
-    return () => { cancelled = true; };
-  }, [slug, selectedDate, primaryServiceId, durationMinutes, locationId]);
+    return () => {
+      cancelled = true;
+    };
+    // basketKey captures every basket field; primaryServiceId / durationMinutes
+    // are derived from it. The exhaustive-deps lint is satisfied by listing
+    // basketKey explicitly.
+  }, [slug, selectedDate, basketKey, primaryServiceId, durationMinutes, locationId, basketItems]);
 
   // When the date is cleared, drop any stale slots so the UI doesn't flash.
-  const displaySlots = selectedDate && primaryServiceId && durationMinutes > 0 ? slots : [];
+  const displaySlots =
+    selectedDate && basketItems.length > 0 && durationMinutes > 0 ? slots : [];
 
   const isDateEnabled = (d: Date) => {
     if (d < today) return false;

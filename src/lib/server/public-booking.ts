@@ -3,7 +3,13 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase-server";
 import type { Booking, MemberService, Service, TeamMember, WorkingHours } from "@/types/models";
 import { mapMemberServiceFromDB, mapServiceFromDB } from "@/lib/db/services";
-import { computeAvailability, type Slot } from "@/lib/services/availability";
+import {
+  computeAvailability,
+  computeBasketAvailability,
+  type BasketItemInput,
+  type BasketSlot,
+  type Slot,
+} from "@/lib/services/availability";
 import { maxDuration } from "@/lib/services/price";
 
 interface ResolvedBookingWorkspace {
@@ -468,4 +474,265 @@ export async function getAvailableTimeSlots(params: {
       return h * 60 + m > nowMin;
     })
     .map((s) => s.time);
+}
+
+// ─── Basket availability ───────────────────────────────────────────────
+//
+// Multi-service version of getAvailableTimeSlots. Loads every service in
+// the basket plus the day's bookings/blocks/resources in one pass and runs
+// computeBasketAvailability so the returned slots are valid for every item
+// end-to-end. Closes the gap where the old single-service estimate would
+// show times the submit handler later rejected.
+
+export interface BasketItemRequest {
+  serviceId: string;
+  variantId?: string;
+  /** Sum of selected add-on durations (minutes) for this item. */
+  extraDurationMinutes?: number;
+  /** Customer pinned an artist for THIS item (basket may mix pinned + anyone). */
+  preferredMemberId?: string;
+}
+
+export async function getAvailableBasketSlots(params: {
+  workspaceId: string;
+  date: string;
+  items: BasketItemRequest[];
+  defaultAvailability: AvailabilitySlot[];
+  locationId?: string;
+}): Promise<BasketSlot[]> {
+  if (params.items.length === 0) return [];
+
+  const supabase = await createAdminClient();
+  const itemServiceIds = Array.from(new Set(params.items.map((i) => i.serviceId)));
+
+  const [serviceRes, memberRes, memberServicesRes, bookingRes, blockRes] = await Promise.all([
+    supabase
+      .from("services")
+      .select("*")
+      .eq("workspace_id", params.workspaceId)
+      .in("id", itemServiceIds),
+    supabase
+      .from("workspace_members")
+      .select("id, status, working_hours, days_off, leave_periods")
+      .eq("workspace_id", params.workspaceId)
+      .eq("status", "active"),
+    supabase
+      .from("member_services")
+      .select("*")
+      .eq("workspace_id", params.workspaceId)
+      .in("service_id", itemServiceIds),
+    supabase
+      .from("bookings")
+      .select("id, assigned_to_id, start_at, end_at, service_id, status")
+      .eq("workspace_id", params.workspaceId)
+      .neq("status", "cancelled")
+      .gte("start_at", `${params.date}T00:00:00`)
+      .lte("start_at", `${params.date}T23:59:59`),
+    supabase
+      .from("calendar_blocks")
+      .select("team_member_id, start_time, end_time")
+      .eq("workspace_id", params.workspaceId)
+      .gte("start_time", `${params.date}T00:00:00`)
+      .lte("start_time", `${params.date}T23:59:59`),
+  ]);
+
+  const serviceRows = (serviceRes.data ?? []) as Record<string, unknown>[];
+  // If any basket item references a service we couldn't load, the basket
+  // can't be served — bail rather than silently dropping the item.
+  if (serviceRows.length !== itemServiceIds.length) return [];
+
+  const serviceById = new Map<string, Service>();
+  for (const row of serviceRows) {
+    const svc = mapServiceFromDB(row);
+    serviceById.set(svc.id, svc);
+  }
+
+  // Resource-by-location: every required resource on every basket service
+  // must be physically present at the picked location. If even one isn't,
+  // the basket is dead.
+  const allRequiredResourceIds = Array.from(
+    new Set(
+      Array.from(serviceById.values()).flatMap(
+        (s) => s.requiredResourceIds ?? [],
+      ),
+    ),
+  );
+  if (params.locationId && allRequiredResourceIds.length > 0) {
+    const { data: rsrcRows } = await supabase
+      .from("resources")
+      .select("id, location_ids")
+      .eq("workspace_id", params.workspaceId)
+      .in("id", allRequiredResourceIds);
+    const allHere = (rsrcRows ?? []).every((r) => {
+      const ids = (r.location_ids as string[] | null) ?? [];
+      return ids.length === 0 || ids.includes(params.locationId!);
+    });
+    if (!allHere) return [];
+  }
+
+  const memberRows = (memberRes.data ?? []) as Array<{
+    id: string;
+    status?: string;
+    working_hours?: Record<string, WorkingHours>;
+    days_off?: string[];
+    leave_periods?: { start: string; end: string; reason?: string }[];
+  }>;
+  const members = memberRows.map((m) => ({
+    id: m.id,
+    status: (m.status ?? "active") as TeamMember["status"],
+    workingHours: m.working_hours ?? {},
+    daysOff: m.days_off ?? [],
+    leavePeriods: m.leave_periods ?? [],
+  })) as unknown as TeamMember[];
+
+  const allMemberServices: MemberService[] = (memberServicesRes.data ?? []).map(
+    (row) => mapMemberServiceFromDB(row as Record<string, unknown>),
+  );
+
+  // Buffer-inflate existing bookings the same way the single-service loader
+  // does — a "15-min cleanup after" must block the chair, not just the
+  // visible service window. Pre-fetch buffers for every service that has a
+  // booking on the day (basket services already loaded; additional services
+  // come from bookings on the date).
+  const otherServiceIds = Array.from(
+    new Set(
+      [
+        ...itemServiceIds,
+        ...((bookingRes.data ?? []).map((b) => b.service_id as string | null)),
+      ].filter((id): id is string => Boolean(id)),
+    ),
+  );
+  const bufByService = new Map<string, { before: number; after: number }>();
+  const reqByService = new Map<string, string[]>();
+  if (otherServiceIds.length > 0) {
+    const { data: bufRows } = await supabase
+      .from("services")
+      .select("id, buffer_before, buffer_after, buffer_minutes, required_resource_ids")
+      .in("id", otherServiceIds);
+    for (const r of (bufRows ?? []) as Array<{
+      id: string;
+      buffer_before: number | null;
+      buffer_after: number | null;
+      buffer_minutes: number | null;
+      required_resource_ids: string[] | null;
+    }>) {
+      const before = r.buffer_before ?? 0;
+      const after = r.buffer_after ?? r.buffer_minutes ?? 0;
+      bufByService.set(r.id, { before, after });
+      reqByService.set(r.id, r.required_resource_ids ?? []);
+    }
+  }
+
+  const bookingRows = (bookingRes.data ?? []) as Array<{
+    id: string;
+    assigned_to_id: string | null;
+    start_at: string;
+    end_at: string;
+    service_id: string | null;
+  }>;
+  const bookings = bookingRows.map((b) => {
+    const buf = (b.service_id && bufByService.get(b.service_id)) || { before: 0, after: 0 };
+    const inflStart = new Date(new Date(b.start_at).getTime() - buf.before * 60_000).toISOString();
+    const inflEnd = new Date(new Date(b.end_at).getTime() + buf.after * 60_000).toISOString();
+    return {
+      id: b.id,
+      date: params.date,
+      assignedToId: b.assigned_to_id ?? undefined,
+      startAt: inflStart,
+      endAt: inflEnd,
+      serviceId: b.service_id ?? undefined,
+    };
+  }) as unknown as Booking[];
+
+  // Calendar blocks → busy intervals against the assigned member (or every
+  // member if workspace-wide).
+  type BlockRow = { team_member_id: string | null; start_time: string; end_time: string };
+  const blockRows = (blockRes.data ?? []) as BlockRow[];
+  for (const block of blockRows) {
+    if (block.team_member_id) {
+      bookings.push({
+        id: `block-${block.team_member_id}-${block.start_time}`,
+        date: params.date,
+        assignedToId: block.team_member_id,
+        startAt: block.start_time,
+        endAt: block.end_time,
+      } as unknown as Booking);
+    } else {
+      for (const m of memberRows) {
+        bookings.push({
+          id: `block-all-${m.id}-${block.start_time}`,
+          date: params.date,
+          assignedToId: m.id,
+          startAt: block.start_time,
+          endAt: block.end_time,
+        } as unknown as Booking);
+      }
+    }
+  }
+
+  // Resource busy-by-day: every basket service's required resources must be
+  // honored, so build the busy map across the union of all required ids.
+  let resourceBusyByDay: Map<string, { start: number; end: number }[]> | undefined;
+  if (allRequiredResourceIds.length > 0) {
+    resourceBusyByDay = new Map();
+    for (const b of bookingRows) {
+      const reqs = (b.service_id && reqByService.get(b.service_id)) || [];
+      if (reqs.length === 0) continue;
+      const buf = (b.service_id && bufByService.get(b.service_id)) || { before: 0, after: 0 };
+      const start =
+        new Date(b.start_at).getHours() * 60 +
+        new Date(b.start_at).getMinutes() -
+        buf.before;
+      const end =
+        new Date(b.end_at).getHours() * 60 +
+        new Date(b.end_at).getMinutes() +
+        buf.after;
+      for (const rid of reqs) {
+        const list = resourceBusyByDay.get(rid) ?? [];
+        list.push({ start, end });
+        resourceBusyByDay.set(rid, list);
+      }
+    }
+  }
+
+  const workingHours = availabilityToWorkingHours(params.defaultAvailability);
+
+  // Build the engine's per-item input. Each item carries its service +
+  // member_services scoped to that service, so the engine's eligibility
+  // check is per-item (item 1 may need artist A, item 2 may need artist B).
+  const engineItems: BasketItemInput[] = params.items.map((req) => {
+    const svc = serviceById.get(req.serviceId)!;
+    const itemMemberServices = allMemberServices.filter(
+      (ms) => ms.serviceId === req.serviceId,
+    );
+    return {
+      service: svc,
+      variantId: req.variantId,
+      extraDurationMinutes: req.extraDurationMinutes,
+      preferredMemberId: req.preferredMemberId,
+      memberServices: itemMemberServices,
+    };
+  });
+
+  const slots = computeBasketAvailability({
+    date: params.date,
+    items: engineItems,
+    workingHours,
+    bookings,
+    members,
+    resourceBusyByDay,
+    locationId: params.locationId,
+    step: 30,
+  });
+
+  // Same "today filter" as the single-service path — drop slots that have
+  // already passed wall-clock time when the customer is browsing today.
+  const today = new Date();
+  const isToday = params.date === today.toISOString().split("T")[0];
+  if (!isToday) return slots;
+  const nowMin = today.getHours() * 60 + today.getMinutes();
+  return slots.filter((s) => {
+    const [h, m] = s.time.split(":").map(Number);
+    return h * 60 + m > nowMin;
+  });
 }
