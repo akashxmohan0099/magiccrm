@@ -6,7 +6,7 @@ import type { TeamMember } from "@/types/models";
 export type Layout = "classic" | "compact" | "grid";
 
 /** Step in the public booking flow — drives titles + back-button breadcrumbs. */
-export type Step = "menu" | "artist" | "date" | "time" | "details" | "confirm";
+export type Step = "menu" | "artist" | "schedule" | "details" | "confirm";
 
 export interface BasketItem {
   serviceId: string;

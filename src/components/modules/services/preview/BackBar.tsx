@@ -25,8 +25,7 @@ export function BackBar({
   const titles: Record<Step, string> = {
     menu: businessName,
     artist: "Choose your artist",
-    date: "Pick a date",
-    time: "Pick a time",
+    schedule: "Pick a date & time",
     details: "Your details",
     confirm: "Confirmed",
   };

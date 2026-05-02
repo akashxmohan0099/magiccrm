@@ -37,6 +37,17 @@ export function CartSidebar({
         : `${hours}h`
       : `${mins} min`;
 
+  // Buffers don't change the customer-visible end time, but they DO block
+  // the chair — surface that explicitly so the operator sees the slot the
+  // scheduler will actually carve out.
+  const bufferTotal = items.reduce(
+    (s, it) =>
+      s +
+      (it.service.bufferBefore ?? 0) +
+      (it.service.bufferAfter ?? 0),
+    0,
+  );
+
   return (
     <aside className="lg:sticky lg:top-4 self-start">
       <div className="bg-card-bg border border-border-light rounded-3xl overflow-hidden shadow-[0_24px_60px_-20px_rgba(0,0,0,0.12)]">
@@ -53,6 +64,11 @@ export function CartSidebar({
             <span className="opacity-50">·</span>
             <span className="tabular-nums">{durationLabel}</span>
           </div>
+          {bufferTotal > 0 && (
+            <p className="text-[10px] text-text-tertiary mt-1.5 tabular-nums">
+              + {bufferTotal}m chair buffer
+            </p>
+          )}
         </div>
 
         {/* Items */}
@@ -114,6 +130,31 @@ export function CartSidebar({
           <p className="text-[28px] font-bold text-foreground tabular-nums leading-none">
             ${totalPrice}
           </p>
+          {(() => {
+            // Deposit due today (mocked from per-service depositType /
+            // depositAmount). Mirrors `lineDeposit` from the public helpers
+            // so the preview matches the public flow's payment breakdown.
+            const dueToday = items.reduce((sum, it) => {
+              const s = it.service;
+              if (s.depositType === "fixed") {
+                return sum + Math.max(0, s.depositAmount);
+              }
+              if (s.depositType === "percentage") {
+                const pct = Math.max(0, Math.min(100, s.depositAmount));
+                return sum + Math.round(it.price * pct) / 100;
+              }
+              return sum;
+            }, 0);
+            if (dueToday <= 0) return null;
+            return (
+              <div className="mt-3 flex items-center justify-between bg-surface rounded-xl px-3 py-2 text-left">
+                <p className="text-[12px] text-text-secondary">Pay today (deposit)</p>
+                <p className="text-[13px] font-semibold text-foreground tabular-nums">
+                  ${dueToday}
+                </p>
+              </div>
+            );
+          })()}
         </div>
 
         {/* CTA */}

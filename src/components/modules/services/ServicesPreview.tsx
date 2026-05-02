@@ -29,8 +29,7 @@ import { BackBar } from "./preview/BackBar";
 import { CategoryAnchors } from "./preview/CategoryAnchors";
 import { FeaturedRow } from "./preview/FeaturedRow";
 import { BasketArtistPicker } from "./preview/steps/BasketArtistPicker";
-import { DatePicker } from "./preview/steps/DatePicker";
-import { TimePicker } from "./preview/steps/TimePicker";
+import { Schedule } from "./preview/steps/Schedule";
 import { DetailsForm } from "./preview/steps/DetailsForm";
 import { ConfirmScreen } from "./preview/steps/ConfirmScreen";
 import { ConfigureServiceModal } from "./preview/ConfigureServiceModal";
@@ -84,39 +83,12 @@ export function ServicesPreview({ open, onClose, fullscreen, onToggleFullscreen 
     );
   };
 
-  // The preview renders a self-contained mock of the booking flow — its
-  // availability, pricing, and validation paths intentionally diverge from
-  // the live `/book/[slug]` route. We surface a banner + "open the real
-  // page" link so operators know to verify the actual customer experience
-  // out-of-band. Long-term this preview should converge on the real
-  // public components; until then the banner is the honesty layer.
-  const liveBookingHref = settings?.bookingPageSlug
-    ? `/book/${settings.bookingPageSlug}`
-    : null;
   const flow = (
-    <div>
-      <div className="px-4 py-2.5 bg-amber-50 border-b border-amber-200 text-[12px] text-amber-900 flex items-center justify-between gap-3">
-        <span>
-          Preview only — uses mock availability + pricing. Test the real flow
-          for accurate slot times, deposits, and gating.
-        </span>
-        {liveBookingHref ? (
-          <a
-            href={liveBookingHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-semibold underline shrink-0"
-          >
-            Open live page →
-          </a>
-        ) : null}
-      </div>
-      <BookingFlow
-        layout={layout}
-        coverImage={coverImage}
-        fontPairing={fontPairing}
-      />
-    </div>
+    <BookingFlow
+      layout={layout}
+      coverImage={coverImage}
+      fontPairing={fontPairing}
+    />
   );
   const panel = styleMode ? (
     <StylePanel
@@ -313,6 +285,11 @@ function BookingFlow({
           memberId,
           memberPriceOverride: memberOverride,
           variantId,
+          // Pass startAt once the operator picks a slot so dynamic-pricing
+          // rules (off-peak / premium hours) actually kick in inside the
+          // preview — matching the real public flow.
+          startAt:
+            flow.date && flow.time ? `${flow.date}T${flow.time}:00` : undefined,
         });
         const baseDuration = resolveDuration(service, { variantId, memberId });
         const selectedAddons = (service.addons ?? []).filter((a) =>
@@ -332,7 +309,14 @@ function BookingFlow({
           baseDuration,
         };
       }),
-    [basketResolved, flow.artist, flow.useArtistPerService, getMemberPriceOverride],
+    [
+      basketResolved,
+      flow.artist,
+      flow.useArtistPerService,
+      flow.date,
+      flow.time,
+      getMemberPriceOverride,
+    ],
   );
   const totalDuration = resolvedItems.reduce((sum, i) => sum + i.duration, 0);
   const totalPrice = resolvedItems.reduce((sum, i) => sum + i.price, 0);
@@ -348,6 +332,38 @@ function BookingFlow({
       (acc, w) => acc.filter((d) => w.includes(d)),
       lists[0],
     );
+  }, [basketServices]);
+
+  // Per-service booking-window gates (mirrors /book/[slug]/page.tsx). The
+  // basket binds the operator's preview to the most restrictive value:
+  // MAX of minNoticeHours (latest "earliest bookable") and MIN of
+  // maxAdvanceDays (earliest "latest bookable").
+  const previewMinDate = useMemo<Date | undefined>(() => {
+    if (basketServices.length === 0) return undefined;
+    let maxNotice = 0;
+    for (const svc of basketServices) {
+      const n = svc.minNoticeHours;
+      if (typeof n === "number" && n > maxNotice) maxNotice = n;
+    }
+    if (maxNotice <= 0) return undefined;
+    const d = new Date();
+    d.setHours(d.getHours() + maxNotice);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, [basketServices]);
+
+  const previewMaxDate = useMemo<Date | undefined>(() => {
+    if (basketServices.length === 0) return undefined;
+    let minAdvance = Infinity;
+    for (const svc of basketServices) {
+      const a = svc.maxAdvanceDays;
+      if (typeof a === "number" && a > 0 && a < minAdvance) minAdvance = a;
+    }
+    if (!Number.isFinite(minAdvance)) return undefined;
+    const d = new Date();
+    d.setDate(d.getDate() + minAdvance);
+    d.setHours(0, 0, 0, 0);
+    return d;
   }, [basketServices]);
 
   // Aggregated intake questions across the basket. Order: per service in
@@ -467,7 +483,7 @@ function BookingFlow({
     // is reachable.
     if (basketServices.length === 1 && eligibleArtists.length <= 1) {
       setFlow((f) => ({ ...f, artist: eligibleArtists[0] ?? null }));
-      setStep("date");
+      setStep("schedule");
       return;
     }
     setStep("artist");
@@ -486,10 +502,9 @@ function BookingFlow({
             businessName={businessName}
             onBack={() => {
               if (step === "artist") setStep("menu");
-              else if (step === "date") {
+              else if (step === "schedule") {
                 setStep(eligibleArtists.length <= 1 ? "menu" : "artist");
-              } else if (step === "time") setStep("date");
-              else if (step === "details") setStep("time");
+              } else if (step === "details") setStep("schedule");
             }}
           />
         </div>
@@ -576,30 +591,28 @@ function BookingFlow({
               onChangeItemArtist={setItemArtist}
               onPick={(artist) => {
                 setFlow((f) => ({ ...f, artist }));
-                setStep("date");
+                setStep("schedule");
               }}
-              onContinuePerService={() => setStep("date")}
+              onContinuePerService={() => setStep("schedule")}
               onBackToMenu={() => setStep("menu")}
             />
           )}
 
-          {step === "date" && (
-            <DatePicker
-              primaryColor={primaryColor}
-              selected={flow.date}
-              allowedWeekdays={allowedWeekdays}
-              onPick={(date) => {
-                setFlow((f) => ({ ...f, date }));
-                setStep("time");
-              }}
-            />
-          )}
-
-          {step === "time" && flow.date && (
-            <TimePicker
+          {step === "schedule" && (
+            <Schedule
               primaryColor={primaryColor}
               duration={totalDuration}
-              onPick={(time) => {
+              selectedDate={flow.date}
+              selectedTime={flow.time}
+              allowedWeekdays={allowedWeekdays}
+              minDate={previewMinDate}
+              maxDate={previewMaxDate}
+              onPickDate={(date) => {
+                // Picking a new date in the calendar resets any pre-existing
+                // time so the operator doesn't carry a stale slot through.
+                setFlow((f) => ({ ...f, date, time: null }));
+              }}
+              onPickTime={(time) => {
                 setFlow((f) => ({ ...f, time }));
                 setStep("details");
               }}
@@ -611,6 +624,7 @@ function BookingFlow({
               flow={flow}
               primaryColor={primaryColor}
               intakeQuestions={intakeQuestions}
+              basketServices={basketServices}
               onChange={(patch) => setFlow((f) => ({ ...f, ...patch }))}
               onIntakeChange={(qid, value) =>
                 setFlow((f) => ({

@@ -9,6 +9,7 @@ export function DetailsForm({
   flow,
   primaryColor,
   intakeQuestions,
+  basketServices = [],
   onChange,
   onIntakeChange,
   onSubmit,
@@ -16,6 +17,9 @@ export function DetailsForm({
   flow: FlowState;
   primaryColor: string;
   intakeQuestions: { service: Service; question: ServiceIntakeQuestion }[];
+  /** Services in the basket — surfaces patch-test + linked-form notices
+   *  even when no inline questions exist. */
+  basketServices?: Service[];
   onChange: (patch: Partial<FlowState>) => void;
   onIntakeChange: (questionId: string, value: string) => void;
   onSubmit: () => void;
@@ -40,8 +44,39 @@ export function DetailsForm({
     return Array.from(map.values());
   }, [intakeQuestions]);
 
+  // Patch-test notice (mirrors the public flow). One notice line per
+  // unique patch-test category in the basket.
+  const patchTestServices = basketServices.filter((s) => s.requiresPatchTest);
+  const linkedFormServices = basketServices.filter(
+    (s) => Boolean(s.intakeFormId) && (s.intakeQuestions ?? []).length === 0,
+  );
+
   return (
     <div className="space-y-4">
+      {patchTestServices.length > 0 && (
+        <div className="bg-rose-50 border border-rose-100 rounded-2xl p-4">
+          <p className="text-[11px] font-semibold text-rose-700 uppercase tracking-wider mb-1">
+            Patch test required
+          </p>
+          <p className="text-[12px] text-rose-900/90">
+            {patchTestServices.length === 1
+              ? `${patchTestServices[0].name} requires a patch test on file before your appointment.`
+              : `These services require a patch test: ${patchTestServices.map((s) => s.name).join(", ")}.`}
+          </p>
+        </div>
+      )}
+      {linkedFormServices.length > 0 && (
+        <div className="bg-card-bg border border-border-light rounded-2xl p-4">
+          <p className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider mb-1">
+            Intake form
+          </p>
+          <p className="text-[12px] text-text-secondary">
+            We&apos;ll email you a short intake form after booking
+            {linkedFormServices.length > 1 ? " for each service" : ""}.
+            Please fill it before your appointment.
+          </p>
+        </div>
+      )}
       <div className="bg-card-bg border border-border-light rounded-2xl p-5 space-y-4">
         <div>
           <label className="text-[12px] font-medium text-foreground block mb-1.5">Full name</label>

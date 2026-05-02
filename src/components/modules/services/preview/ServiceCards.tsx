@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Clock, Users, ChevronDown, ChevronRight } from "lucide-react";
+import { Clock, Users, ChevronDown, ChevronRight, Package } from "lucide-react";
 import type { Service, TeamMember } from "@/types/models";
 import { isPromoActive } from "@/lib/services/price";
+import { useServicesStore } from "@/store/services";
 import { PriceDisplay } from "./PriceDisplay";
 import { AddPill } from "./AddPill";
 import { ArtistChip } from "./ArtistChip";
@@ -29,8 +30,27 @@ export function ServiceCardPreview({
   hidePromoLabel?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const allServices = useServicesStore((s) => s.services);
   const initial = service.name.charAt(0).toUpperCase();
-  const canExpand = !!service.description || providers.length > 0;
+  // Resolve bundle inclusions inline (mirrors mapPublicServiceFromDB's
+  // packageInclusions). Only used when the service is a package.
+  const packageInclusions = service.isPackage
+    ? (service.packageItems ?? [])
+        .map((it) => {
+          const child = allServices.find((s) => s.id === it.serviceId);
+          if (!child) return null;
+          const variant = it.variantId
+            ? child.variants?.find((v) => v.id === it.variantId)
+            : undefined;
+          return {
+            name: child.name,
+            variantName: variant?.name,
+            quantity: typeof it.quantity === "number" && it.quantity > 0 ? it.quantity : 1,
+          };
+        })
+        .filter((x): x is { name: string; variantName: string | undefined; quantity: number } => x !== null)
+    : [];
+  const canExpand = !!service.description || providers.length > 0 || packageInclusions.length > 0;
 
   return (
     <div
@@ -81,6 +101,12 @@ export function ServiceCardPreview({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
             <p className={`text-[15px] font-semibold text-foreground truncate ${headingClass}`}>{service.name}</p>
+            {service.isPackage && (
+              <span className="inline-flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-violet-100 text-violet-700">
+                <Package className="w-3 h-3" />
+                Package
+              </span>
+            )}
             {!hidePromoLabel && service.promoLabel && isPromoActive(service) && (
               <span
                 className="text-[9px] font-semibold px-1.5 py-0.5 rounded text-white"
@@ -94,9 +120,43 @@ export function ServiceCardPreview({
                 By approval
               </span>
             )}
+            {service.allowGroupBooking && (
+              <span className="text-[9px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">
+                +{(service.maxGroupSize ?? 4) - 1} guests
+              </span>
+            )}
+            {service.requiresPatchTest && (
+              <span className="text-[9px] font-semibold text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded">
+                Patch test
+              </span>
+            )}
+            {service.requiresCardOnFile && (
+              <span className="text-[9px] font-semibold text-text-tertiary bg-surface px-1.5 py-0.5 rounded">
+                Card required
+              </span>
+            )}
+            {service.tags?.slice(0, 2).map((t) => (
+              <span
+                key={t}
+                className="text-[9px] font-medium text-text-tertiary bg-surface px-1.5 py-0.5 rounded border border-border-light"
+              >
+                {t}
+              </span>
+            ))}
           </div>
           {service.description && !expanded && (
             <p className="text-[12px] text-text-secondary line-clamp-2 mb-1.5">{service.description}</p>
+          )}
+          {!expanded && packageInclusions.length > 0 && (
+            <p className="text-[11px] text-text-tertiary mb-1.5">
+              Includes:{" "}
+              {packageInclusions
+                .map((inc) => {
+                  const label = inc.variantName ? `${inc.name} (${inc.variantName})` : inc.name;
+                  return inc.quantity > 1 ? `${label} ×${inc.quantity}` : label;
+                })
+                .join(", ")}
+            </p>
           )}
           <div className="flex items-center gap-3 text-[12px] text-text-tertiary">
             <span className="flex items-center gap-1 tabular-nums">
