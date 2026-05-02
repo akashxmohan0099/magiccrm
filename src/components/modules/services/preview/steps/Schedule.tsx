@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { addMinutes } from "../helpers";
 
@@ -12,6 +12,24 @@ function fmtTime12h(time24: string): string {
   const suffix = h >= 12 ? "PM" : "AM";
   const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
   return `${h12}:${mStr} ${suffix}`;
+}
+
+// Local-date ISO formatter. `Date.prototype.toISOString` always returns UTC,
+// so a local date like 2 May at 00:00 in +10 produces "2026-05-01" — clicking
+// May 2 silently selects May 1. We format from the local components instead.
+function fmtLocalISO(d: Date): string {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+// Inverse: parse a "YYYY-MM-DD" string as a LOCAL date. `new Date(iso)` treats
+// the string as UTC midnight, which then shifts when formatted with
+// toLocaleDateString in negative timezones.
+function parseLocalISO(iso: string): Date {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, (m ?? 1) - 1, d ?? 1);
 }
 
 /**
@@ -68,7 +86,7 @@ export function Schedule({
     }
     for (let d = 1; d <= daysInMonth; d++) {
       const date = new Date(year, monthIdx, d);
-      const iso = date.toISOString().slice(0, 10);
+      const iso = fmtLocalISO(date);
       const past = date < today;
       const isToday = date.getTime() === today.getTime();
       const weekday = date.getDay();
@@ -92,6 +110,13 @@ export function Schedule({
 
   // Auto-pick the first allowed day from today on first render so the time
   // grid has something to show. Skip when the parent already has a date.
+  // The latest onPickDate is held in a ref so we don't re-fire this effect
+  // every time the parent re-renders (callers usually pass an inline arrow
+  // — without the ref we'd ping-pong with the parent's state updates).
+  const onPickDateRef = useRef(onPickDate);
+  useEffect(() => {
+    onPickDateRef.current = onPickDate;
+  });
   useEffect(() => {
     if (selectedDate) return;
     const today = new Date();
@@ -105,11 +130,11 @@ export function Schedule({
       const okMax = !maxDate || d <= maxDate;
       const ok = okWeekday && okMin && okMax;
       if (ok) {
-        onPickDate(d.toISOString().slice(0, 10));
+        onPickDateRef.current(fmtLocalISO(d));
         return;
       }
     }
-  }, [selectedDate, allowedWeekdays, minDate, maxDate, onPickDate]);
+  }, [selectedDate, allowedWeekdays, minDate, maxDate]);
 
   const slots = useMemo(() => {
     const out: string[] = [];
@@ -123,8 +148,7 @@ export function Schedule({
 
   const selectedDateLabel = useMemo(() => {
     if (!selectedDate) return null;
-    const d = new Date(selectedDate);
-    return d.toLocaleDateString(undefined, {
+    return parseLocalISO(selectedDate).toLocaleDateString(undefined, {
       weekday: "long",
       month: "long",
       day: "numeric",
