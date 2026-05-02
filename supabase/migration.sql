@@ -1643,3 +1643,38 @@ BEGIN
     ALTER TABLE services ADD CONSTRAINT services_price_nonneg CHECK (price >= 0);
   END IF;
 END $$;
+
+-- Optional % off promo, alternative to promo_price. Mutually exclusive in
+-- the editor; if both are set on a row, displayPrice() prefers promo_percent.
+ALTER TABLE services ADD COLUMN IF NOT EXISTS promo_percent NUMERIC(5,2);
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'services_promo_percent_range'
+  ) THEN
+    ALTER TABLE services ADD CONSTRAINT services_promo_percent_range
+      CHECK (promo_percent IS NULL OR (promo_percent > 0 AND promo_percent < 100));
+  END IF;
+END $$;
+
+-- Optional upper bound for "From" pricing. NULL = open-ended ("From $X").
+-- When set, the menu renders "$price–$price_max" instead of the prefix.
+-- Only meaningful when price_type = 'from'; other modes ignore it.
+ALTER TABLE services ADD COLUMN IF NOT EXISTS price_max NUMERIC(12,2);
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'services_price_max_nonneg'
+  ) THEN
+    ALTER TABLE services ADD CONSTRAINT services_price_max_nonneg
+      CHECK (price_max IS NULL OR price_max >= 0);
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'services_price_max_gte_price'
+  ) THEN
+    ALTER TABLE services ADD CONSTRAINT services_price_max_gte_price
+      CHECK (price_max IS NULL OR price_max >= price);
+  END IF;
+END $$;

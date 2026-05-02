@@ -73,6 +73,8 @@ export interface FormState {
   // Pricing
   priceType: ServicePriceType;
   price: string; // base / fixed / "from" anchor
+  /** Optional upper bound for "from" pricing — empty = open-ended "From $X". */
+  priceMax: string;
   variants: VariantInput[];
   priceTiers: TierInput[];
   addons: AddonInput[];
@@ -104,7 +106,10 @@ export interface FormState {
   intakeFormId: string;
   featured: boolean;
   promoLabel: string;
+  /** Discount type — picks which of promoPrice / promoPercent we write. */
+  promoType: "fixed" | "percent";
   promoPrice: string;
+  promoPercent: string;
   promoStart: string;
   promoEnd: string;
   tagsRaw: string; // comma-separated for input

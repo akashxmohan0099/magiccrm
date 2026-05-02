@@ -223,6 +223,11 @@ export interface Service {
   description: string;
   duration: number;           // minutes — total = activeBefore + processing + activeAfter when split
   price: number;              // base price; for tiered/variants this is a fallback / "from" anchor
+  /** Optional upper bound for "from" pricing — when set, menu shows "$min–$max" instead of "From $min". */
+  priceMax?: number;
+  /** Optional % off promo, alternative to promoPrice. Mutually exclusive in
+   *  the editor; if both ever exist on a row, promoPercent wins. */
+  promoPercent?: number;
   /** Legacy free-text category. Kept for back-compat; new code uses categoryId. */
   category?: string;
   /** Canonical category link. Falls back to `category` (free-text) when absent.

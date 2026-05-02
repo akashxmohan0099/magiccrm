@@ -1,15 +1,16 @@
 "use client";
 
-import { FormField } from "@/components/ui/FormField";
 import { LogoUpload } from "@/components/ui/LogoUpload";
 import type { FormState } from "./types";
 
-const inputClass =
-  "w-full px-3.5 py-2.5 bg-surface border border-border-light rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30";
+const smallInputClass =
+  "w-full px-3 py-2 bg-surface border border-border-light rounded-lg text-[13px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30";
 
 /**
  * Top of Essentials — Name, Category, Description, Image. Pure inputs that
- * write straight to the form state. No cross-field logic.
+ * write straight to the form state. No cross-field logic. Uses the same
+ * dense small-input pattern as every other drawer section so the form
+ * reads as one consistent surface.
  */
 export function BasicsBlock({
   form,
@@ -23,23 +24,30 @@ export function BasicsBlock({
   categoryOptions: string[];
 }) {
   return (
-    <div className="space-y-1">
-      <FormField label="Name" required error={errors.name}>
+    <div className="space-y-3">
+      <div>
+        <label className="text-[11px] text-text-tertiary block mb-1">
+          Name <span className="text-red-500">*</span>
+        </label>
         <input
           autoFocus
           type="text"
           value={form.name}
           onChange={(e) => update("name", e.target.value)}
           placeholder="e.g. Bridal Trial"
-          className={inputClass}
+          className={smallInputClass}
         />
-      </FormField>
+        {errors.name && (
+          <p className="text-[11px] text-red-500 mt-1">{errors.name}</p>
+        )}
+      </div>
 
-      <FormField label="Category">
+      <div>
+        <label className="text-[11px] text-text-tertiary block mb-1">Category</label>
         <select
           value={form.category}
           onChange={(e) => update("category", e.target.value)}
-          className={inputClass}
+          className={smallInputClass}
         >
           {categoryOptions.map((c) => (
             <option key={c} value={c}>
@@ -47,21 +55,22 @@ export function BasicsBlock({
             </option>
           ))}
         </select>
-      </FormField>
+      </div>
 
-      <FormField label="Description">
+      <div>
+        <label className="text-[11px] text-text-tertiary block mb-1">Description</label>
         <textarea
           value={form.description}
           onChange={(e) => update("description", e.target.value)}
           placeholder="What's included in this service…"
           rows={2}
-          className={`${inputClass} resize-none`}
+          className={`${smallInputClass} resize-none`}
         />
-      </FormField>
+      </div>
 
       <LogoUpload
-        label="Image (1:1)"
-        hint="Square photo shown on the booking page. Falls back to a tinted letter card."
+        compact
+        label="Image"
         value={form.imageUrl}
         onChange={(v) => update("imageUrl", v)}
       />

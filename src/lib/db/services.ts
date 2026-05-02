@@ -32,6 +32,8 @@ export interface PublicService {
   imageUrl: string;
   duration: number;
   price: number;
+  /** Optional upper bound for "from" pricing — when set, render "$min–$max". */
+  priceMax?: number;
   category: string;
   priceType: string;
   variants: unknown[];
@@ -40,10 +42,30 @@ export interface PublicService {
   addonGroups: unknown[];
   depositType: string;
   depositAmount: number;
+  /** Who the deposit applies to: 'all' | 'new' | 'flagged'. Defaults to 'all'. */
+  depositAppliesTo?: string;
+  /** % of price charged when client doesn't show. Surfaced in the booking
+   *  disclosure so the customer sees the penalty before they agree. */
+  depositNoShowFee?: number;
+  /** Hours after booking before auto-cancel kicks in if the deposit isn't
+   *  paid. Used to inform the customer of the deadline. */
+  depositAutoCancelHours?: number;
+  /** Hours before the booking that the client can cancel for free. */
+  cancellationWindowHours?: number;
+  /** % charged when client cancels inside the window. */
+  cancellationFee?: number;
   requiresCardOnFile: boolean;
+  /** When true, the customer sees a "needs approval" notice before submitting. */
+  requiresConfirmation?: boolean;
+  /** Min lead time (hrs) — the date picker hides slots inside this window. */
+  minNoticeHours?: number;
+  /** Max future window (days) — date picker hides slots beyond this horizon. */
+  maxAdvanceDays?: number;
   requiresPatchTest: boolean;
   patchTestValidityDays?: number;
   patchTestMinLeadHours?: number;
+  /** Patch-test category clients must have on file. Matches ClientPatchTest.category. */
+  patchTestCategory?: string;
   intakeQuestions: unknown[];
   allowGroupBooking: boolean;
   maxGroupSize?: number;
@@ -55,6 +77,8 @@ export interface PublicService {
   featured: boolean;
   promoLabel: string;
   promoPrice?: number;
+  /** % off — alternative to promoPrice. */
+  promoPercent?: number;
   promoStart?: string;
   promoEnd?: string;
   tags: string[];
@@ -75,6 +99,7 @@ export function mapPublicServiceFromDB(row: Record<string, unknown>): PublicServ
     imageUrl: (row.image_url as string | null) ?? "",
     duration: Number(row.duration ?? 60),
     price: Number(row.price ?? 0),
+    priceMax: row.price_max != null ? Number(row.price_max) : undefined,
     category: (row.category as string) ?? "",
     priceType: (row.price_type as string) || "fixed",
     variants: (row.variants as unknown[]) || [],
@@ -83,12 +108,27 @@ export function mapPublicServiceFromDB(row: Record<string, unknown>): PublicServ
     addonGroups: (row.addon_groups as unknown[]) || [],
     depositType: (row.deposit_type as string) || "none",
     depositAmount: Number(row.deposit_amount ?? 0),
+    depositAppliesTo: (row.deposit_applies_to as string) || undefined,
+    depositNoShowFee:
+      row.deposit_no_show_fee != null ? Number(row.deposit_no_show_fee) : undefined,
+    depositAutoCancelHours:
+      row.deposit_auto_cancel_hours != null ? Number(row.deposit_auto_cancel_hours) : undefined,
+    cancellationWindowHours:
+      row.cancellation_window_hours != null ? Number(row.cancellation_window_hours) : undefined,
+    cancellationFee:
+      row.cancellation_fee != null ? Number(row.cancellation_fee) : undefined,
     requiresCardOnFile: Boolean(row.requires_card_on_file),
+    requiresConfirmation: Boolean(row.requires_confirmation),
+    minNoticeHours:
+      row.min_notice_hours != null ? Number(row.min_notice_hours) : undefined,
+    maxAdvanceDays:
+      row.max_advance_days != null ? Number(row.max_advance_days) : undefined,
     requiresPatchTest: Boolean(row.requires_patch_test),
     patchTestValidityDays:
       row.patch_test_validity_days != null ? Number(row.patch_test_validity_days) : undefined,
     patchTestMinLeadHours:
       row.patch_test_min_lead_hours != null ? Number(row.patch_test_min_lead_hours) : undefined,
+    patchTestCategory: (row.patch_test_category as string) || undefined,
     intakeQuestions: (row.intake_questions as unknown[]) || [],
     allowGroupBooking: Boolean(row.allow_group_booking),
     maxGroupSize: row.max_group_size != null ? Number(row.max_group_size) : undefined,
@@ -98,6 +138,8 @@ export function mapPublicServiceFromDB(row: Record<string, unknown>): PublicServ
     featured: Boolean(row.featured),
     promoLabel: (row.promo_label as string | null) ?? "",
     promoPrice: row.promo_price != null ? Number(row.promo_price) : undefined,
+    promoPercent: row.promo_percent != null ? Number(row.promo_percent) : undefined,
+
     promoStart: (row.promo_start as string | null) ?? undefined,
     promoEnd: (row.promo_end as string | null) ?? undefined,
     tags: (row.tags as string[] | null) ?? [],
@@ -117,6 +159,7 @@ export function mapServiceFromDB(row: Record<string, unknown>): Service {
     description: (row.description as string) || "",
     duration: row.duration as number,
     price: row.price as number,
+    priceMax: (row.price_max as number | null) ?? undefined,
     category: (row.category as string) || undefined,
     enabled: row.enabled as boolean,
     sortOrder: (row.sort_order as number) ?? 0,
@@ -156,6 +199,7 @@ export function mapServiceFromDB(row: Record<string, unknown>): Service {
     featured: (row.featured as boolean | null) ?? undefined,
     promoLabel: (row.promo_label as string | null) ?? undefined,
     promoPrice: (row.promo_price as number | null) ?? undefined,
+    promoPercent: (row.promo_percent as number | null) ?? undefined,
     promoStart: (row.promo_start as string | null) ?? undefined,
     promoEnd: (row.promo_end as string | null) ?? undefined,
     tags: (row.tags as string[] | null) ?? undefined,
@@ -185,6 +229,7 @@ function mapServiceToDB(
   if (data.description !== undefined) row.description = data.description;
   if (data.duration !== undefined) row.duration = data.duration;
   if (data.price !== undefined) row.price = data.price;
+  if (data.priceMax !== undefined) row.price_max = data.priceMax ?? null;
   if (data.category !== undefined) row.category = data.category || null;
   if (data.categoryId !== undefined) row.category_id = data.categoryId || null;
   if (data.enabled !== undefined) row.enabled = data.enabled;
@@ -221,7 +266,8 @@ function mapServiceToDB(
   if (data.availableWeekdays !== undefined) row.available_weekdays = data.availableWeekdays;
   if (data.featured !== undefined) row.featured = data.featured;
   if (data.promoLabel !== undefined) row.promo_label = data.promoLabel;
-  if (data.promoPrice !== undefined) row.promo_price = data.promoPrice;
+  if (data.promoPrice !== undefined) row.promo_price = data.promoPrice ?? null;
+  if (data.promoPercent !== undefined) row.promo_percent = data.promoPercent ?? null;
   if (data.promoStart !== undefined) row.promo_start = data.promoStart;
   if (data.promoEnd !== undefined) row.promo_end = data.promoEnd;
   if (data.tags !== undefined) row.tags = data.tags;

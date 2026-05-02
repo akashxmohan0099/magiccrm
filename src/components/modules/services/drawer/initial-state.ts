@@ -78,6 +78,7 @@ export function getInitialState(
     imageUrl: service?.imageUrl ?? "",
     priceType: service?.priceType ?? "fixed",
     price: service ? String(service.price) : "",
+    priceMax: service?.priceMax != null ? String(service.priceMax) : "",
     variants,
     priceTiers,
     addons,
@@ -123,7 +124,16 @@ export function getInitialState(
     intakeFormId: service?.intakeFormId ?? "",
     featured: service?.featured ?? false,
     promoLabel: service?.promoLabel ?? "",
+    // promoPercent wins if both are set on the row (matches displayPrice).
+    promoType:
+      service?.promoPercent != null
+        ? "percent"
+        : service?.promoPrice != null
+          ? "fixed"
+          : "fixed",
     promoPrice: service?.promoPrice != null ? String(service.promoPrice) : "",
+    promoPercent:
+      service?.promoPercent != null ? String(service.promoPercent) : "",
     promoStart: service?.promoStart ?? "",
     promoEnd: service?.promoEnd ?? "",
     tagsRaw: (service?.tags ?? []).join(", "),

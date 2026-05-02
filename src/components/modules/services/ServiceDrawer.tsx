@@ -20,11 +20,14 @@ import { MarketingSection } from "./drawer/MarketingSection";
 import { BundleSection } from "./drawer/BundleSection";
 import { AddOnsSection } from "./drawer/AddOnsSection";
 import { BookingRulesSection } from "./drawer/BookingRulesSection";
+import { PaymentsSection } from "./drawer/PaymentsSection";
+import { IntakeSection } from "./drawer/IntakeSection";
+import { WhereSection } from "./drawer/WhereSection";
 import { BasicsBlock } from "./drawer/BasicsBlock";
 import { TeamBlock } from "./drawer/TeamBlock";
 import { PricingBlock } from "./drawer/PricingBlock";
-import { DurationBlock } from "./drawer/DurationBlock";
 import { Section } from "./drawer/Section";
+import { InfoHint } from "@/components/ui/InfoHint";
 
 interface ServiceDrawerProps {
   open: boolean;
@@ -234,17 +237,36 @@ function ServiceDrawerFields({
           }))
         : undefined;
 
-    const totalDuration = form.durationSplit
-      ? (Number(form.durationActiveBefore) || 0) +
+    // For variants / tiered the global duration field is hidden — pick the
+    // longest row so service.duration (used by list rows + slot guards)
+    // matches the longest path through the service.
+    let totalDuration: number;
+    if (form.priceType === "variants" && form.variants.length > 0) {
+      const ds = form.variants.map((v) => Number(v.duration) || 0);
+      totalDuration = Math.max(...ds, 0) || 60;
+    } else if (form.priceType === "tiered" && form.priceTiers.length > 0) {
+      const ds = form.priceTiers
+        .map((t) => Number(t.duration) || 0)
+        .filter((d) => d > 0);
+      totalDuration = ds.length > 0 ? Math.max(...ds) : Number(form.duration) || 60;
+    } else if (form.durationSplit) {
+      totalDuration =
+        (Number(form.durationActiveBefore) || 0) +
         (Number(form.durationProcessing) || 0) +
-        (Number(form.durationActiveAfter) || 0)
-      : Number(form.duration) || 60;
+        (Number(form.durationActiveAfter) || 0);
+    } else {
+      totalDuration = Number(form.duration) || 60;
+    }
 
     const payload = {
       name: form.name.trim(),
       description: form.description,
       imageUrl: form.imageUrl.trim() || undefined,
       price: Number(form.price) || 0,
+      priceMax:
+        form.priceType === "from" && form.priceMax.trim() !== ""
+          ? Number(form.priceMax) || undefined
+          : undefined,
       duration: totalDuration,
       category: cat,
       categoryId,
@@ -296,7 +318,17 @@ function ServiceDrawerFields({
       intakeFormId: form.intakeFormId || undefined,
       featured: form.featured,
       promoLabel: form.promoLabel.trim() || undefined,
-      promoPrice: form.promoPrice ? Number(form.promoPrice) : undefined,
+      // Only persist the chosen discount mode. The other side is left
+      // untouched in the DB on a type switch, but `displayPrice` gives
+      // promoPercent precedence so the menu always renders the active mode.
+      promoPrice:
+        form.promoType === "fixed" && form.promoPrice
+          ? Number(form.promoPrice)
+          : undefined,
+      promoPercent:
+        form.promoType === "percent" && form.promoPercent
+          ? Number(form.promoPercent)
+          : undefined,
       promoStart: form.promoStart || undefined,
       promoEnd: form.promoEnd || undefined,
       tags: (() => {
@@ -407,9 +439,6 @@ function ServiceDrawerFields({
 
 
 
-  const smallInputClass =
-    "w-full px-3 py-2 bg-surface border border-border-light rounded-lg text-[13px] text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30";
-
   const categoryOptions = Array.from(new Set([...(categories ?? []), form.category, "Uncategorized"])).filter(Boolean);
 
 
@@ -498,19 +527,33 @@ function ServiceDrawerFields({
             setForm={setForm}
             errors={errors}
             activeMembers={activeMembers}
-          />
-
-          <DurationBlock
-            form={form}
-            update={update}
-            errors={errors}
             totalSplitDuration={totalSplitDuration}
           />
+
+          <label className="flex items-center gap-2 text-[13px] text-text-secondary cursor-pointer pt-4 border-t border-border-light">
+            <input
+              type="checkbox"
+              checked={form.requiresConfirmation}
+              onChange={(e) => update("requiresConfirmation", e.target.checked)}
+              className="rounded"
+            />
+            Requires confirmation (pending until approved)
+            <InfoHint text="Bookings stay in Pending state until you approve them in the Bookings tab. The client gets a 'Booking received' email instead of a confirmation." />
+          </label>
         </div>
       </Section>
 
+      {/* ── Where & resources ──────────────────────────────── */}
+      <WhereSection form={form} update={update} />
+
       {/* ── Booking rules ──────────────────────────────────── */}
       <BookingRulesSection service={service} form={form} update={update} setForm={setForm} />
+
+      {/* ── Intake ─────────────────────────────────────────── */}
+      <IntakeSection form={form} update={update} setForm={setForm} />
+
+      {/* ── Payments & cancellation ────────────────────────── */}
+      <PaymentsSection form={form} update={update} />
 
       {/* ── Marketing ─────────────────────────────────────── */}
       <MarketingSection form={form} update={update} />

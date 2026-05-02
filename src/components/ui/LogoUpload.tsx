@@ -17,6 +17,8 @@ interface LogoUploadProps {
   setLabel?: string;
   /** Accept text-paste of remote URLs in addition to file upload */
   allowUrlPaste?: boolean;
+  /** Single-row layout: thumbnail + URL field + upload/remove inline. */
+  compact?: boolean;
 }
 
 /**
@@ -31,6 +33,7 @@ export function LogoUpload({
   emptyLabel = "No logo",
   setLabel = "Logo set",
   allowUrlPaste = true,
+  compact = false,
 }: LogoUploadProps) {
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -49,6 +52,56 @@ export function LogoUpload({
     };
     reader.readAsDataURL(file);
   };
+
+  if (compact) {
+    return (
+      <div>
+        <label className="text-[11px] text-text-tertiary block mb-1">{label}</label>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            className="relative w-9 h-9 rounded-lg border border-dashed border-border-light bg-surface hover:border-text-tertiary cursor-pointer flex items-center justify-center overflow-hidden transition-colors flex-shrink-0"
+            title={value ? "Change image" : "Upload image"}
+          >
+            {value ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={value} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <ImagePlus className="w-4 h-4 text-text-tertiary" />
+            )}
+          </button>
+          <input
+            type="url"
+            value={value && !value.startsWith("data:") ? value : ""}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder="Upload or paste image URL"
+            className="flex-1 min-w-0 px-3 py-2 bg-surface border border-border-light rounded-lg text-[13px] text-foreground placeholder:text-text-tertiary outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
+          />
+          {value && (
+            <button
+              type="button"
+              onClick={() => onChange("")}
+              className="text-[12px] text-text-tertiary hover:text-foreground cursor-pointer flex-shrink-0"
+            >
+              Remove
+            </button>
+          )}
+        </div>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) handleFile(f);
+            e.target.value = "";
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div>

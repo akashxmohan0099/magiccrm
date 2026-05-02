@@ -4,8 +4,9 @@ import { Check } from "lucide-react";
 import { useLocationsStore } from "@/store/locations";
 import { useResourcesStore } from "@/store/resources";
 import type { FormState } from "./types";
+import { Section } from "./Section";
 
-export function LocationsResourcesBlock({
+export function WhereSection({
   form,
   update,
 }: {
@@ -15,15 +16,24 @@ export function LocationsResourcesBlock({
   const locations = useLocationsStore((s) => s.locations);
   const resources = useResourcesStore((s) => s.resources);
 
+  // Nothing to configure → hide the section entirely. With one location and
+  // no resources, the operational picture is implicit.
   if (locations.length < 2 && resources.length === 0) return null;
 
+  const hasData =
+    form.locationIds.length > 0 || form.requiredResourceIds.length > 0;
+
   return (
-    <div className="space-y-4">
+    <Section
+      title="Where & resources"
+      defaultOpen={hasData}
+      subtitle="Locations & required rooms or equipment"
+    >
       {locations.length >= 2 && (
-        <div>
-          <label className="text-[12px] font-medium text-foreground block mb-1.5">
-            Available at locations
-          </label>
+        <div className="mb-5">
+          <p className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider mb-2">
+            Locations
+          </p>
           <p className="text-[11px] text-text-tertiary mb-2">
             {form.locationIds.length === 0
               ? "Available at every location."
@@ -67,9 +77,9 @@ export function LocationsResourcesBlock({
 
       {resources.length > 0 && (
         <div>
-          <label className="text-[12px] font-medium text-foreground block mb-1.5">
+          <p className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider mb-2">
             Required resources
-          </label>
+          </p>
           <p className="text-[11px] text-text-tertiary mb-2">
             Each one must be free for the booking. Pick rooms, chairs, or machines this service needs.
           </p>
@@ -105,6 +115,6 @@ export function LocationsResourcesBlock({
           </div>
         </div>
       )}
-    </div>
+    </Section>
   );
 }

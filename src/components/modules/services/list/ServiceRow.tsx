@@ -99,10 +99,15 @@ export function ServiceRow({
                 })()}
               </span>
               <span className="text-[12px] font-semibold text-foreground tabular-nums whitespace-nowrap">
-                {isFromPriced(service) && (
-                  <span className="text-[10px] text-text-tertiary font-medium mr-0.5">From</span>
-                )}
+                {isFromPriced(service) &&
+                  !(service.priceType === "from" && service.priceMax != null && service.priceMax > minPrice(service)) && (
+                    <span className="text-[10px] text-text-tertiary font-medium mr-0.5">From</span>
+                  )}
                 ${minPrice(service)}
+                {service.priceType === "from" &&
+                  service.priceMax != null &&
+                  service.priceMax > minPrice(service) &&
+                  `–$${service.priceMax}`}
               </span>
             </div>
             {displayMembers.length > 0 && (

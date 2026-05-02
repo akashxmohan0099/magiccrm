@@ -199,8 +199,24 @@ export function isPromoActive(service: Service, today: Date = new Date()): boole
 }
 
 /** Effective price the menu should display (taking promo into account). */
-export function displayPrice(service: Service): { price: number; struckThrough?: number } {
+export function displayPrice(
+  service: Service,
+): { price: number; max?: number; struckThrough?: number } {
   const min = minPrice(service);
+  // % off wins over fixed promo price if both are set — matches the editor,
+  // which makes the two mutually exclusive but defensively coexists with
+  // older rows that may have both.
+  if (
+    service.promoPercent != null &&
+    service.promoPercent > 0 &&
+    service.promoPercent < 100 &&
+    isPromoActive(service)
+  ) {
+    const discounted = Math.round(min * (1 - service.promoPercent / 100));
+    if (discounted < min) {
+      return { price: discounted, struckThrough: min };
+    }
+  }
   if (
     service.promoPrice != null &&
     service.promoPrice < min &&
@@ -208,5 +224,14 @@ export function displayPrice(service: Service): { price: number; struckThrough?:
   ) {
     return { price: service.promoPrice, struckThrough: min };
   }
-  return { price: min };
+  // Only surface the upper bound for explicit "from" pricing — variants /
+  // tiered already enumerate their own prices, so a max would double up
+  // with the per-row figures.
+  const max =
+    service.priceType === "from" &&
+    service.priceMax != null &&
+    service.priceMax > min
+      ? service.priceMax
+      : undefined;
+  return { price: min, max };
 }
