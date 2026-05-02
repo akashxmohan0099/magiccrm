@@ -4,180 +4,28 @@ import { useState, useCallback, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, Loader2, Send, ArrowRight, ArrowLeft, ExternalLink, Upload, X as XIcon } from "lucide-react";
 import type {
-  FormBranding,
   FormFieldConfig,
-  FormFontFamily,
   FormSuccessVariant,
-  FormTemplate,
-  FormTheme,
-  FormType,
 } from "@/types/models";
 import { isFieldVisible, splitMulti } from "@/lib/form-logic";
 import { SignaturePad } from "./SignaturePad";
-
-// Shared shape so editor preview, public inquiry page, and embed page can
-// all hand the same renderer their form. Only the bits the renderer needs.
-export interface RenderableForm {
-  id?: string;
-  name: string;
-  slug?: string;
-  fields: FormFieldConfig[];
-  branding: FormBranding;
-  type?: FormType;
-}
-
-/** Minimal shape the renderer needs for the Service field dropdown. */
-export interface RenderableService {
-  id: string;
-  name: string;
-}
-
-export interface FormRendererProps {
-  form: RenderableForm;
-  values: Record<string, string>;
-  onChange: (name: string, value: string) => void;
-  onSubmit: () => void | Promise<void>;
-  submitting?: boolean;
-  submitted?: boolean;
-  error?: string;
-  compact?: boolean;
-  /** Disables real submission and lets the editor force the success view. */
-  preview?: boolean;
-  /** Editor-only: pin which view (welcome / form / success) is rendered. */
-  forceView?: "welcome" | "form" | "success";
-  submitLabel?: string;
-  /** Embed page can override accent via query param. */
-  brandColorOverride?: string;
-  showPoweredBy?: boolean;
-  /** Workspace-level logo from Settings. Used when the form has no logo
-   *  override of its own — keeps branding uniform by default. */
-  workspaceLogo?: string;
-  /** Live services from the workspace. Powers the Service field dropdown so
-   *  options stay in sync as services are added/renamed. */
-  services?: RenderableService[];
-  /** Editor-only: pin a specific success variant on the Success view so the
-   *  operator can preview each routed thank-you without faking submissions.
-   *  When undefined the renderer falls through to value-based variant
-   *  matching (the public-form behaviour). */
-  forceSuccessVariantId?: string;
-  /** Per-field validation errors keyed by field.name. Rendered inline under
-   *  each affected field. Top-level submission errors still go through `error`. */
-  fieldErrors?: Record<string, string>;
-}
-
-// Autocomplete heuristic. Field type wins for email/phone/url/date; for plain
-// text we read keywords from the label so "First name" → given-name etc.
-// Returning undefined means we omit the attribute (browsers fall back to
-// no-autofill). Conservative on purpose — wrong autocomplete is worse than none.
-function autocompleteFor(field: FormFieldConfig): string | undefined {
-  const t = field.type;
-  if (t === "email") return "email";
-  if (t === "phone") return "tel";
-  if (t === "url") return "url";
-  const label = (field.label || field.name || "").toLowerCase();
-  if (t === "text") {
-    if (/(^|\b)(first|given)\b.*name/.test(label)) return "given-name";
-    if (/(^|\b)(last|family|sur)\b.*name|surname/.test(label)) return "family-name";
-    if (/full name|^name$|your name|name$/.test(label)) return "name";
-    if (/company|business|organi[sz]ation/.test(label)) return "organization";
-    if (/street|address(?! line 2)/.test(label)) return "street-address";
-    if (/^city|town$|suburb/.test(label)) return "address-level2";
-    if (/postcode|postal code|zip/.test(label)) return "postal-code";
-    if (/country/.test(label)) return "country-name";
-  }
-  return undefined;
-}
-
-// Normalise the dropdown placeholder. Avoids "Select select an option" when
-// the operator typed a label that already starts with "Select".
-function selectPlaceholderText(field: FormFieldConfig): string {
-  const raw = (field.placeholder ?? field.label ?? "").trim();
-  if (!raw) return "Select an option";
-  if (/^select\b/i.test(raw)) return raw;
-  return `Select ${raw.toLowerCase()}`;
-}
-
-function effectiveLogo(form: RenderableForm, workspaceLogo?: string): string | undefined {
-  return form.branding.logo || workspaceLogo;
-}
-
-const FONT_CLASS: Record<FormFontFamily, string> = {
-  sans: "font-sans",
-  serif: "font-serif",
-  mono: "font-mono",
-  display:
-    "[font-family:'Optima','Avenir','Futura','Helvetica_Neue',sans-serif] tracking-wide",
-};
-
-function fontClassFor(branding: FormBranding) {
-  return FONT_CLASS[branding.fontFamily ?? "sans"];
-}
-
-// Heading font falls back to body font when not explicitly set, so old forms
-// that only configured `fontFamily` keep rendering uniformly.
-function headingFontClassFor(branding: FormBranding) {
-  return FONT_CLASS[branding.headingFontFamily ?? branding.fontFamily ?? "sans"];
-}
-
-// Accent defaults to brand when unset — operators with one color get a
-// uniform look without having to set both. Returned as a hex string.
-function accentColorFor(branding: FormBranding, brand: string) {
-  return branding.accentColor?.trim() || brand;
-}
-
-function templateFor(branding: FormBranding): FormTemplate {
-  return branding.template ?? "classic";
-}
-
-function themeFor(branding: FormBranding): FormTheme {
-  return branding.theme ?? "light";
-}
-
-// Resolves "auto" against the system preference. Returns 'dark' or 'light'.
-// Re-evaluated whenever the OS preference changes so an open form picks up
-// the switch without a reload.
-function useResolvedTheme(theme: FormTheme): "light" | "dark" {
-  const [systemDark, setSystemDark] = useState<boolean>(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return false;
-    return window.matchMedia("(prefers-color-scheme: dark)").matches;
-  });
-  useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return;
-    const m = window.matchMedia("(prefers-color-scheme: dark)");
-    const onChange = (e: MediaQueryListEvent) => setSystemDark(e.matches);
-    m.addEventListener("change", onChange);
-    return () => m.removeEventListener("change", onChange);
-  }, []);
-  if (theme === "dark") return "dark";
-  if (theme === "light") return "light";
-  return systemDark ? "dark" : "light";
-}
-
-// Wraps the rendered form so the form's theme tokens (--card-bg, --background,
-// etc.) resolve from the .dark scope when needed. The dashboard's own theme
-// stays unaffected — the wrapper applies a div-scoped colour-scheme override
-// only to its descendants.
-function ThemeScope({
-  theme,
-  children,
-}: {
-  theme: FormTheme;
-  children: React.ReactNode;
-}) {
-  const resolved = useResolvedTheme(theme);
-  // `display: contents` so the wrapper participates in cascading and
-  // scoping (.dark applies to descendants) but contributes no box of its
-  // own. Templates control their own height/layout. `colorScheme` flips
-  // the UA's default form-control palette for this subtree.
-  return (
-    <div
-      className={resolved === "dark" ? "dark contents" : "contents"}
-      style={{ colorScheme: resolved }}
-    >
-      {children}
-    </div>
-  );
-}
+import type {
+  FormRendererProps,
+  RenderableForm,
+  RenderableService,
+} from "./renderer-types";
+export type { RenderableForm, RenderableService, FormRendererProps } from "./renderer-types";
+import {
+  autocompleteFor,
+  selectPlaceholderText,
+  effectiveLogo,
+  fontClassFor,
+  headingFontClassFor,
+  accentColorFor,
+  templateFor,
+  themeFor,
+} from "./renderer-helpers";
+import { ThemeScope } from "./ThemeScope";
 
 export function FormRenderer(props: FormRendererProps) {
   const { form, forceView } = props;
