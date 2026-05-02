@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef, useSyncExternalStore } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -17,7 +17,6 @@ import {
   ChevronRight,
   ChevronDown,
   Palette,
-  Plus,
   List,
 } from "lucide-react";
 import { useServicesStore } from "@/store/services";
@@ -34,9 +33,7 @@ import {
 import {
   resolvePrice,
   resolveDuration,
-  isFromPriced,
   isPromoActive,
-  displayPrice,
 } from "@/lib/services/price";
 import { SlideOver } from "@/components/ui/SlideOver";
 import { ColorField } from "@/components/ui/ColorField";
@@ -47,6 +44,20 @@ import {
   fontClassesFor,
   type FontPairingId,
 } from "@/components/ui/FontPairing";
+import {
+  UNCATEGORIZED,
+  useMounted,
+  slugify,
+  nameColor,
+  minutesToHHMM,
+  chainItems,
+  addMinutes,
+  formatDate,
+} from "./preview/helpers";
+import { ArtistChip } from "./preview/ArtistChip";
+import { PriceDisplay } from "./preview/PriceDisplay";
+import { AddPill } from "./preview/AddPill";
+import { AddonRow } from "./preview/AddonRow";
 
 type Layout = "classic" | "compact" | "grid";
 
@@ -57,12 +68,6 @@ interface ServicesPreviewProps {
   onToggleFullscreen: () => void;
 }
 
-const UNCATEGORIZED = "Uncategorized";
-
-const emptySubscribe = () => () => {};
-function useMounted() {
-  return useSyncExternalStore(emptySubscribe, () => true, () => false);
-}
 
 export function ServicesPreview({ open, onClose, fullscreen, onToggleFullscreen }: ServicesPreviewProps) {
   const [styleMode, setStyleMode] = useState(false);
@@ -932,44 +937,6 @@ function BookingFlow({
   );
 }
 
-function AddonRow({
-  addon,
-  selected,
-  onToggle,
-  primaryColor,
-}: {
-  addon: { id: string; name: string; price: number; duration: number };
-  selected: boolean;
-  onToggle: () => void;
-  primaryColor: string;
-}) {
-  return (
-    <button
-      onClick={onToggle}
-      className={`w-full border rounded-2xl px-4 py-3 flex items-center gap-3 text-left cursor-pointer transition-colors ${
-        selected
-          ? "bg-card-bg"
-          : "bg-surface border-border-light hover:border-foreground/20"
-      }`}
-      style={selected ? { borderColor: primaryColor, borderWidth: 2 } : undefined}
-    >
-      <div
-        className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 ${
-          selected ? "" : "border-border-light"
-        }`}
-        style={selected ? { borderColor: primaryColor, backgroundColor: primaryColor } : undefined}
-      >
-        {selected && <Check className="w-3 h-3 text-white" />}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-[14px] font-semibold text-foreground truncate">{addon.name}</p>
-        <p className="text-[11px] text-text-tertiary tabular-nums">
-          +${addon.price} · +{addon.duration} min
-        </p>
-      </div>
-    </button>
-  );
-}
 
 function ConfigureServiceModal({
   service,
@@ -1794,81 +1761,6 @@ function ServiceCardPreview({
   );
 }
 
-function ArtistChip({ member }: { member: TeamMember }) {
-  const initial = (member.name || "?").charAt(0).toUpperCase();
-  const hue = (() => {
-    let h = 0;
-    for (let i = 0; i < member.name.length; i++) h = (h * 31 + member.name.charCodeAt(i)) | 0;
-    return Math.abs(h) % 360;
-  })();
-  return (
-    <div className="inline-flex items-center gap-1.5 pl-1 pr-3 py-1 rounded-full bg-surface border border-border-light">
-      {member.avatarUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={member.avatarUrl}
-          alt={member.name}
-          className="w-5 h-5 rounded-full object-cover"
-        />
-      ) : (
-        <div
-          className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-semibold text-foreground/70"
-          style={{ backgroundColor: `hsl(${hue} 60% 88%)` }}
-        >
-          {initial}
-        </div>
-      )}
-      <span className="text-[11px] font-medium text-foreground">{member.name}</span>
-    </div>
-  );
-}
-
-function PriceDisplay({
-  service,
-  className = "",
-}: {
-  service: Service;
-  className?: string;
-}) {
-  const { price, struckThrough } = displayPrice(service);
-  const showFrom = isFromPriced(service);
-  return (
-    <div className={`flex items-baseline gap-1.5 tabular-nums whitespace-nowrap ${className}`}>
-      {showFrom && (
-        <span className="text-[10px] text-text-tertiary font-medium">From</span>
-      )}
-      {struckThrough != null && (
-        <span className="text-[11px] text-text-tertiary font-medium line-through">
-          ${struckThrough}
-        </span>
-      )}
-      <span>${price}</span>
-    </div>
-  );
-}
-
-function AddPill({ selected, primaryColor }: { selected: boolean; primaryColor: string }) {
-  if (selected) {
-    return (
-      <span
-        className="flex items-center gap-1 px-3.5 py-1.5 rounded-full text-[12px] font-semibold text-white shadow-[0_4px_12px_-4px_rgba(0,0,0,0.18)]"
-        style={{
-          backgroundImage: `linear-gradient(135deg, ${primaryColor} 0%, ${primaryColor}dd 100%)`,
-        }}
-      >
-        <Check className="w-3 h-3" /> Added
-      </span>
-    );
-  }
-  return (
-    <span
-      className="flex items-center gap-1 px-3.5 py-1.5 rounded-full text-[12px] font-semibold border bg-card-bg"
-      style={{ borderColor: `${primaryColor}66`, color: primaryColor }}
-    >
-      <Plus className="w-3 h-3" /> Add
-    </span>
-  );
-}
 
 function BasketArtistPicker({
   eligible,
@@ -2928,56 +2820,3 @@ function CategoryAnchors({
   );
 }
 
-// ── helpers ──────────────────────────────────────────────────────────
-
-function slugify(s: string) {
-  return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-}
-
-function nameColor(name: string) {
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) | 0;
-  return `hsl(${Math.abs(h) % 360} 60% 88%)`;
-}
-
-function hhmmToMinutes(time: string): number {
-  const [h, m] = time.split(":").map(Number);
-  return h * 60 + m;
-}
-
-function minutesToHHMM(total: number): string {
-  const h = Math.floor(total / 60);
-  const m = total % 60;
-  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-}
-
-/**
- * Walk a basket of duration-bearing items in order, attaching a chain start
- * time to each based on the booking's overall start time. Pure function so
- * it works inside JSX without local mutation.
- */
-function chainItems<T extends { duration: number }>(
-  items: T[],
-  startTime: string | null,
-): { item: T; startAt: number | null }[] {
-  if (!startTime) return items.map((item) => ({ item, startAt: null }));
-  let cursor = hhmmToMinutes(startTime);
-  return items.map((item) => {
-    const startAt = cursor;
-    cursor += item.duration;
-    return { item, startAt };
-  });
-}
-
-function addMinutes(time: string, minutes: number) {
-  const [h, m] = time.split(":").map(Number);
-  const total = h * 60 + m + minutes;
-  const nh = Math.floor(total / 60);
-  const nm = total % 60;
-  return `${String(nh).padStart(2, "0")}:${String(nm).padStart(2, "0")}`;
-}
-
-function formatDate(iso: string) {
-  const d = new Date(iso + "T00:00:00");
-  return d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
-}
