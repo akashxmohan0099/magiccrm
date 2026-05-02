@@ -9,7 +9,7 @@ import type { Form, FormType, FormFieldConfig, FormBranding } from "@/types/mode
  */
 export class FormSlugConflictError extends Error {
   constructor(slug: string) {
-    super(`Slug "${slug}" is already in use by another form in this workspace.`);
+    super(`Slug "${slug}" is already in use by another form.`);
     this.name = "FormSlugConflictError";
   }
 }

@@ -10,6 +10,7 @@ import { useTeamStore } from "@/store/team";
 import { useCommunicationStore } from "@/store/communication";
 import { useInquiriesStore } from "@/store/inquiries";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { useMoney } from "@/lib/format/money";
 
 type Period = "7d" | "30d" | "90d" | "all";
 
@@ -28,6 +29,7 @@ export function AnalyticsPage() {
   const { services } = useServicesStore();
   const { members } = useTeamStore();
   const { conversations } = useCommunicationStore();
+  const money = useMoney();
   const { inquiries } = useInquiriesStore();
   const [period, setPeriod] = useState<Period>("30d");
 
@@ -120,10 +122,10 @@ export function AnalyticsPage() {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <KPI icon={DollarSign} bg="bg-emerald-50" color="text-emerald-600" label="Revenue" value={`$${totalRevenue.toLocaleString()}`} />
+        <KPI icon={DollarSign} bg="bg-emerald-50" color="text-emerald-600" label="Revenue" value={money.format(totalRevenue)} />
         <KPI icon={Calendar} bg="bg-blue-50" color="text-blue-600" label="Bookings" value={String(pb.length)} sub={`${completed.length} completed`} />
         <KPI icon={Users} bg="bg-violet-50" color="text-violet-600" label="New Clients" value={String(newClients)} />
-        <KPI icon={TrendingUp} bg="bg-amber-50" color="text-amber-600" label="Avg Booking" value={`$${Math.round(avgBookingValue)}`} />
+        <KPI icon={TrendingUp} bg="bg-amber-50" color="text-amber-600" label="Avg Booking" value={money.format(avgBookingValue)} />
       </div>
 
       {/* Rates */}

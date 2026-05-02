@@ -22,6 +22,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { BookingForm } from "@/components/modules/bookings/BookingForm";
+import { useMoney } from "@/lib/format/money";
 
 type Tab = "overview" | "bookings" | "payments" | "conversations" | "activity";
 
@@ -40,6 +41,7 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
   const { documents } = usePaymentsStore();
   const { conversations, getMessages } = useCommunicationStore();
   const { createPayment } = useCreatePayment();
+  const money = useMoney();
 
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("overview");
@@ -120,12 +122,12 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
 
     // Payments
     for (const d of clientPayments) {
-      events.push({ time: d.createdAt, label: `${d.label === "quote" ? "Quote" : "Invoice"} ${d.documentNumber} created`, detail: `$${d.total}`, color: "bg-blue-500", icon: FileText });
+      events.push({ time: d.createdAt, label: `${d.label === "quote" ? "Quote" : "Invoice"} ${d.documentNumber} created`, detail: money.format(d.total, { withDecimals: true }), color: "bg-blue-500", icon: FileText });
       if (d.sentAt) {
         events.push({ time: d.sentAt, label: `${d.documentNumber} sent to client`, color: "bg-violet-500", icon: Mail });
       }
       if (d.paidAt) {
-        events.push({ time: d.paidAt, label: `${d.documentNumber} paid`, detail: `$${d.total} via ${d.paymentMethod?.replace("_", " ") || "unknown"}`, color: "bg-emerald-500", icon: DollarSign });
+        events.push({ time: d.paidAt, label: `${d.documentNumber} paid`, detail: `${money.format(d.total, { withDecimals: true })} via ${d.paymentMethod?.replace("_", " ") || "unknown"}`, color: "bg-emerald-500", icon: DollarSign });
       }
     }
 
@@ -136,7 +138,7 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
 
     events.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
     return events;
-  }, [clientId, client, clientBookings, clientPayments, clientConversations, serviceMap]);
+  }, [clientId, client, clientBookings, clientPayments, clientConversations, serviceMap, money]);
 
   if (!client) {
     return (
@@ -265,6 +267,33 @@ export function ClientDetail({ open, onClose, clientId }: ClientDetailProps) {
                 <div className="bg-surface rounded-lg p-4 border border-border-light">
                   <h4 className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider mb-2">Notes</h4>
                   <InlineField value={client.notes} field="notes" clientId={client.id} updateClient={updateClient} workspaceId={workspaceId} placeholder="Click to add notes..." multiline />
+                </div>
+
+                {/* Deposit-required flag — referenced by services configured
+                    with depositAppliesTo === 'flagged'. Operator toggles this
+                    after a no-show / chargeback to lock the client into paying
+                    a deposit on their next online booking. */}
+                <div className="bg-surface rounded-lg p-4 border border-border-light flex items-center justify-between gap-3">
+                  <div>
+                    <h4 className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider">Always require deposit</h4>
+                    <p className="text-[11px] text-text-tertiary mt-0.5">
+                      Forces a deposit on services set to &quot;flagged clients only&quot;.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => updateClient(client.id, { depositRequired: !client.depositRequired }, workspaceId || undefined)}
+                    aria-pressed={!!client.depositRequired}
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 rounded-full transition-colors ${
+                      client.depositRequired ? "bg-foreground" : "bg-border"
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-5 w-5 rounded-full bg-white transform transition-transform mt-0.5 ${
+                        client.depositRequired ? "translate-x-5" : "translate-x-0.5"
+                      }`}
+                    />
+                  </button>
                 </div>
 
                 {/* Patch tests */}

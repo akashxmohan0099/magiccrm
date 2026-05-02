@@ -347,9 +347,19 @@ export const useServicesStore = create<ServicesStore>()(
         if (!existing && duration === undefined) return;
 
         if (!existing) {
-          // Same caveat as setMemberPriceOverride: creating a row implicitly
-          // assigns the member to the service. The drawer gates this section
-          // behind explicit member assignment so the side-effect is contained.
+          // Refuse to auto-create when the service has no specific
+          // assignments at all — that would silently flip an "Anyone"
+          // service to single-member mode. Callers must call
+          // setServiceMembers() first.
+          const hasSpecificAssignments = get().memberServices.some(
+            (ms) => ms.serviceId === serviceId,
+          );
+          if (!hasSpecificAssignments) {
+            console.warn(
+              "[services] setMemberDurationOverride refused: assign the member to the service first.",
+            );
+            return;
+          }
           const newRow: MemberService = {
             id: generateId(),
             memberId,
@@ -389,11 +399,19 @@ export const useServicesStore = create<ServicesStore>()(
         if (!existing && price === undefined) return;
 
         if (!existing) {
-          // Create a new member_service row purely to hold the override.
-          // Note: this also implicitly assigns the member to the service.
-          // If the service was previously "Anyone" (no rows), this flips it
-          // to specific assignment with just this member. Operators editing
-          // overrides typically also intend the assignment, so this is OK.
+          // Refuse to auto-create when the service has no specific
+          // assignments at all — that would silently flip an "Anyone"
+          // service to single-member mode. Callers must call
+          // setServiceMembers() first.
+          const hasSpecificAssignments = get().memberServices.some(
+            (ms) => ms.serviceId === serviceId,
+          );
+          if (!hasSpecificAssignments) {
+            console.warn(
+              "[services] setMemberPriceOverride refused: assign the member to the service first.",
+            );
+            return;
+          }
           const newRow: MemberService = {
             id: generateId(),
             memberId,

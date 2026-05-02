@@ -6,25 +6,54 @@ import { create } from "zustand";
 
 type ToastType = "success" | "error" | "warning" | "info";
 
+interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
+interface ToastOptions {
+  type?: ToastType;
+  /**
+   * Optional inline action (e.g. an Undo button). When provided the toast
+   * stays on screen ~1.5s longer so users actually see and click it.
+   */
+  action?: ToastAction;
+  /** Override the auto-dismiss delay in ms. */
+  durationMs?: number;
+}
+
 interface ToastItem {
   id: string;
   message: string;
   type: ToastType;
+  action?: ToastAction;
+  durationMs: number;
   exiting?: boolean;
 }
 
 interface ToastStore {
   toasts: ToastItem[];
-  add: (message: string, type?: ToastType) => void;
+  add: (message: string, opts?: ToastOptions) => void;
   remove: (id: string) => void;
   markExiting: (id: string) => void;
 }
 
+const DEFAULT_DURATION_MS = 3000;
+const ACTION_DURATION_MS = 4500;
+
 export const useToastStore = create<ToastStore>((set) => ({
   toasts: [],
-  add: (message, type = "success") => {
+  add: (message, opts = {}) => {
     const id = Math.random().toString(36).slice(2);
-    set((s) => ({ toasts: [...s.toasts.slice(-4), { id, message, type }] }));
+    const type = opts.type ?? "success";
+    const durationMs =
+      opts.durationMs ?? (opts.action ? ACTION_DURATION_MS : DEFAULT_DURATION_MS);
+    set((s) => ({
+      toasts: [
+        ...s.toasts.slice(-4),
+        { id, message, type, action: opts.action, durationMs },
+      ],
+    }));
   },
   remove: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
   markExiting: (id) =>
@@ -33,8 +62,19 @@ export const useToastStore = create<ToastStore>((set) => ({
     })),
 }));
 
-export function toast(message: string, type: ToastType = "success") {
-  useToastStore.getState().add(message, type);
+/**
+ * Trigger a toast.
+ *
+ * Legacy form: `toast("Saved")` / `toast("Saved", "error")` still works.
+ * New form: `toast("Closed Saturday", { type: "success", action: { label: "Undo", onClick } })`.
+ */
+export function toast(
+  message: string,
+  optsOrType: ToastOptions | ToastType = {},
+): void {
+  const opts: ToastOptions =
+    typeof optsOrType === "string" ? { type: optsOrType } : optsOrType;
+  useToastStore.getState().add(message, opts);
 }
 
 const ICONS: Record<ToastType, React.ComponentType<{ className?: string }>> = {
@@ -56,13 +96,13 @@ function ToastItem({ item }: { item: ToastItem }) {
   const Icon = ICONS[item.type];
 
   useEffect(() => {
-    const exitTimer = setTimeout(() => markExiting(item.id), 3000);
-    const removeTimer = setTimeout(() => remove(item.id), 3300);
+    const exitTimer = setTimeout(() => markExiting(item.id), item.durationMs);
+    const removeTimer = setTimeout(() => remove(item.id), item.durationMs + 300);
     return () => {
       clearTimeout(exitTimer);
       clearTimeout(removeTimer);
     };
-  }, [item.id, remove, markExiting]);
+  }, [item.id, item.durationMs, remove, markExiting]);
 
   const colors = COLORS[item.type];
   return (
@@ -78,6 +118,18 @@ function ToastItem({ item }: { item: ToastItem }) {
     >
       <Icon className={`w-5 h-5 flex-shrink-0 ${colors.text}`} />
       <p className={`text-[13px] flex-1 font-medium ${colors.text}`}>{item.message}</p>
+      {item.action && (
+        <button
+          onClick={() => {
+            item.action!.onClick();
+            markExiting(item.id);
+            setTimeout(() => remove(item.id), 300);
+          }}
+          className={`px-2 py-1 rounded text-[12px] font-semibold underline-offset-2 hover:underline cursor-pointer flex-shrink-0 ${colors.text}`}
+        >
+          {item.action.label}
+        </button>
+      )}
       <button
         onClick={() => {
           markExiting(item.id);

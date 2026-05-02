@@ -46,6 +46,7 @@ import { useTeamStore } from "@/store/team";
 import { useAuth } from "@/hooks/useAuth";
 import { Service, TeamMember } from "@/types/models";
 import { minPrice, isFromPriced, resolveBuffer } from "@/lib/services/price";
+import { resolveServiceCategoryName } from "@/lib/services/category";
 import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -203,7 +204,7 @@ export function ServicesPage() {
   const categories = useMemo(() => {
     const cats = new Map<string, Service[]>();
     for (const s of services) {
-      const cat = s.category || UNCATEGORIZED;
+      const cat = resolveServiceCategoryName(s, storeCategories) || UNCATEGORIZED;
       if (!cats.has(cat)) cats.set(cat, []);
       cats.get(cat)!.push(s);
     }
@@ -211,7 +212,7 @@ export function ServicesPage() {
       svcs.sort((a, b) => a.sortOrder - b.sortOrder);
     }
     return cats;
-  }, [services]);
+  }, [services, storeCategories]);
 
   const allCategories = useMemo(() => {
     const orderedNames: string[] = [];
@@ -308,8 +309,17 @@ export function ServicesPage() {
 
   const bulkMoveTo = (targetCat: string) => {
     const cat = targetCat === UNCATEGORIZED ? undefined : targetCat;
+    // Dual-write `category` (legacy display name used by every UI that
+    // groups by service.category) and `categoryId` (canonical link).
+    // Once consumers migrate to a `resolveServiceCategory()` helper the
+    // legacy field can be dropped — until then both are needed in sync.
+    const catId = cat ? categoryByName.get(cat)?.id : undefined;
     selectedIds.forEach((id) => {
-      updateService(id, { category: cat }, workspaceId || undefined);
+      updateService(
+        id,
+        { category: cat, categoryId: catId ?? null },
+        workspaceId || undefined,
+      );
     });
     toast(`Moved ${selectedIds.size} service${selectedIds.size === 1 ? "" : "s"} to ${targetCat}`);
     setSelectionMode(false);
@@ -333,7 +343,7 @@ export function ServicesPage() {
 
   const openEdit = (service: Service) => {
     setEditingService(service);
-    setDrawerCategory(service.category || UNCATEGORIZED);
+    setDrawerCategory(resolveServiceCategoryName(service, storeCategories) || UNCATEGORIZED);
     setDrawerOpen(true);
   };
 
@@ -381,8 +391,10 @@ export function ServicesPage() {
       updateCategory(cat.id, { name: newName }, workspaceId || undefined);
     }
     const targetCat = newName === UNCATEGORIZED ? undefined : newName;
+    // The canonical category row keeps its id across renames, so categoryId
+    // stays valid; we only sync the legacy free-text `category` field.
     services
-      .filter((s) => (s.category || UNCATEGORIZED) === oldName)
+      .filter((s) => (resolveServiceCategoryName(s, storeCategories) || UNCATEGORIZED) === oldName)
       .forEach((s) => updateService(s.id, { category: targetCat }, workspaceId || undefined));
     toast(`Renamed to "${newName}"`);
     setRenamingCategory(null);
@@ -392,10 +404,11 @@ export function ServicesPage() {
   const handleDeleteCategory = () => {
     if (!deleteCategoryTarget) return;
     const movingServices = services.filter(
-      (s) => (s.category || UNCATEGORIZED) === deleteCategoryTarget,
+      (s) => (resolveServiceCategoryName(s, storeCategories) || UNCATEGORIZED) === deleteCategoryTarget,
     );
+    // Clear both fields so the row stops referencing the deleted category.
     movingServices.forEach((s) =>
-      updateService(s.id, { category: undefined }, workspaceId || undefined),
+      updateService(s.id, { category: undefined, categoryId: null }, workspaceId || undefined),
     );
     const cat = categoryByName.get(deleteCategoryTarget);
     if (cat) deleteCategory(cat.id, workspaceId || undefined);
@@ -455,29 +468,21 @@ export function ServicesPage() {
   };
 
   const handleDuplicate = (service: Service) => {
+    // Spread the source so every advanced field (variants, tiers, addons,
+    // addon groups, locationIds, requiredResourceIds, intakeQuestions,
+    // intakeFormId, dynamicPriceRules, availableWeekdays, tags, featured,
+    // promo*, isPackage, packageItems, requiresPatchTest, patch test
+    // settings, rebookAfterDays, etc.) carries through. Only id / name /
+    // sortOrder / timestamps are derived; the addService store action
+    // strips id / timestamps for us.
+    const { id: _id, createdAt: _c, updatedAt: _u, ...rest } = service;
+    void _id; void _c; void _u;
     addService(
       {
+        ...rest,
         workspaceId: workspaceId ?? "",
         name: `${service.name} (Copy)`,
-        description: service.description,
-        duration: service.duration,
-        price: service.price,
-        category: service.category,
-        enabled: service.enabled,
         sortOrder: services.length,
-        bufferMinutes: service.bufferMinutes,
-        bufferBefore: service.bufferBefore,
-        bufferAfter: service.bufferAfter,
-        minNoticeHours: service.minNoticeHours,
-        maxAdvanceDays: service.maxAdvanceDays,
-        requiresConfirmation: service.requiresConfirmation,
-        depositType: service.depositType,
-        depositAmount: service.depositAmount,
-        cancellationWindowHours: service.cancellationWindowHours,
-        cancellationFee: service.cancellationFee,
-        locationType: service.locationType,
-        priceMobile: service.priceMobile,
-        imageUrl: service.imageUrl,
       },
       workspaceId || undefined,
     );
@@ -960,7 +965,7 @@ export function ServicesPage() {
         message={(() => {
           if (!deleteCategoryTarget) return "";
           const count = services.filter(
-            (s) => (s.category || UNCATEGORIZED) === deleteCategoryTarget,
+            (s) => (resolveServiceCategoryName(s, storeCategories) || UNCATEGORIZED) === deleteCategoryTarget,
           ).length;
           if (count === 0) return `Delete the "${deleteCategoryTarget}" category?`;
           return `Delete the "${deleteCategoryTarget}" category? Its ${count} service${count === 1 ? "" : "s"} will be moved to ${UNCATEGORIZED}.`;
@@ -1023,8 +1028,9 @@ function ServiceRow({
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const { getServiceMembers } = useServicesStore();
+  const { getServiceMembers, categories: storeCategories } = useServicesStore();
   const { members } = useTeamStore();
+  const resolvedCategory = resolveServiceCategoryName(service, storeCategories);
   const assignedIds = getServiceMembers(service.id);
   const activeMembers = members.filter((m) => m.status !== "inactive");
   const isAnyone = assignedIds.length === 0;
@@ -1072,7 +1078,7 @@ function ServiceRow({
         onClick={selectionMode ? onToggleSelected : onEdit}
         className="flex items-center gap-4 flex-1 min-w-0 text-left cursor-pointer"
       >
-        <ServiceLetterCard name={service.name} category={service.category} />
+        <ServiceLetterCard name={service.name} category={resolvedCategory} />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-x-5 gap-y-1 flex-wrap">
             <p className="text-[14px] font-medium text-foreground truncate">
@@ -1118,16 +1124,8 @@ function ServiceRow({
                   Deposit
                 </span>
               )}
-              {service.locationType === "mobile" && (
-                <span className="text-[9px] font-semibold text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded">
-                  Mobile
-                </span>
-              )}
-              {service.locationType === "both" && (
-                <span className="text-[9px] font-semibold text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded">
-                  Studio + Mobile
-                </span>
-              )}
+              {/* Studio/Mobile badge dropped — Location.kind drives this now;
+                  the badge would need a per-location join to be honest. */}
             </div>
           </div>
           {service.description && (

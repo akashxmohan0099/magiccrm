@@ -17,6 +17,7 @@ import { useClientsStore } from "@/store/clients";
 import { useServicesStore } from "@/store/services";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { getOnboardingChecklistItems } from "@/lib/onboarding";
+import { useMoney } from "@/lib/format/money";
 
 type DateRange = "today" | "7d" | "14d" | "30d" | "90d";
 
@@ -64,6 +65,7 @@ export default function DashboardPage() {
   const documents = usePaymentsStore((s) => s.documents);
   const clients = useClientsStore((s) => s.clients);
   const services = useServicesStore((s) => s.services);
+  const money = useMoney();
 
   const [range, setRange] = useState<DateRange>("30d");
   const [checklistStorageVersion, setChecklistStorageVersion] = useState(0);
@@ -249,7 +251,7 @@ export default function DashboardPage() {
       <motion.div initial={{ y: 6 }} animate={{ y: 0 }} transition={{ delay: 0.06 }}
         className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         <StatCard icon={Calendar} iconBg="bg-emerald-100" iconColor="text-emerald-600" label="Bookings" value={String(rangeBookings.length)} sub={`${todaysBookings.length} today`} href="/dashboard/bookings" accent="#34D399" />
-        <StatCard icon={TrendingUp} iconBg="bg-violet-100" iconColor="text-violet-600" label="Revenue" value={`$${rangeRevenue.toLocaleString()}`} sub={`${completedBookings} completed`} href="/dashboard/payments" accent="#8B5CF6" />
+        <StatCard icon={TrendingUp} iconBg="bg-violet-100" iconColor="text-violet-600" label="Revenue" value={money.format(rangeRevenue)} sub={`${completedBookings} completed`} href="/dashboard/payments" accent="#8B5CF6" />
         <StatCard icon={Users} iconBg="bg-blue-100" iconColor="text-blue-600" label="Clients" value={String(clients.length)} sub={`${rangeNewClients} new`} href="/dashboard/clients" accent="#3B82F6" />
         <StatCard icon={Inbox} iconBg="bg-amber-100" iconColor="text-amber-600" label="Leads" value={String(pendingInquiries.length)} sub="pending" href="/dashboard/leads" accent="#F59E0B" />
       </motion.div>

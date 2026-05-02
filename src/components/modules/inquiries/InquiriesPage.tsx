@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Inbox, Plus, MessageCircle, Calendar, CreditCard, FileText, ChevronRight } from "lucide-react";
 import { useInquiriesStore } from "@/store/inquiries";
 import { useBookingsStore } from "@/store/bookings";
@@ -85,6 +85,7 @@ export function InquiriesPage() {
   const { createPayment } = useCreatePayment();
   const bookingsCountRef = useRef(0);
   const formMap = useMemo(() => new Map(forms.map((f) => [f.id, f])), [forms]);
+  const searchParams = useSearchParams();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<InquiryStatus | "all">("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -118,6 +119,15 @@ export function InquiriesPage() {
     () => (selectedId ? inquiries.find((i) => i.id === selectedId) : null),
     [selectedId, inquiries]
   );
+
+  useEffect(() => {
+    const leadId = searchParams.get("lead") || searchParams.get("inquiry");
+    if (!leadId) return;
+    if (inquiries.some((i) => i.id === leadId)) {
+      const t = window.setTimeout(() => setSelectedId(leadId), 0);
+      return () => window.clearTimeout(t);
+    }
+  }, [searchParams, inquiries]);
 
   const linkedConversation = useMemo(
     () => (selected?.conversationId ? conversations.find((c) => c.id === selected.conversationId) : null),

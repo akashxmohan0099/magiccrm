@@ -23,6 +23,7 @@ export interface PublicInquiryForm {
 export type PublicInquiryLookup =
   | { status: "ok"; form: PublicInquiryForm }
   | { status: "disabled" }
+  | { status: "ambiguous" }
   | { status: "not_found" }
   | { status: "error"; error: string };
 
@@ -49,8 +50,7 @@ export async function lookupPublicInquiryFormBySlug(
     .eq("type", "inquiry")
     .ilike("slug", trimmedSlug)
     .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .limit(2);
 
   if (error) {
     // Outage / RLS misconfig / connection failure — surface as 5xx instead of
@@ -59,14 +59,20 @@ export async function lookupPublicInquiryFormBySlug(
     console.error("[public-inquiries] forms lookup failed:", error);
     return { status: "error", error: error.message ?? "Lookup failed" };
   }
-  if (!data) {
+  const rows = data ?? [];
+  if (rows.length === 0) {
     return { status: "not_found" };
   }
-  if (data.enabled === false) {
+  if (rows.length > 1) {
+    console.error(`[public-inquiries] duplicate public inquiry slug "${trimmedSlug}"`);
+    return { status: "ambiguous" };
+  }
+  const dataRow = rows[0];
+  if (dataRow.enabled === false) {
     return { status: "disabled" };
   }
 
-  const form = mapFormFromDB(data);
+  const form = mapFormFromDB(dataRow);
 
   // Pull the workspace's branding logo so the public form can fall back to
   // it when no per-form logo is set. One extra small read per public load.

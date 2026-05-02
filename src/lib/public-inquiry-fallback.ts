@@ -61,6 +61,9 @@ export async function resolvePublicInquiryForm(
     if (res.status === 410) {
       return { status: "disabled" };
     }
+    if (res.status === 409) {
+      throw new Error("Form slug is not unique");
+    }
     if (res.status !== 404) {
       // 5xx, 429, etc. — try the dev fallback before surfacing the failure.
       serverFailure = true;
@@ -88,10 +91,12 @@ export async function resolvePublicInquiryForm(
     }
     const form = allMatch && allMatch.enabled ? allMatch : null;
     if (form) {
-      console.warn(
-        `[public-inquiry] DEV FALLBACK serving "${slug}" from local Zustand — ` +
-          "API did not have it. If you expected a real DB hit, check that the " +
-          "form is synced to Supabase. This warning will not fire in production.",
+      console.info(
+        `[public-inquiry] DEV FALLBACK serving "${slug}" from local Zustand. ` +
+          "This usually means it's a seeded demo form (workspace_id=seed-workspace) " +
+          "that never reached Supabase by design. Forms created via the editor " +
+          "with a real workspace_id DO persist to Supabase. This message is " +
+          "dev-only and will never fire in production.",
       );
       const settings = useSettingsStore.getState().settings;
       const services = useServicesStore

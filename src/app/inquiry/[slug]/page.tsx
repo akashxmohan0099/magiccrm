@@ -34,13 +34,26 @@ export default function InquiryFormPage() {
   // Capture URL params (UTMs, source, ref) into hidden fields once the
   // form definition loads. Also lets the operator pre-fill any field via
   // ?fieldName=... so personalised links can land with answers pre-set.
+  // Match against multiple key shapes (raw name, label, normalized) so the
+  // operator's URL doesn't have to know the internal field id.
   useEffect(() => {
     if (!form) return;
     const hidden = captureHiddenFieldValues(form.fields, searchParams);
     const prefilled: Record<string, string> = { ...hidden };
+    const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "");
+    const paramByNorm = new Map<string, string>();
+    if (searchParams) {
+      searchParams.forEach((v, k) => {
+        if (!paramByNorm.has(norm(k))) paramByNorm.set(norm(k), v);
+      });
+    }
     for (const f of form.fields) {
       if (f.type === "hidden") continue;
-      const got = searchParams?.get(f.name);
+      const direct = searchParams?.get(f.name);
+      const fuzzy =
+        paramByNorm.get(norm(f.name)) ??
+        (f.label ? paramByNorm.get(norm(f.label)) : undefined);
+      const got = direct ?? fuzzy;
       if (got) prefilled[f.name] = got;
     }
     if (Object.keys(prefilled).length > 0) {
@@ -105,14 +118,17 @@ export default function InquiryFormPage() {
   }
 
   if (load.status === "not_found" || load.status === "error" || !form) {
+    const isError = load.status === "error";
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <div className="text-center max-w-sm">
-          <h1 className="text-xl font-bold text-foreground mb-2">Form not found</h1>
+          <h1 className="text-xl font-bold text-foreground mb-2">
+            {isError ? "Couldn't reach the server" : "Form not found"}
+          </h1>
           <p className="text-sm text-text-secondary">
-            {load.status === "error"
-              ? "Something went wrong loading this form. Please try again in a moment."
-              : "We couldn't find this form. Double-check the link."}
+            {isError
+              ? "We had trouble loading this form. Please try again in a moment."
+              : "This form doesn't exist or has been removed. Double-check the link."}
           </p>
         </div>
       </div>

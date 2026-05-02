@@ -21,6 +21,7 @@ import {
   List,
 } from "lucide-react";
 import { useServicesStore } from "@/store/services";
+import { resolveServiceCategoryName } from "@/lib/services/category";
 import { useTeamStore } from "@/store/team";
 import { useSettingsStore } from "@/store/settings";
 import { useAuth } from "@/hooks/useAuth";
@@ -96,12 +97,39 @@ export function ServicesPreview({ open, onClose, fullscreen, onToggleFullscreen 
     );
   };
 
+  // The preview renders a self-contained mock of the booking flow — its
+  // availability, pricing, and validation paths intentionally diverge from
+  // the live `/book/[slug]` route. We surface a banner + "open the real
+  // page" link so operators know to verify the actual customer experience
+  // out-of-band. Long-term this preview should converge on the real
+  // public components; until then the banner is the honesty layer.
+  const liveBookingHref = settings?.bookingPageSlug
+    ? `/book/${settings.bookingPageSlug}`
+    : null;
   const flow = (
-    <BookingFlow
-      layout={layout}
-      coverImage={coverImage}
-      fontPairing={fontPairing}
-    />
+    <div>
+      <div className="px-4 py-2.5 bg-amber-50 border-b border-amber-200 text-[12px] text-amber-900 flex items-center justify-between gap-3">
+        <span>
+          Preview only — uses mock availability + pricing. Test the real flow
+          for accurate slot times, deposits, and gating.
+        </span>
+        {liveBookingHref ? (
+          <a
+            href={liveBookingHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold underline shrink-0"
+          >
+            Open live page →
+          </a>
+        ) : null}
+      </div>
+      <BookingFlow
+        layout={layout}
+        coverImage={coverImage}
+        fontPairing={fontPairing}
+      />
+    </div>
   );
   const panel = styleMode ? (
     <StylePanel
@@ -478,7 +506,7 @@ function BookingFlow({
   fontPairing: string;
 }) {
   const fonts = fontClassesFor(fontPairing);
-  const { services, getServiceMembers, getMemberPriceOverride } = useServicesStore();
+  const { services, getServiceMembers, getMemberPriceOverride, categories: storeCategories } = useServicesStore();
   const { members } = useTeamStore();
   const { settings } = useSettingsStore();
 
@@ -506,14 +534,14 @@ function BookingFlow({
     const seen = new Set<string>();
     const out: string[] = [];
     for (const s of activeServices) {
-      const cat = s.category || UNCATEGORIZED;
+      const cat = resolveServiceCategoryName(s, storeCategories) || UNCATEGORIZED;
       if (!seen.has(cat)) {
         seen.add(cat);
         out.push(cat);
       }
     }
     return out;
-  }, [activeServices]);
+  }, [activeServices, storeCategories]);
 
   // Resolve basket items into { service, variantId, addonIds, artistId }.
   // Filter against activeServices so a stale id (service deactivated
@@ -1549,15 +1577,18 @@ function ServiceMenu({
   onToggle: (s: Service) => void;
   headingClass?: string;
 }) {
+  // Pull category rows from the store so the canonical name wins over the
+  // legacy free-text fallback. Same lookup pattern as the catalog view.
+  const storeCategories = useServicesStore((s) => s.categories);
   const grouped = useMemo(() => {
     const m = new Map<string, Service[]>();
     for (const s of services) {
-      const cat = s.category || UNCATEGORIZED;
+      const cat = resolveServiceCategoryName(s, storeCategories) || UNCATEGORIZED;
       if (!m.has(cat)) m.set(cat, []);
       m.get(cat)!.push(s);
     }
     return m;
-  }, [services]);
+  }, [services, storeCategories]);
 
   const containerClass =
     layout === "grid"

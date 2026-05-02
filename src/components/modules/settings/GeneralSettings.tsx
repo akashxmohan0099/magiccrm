@@ -15,12 +15,39 @@ import {
   Sun,
   Moon,
   Monitor,
+  DollarSign,
 } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { useSettingsStore } from "@/store/settings";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/Button";
 import type { WorkspaceSettings } from "@/types/models";
+
+const CURRENCY_OPTIONS = [
+  { code: "USD", label: "US Dollar" },
+  { code: "AUD", label: "Australian Dollar" },
+  { code: "CAD", label: "Canadian Dollar" },
+  { code: "GBP", label: "British Pound" },
+  { code: "EUR", label: "Euro" },
+  { code: "NZD", label: "New Zealand Dollar" },
+  { code: "JPY", label: "Japanese Yen" },
+  { code: "INR", label: "Indian Rupee" },
+  { code: "AED", label: "UAE Dirham" },
+  { code: "SGD", label: "Singapore Dollar" },
+];
+
+const LOCALE_OPTIONS = [
+  { code: "en-US", label: "English (US)" },
+  { code: "en-AU", label: "English (Australia)" },
+  { code: "en-GB", label: "English (UK)" },
+  { code: "en-CA", label: "English (Canada)" },
+  { code: "en-NZ", label: "English (New Zealand)" },
+  { code: "en-IN", label: "English (India)" },
+  { code: "fr-FR", label: "French (France)" },
+  { code: "de-DE", label: "German (Germany)" },
+  { code: "es-ES", label: "Spanish (Spain)" },
+  { code: "ja-JP", label: "Japanese" },
+];
 
 // --- Preset brand colors ---
 const PRESET_COLORS = [
@@ -447,6 +474,9 @@ function GeneralSettingsContent({
     contactEmail: settings?.contactEmail || "",
     contactPhone: settings?.contactPhone || "",
     address: settings?.address || "",
+    currency: settings?.currency || "USD",
+    locale: settings?.locale || "en-US",
+    bookingPageSlug: settings?.bookingPageSlug || "",
   }));
   const [saved, setSaved] = useState(false);
 
@@ -455,16 +485,32 @@ function GeneralSettingsContent({
     if (saved) setSaved(false);
   };
 
+  // Same normalization as the workspace-bootstrap auto-slug — keep them
+  // in sync so a manually entered slug round-trips identically.
+  const normalizeSlug = (value: string) =>
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 48);
+
   const handleSave = () => {
+    const cleanSlug = normalizeSlug(form.bookingPageSlug);
     updateSettings(
       {
         businessName: form.businessName.trim(),
         contactEmail: form.contactEmail.trim(),
         contactPhone: form.contactPhone.trim(),
         address: form.address.trim(),
+        currency: form.currency,
+        locale: form.locale,
+        bookingPageSlug: cleanSlug || undefined,
       },
       workspaceId
     );
+    if (cleanSlug !== form.bookingPageSlug) {
+      setForm((prev) => ({ ...prev, bookingPageSlug: cleanSlug }));
+    }
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -534,6 +580,35 @@ function GeneralSettingsContent({
             />
           </div>
           <div>
+            <label className="block text-xs font-medium text-text-secondary mb-2">
+              Public booking URL
+            </label>
+            <div className="flex items-center bg-card-bg border border-border-light rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-foreground/10 focus-within:border-foreground transition-all">
+              <span className="px-3 py-3 text-[13px] text-text-tertiary bg-surface border-r border-border-light select-none">
+                /book/
+              </span>
+              <input
+                type="text"
+                value={form.bookingPageSlug}
+                onChange={(e) => update("bookingPageSlug", e.target.value)}
+                onBlur={(e) => {
+                  const cleaned = normalizeSlug(e.target.value);
+                  if (cleaned !== form.bookingPageSlug) {
+                    update("bookingPageSlug", cleaned);
+                  }
+                }}
+                placeholder="your-business"
+                className="flex-1 px-3 py-3 bg-transparent text-[15px] text-foreground placeholder:text-text-tertiary focus:outline-none"
+                spellCheck={false}
+                autoComplete="off"
+              />
+            </div>
+            <p className="text-[11px] text-text-tertiary mt-1.5">
+              Lowercase letters, numbers, and hyphens. This is the public link
+              clients use to book with you. Save to apply.
+            </p>
+          </div>
+          <div>
             <label className="block text-xs font-medium text-text-secondary mb-2">Contact Email</label>
             <input
               type="email"
@@ -567,6 +642,45 @@ function GeneralSettingsContent({
 
       {/* Appearance Section */}
       <AppearanceSection />
+
+      {/* Currency & Locale Section */}
+      <SettingsSection
+        icon={DollarSign}
+        title="Currency & Locale"
+        description="Used for every price and money display in the dashboard"
+        delay={0.16}
+      >
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-medium text-text-secondary mb-2">Currency</label>
+            <select
+              value={form.currency}
+              onChange={(e) => update("currency", e.target.value)}
+              className={inputClass}
+            >
+              {CURRENCY_OPTIONS.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.code} — {c.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-text-secondary mb-2">Locale</label>
+            <select
+              value={form.locale}
+              onChange={(e) => update("locale", e.target.value)}
+              className={inputClass}
+            >
+              {LOCALE_OPTIONS.map((l) => (
+                <option key={l.code} value={l.code}>
+                  {l.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </SettingsSection>
 
       {/* Business Details Section */}
       <SettingsSection icon={MapPin} title="Business Address" description="Your business location" delay={0.18}>

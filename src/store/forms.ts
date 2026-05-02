@@ -3,6 +3,7 @@ import { persist } from "zustand/middleware";
 import type { Form } from "@/types/models";
 import { generateId } from "@/lib/id";
 import { toast } from "@/components/ui/Toast";
+import { surfaceDbError } from "@/store/_db-error";
 import {
   fetchForms,
   dbCreateForm,
@@ -54,8 +55,10 @@ export const useFormsStore = create<FormsStore>()(
               toast(err.message, "error");
               return;
             }
-            console.error("[forms.addForm] DB write failed:", err);
-            toast("Couldn't save form to the server. Reload and try again.", "error");
+            // Delegate to the shared error surface so schema-cache misses
+            // get the actionable "run the migration" message instead of
+            // the generic "couldn't save" toast.
+            surfaceDbError("forms.add")(err);
           });
         }
         return form;

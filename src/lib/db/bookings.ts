@@ -12,6 +12,7 @@ export function mapBookingFromDB(row: Record<string, unknown>): Booking {
     workspaceId: row.workspace_id as string,
     clientId: row.client_id as string,
     serviceId: (row.service_id as string) || undefined,
+    additionalServiceIds: (row.additional_service_ids as string[] | null) ?? undefined,
     assignedToId: (row.assigned_to_id as string) || undefined,
     date: row.date as string,
     startAt: row.start_at as string,
@@ -35,6 +36,10 @@ export function mapBookingFromDB(row: Record<string, unknown>): Booking {
         : Number(row.resolved_price),
     giftCardCode: (row.gift_card_code as string | null) ?? undefined,
     membershipId: (row.membership_id as string | null) ?? undefined,
+    intakeAnswers: (row.intake_answers as Record<string, string> | null) ?? undefined,
+    locationId: (row.location_id as string | null) ?? undefined,
+    locationType: (row.location_type as string | null) ?? undefined,
+    address: (row.address as string | null) ?? undefined,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };
@@ -50,6 +55,10 @@ function mapBookingToDB(
   if (data.id !== undefined) row.id = data.id;
   if (data.clientId !== undefined) row.client_id = data.clientId;
   if (data.serviceId !== undefined) row.service_id = data.serviceId || null;
+  if (data.additionalServiceIds !== undefined) {
+    const ids = (data.additionalServiceIds as string[] | undefined) ?? [];
+    row.additional_service_ids = ids.length ? ids : null;
+  }
   if (data.assignedToId !== undefined) row.assigned_to_id = data.assignedToId || null;
   if (data.date !== undefined) row.date = data.date;
   if (data.startAt !== undefined) row.start_at = data.startAt;
@@ -70,6 +79,10 @@ function mapBookingToDB(
   if (data.resolvedPrice !== undefined) row.resolved_price = data.resolvedPrice;
   if (data.giftCardCode !== undefined) row.gift_card_code = data.giftCardCode || null;
   if (data.membershipId !== undefined) row.membership_id = data.membershipId || null;
+  if (data.intakeAnswers !== undefined) row.intake_answers = data.intakeAnswers ?? {};
+  if (data.locationId !== undefined) row.location_id = data.locationId || null;
+  if (data.locationType !== undefined) row.location_type = data.locationType || null;
+  if (data.address !== undefined) row.address = data.address || null;
   if (data.createdAt !== undefined) row.created_at = data.createdAt;
   if (data.updatedAt !== undefined) row.updated_at = data.updatedAt;
 

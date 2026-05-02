@@ -70,7 +70,11 @@ export function LocationsManagerModal({ open, onClose }: Props) {
               {locations.map((loc) => (
                 <div
                   key={loc.id}
-                  className="flex items-center gap-3 bg-surface border border-border-light rounded-lg px-3 py-2.5"
+                  className={`flex items-center gap-3 border rounded-lg px-3 py-2.5 transition-colors ${
+                    loc.enabled === false
+                      ? "bg-surface/50 border-dashed border-border-light"
+                      : "bg-surface border-border-light"
+                  }`}
                 >
                   <input
                     type="text"
@@ -82,7 +86,9 @@ export function LocationsManagerModal({ open, onClose }: Props) {
                         workspaceId || undefined,
                       )
                     }
-                    className="flex-1 bg-transparent outline-none text-[13px] font-medium text-foreground"
+                    className={`flex-1 bg-transparent outline-none text-[13px] font-medium ${
+                      loc.enabled === false ? "text-text-tertiary" : "text-foreground"
+                    }`}
                   />
                   <select
                     value={loc.kind}
@@ -98,6 +104,24 @@ export function LocationsManagerModal({ open, onClose }: Props) {
                     <option value="studio">Studio</option>
                     <option value="mobile">Mobile</option>
                   </select>
+                  <label
+                    className="flex items-center gap-1 text-[11px] text-text-tertiary cursor-pointer select-none"
+                    title="Disabled locations are hidden from the public booking flow but kept for historical bookings."
+                  >
+                    <input
+                      type="checkbox"
+                      checked={loc.enabled !== false}
+                      onChange={(e) =>
+                        updateLocation(
+                          loc.id,
+                          { enabled: e.target.checked },
+                          workspaceId || undefined,
+                        )
+                      }
+                      className="rounded"
+                    />
+                    {loc.enabled === false ? "Disabled" : "Enabled"}
+                  </label>
                   <button
                     onClick={() =>
                       deleteLocation(loc.id, workspaceId || undefined)

@@ -1,37 +1,34 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
-import posthog from "posthog-js";
-import { CardOnFileForm } from "./CardOnFileForm";
-import {
-  CheckCircle2,
-  Loader2,
-  Clock,
-  DollarSign,
-  ChevronLeft,
-  ChevronRight,
-  Calendar,
-  ArrowLeft,
-} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowLeft, X } from "lucide-react";
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
+import { useBookingCart } from "@/store/booking-cart";
+import { CategoryTabs } from "@/components/modules/bookings/public/CategoryTabs";
+import { ServiceCard } from "@/components/modules/bookings/public/ServiceCard";
+import { CartPane } from "@/components/modules/bookings/public/CartPane";
+import { MobileCartBar } from "@/components/modules/bookings/public/MobileCartBar";
+import { LineItemDrawer } from "@/components/modules/bookings/public/LineItemDrawer";
+import { TimePicker } from "@/components/modules/bookings/public/TimePicker";
+import { DetailsForm, isDetailsValid, type DetailsFormValues } from "@/components/modules/bookings/public/DetailsForm";
+import { Confirmation, type ConfirmedBooking } from "@/components/modules/bookings/public/Confirmation";
+import { CatalogSkeleton } from "@/components/modules/bookings/public/CatalogSkeleton";
+import { FloatingCartPill } from "@/components/modules/bookings/public/FloatingCartPill";
+import { CardOnFileForm } from "@/app/book/[slug]/CardOnFileForm";
+import { GiftCardField, type GiftCardCheck } from "@/components/modules/bookings/public/GiftCardField";
+import { LocationPicker } from "@/components/modules/bookings/public/LocationPicker";
+import { categoryAnchor, computeLine } from "@/components/modules/bookings/public/helpers";
+import type { PublicLocation, PublicMember, PublicService } from "@/components/modules/bookings/public/types";
 
-interface Service {
-  id: string;
-  name: string;
-  duration: number;
-  price: number;
-  category?: string;
-  depositType?: "none" | "percentage" | "fixed";
-  depositAmount?: number;
-  rebookAfterDays?: number;
-  allowGroupBooking?: boolean;
-  maxGroupSize?: number;
-  requiresCardOnFile?: boolean;
-}
+type Step = "browse" | "time" | "details" | "confirm";
+const STEPS: { key: Step; label: string }[] = [
+  { key: "browse", label: "Services" },
+  { key: "time", label: "Time" },
+  { key: "details", label: "Details" },
+  { key: "confirm", label: "Confirm" },
+];
 
 interface AvailabilitySlot {
   day: number;
@@ -40,906 +37,789 @@ interface AvailabilitySlot {
   enabled: boolean;
 }
 
-interface BookingConfirmation {
-  id: string;
-  serviceName: string;
-  date: string;
-  time: string;
-  endTime: string;
-  duration: number;
-  price: number;
-  status: string;
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function formatPrice(cents: number): string {
-  return new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD" }).format(cents);
-}
-
-function formatDuration(minutes: number): string {
-  if (minutes < 60) return `${minutes} min`;
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return m > 0 ? `${h}h ${m}m` : `${h}h`;
-}
-
-function getDaysInMonth(year: number, month: number): number {
-  return new Date(year, month + 1, 0).getDate();
-}
-
-function getFirstDayOfMonth(year: number, month: number): number {
-  return new Date(year, month, 1).getDay();
-}
-
-function formatDateStr(d: Date): string {
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
-}
-
-function formatDisplayDate(dateStr: string): string {
-  const d = new Date(`${dateStr}T12:00:00`);
-  return d.toLocaleDateString("en-AU", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-}
-
-function formatTime12h(time24: string): string {
-  const [hStr, mStr] = time24.split(":");
-  const h = parseInt(hStr);
-  const suffix = h >= 12 ? "PM" : "AM";
-  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
-  return `${h12}:${mStr} ${suffix}`;
-}
-
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
-
-type Step = "service" | "date" | "details" | "confirmation";
+const EMPTY_DETAILS: DetailsFormValues = { name: "", email: "", phone: "", notes: "", address: "" };
 
 export default function PublicBookingPage() {
   const { slug } = useParams<{ slug: string }>();
 
-  // ---- data loading state ----
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [workspaceId, setWorkspaceId] = useState<string | null>(null);
   const [businessName, setBusinessName] = useState("Business");
   const [brandColor, setBrandColor] = useState("#34D399");
-  const [services, setServices] = useState<Service[]>([]);
+  const [services, setServices] = useState<PublicService[]>([]);
+  const [members, setMembers] = useState<PublicMember[]>([]);
+  const [memberServiceMap, setMemberServiceMap] = useState<Record<string, string[]>>({});
   const [availability, setAvailability] = useState<AvailabilitySlot[]>([]);
+  const [locations, setLocations] = useState<PublicLocation[]>([]);
+  const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
 
-  // ---- booking flow state ----
-  const [step, setStep] = useState<Step>("service");
-  const [selectedService, setSelectedService] = useState<Service | null>(null);
+  const [step, setStep] = useState<Step>("browse");
+  const [scrolled, setScrolled] = useState(false);
+  const [editingLineId, setEditingLineId] = useState<string | null>(null);
+  const cartSentinelRef = useRef<HTMLDivElement>(null);
+
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const [clientName, setClientName] = useState("");
-  const [clientEmail, setClientEmail] = useState("");
-  const [clientPhone, setClientPhone] = useState("");
-  const [notes, setNotes] = useState("");
-  // Group booking — extra guest names attached to the same time slot.
-  const [guestNames, setGuestNames] = useState<string[]>([]);
-  // Card-on-file: when service requires it, capture before submit.
-  const [cardOnFile, setCardOnFile] = useState<{ customerId: string; setupIntentId: string } | null>(null);
-  // Gift card redemption — entered code + validated balance.
-  const [giftCardCode, setGiftCardCode] = useState("");
-  const [giftCardCheck, setGiftCardCheck] = useState<
-    { status: "valid"; balance: number } | { status: "invalid"; reason: string } | null
-  >(null);
-  const [checkingGift, setCheckingGift] = useState(false);
+  const [details, setDetails] = useState<DetailsFormValues>(EMPTY_DETAILS);
+  // Per-service intake answers, keyed by serviceId then questionId. Each
+  // primary basket item POSTs its slice in the basket payload.
+  const [intakeAnswersByService, setIntakeAnswersByService] = useState<Record<string, Record<string, string>>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [confirmation, setConfirmation] = useState<BookingConfirmation | null>(null);
+  const [confirmed, setConfirmed] = useState<ConfirmedBooking | null>(null);
+  const [cardOnFile, setCardOnFile] = useState<{ customerId: string; setupIntentId: string } | null>(null);
+  const [giftCard, setGiftCard] = useState<GiftCardCheck | null>(null);
 
-  // ---- calendar state ----
-  const today = useMemo(() => new Date(), []);
-  const [calMonth, setCalMonth] = useState(today.getMonth());
-  const [calYear, setCalYear] = useState(today.getFullYear());
+  const setSlug = useBookingCart((s) => s.setSlug);
+  const cartItems = useBookingCart((s) => s.items);
+  const friends = useBookingCart((s) => s.friends);
+  const addItem = useBookingCart((s) => s.addItem);
+  const removeItem = useBookingCart((s) => s.removeItem);
+  const updateItem = useBookingCart((s) => s.updateItem);
+  const clearCart = useBookingCart((s) => s.clear);
 
-  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+  const removeByServiceId = (serviceId: string) => {
+    const target = cartItems.find((it) => it.serviceId === serviceId);
+    if (target) removeItem(target.lineId);
+  };
 
-  // ---- load workspace data from slug ----
+  // Bind cart to this slug. Switching slugs clears the cart (handled in store).
+  useEffect(() => {
+    if (slug) setSlug(slug);
+  }, [slug, setSlug]);
+
+  // Fetch services + business info
   useEffect(() => {
     if (!slug) return;
+    let cancelled = false;
     (async () => {
       try {
         setLoading(true);
         const res = await fetch(`/api/public/book/info?slug=${encodeURIComponent(slug)}`);
+        if (cancelled) return;
         if (!res.ok) {
           const data = await res.json().catch(() => ({ error: "Not found" }));
           setError(data.error || "Booking page not found.");
           return;
         }
         const data = await res.json();
-        setWorkspaceId(data.workspaceId);
         setBusinessName(data.businessName || "Business");
         setBrandColor(data.brandColor || "#34D399");
-        setServices(data.services || []);
-        setAvailability(data.availability || []);
+        setServices((data.services as PublicService[]) || []);
+        setMembers((data.members as PublicMember[]) || []);
+        setMemberServiceMap((data.memberServiceMap as Record<string, string[]>) || {});
+        setAvailability((data.availability as AvailabilitySlot[]) || []);
+        const locs = (data.locations as PublicLocation[]) || [];
+        setLocations(locs);
+        // Auto-select when there's only one location so the rest of the flow
+        // always has a locationId to thread through. The picker UI stays
+        // hidden in that case.
+        if (locs.length === 1) setSelectedLocationId(locs[0].id);
       } catch {
-        setError("Failed to load booking page. Please try again.");
+        if (!cancelled) setError("Failed to load booking page. Please try again.");
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     })();
+    return () => { cancelled = true; };
   }, [slug]);
 
-  // ---- load available time slots for the selected date and service ----
+  // Morphing top bar — business name fades in once user scrolls past ~40px.
   useEffect(() => {
-    if (!workspaceId || !selectedDate || !selectedService) {
-      setAvailableSlots([]);
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // When the customer picks a different location, drop any cart items whose
+  // service isn't offered there. Pinned slot/time gets reset so the customer
+  // re-picks against the new location's availability.
+  useEffect(() => {
+    if (!selectedLocationId || locations.length < 2) return;
+    const allowedServiceIds = new Set(
+      services
+        .filter((s) => !s.locationIds?.length || s.locationIds.includes(selectedLocationId))
+        .map((s) => s.id),
+    );
+    const stale = cartItems.filter((it) => !allowedServiceIds.has(it.serviceId));
+    if (stale.length === 0) return;
+    for (const it of stale) removeItem(it.lineId);
+    setSelectedDate(null);
+    setSelectedTime(null);
+  }, [selectedLocationId, services, cartItems, removeItem, locations.length]);
+
+  const selectedLocation = useMemo(
+    () => locations.find((l) => l.id === selectedLocationId) ?? null,
+    [locations, selectedLocationId],
+  );
+
+  // Filter the catalog to services available at the selected location.
+  // Empty / missing locationIds means "available at every location" — show it
+  // unconditionally. When the workspace has a single location (or none) the
+  // selectedLocationId is already auto-set and the predicate is a no-op for
+  // the common single-location case.
+  const visibleServices = useMemo(() => {
+    if (!selectedLocationId || locations.length < 2) return services;
+    return services.filter(
+      (s) => !s.locationIds?.length || s.locationIds.includes(selectedLocationId),
+    );
+  }, [services, selectedLocationId, locations.length]);
+
+  // Group services by category, preserving the order they arrived in.
+  const sections = useMemo(() => {
+    const map = new Map<string, PublicService[]>();
+    for (const svc of visibleServices) {
+      const cat = svc.category || "";
+      if (!map.has(cat)) map.set(cat, []);
+      map.get(cat)!.push(svc);
+    }
+    const ordered = [...map.entries()].sort(([a], [b]) => {
+      if (a === "" && b !== "") return 1;
+      if (b === "" && a !== "") return -1;
+      return a.localeCompare(b);
+    });
+    return ordered.map(([category, svcs]) => ({ category, services: svcs }));
+  }, [visibleServices]);
+
+  const categories = sections.map((s) => s.category);
+  const serviceMap = useMemo(() => new Map(services.map((s) => [s.id, s])), [services]);
+  const memberMap = useMemo(() => new Map(members.map((m) => [m.id, m])), [members]);
+  const selectedIds = useMemo(() => new Set(cartItems.map((it) => it.serviceId)), [cartItems]);
+  const enabledWeekdays = useMemo(
+    () => new Set(availability.filter((s) => s.enabled).map((s) => s.day)),
+    [availability]
+  );
+
+  // When at least one cart service restricts itself to specific weekdays,
+  // intersect that restriction with the workspace's open days. A booking
+  // basket only resolves to a slot when EVERY service in it is bookable,
+  // so we AND the per-service `availableWeekdays` arrays together.
+  const cartEnabledWeekdays = useMemo(() => {
+    if (cartItems.length === 0) return enabledWeekdays;
+    let allowed: number[] | null = null;
+    for (const item of cartItems) {
+      const svc = serviceMap.get(item.serviceId);
+      if (!svc) continue;
+      const weekdays = svc.availableWeekdays;
+      if (!weekdays || weekdays.length === 0) continue;
+      if (allowed === null) {
+        allowed = [...weekdays];
+      } else {
+        allowed = allowed.filter((d) => weekdays.includes(d));
+      }
+    }
+    if (allowed === null) return enabledWeekdays;
+    const allowedSet = new Set(allowed);
+    const out = new Set<number>();
+    for (const d of enabledWeekdays) {
+      if (allowedSet.has(d)) out.add(d);
+    }
+    return out;
+  }, [cartItems, serviceMap, enabledWeekdays]);
+
+  const editingItem = editingLineId ? cartItems.find((it) => it.lineId === editingLineId) ?? null : null;
+  const editingService = editingItem ? serviceMap.get(editingItem.serviceId) ?? null : null;
+  const eligibleMembers = useMemo(() => {
+    if (!editingService) return [];
+    const allowed = memberServiceMap[editingService.id];
+    if (!allowed || allowed.length === 0) return members;
+    const set = new Set(allowed);
+    return members.filter((m) => set.has(m.id));
+  }, [editingService, members, memberServiceMap]);
+
+  // Cart-derived totals for time-picker sizing + payload assembly.
+  const cartLines = useMemo(() => {
+    return cartItems
+      .map((item) => {
+        const svc = serviceMap.get(item.serviceId);
+        if (!svc) return null;
+        const computed = computeLine(svc, {
+          variantId: item.variantId,
+          tierId: item.tierId,
+          addonIds: item.addonIds,
+        });
+        return { item, service: svc, computed };
+      })
+      .filter((row): row is NonNullable<typeof row> => row !== null);
+  }, [cartItems, serviceMap]);
+
+  const totalDuration = cartLines.reduce((sum, l) => sum + l.computed.duration * l.item.qty, 0);
+  // Use the longest line item as the primary serviceId for the slot endpoint —
+  // its availability rules are most restrictive; durationMinutes carries the
+  // real cart-total window.
+  const primaryServiceId = useMemo(() => {
+    if (cartLines.length === 0) return null;
+    const longest = cartLines.reduce((a, b) =>
+      a.computed.duration >= b.computed.duration ? a : b
+    );
+    return longest.service.id;
+  }, [cartLines]);
+
+  // ── Step navigation ─────────────────────────────────────────────
+  const stepIndex = STEPS.findIndex((s) => s.key === step);
+
+  const handleContinue = async () => {
+    if (step === "browse") {
+      setStep("time");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    if (step === "time") {
+      setStep("details");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    if (step === "details") {
+      await handleSubmit();
+      return;
+    }
+  };
+
+  const handleBack = () => {
+    if (step === "time") setStep("browse");
+    else if (step === "details") setStep("time");
+    else history.back();
+  };
+
+  const continueLabel: Record<Step, string> = {
+    browse: "Pick a time",
+    time: "Add details",
+    details: submitting ? "Booking…" : "Confirm booking",
+    confirm: "Confirm",
+  };
+
+  // Any cart line that needs a card on file gates the Confirm CTA.
+  const needsCardOnFile = cartLines.some((l) => l.service.requiresCardOnFile);
+  const cardReady = !needsCardOnFile || Boolean(cardOnFile);
+
+  // Unique services in the cart that have at least one intake question to
+  // render. Used both to draw the section and to gate Confirm.
+  const intakeServices = useMemo(() => {
+    const seen = new Set<string>();
+    const out: PublicService[] = [];
+    for (const line of cartLines) {
+      if (seen.has(line.service.id)) continue;
+      seen.add(line.service.id);
+      if ((line.service.intakeQuestions ?? []).length > 0) out.push(line.service);
+    }
+    return out;
+  }, [cartLines]);
+
+  const intakeRequiredOk = useMemo(
+    () =>
+      intakeServices.every((svc) => {
+        const answers = intakeAnswersByService[svc.id] ?? {};
+        return svc.intakeQuestions
+          .filter((q) => q.required)
+          .every((q) => (answers[q.id] ?? "").trim() !== "");
+      }),
+    [intakeServices, intakeAnswersByService],
+  );
+
+  // Cart services that need a patch test on file. We display a single
+  // consent notice listing each affected service so the customer knows
+  // they may be contacted to arrange a test before their appointment.
+  const patchTestServices = useMemo(() => {
+    const seen = new Set<string>();
+    const out: PublicService[] = [];
+    for (const line of cartLines) {
+      if (seen.has(line.service.id)) continue;
+      seen.add(line.service.id);
+      if (line.service.requiresPatchTest) out.push(line.service);
+    }
+    return out;
+  }, [cartLines]);
+
+  const requireAddress = selectedLocation?.kind === "mobile";
+  const locationGateOk = locations.length < 2 || Boolean(selectedLocationId);
+  const continueDisabled =
+    (step === "browse" && !locationGateOk) ||
+    (step === "time" && !(selectedDate && selectedTime)) ||
+    (step === "details" &&
+      (!isDetailsValid(details, { requireAddress }) || submitting || !cardReady || !intakeRequiredOk));
+
+  // ── Submit ──────────────────────────────────────────────────────
+  const handleSubmit = async () => {
+    if (!slug || !selectedDate || !selectedTime) return;
+    if (locations.length >= 2 && !selectedLocationId) {
+      setSubmitError("Please choose a location before continuing.");
+      return;
+    }
+    if (!isDetailsValid(details, { requireAddress })) return;
+    if (needsCardOnFile && !cardOnFile) {
+      setSubmitError("Please add a card on file before continuing.");
       return;
     }
 
-    fetch(`/api/public/book/info?slug=${encodeURIComponent(slug)}&bookingsDate=${selectedDate}&serviceId=${selectedService.id}`)
-      .then((r) => r.json())
-      .then((data) => {
-        setAvailableSlots(Array.isArray(data.availableSlots) ? data.availableSlots : []);
-      })
-      .catch(() => {
-        setAvailableSlots([]);
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      // Build basket payload — each cart line becomes a basket item.
+      // Group bookings: each friend gets a parallel copy of every primary item,
+      // with guestName + guestOf pointing back at the matching primary index.
+      const primaryItems = cartItems.map((it) => ({
+        serviceId: it.serviceId,
+        variantId: it.variantId,
+        addonIds: it.addonIds,
+        artistId: it.artistId,
+        intakeAnswers: intakeAnswersByService[it.serviceId],
+      }));
+      const guestItems = friends.flatMap((friendName) =>
+        primaryItems.map((it, primaryIdx) => ({ ...it, guestName: friendName, guestOf: primaryIdx }))
+      );
+      const items = [...primaryItems, ...guestItems];
+
+      const res = await fetch("/api/public/book/basket", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slug,
+          clientName: details.name.trim(),
+          clientEmail: details.email.trim(),
+          clientPhone: details.phone.trim() || undefined,
+          notes: details.notes.trim() || undefined,
+          date: selectedDate,
+          time: selectedTime,
+          items,
+          locationId: selectedLocationId || undefined,
+          address: selectedLocation?.kind === "mobile" ? details.address?.trim() || undefined : undefined,
+          stripeCustomerId: cardOnFile?.customerId,
+          stripeSetupIntentId: cardOnFile?.setupIntentId,
+          giftCardCode: giftCard?.code,
+        }),
       });
-  }, [workspaceId, selectedDate, selectedService, slug]);
 
-  // ---- determine which days are enabled ----
-  const enabledDays = useMemo(() => {
-    return new Set(availability.filter((s) => s.enabled).map((s) => s.day));
-  }, [availability]);
-
-  // ---- handle booking submission ----
-  const handleSubmit = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!workspaceId || !selectedService || !selectedDate || !selectedTime) return;
-
-      // Card-on-file gate: refuse to submit without a saved SetupIntent
-      // when the service requires one. The error is reported in-form
-      // rather than swallowed so the user knows to fill the card panel.
-      if (selectedService.requiresCardOnFile && !cardOnFile) {
-        setSubmitError("Please add a card on file before continuing.");
+      const data = await res.json();
+      if (!res.ok) {
+        setSubmitError(data.error || "Couldn't confirm your booking. Please try again.");
         return;
       }
 
-      setSubmitting(true);
-      setSubmitError(null);
+      // Compute end time + assemble confirmation card data.
+      // Friends book parallel chairs, so the slot duration is per-person,
+      // but the bill multiplies by the guest count.
+      const totalMins = totalDuration;
+      const endTime = addMinutes(selectedTime, totalMins);
+      const perPerson = cartLines.reduce((s, l) => s + l.computed.price * l.item.qty, 0);
+      const total = perPerson * (friends.length + 1);
 
-      try {
-        // Group bookings → basket endpoint. Each cleaned guest name becomes
-        // a parallel item attached to the primary booking.
-        const cleanGuests = guestNames.map((g) => g.trim()).filter(Boolean);
-        const useBasket = cleanGuests.length > 0;
-        const url = useBasket ? "/api/public/book/basket" : "/api/public/book";
-        const body = useBasket
-          ? {
-              slug,
-              clientName: clientName.trim(),
-              clientEmail: clientEmail.trim(),
-              clientPhone: clientPhone.trim() || undefined,
-              notes: notes.trim() || undefined,
-              date: selectedDate,
-              time: selectedTime,
-              items: [
-                { serviceId: selectedService.id },
-                ...cleanGuests.map((name) => ({
-                  serviceId: selectedService.id,
-                  guestName: name,
-                  guestOf: 0,
-                })),
-              ],
-              stripeCustomerId: cardOnFile?.customerId,
-              stripeSetupIntentId: cardOnFile?.setupIntentId,
-            }
-          : {
-              slug,
-              serviceId: selectedService.id,
-              date: selectedDate,
-              time: selectedTime,
-              clientName: clientName.trim(),
-              clientEmail: clientEmail.trim(),
-              clientPhone: clientPhone.trim() || undefined,
-              notes: notes.trim() || undefined,
-              stripeCustomerId: cardOnFile?.customerId,
-              stripeSetupIntentId: cardOnFile?.setupIntentId,
-              giftCardCode:
-                giftCardCheck?.status === "valid"
-                  ? giftCardCode.trim().toUpperCase()
-                  : undefined,
-            };
-
-        const res = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
-
-        const data = await res.json();
-
-        if (!res.ok) {
-          setSubmitError(data.error || "Failed to create booking. Please try again.");
-          return;
-        }
-        // Basket response uses `bookings[]`; normalize to the same shape the
-        // confirmation step expects (single booking → use the first/lead).
-        if (useBasket && Array.isArray(data.bookings) && data.bookings.length > 0) {
-          data.booking = data.bookings[0];
-        }
-
-        posthog.capture("public_booking_submitted", {
-          service_name: selectedService?.name,
-          service_id: selectedService?.id,
-          date: selectedDate,
-          time: selectedTime,
-          business_slug: slug,
-        });
-
-        // Redirect to Stripe deposit checkout when the service requires a
-        // deposit. Single-service path always considers the selected service;
-        // basket path defers to the server's `requiresDeposit` + `leadBookingId`
-        // because guests under the lead don't get a separate deposit.
-        const needsDeposit = useBasket
-          ? !!data.requiresDeposit
-          : selectedService.depositType !== "none" &&
-            !!selectedService.depositAmount &&
-            selectedService.depositAmount > 0;
-        const depositBookingId = useBasket
-          ? (data.leadBookingId as string | undefined)
-          : data.booking?.id;
-        const depositServiceId = useBasket
-          ? (data.depositServiceId as string | undefined) ?? selectedService.id
-          : selectedService.id;
-
-        if (needsDeposit && depositBookingId) {
-          try {
-            const dRes = await fetch("/api/public/book/deposit", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                slug,
-                bookingId: depositBookingId,
-                serviceId: depositServiceId,
-                customerEmail: clientEmail.trim(),
-                returnUrl: window.location.href,
-              }),
-            });
-            const dData = await dRes.json();
-            if (dRes.ok && dData.url) {
-              window.location.href = dData.url;
-              return;
-            }
-            // Deposit setup failed (e.g. workspace hasn't onboarded with
-            // Stripe). Treat the booking as confirmed and surface a soft
-            // notice rather than blocking the customer.
-            console.warn("[book] deposit checkout skipped:", dData.error);
-          } catch (err) {
-            console.warn("[book] deposit checkout error:", err);
-          }
-        }
-
-        setConfirmation(data.booking);
-        setStep("confirmation");
-      } catch {
-        setSubmitError("Network error. Please try again.");
-      } finally {
-        setSubmitting(false);
-      }
-    },
-    [workspaceId, slug, selectedService, selectedDate, selectedTime, clientName, clientEmail, clientPhone, notes, guestNames, cardOnFile, giftCardCode, giftCardCheck]
-  );
-
-  // ---- calendar navigation ----
-  const goToPrevMonth = () => {
-    if (calMonth === 0) {
-      setCalMonth(11);
-      setCalYear(calYear - 1);
-    } else {
-      setCalMonth(calMonth - 1);
+      const confirmationAddress =
+        selectedLocation?.kind === "mobile"
+          ? details.address?.trim() || undefined
+          : selectedLocation?.address || undefined;
+      // Largest rebook cadence across booked services anchors the
+      // "Plan your next visit" CTA. If no service has one configured,
+      // Confirmation falls back to the plain "Book another" link.
+      const rebookAfterDays = cartLines.reduce<number>((max, l) => {
+        const v = l.service.rebookAfterDays;
+        return typeof v === "number" && v > max ? v : max;
+      }, 0);
+      setConfirmed({
+        date: selectedDate,
+        time: selectedTime,
+        endTime,
+        serviceNames: cartLines.map((l) => l.service.name),
+        total,
+        durationMinutes: totalMins,
+        businessName,
+        locationName: selectedLocation?.name,
+        address: confirmationAddress,
+        rebookAfterDays: rebookAfterDays > 0 ? rebookAfterDays : undefined,
+      });
+      setStep("confirm");
+      clearCart();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch {
+      setSubmitError("Couldn't reach the server. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   };
-
-  const goToNextMonth = () => {
-    if (calMonth === 11) {
-      setCalMonth(0);
-      setCalYear(calYear + 1);
-    } else {
-      setCalMonth(calMonth + 1);
-    }
-  };
-
-  const canGoPrev = calYear > today.getFullYear() || (calYear === today.getFullYear() && calMonth > today.getMonth());
-
-  // ---------------------------------------------------------------------------
-  // Renders
-  // ---------------------------------------------------------------------------
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
-      </div>
-    );
-  }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background px-4">
-        <div className="max-w-md w-full bg-card-bg border border-border-light rounded-3xl p-10 text-center shadow-[0_24px_60px_-20px_rgba(0,0,0,0.06)]">
-          <div className="w-14 h-14 rounded-2xl bg-foreground/[0.04] flex items-center justify-center mx-auto mb-4">
-            <Calendar className="w-7 h-7 text-text-tertiary" />
-          </div>
-          <h1 className="text-[20px] font-bold text-foreground mb-2">
-            Booking unavailable
-          </h1>
-          <p className="text-[13px] text-text-secondary leading-relaxed">
-            {error.toLowerCase().includes("not found")
-              ? "This booking link doesn't match an active page yet. Set your booking page slug from Settings → Booking, then try the link again."
-              : error}
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  // ---- STEP 4: Confirmation ----
-  if (step === "confirmation" && confirmation) {
-    // Build Google Calendar link
-    const calStart = `${confirmation.date.replace(/-/g, "")}T${confirmation.time.replace(":", "")}00`;
-    const calEnd = `${confirmation.date.replace(/-/g, "")}T${confirmation.endTime.replace(":", "")}00`;
-    const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(confirmation.serviceName + " at " + businessName)}&dates=${calStart}/${calEnd}&details=${encodeURIComponent("Booked via " + businessName)}`;
-
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <div className="max-w-md w-full text-center space-y-5">
-          <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: `${brandColor}20` }}>
-            <CheckCircle2 className="w-8 h-8" style={{ color: brandColor }} />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Booking Confirmed!</h1>
-            <p className="text-sm text-gray-500 mt-1">{businessName}</p>
-          </div>
-          <div className="bg-white rounded-2xl border border-gray-200 p-6 text-left space-y-3">
-            <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Service</p>
-              <p className="text-sm font-medium text-gray-900">{confirmation.serviceName}</p>
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Date & Time</p>
-              <p className="text-sm font-medium text-gray-900">
-                {formatDisplayDate(confirmation.date)} at {formatTime12h(confirmation.time)}
-              </p>
-            </div>
-            <div className="flex gap-6">
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Duration</p>
-                <p className="text-sm font-medium text-gray-900">{formatDuration(confirmation.duration)}</p>
-              </div>
-              {confirmation.price > 0 && (
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Price</p>
-                  <p className="text-sm font-medium text-gray-900">{formatPrice(confirmation.price)}</p>
-                </div>
-              )}
-            </div>
-          </div>
-          <a
-            href={gcalUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors hover:opacity-80"
-            style={{ backgroundColor: brandColor, color: "#fff" }}
-          >
-            <Calendar className="w-4 h-4" />
-            Add to Google Calendar
-          </a>
-          {selectedService?.rebookAfterDays && selectedService.rebookAfterDays > 0 && (
-            (() => {
-              // Suggested next-visit date = appointment date + cadence.
-              const suggested = new Date(confirmation.date);
-              suggested.setDate(suggested.getDate() + selectedService.rebookAfterDays);
-              const suggestedStr = suggested.toISOString().slice(0, 10);
-              return (
-                <div className="bg-white border border-gray-200 rounded-2xl p-4 text-left">
-                  <p className="text-[11px] uppercase tracking-wider text-gray-500 mb-1">
-                    Book your next
-                  </p>
-                  <p className="text-[13px] text-gray-700 mb-3">
-                    Most clients rebook this around <strong>{formatDisplayDate(suggestedStr)}</strong>. Lock it in now while it's fresh.
-                  </p>
-                  <button
-                    onClick={() => {
-                      // Reset the flow back to date-pick with the same service
-                      // pre-selected and the suggested date pre-filled.
-                      setStep("date");
-                      setSelectedDate(suggestedStr);
-                      setSelectedTime(null);
-                      setConfirmation(null);
-                    }}
-                    className="text-[13px] font-medium px-3 py-2 rounded-lg cursor-pointer"
-                    style={{ backgroundColor: brandColor, color: "#fff" }}
-                  >
-                    Pick a time on {formatDisplayDate(suggestedStr)}
-                  </button>
-                </div>
-              );
-            })()
-          )}
-          <p className="text-xs text-gray-400">
-            A confirmation has been sent to {clientEmail}.
-          </p>
-          <p className="text-[11px] text-gray-300 mt-6">Powered by Magic</p>
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="bg-card-bg border border-border-light rounded-2xl p-8 max-w-md w-full text-center">
+          <p className="text-[15px] font-semibold text-foreground">Can&apos;t load this page</p>
+          <p className="text-[13px] text-text-secondary mt-2">{error}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 px-3 sm:px-4 py-6 sm:py-12">
-      <div className="max-w-lg mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div style={{ backgroundColor: brandColor }} className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
-            <Calendar className="w-5 h-5 text-white" />
-          </div>
-          <h1 className="text-xl font-bold text-gray-900 tracking-tight">{businessName}</h1>
-          <p className="text-sm text-gray-500 mt-1">Book an appointment online</p>
-        </div>
+    <div className="min-h-screen bg-background pb-32 lg:pb-0">
+      {/* Morphing top bar */}
+      <header className="sticky top-0 z-30 bg-background/85 backdrop-blur-md border-b border-border-light">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+          <button
+            type="button"
+            onClick={handleBack}
+            aria-label="Back"
+            className="p-2 -ml-2 rounded-full text-text-secondary hover:text-foreground hover:bg-surface cursor-pointer"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
 
-        {/* Steps indicator */}
-        <div className="flex items-center justify-center gap-2 mb-8">
-          {(["service", "date", "details"] as Step[]).map((s, i) => (
-            <div key={s} className="flex items-center gap-2">
-              <div
-                className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-                  step === s
-                    ? "bg-gray-900 text-white"
-                    : (["service", "date", "details"] as Step[]).indexOf(step) > i
-                      ? "bg-green-500 text-white"
-                      : "bg-gray-200 text-gray-500"
-                }`}
-              >
-                {(["service", "date", "details"] as Step[]).indexOf(step) > i ? "\u2713" : i + 1}
-              </div>
-              {i < 2 && <div className="w-8 h-px bg-gray-300" />}
-            </div>
-          ))}
-        </div>
-
-        <div className="bg-card-bg rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-          {/* ---- STEP 1: Pick a Service ---- */}
-          {step === "service" && (
-            <div className="p-6">
-              <h2 className="text-base font-semibold text-gray-900 mb-1">Select a Service</h2>
-              <p className="text-xs text-gray-500 mb-5">Choose the service you would like to book.</p>
-
-              {services.length === 0 ? (
-                <p className="text-sm text-gray-400 text-center py-8">No services available at this time.</p>
+          <div className="flex-1 min-w-0 text-center">
+            <AnimatePresence mode="wait">
+              {scrolled ? (
+                <motion.p
+                  key="title"
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.15 }}
+                  className="text-[14px] font-semibold text-foreground truncate"
+                >
+                  {businessName}
+                </motion.p>
               ) : (
-                <div className="space-y-2">
-                  {services.map((svc) => (
-                    <button
-                      key={svc.id}
-                      onClick={() => {
-                        setSelectedService(svc);
-                        setSelectedDate(null);
-                        setSelectedTime(null);
-                        setStep("date");
-                      }}
-                      className={`w-full text-left px-4 py-3.5 rounded-xl border transition-all cursor-pointer ${
-                        selectedService?.id === svc.id
-                          ? "border-gray-900 bg-gray-50 ring-1 ring-gray-900"
-                          : "border-gray-200 hover:border-gray-400 bg-card-bg"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-semibold text-gray-900">{svc.name}</p>
-                          <div className="flex items-center gap-3 mt-1">
-                            <span className="flex items-center gap-1 text-xs text-gray-500">
-                              <Clock className="w-3 h-3" />
-                              {formatDuration(svc.duration)}
-                            </span>
-                            {svc.price > 0 && (
-                              <span className="flex items-center gap-1 text-xs text-gray-500">
-                                <DollarSign className="w-3 h-3" />
-                                {formatPrice(svc.price)}
-                              </span>
-                            )}
+                <motion.p
+                  key={`step-${step}`}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="text-[12px] text-text-tertiary"
+                >
+                  Step {stepIndex + 1} of {STEPS.length} · {STEPS[stepIndex].label}
+                </motion.p>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => history.back()}
+            aria-label="Close"
+            className="p-2 -mr-2 rounded-full text-text-secondary hover:text-foreground hover:bg-surface cursor-pointer"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+      </header>
+
+      {step === "confirm" && confirmed ? (
+        <main className="max-w-2xl mx-auto px-4 pt-8">
+          <Confirmation
+            booking={confirmed}
+            onBookAnother={() => {
+              setConfirmed(null);
+              setSelectedDate(null);
+              setSelectedTime(null);
+              setDetails(EMPTY_DETAILS);
+              setStep("browse");
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+          />
+        </main>
+      ) : (
+        <main className="max-w-6xl mx-auto px-4 pt-6">
+          <div className="mb-6">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
+              {businessName}
+            </h1>
+            <p className="text-[13px] text-text-secondary mt-1">
+              Step {stepIndex + 1} of {STEPS.length} ·{" "}
+              {step === "browse"
+                ? "Pick the services you'd like to book."
+                : step === "time"
+                ? "Choose a date and time that works."
+                : "Confirm your details."}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+            {/* Main content varies by step */}
+            <div className="lg:col-span-2 min-w-0">
+              {step === "browse" && (
+                loading ? (
+                  <CatalogSkeleton />
+                ) : (
+                  <>
+                    {locations.length >= 2 && (
+                      <LocationPicker
+                        locations={locations}
+                        selectedId={selectedLocationId}
+                        onSelect={setSelectedLocationId}
+                      />
+                    )}
+                    <CategoryTabs categories={categories} scrollOffset={140} />
+                    <div className="mt-4 space-y-10">
+                      {sections.map(({ category, services: svcs }) => (
+                        <section
+                          key={category || "uncategorized"}
+                          id={categoryAnchor(category)}
+                          aria-labelledby={`${categoryAnchor(category)}-heading`}
+                          className="scroll-mt-32"
+                        >
+                          <h2
+                            id={`${categoryAnchor(category)}-heading`}
+                            className="text-[16px] font-semibold text-foreground mb-3 tracking-tight"
+                          >
+                            {category || "Other"}
+                          </h2>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {svcs.map((svc) => (
+                              <ServiceCard
+                                key={svc.id}
+                                service={svc}
+                                selected={selectedIds.has(svc.id)}
+                                onAdd={() => addItem({ serviceId: svc.id, addonIds: [] })}
+                                onRemove={() => removeByServiceId(svc.id)}
+                              />
+                            ))}
                           </div>
+                        </section>
+                      ))}
+                      {sections.length === 0 && (
+                        <div className="bg-card-bg border border-border-light rounded-2xl p-10 text-center">
+                          <p className="text-[14px] text-text-tertiary">No services available yet.</p>
                         </div>
-                        <ChevronRight className="w-4 h-4 text-gray-400" />
-                      </div>
-                    </button>
-                  ))}
+                      )}
+                    </div>
+                  </>
+                )
+              )}
+
+              {step === "time" && primaryServiceId && (
+                <div className="bg-card-bg border border-border-light rounded-2xl p-5 sm:p-6">
+                  <TimePicker
+                    slug={slug}
+                    primaryServiceId={primaryServiceId}
+                    durationMinutes={totalDuration}
+                    enabledWeekdays={cartEnabledWeekdays}
+                    selectedDate={selectedDate}
+                    selectedTime={selectedTime}
+                    locationId={selectedLocationId ?? undefined}
+                    onChange={({ date, time }) => {
+                      setSelectedDate(date);
+                      setSelectedTime(time);
+                    }}
+                  />
                 </div>
               )}
-            </div>
-          )}
 
-          {/* ---- STEP 2: Pick a Date & Time ---- */}
-          {step === "date" && (
-            <div className="p-6">
-              <button
-                onClick={() => setStep("service")}
-                className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 mb-4 cursor-pointer"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                Back to services
-              </button>
+              {step === "details" && (
+                <div className="bg-card-bg border border-border-light rounded-2xl p-5 sm:p-6 space-y-5">
+                  <DetailsForm
+                    values={details}
+                    onChange={setDetails}
+                    requireAddress={requireAddress}
+                  />
 
-              <h2 className="text-base font-semibold text-gray-900 mb-1">Pick a Date & Time</h2>
-              <p className="text-xs text-gray-500 mb-5">
-                {selectedService?.name} &middot; {formatDuration(selectedService?.duration || 60)}
-              </p>
+                  {patchTestServices.length > 0 && (
+                    <div className="border-t border-border-light pt-5">
+                      <p className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider mb-1.5">
+                        Patch test required
+                      </p>
+                      <p className="text-[12px] text-text-secondary">
+                        {patchTestServices.length === 1
+                          ? `${patchTestServices[0].name} requires a patch test on file before your appointment.`
+                          : `These services require a patch test on file: ${patchTestServices
+                              .map((s) => s.name)
+                              .join(", ")}.`}
+                        {(() => {
+                          // Pull the strictest validity + lead time across
+                          // affected services so the wording reflects the
+                          // tightest rule.
+                          const validities = patchTestServices
+                            .map((s) => s.patchTestValidityDays)
+                            .filter((v): v is number => typeof v === "number" && v > 0);
+                          const leads = patchTestServices
+                            .map((s) => s.patchTestMinLeadHours)
+                            .filter((v): v is number => typeof v === "number" && v > 0);
+                          const validity = validities.length ? Math.min(...validities) : null;
+                          const lead = leads.length ? Math.max(...leads) : null;
+                          if (!validity && !lead) return null;
+                          const parts: string[] = [];
+                          if (validity) parts.push(`taken in the last ${validity} day${validity === 1 ? "" : "s"}`);
+                          if (lead) parts.push(`at least ${lead} hour${lead === 1 ? "" : "s"} before your booking`);
+                          return ` It must be ${parts.join(" and ")}.`;
+                        })()}
+                        {" "}If you don&apos;t have a recent test, we&apos;ll be in touch to arrange one.
+                      </p>
+                    </div>
+                  )}
 
-              {/* Calendar */}
-              <div className="mb-5">
-                <div className="flex items-center justify-between mb-3">
-                  <button
-                    onClick={goToPrevMonth}
-                    disabled={!canGoPrev}
-                    className="p-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  <span className="text-sm font-semibold text-gray-900">
-                    {new Date(calYear, calMonth).toLocaleDateString("en-AU", { month: "long", year: "numeric" })}
-                  </span>
-                  <button
-                    onClick={goToNextMonth}
-                    className="p-1.5 rounded-lg hover:bg-gray-100 cursor-pointer"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-7 gap-1 text-center mb-1">
-                  {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
-                    <div key={d} className="text-[10px] font-semibold text-gray-400 uppercase py-1">
-                      {d}
+                  {intakeServices.map((svc) => (
+                    <div key={svc.id} className="border-t border-border-light pt-5 space-y-3">
+                      <p className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider">
+                        {intakeServices.length > 1 ? `${svc.name} — questions` : "A few questions"}
+                      </p>
+                      {svc.intakeQuestions
+                        .slice()
+                        .sort((a, b) => a.sortOrder - b.sortOrder)
+                        .map((q) => {
+                          const value = intakeAnswersByService[svc.id]?.[q.id] ?? "";
+                          const setValue = (v: string) =>
+                            setIntakeAnswersByService((prev) => ({
+                              ...prev,
+                              [svc.id]: { ...(prev[svc.id] ?? {}), [q.id]: v },
+                            }));
+                          const inputId = `iq-${svc.id}-${q.id}`;
+                          return (
+                            <div key={q.id}>
+                              <label
+                                htmlFor={inputId}
+                                className="block text-[12px] font-semibold text-text-secondary mb-1.5"
+                              >
+                                {q.label}
+                                {q.required ? (
+                                  <span className="text-red-500 ml-0.5">*</span>
+                                ) : (
+                                  <span className="text-text-tertiary font-normal"> (optional)</span>
+                                )}
+                              </label>
+                              {q.type === "longtext" ? (
+                                <textarea
+                                  id={inputId}
+                                  rows={3}
+                                  value={value}
+                                  onChange={(e) => setValue(e.target.value)}
+                                  className="w-full px-3 py-2 border border-border-light rounded-lg text-[13px] focus:outline-none focus:ring-2 focus:ring-foreground/10 resize-none"
+                                />
+                              ) : q.type === "select" ? (
+                                <select
+                                  id={inputId}
+                                  value={value}
+                                  onChange={(e) => setValue(e.target.value)}
+                                  className="w-full px-3 py-2 border border-border-light rounded-lg text-[13px] focus:outline-none focus:ring-2 focus:ring-foreground/10 bg-white"
+                                >
+                                  <option value="">Select…</option>
+                                  {(q.options ?? []).map((opt) => (
+                                    <option key={opt} value={opt}>
+                                      {opt}
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : q.type === "yesno" ? (
+                                <div className="flex gap-2">
+                                  {["Yes", "No"].map((opt) => (
+                                    <button
+                                      key={opt}
+                                      type="button"
+                                      onClick={() => setValue(opt)}
+                                      className={`flex-1 py-2 px-3 rounded-lg text-[13px] font-medium border transition ${
+                                        value === opt
+                                          ? "bg-foreground text-white border-foreground"
+                                          : "bg-white text-text-secondary border-border-light hover:border-border"
+                                      }`}
+                                    >
+                                      {opt}
+                                    </button>
+                                  ))}
+                                </div>
+                              ) : (
+                                <input
+                                  id={inputId}
+                                  type={q.type === "date" ? "date" : q.type === "number" ? "number" : "text"}
+                                  value={value}
+                                  onChange={(e) => setValue(e.target.value)}
+                                  className="w-full px-3 py-2 border border-border-light rounded-lg text-[13px] focus:outline-none focus:ring-2 focus:ring-foreground/10"
+                                />
+                              )}
+                              {q.hint && (
+                                <p className="text-[11px] text-text-tertiary mt-1">{q.hint}</p>
+                              )}
+                            </div>
+                          );
+                        })}
                     </div>
                   ))}
-                </div>
 
-                <div className="grid grid-cols-7 gap-1">
-                  {Array.from({ length: getFirstDayOfMonth(calYear, calMonth) }).map((_, i) => (
-                    <div key={`pad-${i}`} />
-                  ))}
-                  {Array.from({ length: getDaysInMonth(calYear, calMonth) }).map((_, i) => {
-                    const day = i + 1;
-                    const dateObj = new Date(calYear, calMonth, day);
-                    const dateStr = formatDateStr(dateObj);
-                    const dayOfWeek = dateObj.getDay();
-                    const isEnabled = enabledDays.has(dayOfWeek);
-                    const isPast = dateObj < new Date(today.getFullYear(), today.getMonth(), today.getDate());
-                    const isSelected = selectedDate === dateStr;
-                    const isToday = dateStr === formatDateStr(today);
-                    const isDisabled = isPast || !isEnabled;
+                  <div className="border-t border-border-light pt-5">
+                    <GiftCardField slug={slug} applied={giftCard} onApplied={setGiftCard} />
+                  </div>
 
-                    return (
-                      <button
-                        key={day}
-                        disabled={isDisabled}
-                        onClick={() => {
-                          setSelectedDate(dateStr);
-                          setSelectedTime(null);
-                        }}
-                        className={`aspect-square rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                          isDisabled
-                            ? "text-gray-300 cursor-not-allowed"
-                            : isSelected
-                              ? "bg-gray-900 text-white"
-                              : isToday
-                                ? "bg-gray-100 text-gray-900 font-bold hover:bg-gray-200"
-                                : "text-gray-700 hover:bg-gray-100"
-                        }`}
-                      >
-                        {day}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+                  {needsCardOnFile && (
+                    <div className="border-t border-border-light pt-5">
+                      <p className="text-[12px] font-semibold text-text-tertiary uppercase tracking-wider mb-1">
+                        Card on file
+                      </p>
+                      <p className="text-[12px] text-text-secondary mb-3">
+                        Required for the services in your booking. Card isn&apos;t charged now —
+                        only used for no-show or cancellation fees per the policy.
+                      </p>
+                      {isDetailsValid(details) ? (
+                        <CardOnFileForm
+                          slug={slug}
+                          customerEmail={details.email.trim()}
+                          customerName={details.name.trim()}
+                          brandColor={brandColor}
+                          onReady={(data) => setCardOnFile(data)}
+                          onError={(msg) => setSubmitError(msg)}
+                        />
+                      ) : (
+                        <p className="text-[12px] text-text-tertiary italic">
+                          Enter your name and email above to add a card.
+                        </p>
+                      )}
+                    </div>
+                  )}
 
-              {/* Time Slots */}
-              {selectedDate && (
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                    Available times for {formatDisplayDate(selectedDate)}
-                  </p>
-                  {availableSlots.length === 0 ? (
-                    <p className="text-sm text-gray-400 text-center py-4">No available times on this date.</p>
-                  ) : (
-                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                      {availableSlots.map((slot) => (
-                        <button
-                          key={slot}
-                          onClick={() => setSelectedTime(slot)}
-                          className={`px-2 py-2.5 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
-                            selectedTime === slot
-                              ? "bg-gray-900 text-white border-gray-900"
-                              : "bg-card-bg border-gray-200 text-gray-700 hover:border-gray-400"
-                          }`}
-                        >
-                          {formatTime12h(slot)}
-                        </button>
-                      ))}
+                  {submitError && (
+                    <div className="text-[13px] text-red-600 bg-red-50 rounded-lg px-3 py-2">
+                      {submitError}
                     </div>
                   )}
                 </div>
               )}
-
-              {/* Continue button */}
-              {selectedDate && selectedTime && (
-                <button
-                  onClick={() => setStep("details")}
-                  className="w-full mt-5 py-2.5 rounded-lg bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 transition cursor-pointer"
-                >
-                  Continue
-                </button>
-              )}
             </div>
-          )}
 
-          {/* ---- STEP 3: Enter Details ---- */}
-          {step === "details" && (
-            <div className="p-6">
-              <button
-                onClick={() => setStep("date")}
-                className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 mb-4 cursor-pointer"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                Back to date & time
-              </button>
-
-              <h2 className="text-base font-semibold text-gray-900 mb-1">Your Details</h2>
-              <p className="text-xs text-gray-500 mb-5">
-                {selectedService?.name} &middot; {formatDisplayDate(selectedDate!)} at {formatTime12h(selectedTime!)}
-              </p>
-
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Name */}
-                <div>
-                  <label htmlFor="bp-name" className="block text-xs font-semibold text-gray-700 mb-1.5">
-                    Full Name <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    id="bp-name"
-                    type="text"
-                    required
-                    value={clientName}
-                    onChange={(e) => setClientName(e.target.value)}
-                    placeholder="Jane Smith"
-                    className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400 transition"
-                  />
-                </div>
-
-                {/* Email */}
-                <div>
-                  <label htmlFor="bp-email" className="block text-xs font-semibold text-gray-700 mb-1.5">
-                    Email <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    id="bp-email"
-                    type="email"
-                    required
-                    value={clientEmail}
-                    onChange={(e) => setClientEmail(e.target.value)}
-                    placeholder="jane@example.com"
-                    className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400 transition"
-                  />
-                </div>
-
-                {/* Phone */}
-                <div>
-                  <label htmlFor="bp-phone" className="block text-xs font-semibold text-gray-700 mb-1.5">
-                    Phone
-                  </label>
-                  <input
-                    id="bp-phone"
-                    type="tel"
-                    value={clientPhone}
-                    onChange={(e) => setClientPhone(e.target.value)}
-                    placeholder="+61 400 123 456"
-                    className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400 transition"
-                  />
-                </div>
-
-                {/* Gift card */}
-                {selectedService && selectedService.price > 0 && (
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                      Gift card <span className="text-gray-400 font-normal">(optional)</span>
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={giftCardCode}
-                        onChange={(e) => {
-                          setGiftCardCode(e.target.value.toUpperCase());
-                          setGiftCardCheck(null);
-                        }}
-                        placeholder="ABCD-EFGH-1234"
-                        className="flex-1 px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm font-mono uppercase tracking-wider text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400 transition"
-                      />
-                      <button
-                        type="button"
-                        disabled={!giftCardCode.trim() || checkingGift}
-                        onClick={async () => {
-                          setCheckingGift(true);
-                          try {
-                            const res = await fetch("/api/public/gift-cards/redeem", {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({
-                                slug,
-                                code: giftCardCode.trim().toUpperCase(),
-                              }),
-                            });
-                            const data = await res.json();
-                            if (!res.ok) {
-                              setGiftCardCheck({
-                                status: "invalid",
-                                reason: data.error ?? "Invalid code",
-                              });
-                            } else {
-                              setGiftCardCheck({
-                                status: "valid",
-                                balance: data.remainingBalance,
-                              });
-                            }
-                          } catch {
-                            setGiftCardCheck({ status: "invalid", reason: "Lookup failed" });
-                          } finally {
-                            setCheckingGift(false);
-                          }
-                        }}
-                        className="px-3 py-2 rounded-lg text-xs font-medium border border-gray-200 text-gray-700 hover:border-gray-300 disabled:opacity-50 cursor-pointer"
-                      >
-                        {checkingGift ? "Checking…" : "Apply"}
-                      </button>
-                    </div>
-                    {giftCardCheck?.status === "valid" && (
-                      <p className="text-[11px] text-emerald-700 mt-1.5">
-                        ✓ Card applied · ${giftCardCheck.balance.toFixed(2)} balance available
-                      </p>
-                    )}
-                    {giftCardCheck?.status === "invalid" && (
-                      <p className="text-[11px] text-red-600 mt-1.5">
-                        {giftCardCheck.reason}
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {/* Card on file */}
-                {selectedService?.requiresCardOnFile && clientEmail.trim() && (
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                      Card on file <span className="text-red-500">*</span>
-                    </label>
-                    <CardOnFileForm
-                      slug={slug as string}
-                      customerEmail={clientEmail.trim()}
-                      customerName={clientName.trim() || undefined}
-                      brandColor={brandColor}
-                      onReady={(d) => setCardOnFile(d)}
-                      onError={(msg) => setSubmitError(msg)}
-                    />
-                  </div>
-                )}
-
-                {/* Guests (group booking) */}
-                {selectedService?.allowGroupBooking && (
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                      Guests <span className="text-gray-400 font-normal">(optional)</span>
-                    </label>
-                    {guestNames.map((name, i) => (
-                      <div key={i} className="flex gap-2 mb-2">
-                        <input
-                          type="text"
-                          value={name}
-                          onChange={(e) =>
-                            setGuestNames((g) =>
-                              g.map((v, idx) => (idx === i ? e.target.value : v)),
-                            )
-                          }
-                          placeholder={`Guest ${i + 1} name`}
-                          className="flex-1 px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400 transition"
-                        />
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setGuestNames((g) => g.filter((_, idx) => idx !== i))
-                          }
-                          className="px-3 py-2.5 text-xs text-gray-500 hover:text-red-500 cursor-pointer"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    ))}
-                    {(() => {
-                      const cap = selectedService.maxGroupSize ?? 4;
-                      const canAdd = guestNames.length + 1 < cap;
-                      if (!canAdd) {
-                        return (
-                          <p className="text-[11px] text-gray-400 mt-1">
-                            Up to {cap - 1} additional guests.
-                          </p>
-                        );
-                      }
-                      return (
-                        <button
-                          type="button"
-                          onClick={() => setGuestNames((g) => [...g, ""])}
-                          className="text-xs text-gray-700 hover:text-gray-900 cursor-pointer underline"
-                        >
-                          + Add a guest
-                        </button>
-                      );
-                    })()}
-                  </div>
-                )}
-
-                {/* Notes */}
-                <div>
-                  <label htmlFor="bp-notes" className="block text-xs font-semibold text-gray-700 mb-1.5">
-                    Notes <span className="text-gray-400 font-normal">(optional)</span>
-                  </label>
-                  <textarea
-                    id="bp-notes"
-                    rows={3}
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Anything we should know..."
-                    className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400 transition resize-none"
-                  />
-                </div>
-
-                {/* Summary */}
-                <div className="bg-gray-50 rounded-xl p-4 space-y-1.5">
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Booking Summary</p>
-                  <p className="text-sm text-gray-900 font-medium">{selectedService?.name}</p>
-                  <p className="text-xs text-gray-600">
-                    {formatDisplayDate(selectedDate!)} at {formatTime12h(selectedTime!)}
-                  </p>
-                  <p className="text-xs text-gray-600">
-                    {formatDuration(selectedService?.duration || 60)}
-                    {selectedService && selectedService.price > 0 && ` \u00b7 ${formatPrice(selectedService.price)}`}
-                  </p>
-                </div>
-
-                {/* Error */}
-                {submitError && (
-                  <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-                    {submitError}
-                  </p>
-                )}
-
-                {/* Submit */}
-                <button
-                  type="submit"
-                  disabled={!clientName.trim() || !clientEmail.trim() || submitting}
-                  className="w-full py-2.5 px-4 bg-gray-900 text-white text-sm font-semibold rounded-lg hover:bg-gray-800 transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {submitting ? "Booking..." : "Confirm Booking"}
-                </button>
-              </form>
+            {/* Cart pane — desktop sticky right rail, all non-confirm steps */}
+            <div className="hidden lg:block self-start">
+              <div ref={cartSentinelRef} aria-hidden="true" />
+              <CartPane
+                serviceMap={serviceMap}
+                memberMap={memberMap}
+                businessName={businessName}
+                onContinue={handleContinue}
+                onEdit={(lineId) => setEditingLineId(lineId)}
+                continueLabel={continueLabel[step]}
+                continueDisabled={continueDisabled}
+                giftCardBalance={giftCard?.balance ?? 0}
+                location={locations.length >= 2 ? selectedLocation : null}
+                className="sticky top-24"
+              />
             </div>
-          )}
-        </div>
+          </div>
+        </main>
+      )}
 
-        <p className="text-center text-[11px] text-gray-300 mt-6">Powered by Magic</p>
-      </div>
+      {/* Mobile sticky cart bar — hide on confirm */}
+      {step !== "confirm" && (
+        <MobileCartBar serviceMap={serviceMap} onContinue={handleContinue} />
+      )}
+
+      {/* Floating cart re-entry pill — desktop only, browse step only */}
+      {step === "browse" && (
+        <FloatingCartPill sentinelRef={cartSentinelRef} serviceMap={serviceMap} />
+      )}
+
+      {/* Per-line edit drawer */}
+      <LineItemDrawer
+        open={Boolean(editingItem && editingService)}
+        onClose={() => setEditingLineId(null)}
+        service={editingService}
+        item={editingItem}
+        eligibleMembers={eligibleMembers}
+        onSave={(patch) => {
+          if (editingItem) updateItem(editingItem.lineId, patch);
+        }}
+        onRemove={() => {
+          if (editingItem) removeItem(editingItem.lineId);
+        }}
+      />
     </div>
   );
+}
+
+function addMinutes(time24: string, mins: number): string {
+  const [h, m] = time24.split(":").map(Number);
+  const total = h * 60 + m + mins;
+  const hh = String(Math.floor(total / 60) % 24).padStart(2, "0");
+  const mm = String(total % 60).padStart(2, "0");
+  return `${hh}:${mm}`;
 }

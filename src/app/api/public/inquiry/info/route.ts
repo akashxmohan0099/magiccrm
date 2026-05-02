@@ -25,6 +25,9 @@ export async function GET(req: NextRequest) {
   if (lookup.status === "not_found") {
     return NextResponse.json({ error: "Form not found" }, { status: 404 });
   }
+  if (lookup.status === "ambiguous") {
+    return NextResponse.json({ error: "Form slug is not unique" }, { status: 409 });
+  }
   if (lookup.status === "disabled") {
     // 410 Gone is the closest semantic match for "this resource existed but
     // the owner has turned it off." The page reads the body to render the

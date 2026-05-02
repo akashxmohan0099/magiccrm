@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import type {
   Form,
   FormBranding,
@@ -8,6 +8,7 @@ import type {
   FormTemplate,
   FormTheme,
 } from "@/types/models";
+import { slugify } from "@/components/modules/forms/helpers";
 
 /**
  * The editor's editable state in one place.
@@ -50,10 +51,8 @@ export interface DraftBranding {
   autoReplyEnabled: boolean;
   autoReplySubject: string;
   autoReplyBody: string;
-  autoReplyDelayMinutes: number;
   autoReplySmsEnabled: boolean;
   autoReplySmsBody: string;
-  autoReplySmsDelayMinutes: number;
   notifyOwnerEmail: boolean;
 }
 
@@ -112,20 +111,12 @@ export function buildBrandingFromDraft(
     autoReplyEnabled: draft.autoReplyEnabled,
     autoReplySubject: draft.autoReplySubject.trim() || undefined,
     autoReplyBody: draft.autoReplyBody.trim() || undefined,
-    autoReplyDelayMinutes: clampDelay(draft.autoReplyDelayMinutes),
+    autoReplyDelayMinutes: undefined,
     autoReplySmsEnabled: draft.autoReplySmsEnabled,
     autoReplySmsBody: draft.autoReplySmsBody.trim() || undefined,
-    autoReplySmsDelayMinutes: clampDelay(draft.autoReplySmsDelayMinutes),
+    autoReplySmsDelayMinutes: undefined,
     notifyOwnerEmail: draft.notifyOwnerEmail,
   };
-}
-
-// Match FormEditor's clampDelay exactly so the persisted shape doesn't
-// shift between the inline-callback world and the hook world.
-const MAX_AUTOREPLY_DELAY_MINUTES = 60 * 24 * 7;
-function clampDelay(v: number): number | undefined {
-  if (!Number.isFinite(v) || v <= 0) return undefined;
-  return Math.min(Math.max(0, Math.round(v)), MAX_AUTOREPLY_DELAY_MINUTES);
 }
 
 function brandingFromForm(branding: FormBranding): DraftBranding {
@@ -154,10 +145,8 @@ function brandingFromForm(branding: FormBranding): DraftBranding {
     autoReplyEnabled: branding.autoReplyEnabled ?? true,
     autoReplySubject: branding.autoReplySubject ?? "",
     autoReplyBody: branding.autoReplyBody ?? "",
-    autoReplyDelayMinutes: branding.autoReplyDelayMinutes ?? 0,
     autoReplySmsEnabled: branding.autoReplySmsEnabled ?? false,
     autoReplySmsBody: branding.autoReplySmsBody ?? "",
-    autoReplySmsDelayMinutes: branding.autoReplySmsDelayMinutes ?? 0,
     notifyOwnerEmail: branding.notifyOwnerEmail ?? true,
   };
 }
@@ -229,19 +218,25 @@ export interface UseFormDraftResult {
 }
 
 export function useFormDraft(form: Form): UseFormDraftResult {
-  // Capture the load-time uniquify result in a ref so the editor can read
-  // it during render (state setters in the initializer can't be async, and
-  // we don't want to make this an effect).
-  const didUniquifyOnLoadRef = useRef(false);
+  // Compute the load-time uniquify once. We hold the resulting `changed`
+  // flag in state so the editor can read it during render without poking
+  // a ref (which the lint flags as a cross-render hazard).
+  const [{ initialFields, didUniquifyOnLoad }] = useState(() => {
+    const { fields, changed } = uniquifyFieldNames(form.fields);
+    return { initialFields: fields, didUniquifyOnLoad: changed };
+  });
 
   const [draft, setDraft] = useState<FormDraft>(() => {
-    const { fields, changed } = uniquifyFieldNames(form.fields);
-    didUniquifyOnLoadRef.current = changed;
+    // A slug that exactly matches the slugified name (e.g. a freshly created
+    // blank form) is treated as auto-derived so renaming still updates the
+    // URL. A slug that differs is treated as user-set and stays put.
+    const slug = form.slug || "";
+    const isAuto = !slug || slug === slugify(form.name);
     return {
       name: form.name,
-      slug: form.slug || "",
-      slugTouched: !!form.slug,
-      fields,
+      slug,
+      slugTouched: !isAuto,
+      fields: initialFields,
       branding: brandingFromForm(form.branding),
     };
   });
@@ -354,6 +349,6 @@ export function useFormDraft(form: Form): UseFormDraftResult {
     updateDraft,
     updateBranding,
     fieldOps,
-    didUniquifyOnLoad: didUniquifyOnLoadRef.current,
+    didUniquifyOnLoad,
   };
 }

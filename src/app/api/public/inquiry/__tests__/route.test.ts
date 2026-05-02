@@ -105,6 +105,14 @@ describe("POST /api/public/inquiry", () => {
     expect(res.status).toBe(404);
   });
 
+  it("returns 409 when the public slug matches more than one form", async () => {
+    lookupMock.mockResolvedValue({ status: "ambiguous" });
+    const { POST } = await import("../route");
+    const res = await POST(makeRequest({ slug: "contact", values: { name: "Jane", email: "j@x.com" } }));
+    expect(res.status).toBe(409);
+    expect(insertCalls).toHaveLength(0);
+  });
+
   it("rejects missing required field with a 400 and field error map", async () => {
     lookupMock.mockResolvedValue({ status: "ok", form: baseForm });
     const { POST } = await import("../route");
@@ -286,5 +294,21 @@ describe("POST /api/public/inquiry", () => {
     const body = await res.json();
     expect(body.success).toBe(true);
     expect(body.inquiryPromotionFailed).toBe(true);
+  });
+
+  it("auto-promotes without writing the legacy submission_values column", async () => {
+    lookupMock.mockResolvedValue({
+      status: "ok",
+      form: { ...baseForm, autoPromoteToInquiry: true },
+    });
+    const { POST } = await import("../route");
+    const res = await POST(
+      makeRequest({ slug: "weddings", values: { name: "Jane", email: "j@x.com" } }),
+    );
+    expect(res.status).toBe(201);
+    const inquiryInsert = insertCalls.find((c) => c.table === "inquiries");
+    expect(inquiryInsert).toBeDefined();
+    expect(inquiryInsert!.row.form_response_id).toBeDefined();
+    expect(inquiryInsert!.row.submission_values).toBeUndefined();
   });
 });

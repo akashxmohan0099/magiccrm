@@ -20,6 +20,8 @@ import {
   PackageItem,
 } from "@/types/models";
 import { generateId } from "@/lib/id";
+import { resolveServiceCategoryName } from "@/lib/services/category";
+import { useMoney } from "@/lib/format/money";
 import { SlideOver } from "@/components/ui/SlideOver";
 import { FormField } from "@/components/ui/FormField";
 import { Button } from "@/components/ui/Button";
@@ -121,7 +123,6 @@ interface FormState {
   promoStart: string;
   promoEnd: string;
   tagsRaw: string; // comma-separated for input
-  locationType: "studio" | "mobile" | "both";
   /** Empty = all locations (or no multi-location at all). */
   locationIds: string[];
   /** Resource ids required for this service. */
@@ -151,7 +152,11 @@ interface DynamicPriceRuleInput {
   modifierValue: string;
 }
 
-function getInitialState(service: Service | undefined, defaultCategory: string): FormState {
+function getInitialState(
+  service: Service | undefined,
+  defaultCategory: string,
+  categories: Array<{ id: string; name: string }> = [],
+): FormState {
   const variants: VariantInput[] = (service?.variants ?? []).map((v) => ({
     id: v.id,
     name: v.name,
@@ -197,9 +202,15 @@ function getInitialState(service: Service | undefined, defaultCategory: string):
     (service?.durationProcessing ?? 0) > 0 ||
     (service?.durationActiveAfter ?? 0) > 0;
 
+  // Resolve via helper so a service with only `categoryId` (and no legacy
+  // free-text `category`) still hydrates the dropdown correctly.
+  const resolvedCategory = service
+    ? resolveServiceCategoryName(service, categories) || service.category || defaultCategory
+    : defaultCategory;
+
   return {
     name: service?.name ?? "",
-    category: service?.category ?? defaultCategory,
+    category: resolvedCategory,
     description: service?.description ?? "",
     imageUrl: service?.imageUrl ?? "",
     priceType: service?.priceType ?? "fixed",
@@ -253,7 +264,6 @@ function getInitialState(service: Service | undefined, defaultCategory: string):
     promoStart: service?.promoStart ?? "",
     promoEnd: service?.promoEnd ?? "",
     tagsRaw: (service?.tags ?? []).join(", "),
-    locationType: service?.locationType ?? "studio",
     locationIds: service?.locationIds ?? [],
     requiredResourceIds: service?.requiredResourceIds ?? [],
     requiresPatchTest: service?.requiresPatchTest ?? false,
@@ -281,18 +291,20 @@ function getInitialState(service: Service | undefined, defaultCategory: string):
 }
 
 export function ServiceDrawer({ open, onClose, service, defaultCategory, categories }: ServiceDrawerProps) {
-  const formKey = service?.id ?? (open ? "new" : "closed");
+  // Stable per-instance key keeps form state fresh between Add/Edit/different
+  // services; we don't fold `open` into it because gating the children on
+  // `open` would unmount the form during SlideOver's slide-out animation,
+  // leaving an empty panel mid-exit.
+  const formKey = service?.id ?? "new";
   return (
     <SlideOver open={open} onClose={onClose} title={service ? "Edit Service" : "New Service"}>
-      {open ? (
-        <ServiceDrawerFields
-          key={formKey}
-          service={service}
-          defaultCategory={defaultCategory ?? "Uncategorized"}
-          categories={categories}
-          onClose={onClose}
-        />
-      ) : null}
+      <ServiceDrawerFields
+        key={formKey}
+        service={service}
+        defaultCategory={defaultCategory ?? "Uncategorized"}
+        categories={categories}
+        onClose={onClose}
+      />
     </SlideOver>
   );
 }
@@ -320,12 +332,14 @@ function ServiceDrawerFields({
     setMemberDurationOverride,
     libraryAddons,
     addLibraryAddon,
+    categories: storeCategories,
   } = useServicesStore();
   const { members } = useTeamStore();
   const { forms } = useFormsStore();
   const { locations } = useLocationsStore();
   const { resources } = useResourcesStore();
   const { workspaceId } = useAuth();
+  const money = useMoney();
 
   const activeMembers = useMemo(
     () => members.filter((m) => m.status !== "inactive"),
@@ -360,7 +374,9 @@ function ServiceDrawerFields({
     return out;
   });
 
-  const [form, setForm] = useState<FormState>(() => getInitialState(service, defaultCategory));
+  const [form, setForm] = useState<FormState>(() =>
+    getInitialState(service, defaultCategory, storeCategories),
+  );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showStaffPrices, setShowStaffPrices] = useState(
     Object.keys(memberOverrides).length > 0 ||
@@ -409,6 +425,13 @@ function ServiceDrawerFields({
     setSaving(true);
 
     const cat = form.category === "Uncategorized" ? undefined : form.category;
+    // Resolve to a canonical category row when one matches the display name.
+    // We dual-write `category` (legacy free-text) and `categoryId` so that
+    // every UI that still groups by `service.category` keeps working while
+    // category-aware features migrate to use `categoryId` directly.
+    const categoryId = cat
+      ? storeCategories.find((c) => c.name === cat)?.id ?? null
+      : null;
     const variants: ServiceVariant[] | undefined =
       form.priceType === "variants"
         ? form.variants.map((v, idx) => ({
@@ -483,6 +506,7 @@ function ServiceDrawerFields({
       price: Number(form.price) || 0,
       duration: totalDuration,
       category: cat,
+      categoryId,
       enabled: form.enabled,
       priceType: form.priceType,
       variants,
@@ -541,7 +565,9 @@ function ServiceDrawerFields({
           .filter(Boolean);
         return list.length > 0 ? list : undefined;
       })(),
-      locationType: form.locationType,
+      // locationType is intentionally not written: Location.kind is the
+      // single source of truth for studio/mobile. Old DB rows keep their
+      // stored value because mapServiceToDB only writes the keys it sees.
       locationIds: form.locationIds.length > 0 ? form.locationIds : undefined,
       requiredResourceIds:
         form.requiredResourceIds.length > 0 ? form.requiredResourceIds : undefined,
@@ -881,8 +907,7 @@ function ServiceDrawerFields({
     (form.depositType && form.depositType !== "none") ||
     form.cancellationWindowHours ||
     form.cancellationFee ||
-    form.intakeQuestions.length > 0 ||
-    (form.locationType && form.locationType !== "studio")
+    form.intakeQuestions.length > 0
   );
 
   return (
@@ -926,6 +951,15 @@ function ServiceDrawerFields({
       {/* Always-open block. Everything an artist needs to set up a service
           before saving lives here; collapsibles below are policy/marketing. */}
       <div className="bg-card-bg border border-border-light rounded-xl p-4 space-y-5">
+        <div className="flex items-baseline justify-between -mb-1">
+          <p className="text-[12px] font-semibold text-foreground uppercase tracking-wider">
+            Essentials
+          </p>
+          <p className="text-[11px] text-text-tertiary">
+            What this is, who delivers it, what it costs, how long it takes.
+          </p>
+        </div>
+
         {/* Basics */}
         <div className="space-y-1">
           <FormField label="Name" required error={errors.name}>
@@ -1059,7 +1093,7 @@ function ServiceDrawerFields({
                     </p>
                     <div className="grid grid-cols-[1fr_100px_100px] gap-2 px-0.5 mb-1.5 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">
                       <span>Artist</span>
-                      <span>Price ($)</span>
+                      <span>Price ({money.symbol()})</span>
                       <span>Duration (min)</span>
                     </div>
                     <div className="space-y-2">
@@ -1173,7 +1207,7 @@ function ServiceDrawerFields({
                 {form.variants.length > 0 && (
                   <div className="grid grid-cols-[1fr_80px_80px_auto] gap-2 px-0.5 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">
                     <span>Name</span>
-                    <span>Price ($)</span>
+                    <span>Price ({money.symbol()})</span>
                     <span>Duration (min)</span>
                     <span />
                   </div>
@@ -1248,7 +1282,7 @@ function ServiceDrawerFields({
                 {form.priceTiers.length > 0 && (
                   <div className="grid grid-cols-[1fr_80px_80px_auto] gap-2 px-3.5 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">
                     <span>Tier name</span>
-                    <span>Price ($)</span>
+                    <span>Price ({money.symbol()})</span>
                     <span>Duration (min)</span>
                     <span />
                   </div>
@@ -1966,25 +2000,14 @@ function ServiceDrawerFields({
           </div>
         </div>
 
-        <p className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider mt-4 mb-2">
-          Location
-        </p>
-        <div className="flex items-center gap-2">
-          {(["studio", "mobile", "both"] as const).map((loc) => (
-            <button
-              key={loc}
-              type="button"
-              onClick={() => update("locationType", loc)}
-              className={`px-3 py-1.5 rounded-lg text-[12px] font-medium border cursor-pointer capitalize transition-colors ${
-                form.locationType === loc
-                  ? "bg-primary text-white border-primary"
-                  : "bg-surface text-text-secondary border-border-light hover:text-foreground"
-              }`}
-            >
-              {loc === "both" ? "Studio + Mobile" : loc}
-            </button>
-          ))}
-        </div>
+        {/*
+         * Service.locationType (Studio/Mobile/Both) is intentionally NOT
+         * surfaced anymore. Studio-vs-mobile is now driven by Location.kind
+         * — the operator defines real locations (Studio A, Mobile, …) and
+         * restricts services via locationIds below. The DB column + type
+         * remain for backward compat with older rows; new edits don't
+         * touch them.
+         */}
 
         {resources.length > 0 && (
           <div className="mt-4 pt-4 border-t border-border-light">
@@ -2279,9 +2302,9 @@ function ServiceDrawerFields({
               const savings = itemsTotal - bundlePrice;
               return (
                 <p className="text-[11px] text-text-tertiary mt-3">
-                  Items total: ${itemsTotal} · Bundle price: ${bundlePrice}
+                  Items total: {money.format(itemsTotal)} · Bundle price: {money.format(bundlePrice)}
                   {savings > 0 && (
-                    <span className="text-emerald-600 font-medium"> · Save ${savings}</span>
+                    <span className="text-emerald-600 font-medium"> · Save {money.format(savings)}</span>
                   )}
                 </p>
               );
@@ -2371,7 +2394,7 @@ function ServiceDrawerFields({
             <div className={`grid ${form.addonGroups.length > 0 ? "grid-cols-[1fr_120px_70px_70px_auto]" : "grid-cols-[1fr_80px_80px_auto]"} gap-2 px-0.5 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider`}>
               <span>Name</span>
               {form.addonGroups.length > 0 && <span>Group</span>}
-              <span>Price ($)</span>
+              <span>Price ({money.symbol()})</span>
               <span>Min</span>
               <span />
             </div>

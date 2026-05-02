@@ -31,7 +31,16 @@ export function ConfirmDialog({
         <Button variant="ghost" onClick={onClose}>Cancel</Button>
         <Button
           variant={variant}
-          onClick={() => { onConfirm(); onClose(); }}
+          onClick={() => {
+            // try/finally so the dialog still closes even if onConfirm
+            // throws — otherwise the user is stuck on a dead modal that
+            // looks like nothing happened.
+            try {
+              onConfirm();
+            } finally {
+              onClose();
+            }
+          }}
         >
           {confirmLabel}
         </Button>

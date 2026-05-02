@@ -54,7 +54,6 @@ function mapInquiryToDB(
   if (data.bookingId !== undefined) row.booking_id = data.bookingId || null;
   if (data.clientId !== undefined) row.client_id = data.clientId || null;
   if (data.notes !== undefined) row.notes = data.notes ?? "";
-  if (data.submissionValues !== undefined) row.submission_values = data.submissionValues ?? {};
   if (data.createdAt !== undefined) row.created_at = data.createdAt;
   if (data.updatedAt !== undefined) row.updated_at = data.updatedAt;
 

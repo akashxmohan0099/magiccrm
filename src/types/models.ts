@@ -27,6 +27,12 @@ export interface Client {
    * The booking flow gates services that require a non-expired test.
    */
   patchTests?: ClientPatchTest[];
+  /**
+   * Operator-set flag: when true, this client is always charged a deposit
+   * on services configured with `depositAppliesTo === 'flagged'` (typically
+   * because of past no-shows or chargebacks).
+   */
+  depositRequired?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -315,8 +321,10 @@ export interface Service {
   price: number;              // base price; for tiered/variants this is a fallback / "from" anchor
   /** Legacy free-text category. Kept for back-compat; new code uses categoryId. */
   category?: string;
-  /** Canonical category link. Falls back to `category` (free-text) when absent. */
-  categoryId?: string;
+  /** Canonical category link. Falls back to `category` (free-text) when absent.
+   *  Pass `null` on update to clear the link (e.g. moving to "Uncategorized"
+   *  or after deleting a category row). */
+  categoryId?: string | null;
   enabled: boolean;
   sortOrder: number;
   // Pricing
@@ -421,7 +429,12 @@ export interface Service {
   isPackage?: boolean;
   /** Items in the bundle. Only meaningful when isPackage is true. */
   packageItems?: PackageItem[];
-  locationType: ServiceLocationType;
+  /**
+   * @deprecated Use `locationIds` + `Location.kind`. Studio/Mobile/Both is now
+   * a property of the location, not the service. Kept optional only so old DB
+   * rows round-trip; no UI surface writes it anymore.
+   */
+  locationType?: ServiceLocationType;
   /** Restrict this service to specific locations. Empty/undefined = all. */
   locationIds?: string[];
   /**
@@ -430,7 +443,6 @@ export interface Service {
    * the slot is rejected even when the artist is available.
    */
   requiredResourceIds?: string[];
-  priceMobile?: number;
   imageUrl?: string;
   createdAt: string;
   updatedAt: string;
@@ -540,6 +552,13 @@ export interface Booking {
   workspaceId: string;
   clientId: string;
   serviceId?: string;
+  /**
+   * Additional services stacked into the same appointment (e.g. Bridal
+   * Package + Brow Tint, one client, one visit). The primary `serviceId`
+   * still drives display labels, intake, and pricing snapshots; these
+   * extras contribute to total duration and are listed alongside it.
+   */
+  additionalServiceIds?: string[];
   assignedToId?: string;
   date: string;               // YYYY-MM-DD
   startAt: string;            // ISO timestamp
@@ -571,10 +590,20 @@ export interface Booking {
   giftCardCode?: string;
   /** Membership the booking was drawn against, if any. */
   membershipId?: string;
+  /**
+   * Inline intake answers captured at booking time, keyed by
+   * ServiceIntakeQuestion.id. Distinct from the linked Form Builder form
+   * (intakeFormId) which is sent post-booking by the intake-form cron.
+   */
+  intakeAnswers?: Record<string, string>;
   // Platform features
   recurrencePattern?: RecurrencePattern;
   recurrenceEndDate?: string;
+  /** FK to the Location this booking happens at. Null on single-location workspaces. */
+  locationId?: string;
+  /** Snapshot of the location's kind at booking time ("studio" | "mobile"). */
   locationType?: string;
+  /** Customer drop-off address for mobile bookings. */
   address?: string;
   createdAt: string;
   updatedAt: string;
@@ -731,10 +760,10 @@ export interface FormBranding {
   autoReplyEnabled?: boolean;          // email auto-reply toggle
   autoReplySubject?: string;           // e.g. "We got your inquiry"
   autoReplyBody?: string;              // plain text, supports {{name}} {{businessName}} {{serviceInterest}}
-  autoReplyDelayMinutes?: number;      // 0 = send immediately. Honored by the scheduler.
+  autoReplyDelayMinutes?: number;      // reserved for scheduled auto-replies; editor currently sends immediately
   autoReplySmsEnabled?: boolean;       // SMS auto-reply toggle (only if phone captured)
   autoReplySmsBody?: string;           // SMS text, same {{vars}}
-  autoReplySmsDelayMinutes?: number;   // 0 = send immediately. Honored by the scheduler.
+  autoReplySmsDelayMinutes?: number;   // reserved for scheduled auto-replies; editor currently sends immediately
 
   // ── Owner notification ──
   notifyOwnerEmail?: boolean;          // also email the workspace owner
@@ -970,6 +999,10 @@ export interface WorkspaceSettings {
   };
   bookingPageSlug?: string;
   // Platform features
+  /** ISO 4217 currency code (e.g. "USD", "AUD", "GBP"). Defaults to "USD". */
+  currency?: string;
+  /** BCP-47 locale used for currency/date formatting (e.g. "en-US", "en-AU"). */
+  locale?: string;
   taxRate?: number;
   taxId?: string;
   termsContent?: string;
@@ -1288,4 +1321,138 @@ export interface SentDocument {
   viewedAt?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+// ── Calendar Suggestion ─────────────────────────────
+//
+// Suggestions are operator-facing nudges shown on the Calendar tab's right
+// rail. Each suggestion has a deterministic trigger (data condition that
+// produced it), a typed action payload (so the UI can render the right
+// confirm flow), and a lifecycle (open → snoozed/dismissed/acted/expired).
+//
+// Generation is pure: a generator takes a workspace snapshot
+// (bookings, clients, members, settings) and returns Suggestion rows. The
+// store dedupes against existing suggestions via `triggerKey` so re-running
+// a generator never produces duplicates for the same situation.
+
+export type SuggestionKind =
+  | 'empty_day'           // a working day with low utilisation
+  | 'last_minute_gap'     // a hole opening today/tomorrow (cancellation, gap between bookings)
+  | 'overdue_rebook'      // clients past their typical rebook window
+  | 'no_deposit_risk'     // upcoming bookings missing a deposit on a deposit-required service
+  | 'patch_test_due'      // upcoming services that need a fresh patch test
+  | 'staff_underbooked'   // one team member is materially less booked than peers
+  | 'recurring_lapsed';   // a recurring booking series stopped without an explicit cancel
+
+export type SuggestionPriority = 'low' | 'medium' | 'high' | 'urgent';
+
+export type SuggestionStatus = 'open' | 'snoozed' | 'dismissed' | 'acted' | 'expired';
+
+/**
+ * Who a suggestion targets. Resolved at generation time into a concrete
+ * client list (`audienceClientIds`) so the operator can preview before
+ * acting; the descriptor is kept around for "Why these clients?" copy.
+ */
+export type SuggestionAudience =
+  | { kind: 'past_clients'; lastVisitedFromDays: number; lastVisitedToDays: number }
+  | { kind: 'overdue_rebookers'; minDaysOverdue: number; serviceIds?: string[] }
+  | { kind: 'specific_clients' }
+  | { kind: 'nearby_clients'; postcode?: string; radiusKm?: number }
+  | { kind: 'none' };
+
+/**
+ * Action payload — drives both the primary CTA copy and the confirm flow.
+ * `send_message` never sends directly; the UI must show a preview screen
+ * with editable copy and per-client opt-out before dispatch.
+ */
+export type SuggestionAction =
+  | {
+      kind: 'send_message';
+      channel: 'sms' | 'email' | 'both';
+      templateId?: string;
+      defaultMessage: string;
+      /** Slot date the offer points at, if applicable. */
+      slotDate?: string;
+      /** Slot time (HH:MM) when the offer is for a specific gap. */
+      slotTime?: string;
+    }
+  | { kind: 'open_calendar'; date: string }
+  | { kind: 'open_booking'; bookingId: string }
+  | { kind: 'open_clients'; clientIds: string[] }
+  | { kind: 'collect_deposit'; bookingId: string };
+
+export interface Suggestion {
+  id: string;
+  workspaceId: string;
+  kind: SuggestionKind;
+  priority: SuggestionPriority;
+  status: SuggestionStatus;
+
+  // Display
+  title: string;          // e.g. "Thu has 5 empty slots"
+  body: string;           // e.g. "Send offers to 12 past clients?"
+
+  /**
+   * One-sentence summary of why this suggestion fired. Shown next to a
+   * "Why?" affordance. Keep it concrete: numbers + the data fact.
+   */
+  reasonSummary: string;
+  /** Optional bullet-list expansion shown when the operator opens "Why?". */
+  reasonDetails?: string[];
+  /**
+   * Numeric/string facts the UI may surface inline (e.g. potentialRevenue,
+   * clientCount). Keep keys stable per kind.
+   */
+  metrics?: Record<string, number | string>;
+
+  // Targeting
+  audience: SuggestionAudience;
+  /** Concrete client ids resolved at generation time. Capped (typically 50). */
+  audienceClientIds?: string[];
+
+  // Action
+  primaryAction: SuggestionAction;
+  secondaryAction?: SuggestionAction;
+
+  /**
+   * Stable dedupe key per workspace, e.g. "empty_day:2026-05-08" or
+   * "last_minute_gap:booking_<id>". The store rejects inserts that collide
+   * with an existing open/snoozed suggestion's triggerKey.
+   */
+  triggerKey: string;
+
+  // Lifecycle
+  /** ISO — when this suggestion stops being relevant (day passes, booking starts). */
+  expiresAt?: string;
+  snoozedUntil?: string;
+  actedAt?: string;
+  /** Foreign-key-ish reference to whatever the action produced (e.g. campaign id). */
+  actionResultRef?: string;
+  dismissedAt?: string;
+  generatedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Generator interface — every suggestion kind implements this. Generators
+ * are pure: same input → same output (modulo `now`). The runner calls each
+ * registered generator on a schedule (daily for date-driven kinds) or on
+ * an event (booking cancelled → re-run last_minute_gap).
+ */
+export interface SuggestionGeneratorContext {
+  workspaceId: string;
+  now: Date;
+  bookings: Booking[];
+  blocks: CalendarBlock[];
+  clients: Client[];
+  members: TeamMember[];
+  services: Service[];
+  settings: WorkspaceSettings;
+}
+
+export interface SuggestionGenerator {
+  kind: SuggestionKind;
+  /** Returns suggestions to upsert. The runner handles dedupe via triggerKey. */
+  generate(ctx: SuggestionGeneratorContext): Suggestion[];
 }

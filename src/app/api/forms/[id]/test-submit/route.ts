@@ -175,7 +175,6 @@ export async function POST(
         status: "new",
         form_id: formRow.id,
         form_response_id: responseId,
-        submission_values: values,
         created_at: now,
         updated_at: now,
       });

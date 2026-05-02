@@ -58,6 +58,13 @@ export interface AvailabilityInput {
   /** Optional cap on slots returned. */
   limit?: number;
   /**
+   * Extra minutes that must fit inside the booking envelope on top of the
+   * service's base duration — typically the sum of selected add-on durations,
+   * or the gap between a basket-wide required duration and the engine's
+   * computed base. Added to baseDuration in totalNeeded.
+   */
+  extraDurationMinutes?: number;
+  /**
    * Pre-computed resource busy intervals for the day, keyed by resourceId.
    * Caller derives this by walking bookings for services that share required
    * resources with the target service. Empty/missing = no resource locks.
@@ -115,6 +122,7 @@ export function computeAvailability(input: AvailabilityInput): Slot[] {
     bufferAfterMin,
     limit,
     resourceBusyByDay,
+    extraDurationMinutes = 0,
   } = input;
 
   const weekday = WEEKDAY_KEYS[new Date(`${date}T12:00:00`).getDay()];
@@ -171,7 +179,7 @@ export function computeAvailability(input: AvailabilityInput): Slot[] {
     return resolveBuffer(service);
   })();
 
-  const totalNeeded = buf.before + baseDuration + buf.after;
+  const totalNeeded = buf.before + baseDuration + Math.max(0, extraDurationMinutes) + buf.after;
 
   // Build per-member busy intervals (in minutes-of-day) from bookings.
   type Interval = { start: number; end: number };
@@ -247,7 +255,7 @@ export function computeAvailability(input: AvailabilityInput): Slot[] {
     if (cursor < minNoticeCutoff) continue;
 
     const slotStart = cursor + buf.before;
-    const slotEnd = slotStart + baseDuration;
+    const slotEnd = slotStart + baseDuration + Math.max(0, extraDurationMinutes);
 
     const freeMembers = eligible.filter((m) => {
       // Each member needs their full envelope (incl. buffers) clear AND the

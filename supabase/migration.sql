@@ -755,6 +755,30 @@ CREATE INDEX idx_payment_line_items_doc ON payment_line_items(payment_document_i
 -- Forms
 CREATE INDEX idx_forms_workspace ON forms(workspace_id);
 CREATE UNIQUE INDEX idx_forms_slug ON forms(workspace_id, slug) WHERE slug IS NOT NULL AND slug != '';
+-- Inquiry form URLs are global (`/inquiry/<slug>`), not workspace-namespaced.
+-- A workspace-scoped unique index is not enough: two tenants with `/contact`
+-- would otherwise resolve through the same public route. Keep inquiry slugs
+-- globally unique case-insensitively.
+WITH duplicate_inquiry_form_slugs AS (
+  SELECT
+    id,
+    workspace_id,
+    slug,
+    row_number() OVER (PARTITION BY lower(slug) ORDER BY created_at ASC, id ASC) AS slug_rank
+  FROM forms
+  WHERE type = 'inquiry' AND slug IS NOT NULL AND slug != ''
+)
+UPDATE forms f
+SET
+  slug = duplicate_inquiry_form_slugs.slug || '-' || left(f.id::text, 8),
+  updated_at = now()
+FROM duplicate_inquiry_form_slugs
+WHERE f.id = duplicate_inquiry_form_slugs.id
+  AND f.workspace_id = duplicate_inquiry_form_slugs.workspace_id
+  AND duplicate_inquiry_form_slugs.slug_rank > 1;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_inquiry_forms_slug_global
+  ON forms(lower(slug))
+  WHERE type = 'inquiry' AND slug IS NOT NULL AND slug != '';
 
 -- Campaigns
 CREATE INDEX idx_campaigns_workspace ON campaigns(workspace_id);
@@ -841,6 +865,8 @@ ALTER TABLE workspace_settings ADD COLUMN IF NOT EXISTS resolved_persona TEXT;
 ALTER TABLE workspace_settings ADD COLUMN IF NOT EXISTS selected_onboarding_actions TEXT[] DEFAULT '{}';
 ALTER TABLE workspace_settings ADD COLUMN IF NOT EXISTS onboarding_follow_ups JSONB DEFAULT '{}';
 ALTER TABLE workspace_settings ADD COLUMN IF NOT EXISTS enabled_features TEXT[] DEFAULT '{}';  -- toggle-on feature IDs
+ALTER TABLE workspace_settings ADD COLUMN IF NOT EXISTS currency TEXT DEFAULT 'USD';  -- ISO 4217 code
+ALTER TABLE workspace_settings ADD COLUMN IF NOT EXISTS locale TEXT DEFAULT 'en-US';  -- BCP-47 locale
 
 -- ═══════════════════════════════════════════════════
 -- Platform Features — New Tables
@@ -1337,6 +1363,14 @@ CREATE POLICY "locations_workspace_access" ON locations
 ALTER TABLE services ADD COLUMN IF NOT EXISTS location_ids UUID[];
 ALTER TABLE member_services ADD COLUMN IF NOT EXISTS location_ids UUID[];
 
+-- Per-booking location FK. The earlier `location_type` TEXT column was being
+-- repurposed to hold the location UUID; this column gives us a real reference
+-- so joins, RLS, and analytics work. `address` (already on bookings) is the
+-- free-text drop-off for mobile bookings.
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS location_id UUID
+  REFERENCES locations(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_bookings_location_id ON bookings(location_id);
+
 -- ── Resources / rooms (Tier 1) ───────────────────────────────────
 -- Bookable scarce objects beyond artists: treatment rooms, pedicure chairs,
 -- specific machines. Bookings reserve the resource for their full envelope.
@@ -1580,7 +1614,32 @@ ALTER TABLE gift_cards ADD COLUMN IF NOT EXISTS purchased_at TIMESTAMPTZ;
 -- gift card / membership references that were applied.
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS selected_variant_id TEXT;
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS selected_addon_ids TEXT[];
+-- Multi-service bookings: extra services stacked on top of service_id in
+-- the same appointment slot (e.g. Bridal Package + Brow Tint).
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS additional_service_ids UUID[];
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS resolved_price NUMERIC(12,2);
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS gift_card_code TEXT;
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS membership_id UUID
   REFERENCES client_memberships(id) ON DELETE SET NULL;
+
+-- Operator-set client flag: when true, the booking flow always requires a
+-- deposit for services configured with deposit_applies_to = 'flagged'.
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS deposit_required BOOLEAN DEFAULT FALSE;
+
+-- Inline per-service intake answers captured at booking time. Keyed by
+-- ServiceIntakeQuestion.id; distinct from intake_form_id (a linked Form
+-- Builder form sent post-booking by the cron).
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS intake_answers JSONB DEFAULT '{}'::jsonb;
+
+-- Negative prices are nonsense and were previously slipping through because
+-- the HTML `min={0}` attribute only constrains arrow controls, not typed
+-- input. Enforce non-negative prices at the database level so a malformed
+-- client write can never persist (BUG-3 in services QA report).
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'services_price_nonneg'
+  ) THEN
+    ALTER TABLE services ADD CONSTRAINT services_price_nonneg CHECK (price >= 0);
+  END IF;
+END $$;

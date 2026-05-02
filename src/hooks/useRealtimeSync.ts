@@ -10,6 +10,10 @@ import { usePaymentsStore } from "@/store/payments";
 import { useInquiriesStore } from "@/store/inquiries";
 import { useFormResponsesStore } from "@/store/form-responses";
 import { useCommunicationStore } from "@/store/communication";
+import { useLocationsStore } from "@/store/locations";
+import { useResourcesStore } from "@/store/resources";
+import { useMembershipsStore } from "@/store/memberships";
+import { useGiftCardStore } from "@/store/gift-cards";
 
 /**
  * Subscribe to Supabase Realtime changes on critical tables.
@@ -59,6 +63,25 @@ export function useRealtimeSync({
         () => debouncedReload("conversations", () => useCommunicationStore.getState().loadFromSupabase(workspaceId)))
       .on("postgres_changes", { event: "*", schema: "public", table: "messages", filter: `workspace_id=eq.${workspaceId}` },
         () => debouncedReload("messages", () => useCommunicationStore.getState().loadFromSupabase(workspaceId)))
+      // Service taxonomy + per-staff overrides + library add-ons all live in
+      // the services store. Reloading once on any of them refreshes every
+      // dependent slice.
+      .on("postgres_changes", { event: "*", schema: "public", table: "service_categories", filter: `workspace_id=eq.${workspaceId}` },
+        () => debouncedReload("services", () => useServicesStore.getState().loadFromSupabase(workspaceId)))
+      .on("postgres_changes", { event: "*", schema: "public", table: "library_addons", filter: `workspace_id=eq.${workspaceId}` },
+        () => debouncedReload("services", () => useServicesStore.getState().loadFromSupabase(workspaceId)))
+      .on("postgres_changes", { event: "*", schema: "public", table: "member_services", filter: `workspace_id=eq.${workspaceId}` },
+        () => debouncedReload("services", () => useServicesStore.getState().loadFromSupabase(workspaceId)))
+      .on("postgres_changes", { event: "*", schema: "public", table: "locations", filter: `workspace_id=eq.${workspaceId}` },
+        () => debouncedReload("locations", () => useLocationsStore.getState().loadFromSupabase(workspaceId)))
+      .on("postgres_changes", { event: "*", schema: "public", table: "resources", filter: `workspace_id=eq.${workspaceId}` },
+        () => debouncedReload("resources", () => useResourcesStore.getState().loadFromSupabase(workspaceId)))
+      .on("postgres_changes", { event: "*", schema: "public", table: "membership_plans", filter: `workspace_id=eq.${workspaceId}` },
+        () => debouncedReload("memberships", () => useMembershipsStore.getState().loadFromSupabase(workspaceId)))
+      .on("postgres_changes", { event: "*", schema: "public", table: "client_memberships", filter: `workspace_id=eq.${workspaceId}` },
+        () => debouncedReload("memberships", () => useMembershipsStore.getState().loadFromSupabase(workspaceId)))
+      .on("postgres_changes", { event: "*", schema: "public", table: "gift_cards", filter: `workspace_id=eq.${workspaceId}` },
+        () => debouncedReload("gift_cards", () => useGiftCardStore.getState().loadFromSupabase(workspaceId)))
       .subscribe((status: string) => {
         if (status === "SUBSCRIBED") {
           console.debug("[realtime] Connected to workspace channel");

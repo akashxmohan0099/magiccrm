@@ -155,14 +155,20 @@ describe("POST /api/inquiries/promote-form-response", () => {
         error: null,
       }),
     };
+    let insertedInquiry: Record<string, unknown> | null = null;
     tableHandlers.inquiries = {
-      insert: () => ({ error: null }),
+      insert: (row) => {
+        insertedInquiry = row;
+        return { error: null };
+      },
     };
     const { POST } = await import("../route");
     const res = await POST(makeRequest({ formResponseId: "r-2" }));
     expect(res.status).toBe(201);
     const body = await res.json();
     expect(body.inquiryId).toBe("fixed-inquiry-id");
+    expect(insertedInquiry?.form_response_id).toBe("r-2");
+    expect(insertedInquiry?.submission_values).toBeUndefined();
   });
 
   it("resolves a 23505 race by returning the inquiry that already won", async () => {

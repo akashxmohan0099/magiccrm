@@ -4,11 +4,11 @@ import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { FileText, Plus, Globe, Code, Eye, Inbox, ToggleLeft, ToggleRight, Pencil, Trash2, Copy, Check, GripVertical, Download, ChevronDown, ChevronRight, Zap, X, ImagePlus, Type, Mail, Phone, Link as LinkIcon, Hash, AlignLeft, ChevronsUpDown, Calendar, CalendarRange, Clock, Maximize2, Minimize2, Sparkles, MessageSquare, Bell, ExternalLink, HelpCircle, CheckSquare, CircleDot, ListChecks, Upload, EyeOff, Filter, Sun, Moon, Monitor, ArrowRight, Send, Loader2, Smartphone, Tablet, PenLine } from "lucide-react";
+import { FileText, Plus, Code, Eye, Inbox, ToggleLeft, ToggleRight, Pencil, Trash2, Copy, Check, GripVertical, ChevronDown, ChevronRight, Zap, X, ImagePlus, Type, Mail, Phone, Link as LinkIcon, Hash, AlignLeft, ChevronsUpDown, Calendar, CalendarRange, Clock, Maximize2, Minimize2, Sparkles, MessageSquare, Bell, ExternalLink, HelpCircle, CheckSquare, CircleDot, ListChecks, Upload, EyeOff, Filter, Sun, Moon, Monitor, ArrowRight, Send, Loader2, Smartphone, Tablet, PenLine } from "lucide-react";
 import { FORM_STARTERS, STARTER_CATEGORY_STYLE, type FormStarter } from "@/lib/forms/starters";
 import { useFormsStore } from "@/store/forms";
 import { useFormResponsesStore } from "@/store/form-responses";
-import { Form, FormFieldConfig, FormFieldCondition, FormResponse, FormTemplate, FormFontFamily, FormSuccessVariant, FormTheme } from "@/types/models";
+import { Form, FormFieldConfig, FormFieldCondition, FormTemplate, FormFontFamily, FormSuccessVariant, FormTheme } from "@/types/models";
 import { withoutTestFormResponses } from "@/lib/forms/test-submission";
 import { validateFormDraft } from "@/lib/forms/validate-form-draft";
 import {
@@ -21,7 +21,6 @@ import {
   formatRelativeTime,
   formatTimestamp,
   matchFontPair,
-  csvEscape,
   fieldHasOptions,
   eligibleConditionFields,
   seedCondition,
@@ -32,9 +31,7 @@ import { FormPreviewRenderer } from "@/components/forms/FormRenderer";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { SlideOver } from "@/components/ui/SlideOver";
-import { DataTable, type Column } from "@/components/ui/DataTable";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { InlineDropdown } from "@/components/ui/InlineDropdown";
 import { ColorField } from "@/components/ui/ColorField";
 import { toast } from "@/components/ui/Toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -486,6 +483,13 @@ export function FormsPage() {
     ? forms.find((f) => f.id === pendingAutoFlowFormId) ?? null
     : null;
   const [starterGalleryOpen, setStarterGalleryOpen] = useState(false);
+  // Belt + braces: if the gallery opens an editor for a freshly created
+  // form, close the gallery as soon as the editor latches onto the new id.
+  // Defends against any race where the create handler's close call doesn't
+  // beat the new editor mount.
+  useEffect(() => {
+    if (selectedId && starterGalleryOpen) setStarterGalleryOpen(false);
+  }, [selectedId, starterGalleryOpen]);
   const [testSubmitPending, setTestSubmitPending] = useState(false);
   // Editor's autosave state, lifted up so the slide-over header can gate
   // the Send test button — testing a form whose latest edits haven't
@@ -558,6 +562,11 @@ export function FormsPage() {
 
   const createFromStarter = useCallback(
     (starter: FormStarter) => {
+      // Close the gallery FIRST so the user sees an immediate response,
+      // then create + open the editor on the next tick. Doing both
+      // synchronously left the modal sitting on screen while React
+      // committed the state change + the editor's slide-in animation.
+      setStarterGalleryOpen(false);
       const { name, slug } = dedupeNameAndSlug(starter.formName, starter.slug);
       const f = addForm(
         {
@@ -572,7 +581,6 @@ export function FormsPage() {
         },
         workspaceId || undefined,
       );
-      setStarterGalleryOpen(false);
       if (f) {
         setSelectedId(f.id);
         setSlideMode("edit");
@@ -583,6 +591,7 @@ export function FormsPage() {
   );
 
   const createBlankForm = useCallback(() => {
+    setStarterGalleryOpen(false);
     const { name, slug } = dedupeNameAndSlug("New Form", "new-form");
     const f = addForm(
       {
@@ -601,7 +610,6 @@ export function FormsPage() {
       },
       workspaceId || undefined,
     );
-    setStarterGalleryOpen(false);
     if (f) {
       setSelectedId(f.id);
       setSlideMode("edit");
@@ -653,8 +661,9 @@ export function FormsPage() {
   // Inquiry forms split into two buckets:
   //   Main = auto-flow to Leads is on (canonical lead-capture forms)
   //   Additional = custom forms whose submissions stay on this page
-  const mainInquiryForms = forms.filter((f) => f.type === "inquiry" && f.autoPromoteToInquiry);
-  const additionalInquiryForms = forms.filter((f) => f.type === "inquiry" && !f.autoPromoteToInquiry);
+  const inquiryForms = forms.filter((f) => f.type === "inquiry");
+  const mainInquiryForms = inquiryForms.filter((f) => f.autoPromoteToInquiry);
+  const additionalInquiryForms = inquiryForms.filter((f) => !f.autoPromoteToInquiry);
 
   // Filter test submissions out of every list, count, and table on this page.
   // The /api/forms/[id]/test-submit endpoint tags rows with values.__test so
@@ -718,7 +727,7 @@ export function FormsPage() {
         }
       />
 
-      {forms.length === 0 ? (
+      {inquiryForms.length === 0 ? (
         <div className="bg-card-bg border border-border-light rounded-2xl p-12 text-center max-w-md mx-auto">
           <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
             <FileText className="w-6 h-6 text-primary" />
@@ -791,19 +800,34 @@ export function FormsPage() {
               editorSaveStatus === "saving" ||
               editorSaveStatus === "error" ||
               !!editorBlockingError;
-            const testDisabled = testSubmitPending || saveBlocked;
+            // We keep the button enabled when blocked so a click can surface
+            // *why* via toast, instead of silently doing nothing. Only the
+            // pending-network state truly disables click — re-firing while
+            // a request is in flight would queue duplicates.
             const testTooltip = saveBlocked
               ? editorBlockingError
                 ? `Save blocked — ${editorBlockingError}`
                 : "Save in progress — try again in a moment."
               : "Fire a test submission through the live pipeline. Auto-reply lands in your inbox; the entry is tagged [TEST] in Leads.";
+            const handleTestClick = () => {
+              if (saveBlocked) {
+                toast(
+                  editorBlockingError
+                    ? `Can't send a test yet — ${editorBlockingError}`
+                    : "Hold on — this form is still saving. Try again in a moment.",
+                  "warning",
+                );
+                return;
+              }
+              sendTestSubmission(selected.id);
+            };
             return (
               <div className="flex items-center gap-1">
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => sendTestSubmission(selected.id)}
-                  disabled={testDisabled}
+                  onClick={handleTestClick}
+                  disabled={testSubmitPending}
                   title={testTooltip}
                 >
                   {testSubmitPending ? (
@@ -811,7 +835,9 @@ export function FormsPage() {
                   ) : (
                     <Send className="w-3.5 h-3.5" />
                   )}
-                  <span className="ml-1.5">Send test</span>
+                  <span className="ml-1.5">
+                    {testSubmitPending ? "Sending…" : "Send test"}
+                  </span>
                 </Button>
                 <Button
                   variant="ghost"
@@ -1502,10 +1528,8 @@ function FormEditor({
     autoReplyEnabled,
     autoReplySubject,
     autoReplyBody,
-    autoReplyDelayMinutes,
     autoReplySmsEnabled,
     autoReplySmsBody,
-    autoReplySmsDelayMinutes,
     notifyOwnerEmail,
   } = branding;
   const setFields = fieldOps.setFields;
@@ -1610,20 +1634,12 @@ function FormEditor({
     (v: string) => updateBranding({ autoReplyBody: v }),
     [updateBranding],
   );
-  const setAutoReplyDelayMinutes = useCallback(
-    (v: number) => updateBranding({ autoReplyDelayMinutes: v }),
-    [updateBranding],
-  );
   const setAutoReplySmsEnabled = useCallback(
     (v: boolean) => updateBranding({ autoReplySmsEnabled: v }),
     [updateBranding],
   );
   const setAutoReplySmsBody = useCallback(
     (v: string) => updateBranding({ autoReplySmsBody: v }),
-    [updateBranding],
-  );
-  const setAutoReplySmsDelayMinutes = useCallback(
-    (v: number) => updateBranding({ autoReplySmsDelayMinutes: v }),
     [updateBranding],
   );
   const setNotifyOwnerEmail = useCallback(
@@ -1770,11 +1786,22 @@ function FormEditor({
       // Supabase errors are PostgrestError, not Error instances. Pull message off
       // whichever shape we get so the operator sees the real cause (RLS denial,
       // payload-too-large, etc.) instead of a generic "Save failed".
-      const msg =
+      const rawMsg =
         (err as { message?: string } | null)?.message ||
         (err as { details?: string } | null)?.details ||
         (typeof err === "string" ? err : null) ||
         "Save failed";
+      // Friendlier copy for the most common setup snag — a missing migration
+      // or stale PostgREST schema cache. The raw Postgres text mentions
+      // "schema cache" which means nothing to most operators.
+      const code = (err as { code?: string } | null)?.code;
+      const isSchemaCache =
+        code === "PGRST205" ||
+        rawMsg.toLowerCase().includes("could not find the table") ||
+        rawMsg.toLowerCase().includes("schema cache");
+      const msg = isSchemaCache
+        ? "Database schema is out of date — run the latest Supabase migration, then reload."
+        : rawMsg;
       console.error("[forms] save error:", err);
       setSaveError(msg);
       setSaveStatus("error");
@@ -1987,14 +2014,10 @@ function FormEditor({
           setAutoReplySubject={setAutoReplySubject}
           autoReplyBody={autoReplyBody}
           setAutoReplyBody={setAutoReplyBody}
-          autoReplyDelayMinutes={autoReplyDelayMinutes}
-          setAutoReplyDelayMinutes={setAutoReplyDelayMinutes}
           autoReplySmsEnabled={autoReplySmsEnabled}
           setAutoReplySmsEnabled={setAutoReplySmsEnabled}
           autoReplySmsBody={autoReplySmsBody}
           setAutoReplySmsBody={setAutoReplySmsBody}
-          autoReplySmsDelayMinutes={autoReplySmsDelayMinutes}
-          setAutoReplySmsDelayMinutes={setAutoReplySmsDelayMinutes}
           notifyOwnerEmail={notifyOwnerEmail}
           setNotifyOwnerEmail={setNotifyOwnerEmail}
           formFields={fields}
@@ -2027,7 +2050,23 @@ function FormEditor({
               value={slug}
               onChange={(e) => {
                 setSlugTouched(true);
-                setUserSlug(e.target.value.replace(/\s/g, "-").toLowerCase());
+                // Live cleanup but DON'T trim trailing/leading hyphens during
+                // typing — otherwise a typed space (which collapses to `-`)
+                // would be stripped before the next char arrives, so
+                // "hello world" would land as "helloworld" instead of
+                // "hello-world". Final trim happens on blur.
+                const live = e.target.value
+                  .toLowerCase()
+                  .replace(/[^a-z0-9]+/g, "-")
+                  .replace(/-{2,}/g, "-")
+                  .slice(0, 60);
+                setUserSlug(live);
+              }}
+              onBlur={(e) => {
+                // Final clean-up on blur trims the trailing/leading hyphens
+                // that we kept during typing for ergonomics.
+                const cleaned = slugify(e.target.value);
+                if (cleaned !== e.target.value) setUserSlug(cleaned);
               }}
               className={`w-full px-3 py-2.5 bg-surface border rounded-lg text-[14px] text-foreground font-mono outline-none focus:ring-2 ${
                 slugError
@@ -2044,6 +2083,30 @@ function FormEditor({
             </p>
           )}
         </div>
+      </div>
+
+      {/* Auto-promote toggle — duplicates the row toggle on the list view so
+          operators can flip it without leaving the editor. Same underlying
+          state; saves immediately via onUpdate. */}
+      <div className="border-t border-border-light pt-4">
+        <label className="flex items-start gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={form.autoPromoteToInquiry}
+            onChange={(e) => onUpdate({ autoPromoteToInquiry: e.target.checked })}
+            className="mt-0.5 rounded"
+          />
+          <div className="flex-1">
+            <p className="text-[13px] font-medium text-foreground">
+              Auto-promote responses to a Lead
+            </p>
+            <p className="text-[12px] text-text-tertiary mt-0.5">
+              When ON, every submission also creates an Inquiry in your Leads
+              list. When OFF, responses sit in the form&apos;s response tab
+              until you promote them manually.
+            </p>
+          </div>
+        </label>
       </div>
 
       </>)}
@@ -2748,15 +2811,6 @@ function SaveStatusIndicator({
 // and Auto-reply (email + SMS to the visitor, plus owner notify). All optional,
 // all stored on form.branding (no migration).
 
-// Auto-reply delay clamps to a 7-day window. Beyond that and the user almost
-// certainly meant something else; tighter caps would shoot themselves in the
-// foot for legitimate "follow up the next morning" workflows.
-const MAX_AUTOREPLY_DELAY_MINUTES = 60 * 24 * 7;
-function clampDelay(v: number): number | undefined {
-  if (!Number.isFinite(v) || v <= 0) return undefined;
-  return Math.min(Math.max(0, Math.round(v)), MAX_AUTOREPLY_DELAY_MINUTES);
-}
-
 // Merge tags available in auto-reply email/SMS bodies. `source` distinguishes
 // values pulled from the inquiry (the visitor's input) from workspace settings
 // (configured once in Settings → Business). The Info popover renders this so
@@ -2866,50 +2920,6 @@ function MergeTagBar({ onInsert }: { onInsert: (token: string) => void }) {
   );
 }
 
-// Curated delay presets — covers the realistic range without exposing a free
-// number input. "Send immediately" maps to undefined on save (clampDelay).
-const DELAY_PRESETS: Array<{ label: string; minutes: number }> = [
-  { label: "Send immediately", minutes: 0 },
-  // Tiny breathing room so the auto-reply doesn't feel robotically instant —
-  // a real person can't reply in seconds. The 2-min option is the "still
-  // feels human" preset most beauty pros are reaching for.
-  { label: "2 minutes after submit", minutes: 2 },
-  { label: "5 minutes after submit", minutes: 5 },
-  { label: "15 minutes after submit", minutes: 15 },
-  { label: "30 minutes after submit", minutes: 30 },
-  { label: "1 hour after submit", minutes: 60 },
-  { label: "2 hours after submit", minutes: 120 },
-  { label: "4 hours after submit", minutes: 240 },
-  { label: "1 day after submit", minutes: 60 * 24 },
-];
-
-function DelayPicker({
-  value,
-  onChange,
-}: {
-  value: number;
-  onChange: (v: number) => void;
-}) {
-  const matched = DELAY_PRESETS.find((p) => p.minutes === value) ?? DELAY_PRESETS[0];
-  return (
-    <InlineDropdown
-      value={String(matched.minutes)}
-      options={DELAY_PRESETS.map((p) => ({
-        value: String(p.minutes),
-        label: p.label,
-      }))}
-      onChange={(next) => onChange(Number(next))}
-      ariaLabel="Send delay"
-      triggerClassName="w-full justify-between px-2.5 py-1.5 bg-card-bg border border-border-light rounded-lg text-[12px] text-foreground hover:border-text-tertiary transition-colors"
-    >
-      <span className="flex items-center gap-2 min-w-0">
-        <Clock className="w-3.5 h-3.5 text-text-tertiary flex-shrink-0" />
-        <span className="truncate">{matched.label}</span>
-      </span>
-    </InlineDropdown>
-  );
-}
-
 // Thank-you screen — what the visitor sees the moment they submit.
 function ThankYouSection(props: {
   successMessage: string;
@@ -2989,11 +2999,18 @@ function ThankYouSection(props: {
                 min={0}
                 max={60}
                 value={props.successRedirectDelaySeconds}
-                onChange={(e) => props.setSuccessRedirectDelaySeconds(Number(e.target.value) || 0)}
+                onChange={(e) => {
+                  // Clamp at input time so the operator sees the limit
+                  // applied, not just at save. Matches the buildBrandingFromDraft
+                  // clamp to keep the source of truth consistent.
+                  const raw = Number(e.target.value);
+                  const clamped = Number.isFinite(raw) ? Math.max(0, Math.min(60, raw)) : 0;
+                  props.setSuccessRedirectDelaySeconds(clamped);
+                }}
                 disabled={!props.successRedirectUrl.trim()}
                 className="w-16 px-2 py-2 bg-card-bg border border-border-light rounded-lg text-[13.5px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
               />
-              <span className="text-[12.5px] text-text-tertiary">sec</span>
+              <span className="text-[12.5px] text-text-tertiary">sec (max 60)</span>
             </div>
           </div>
         </div>
@@ -3236,14 +3253,10 @@ function AutoReplySection(props: {
   setAutoReplySubject: (v: string) => void;
   autoReplyBody: string;
   setAutoReplyBody: (v: string) => void;
-  autoReplyDelayMinutes: number;
-  setAutoReplyDelayMinutes: (v: number) => void;
   autoReplySmsEnabled: boolean;
   setAutoReplySmsEnabled: (v: boolean) => void;
   autoReplySmsBody: string;
   setAutoReplySmsBody: (v: string) => void;
-  autoReplySmsDelayMinutes: number;
-  setAutoReplySmsDelayMinutes: (v: number) => void;
   notifyOwnerEmail: boolean;
   setNotifyOwnerEmail: (v: boolean) => void;
   formFields: FormFieldConfig[];
@@ -3362,10 +3375,6 @@ function AutoReplySection(props: {
               body={props.autoReplyBody}
               businessName={businessName}
             />
-            <DelayPicker
-              value={props.autoReplyDelayMinutes}
-              onChange={props.setAutoReplyDelayMinutes}
-            />
           </div>
         )}
       </div>
@@ -3415,10 +3424,6 @@ function AutoReplySection(props: {
               </span>
             </div>
             <SmsPreview body={props.autoReplySmsBody} businessName={businessName} />
-            <DelayPicker
-              value={props.autoReplySmsDelayMinutes}
-              onChange={props.setAutoReplySmsDelayMinutes}
-            />
           </div>
         )}
       </div>
@@ -3454,15 +3459,23 @@ function AutoReplySection(props: {
                   <button
                     type="button"
                     onClick={startEditingNotifyEmail}
-                    className="group inline-flex items-center gap-1 text-foreground font-medium hover:text-primary transition-colors cursor-pointer min-w-0"
+                    className={`group inline-flex items-center gap-1 font-medium hover:text-primary transition-colors cursor-pointer min-w-0 ${
+                      contactEmail ? "text-foreground" : "text-amber-700 underline"
+                    }`}
                   >
                     <span className="truncate">
-                      {contactEmail || "set an address"}
+                      {contactEmail || "Set an address →"}
                     </span>
                     <Pencil className="w-3 h-3 text-text-tertiary group-hover:text-primary flex-shrink-0" />
                   </button>
                 )}
               </div>
+              {props.notifyOwnerEmail && !contactEmail && !editingNotifyEmail ? (
+                <p className="text-[11.5px] text-amber-700 mt-1.5">
+                  Notifications are on, but no recipient is set — emails won&apos;t
+                  send until you add an address.
+                </p>
+              ) : null}
             </div>
           </div>
           <button
@@ -3923,4 +3936,3 @@ function FieldTypePickerInline({
 }
 
 // FormEmbed + FormQrCode live in ./share/FormEmbed.tsx now.
-

@@ -40,12 +40,9 @@ const FROM_DOMAIN_DEFAULT = "bookings@magiccrm.app";
  * (auto_reply_enabled / contact_email / business_name) and finally to
  * built-in copy. Never throws — caller fires-and-forgets.
  *
- * NOTE: `branding.autoReplyDelayMinutes` and `autoReplySmsDelayMinutes` are
- * persisted by the form editor but NOT yet honored here — implementing them
- * needs a queued/scheduled-send job (a `setTimeout` in a serverless handler
- * dies with the request). Until that lands this function still sends every
- * configured channel immediately, regardless of the delay value.
- */
+   * Sends immediately. Delayed auto-replies need a queued/scheduled-send job;
+   * the form editor does not expose delay controls until that exists.
+   */
 export async function sendInquiryConfirmation(
   params: SendInquiryConfirmationParams,
 ): Promise<SendInquiryConfirmationResult> {
@@ -75,7 +72,7 @@ export async function sendInquiryConfirmation(
       (settingsRow?.auto_reply_template as string | null) || undefined;
 
     // Per-form override beats workspace default. When neither is set, default
-    // to ON — the merchant explicitly configured a public-facing form, so
+    // to ON - the merchant explicitly configured a public-facing form, so
     // sending an ack is the obviously-right behaviour. Mark `void` to keep
     // the workspace flag read for future opt-out semantics.
     void workspaceAutoReplyEnabled;
@@ -125,8 +122,8 @@ export async function sendInquiryConfirmation(
       result.ownerEmail.attempted = true;
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://usemagic.com";
       const dashboardUrl = inquiryId
-        ? `${baseUrl}/dashboard/inquiries/${inquiryId}`
-        : `${baseUrl}/dashboard/inquiries`;
+        ? `${baseUrl}/dashboard/leads?lead=${encodeURIComponent(inquiryId)}`
+        : `${baseUrl}/dashboard/forms?form=${encodeURIComponent(form.id)}`;
       const built = buildOwnerInquiryNotifyEmail({
         businessName,
         formName: form.name,

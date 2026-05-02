@@ -48,3 +48,9 @@ playwright-report/
 
 # local agent / IDE config
 .claude/
+
+# supabase CLI cache (machine-specific, regenerated on every command)
+supabase/.temp/
+
+# ad-hoc SQL utilities — keep locally, don't commit
+scripts/local/

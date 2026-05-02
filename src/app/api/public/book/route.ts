@@ -6,11 +6,13 @@ import {
   fetchWorkspaceAvailability,
   getAvailableMembersForSlot,
   resolveBookingWorkspaceBySlug,
+  sanitizeClientText,
 } from "@/lib/server/public-booking";
-import { maxDuration, resolveDuration } from "@/lib/services/price";
+import { resolveDuration, resolvePrice } from "@/lib/services/price";
 import { mapServiceFromDB } from "@/lib/db/services";
 import { mapClientFromDB } from "@/lib/db/clients";
 import { checkPatchTest } from "@/lib/services/patch-test";
+import { shouldRequireDeposit } from "@/lib/services/deposit";
 import { runAutomationRules } from "@/lib/server/automation-runner";
 
 /**
@@ -37,17 +39,25 @@ export async function POST(req: NextRequest) {
       serviceId,
       date,
       time,
-      clientName,
+      clientName: rawClientName,
       clientEmail,
-      clientPhone,
-      notes,
+      clientPhone: rawClientPhone,
+      notes: rawNotes,
       locationId,
       stripeCustomerId,
       stripeSetupIntentId,
       variantId,
       addonIds,
       giftCardCode,
+      intakeAnswers,
     } = body;
+
+    // Strip HTML tags / control characters before any of the downstream
+    // SMS/email/Stripe-description templates can interpolate the value —
+    // those channels don't go through React so they don't get free escaping.
+    const clientName = sanitizeClientText(rawClientName ?? "", 80);
+    const clientPhone = sanitizeClientText(rawClientPhone ?? "", 30);
+    const notes = sanitizeClientText(rawNotes ?? "", 1000);
 
     // ---- validation ----
     if (!slug || !serviceId || !date || !time || !clientName || !clientEmail) {
@@ -57,7 +67,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
     if (!emailRegex.test(clientEmail)) {
       return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
     }
@@ -95,7 +105,7 @@ export async function POST(req: NextRequest) {
       .eq("workspace_id", workspaceId)
       .maybeSingle();
 
-    if (!serviceRow) {
+    if (!serviceRow || serviceRow.enabled === false) {
       return NextResponse.json({ error: "Service not found" }, { status: 404 });
     }
 
@@ -131,16 +141,89 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Validate variant + addon picks against the service's actual rules
+    // BEFORE running availability so we don't reserve a slot that ultimately
+    // can't be created.
+    const allAddons = service.addons ?? [];
+    const selectedAddonIds: string[] = Array.isArray(addonIds) ? addonIds : [];
+    if (service.priceType === "variants") {
+      const ok = service.variants?.some((v) => v.id === variantId);
+      if (!ok) {
+        return NextResponse.json(
+          { error: "Please pick one of the available variants for this service." },
+          { status: 400 },
+        );
+      }
+    }
+    for (const id of selectedAddonIds) {
+      if (!allAddons.some((a) => a.id === id)) {
+        return NextResponse.json(
+          { error: "One of the selected add-ons isn't available for this service." },
+          { status: 400 },
+        );
+      }
+    }
+    for (const grp of service.addonGroups ?? []) {
+      const picksInGroup = selectedAddonIds.filter((id) => {
+        const a = allAddons.find((x) => x.id === id);
+        return a?.groupId === grp.id;
+      }).length;
+      if (picksInGroup < (grp.minSelect ?? 0)) {
+        return NextResponse.json(
+          { error: `Please pick at least ${grp.minSelect} from "${grp.name}".` },
+          { status: 400 },
+        );
+      }
+      if (grp.maxSelect != null && picksInGroup > grp.maxSelect) {
+        return NextResponse.json(
+          { error: `You can pick at most ${grp.maxSelect} from "${grp.name}".` },
+          { status: 400 },
+        );
+      }
+    }
+
+    // Validate inline intake question answers. Required questions must have
+    // a non-empty answer; trim() handles "all whitespace" inputs.
+    const intakeAnswersClean: Record<string, string> = {};
+    if (intakeAnswers && typeof intakeAnswers === "object") {
+      for (const q of service.intakeQuestions ?? []) {
+        const raw = (intakeAnswers as Record<string, unknown>)[q.id];
+        const value = typeof raw === "string" ? raw.trim() : "";
+        if (q.required && !value) {
+          return NextResponse.json(
+            { error: `Please answer "${q.label}".` },
+            { status: 400 },
+          );
+        }
+        if (value) intakeAnswersClean[q.id] = value;
+      }
+    } else {
+      for (const q of service.intakeQuestions ?? []) {
+        if (q.required) {
+          return NextResponse.json(
+            { error: `Please answer "${q.label}".` },
+            { status: 400 },
+          );
+        }
+      }
+    }
+
+    // Sum addon durations + prices once — used both for sizing the slot
+    // envelope (so availability rejects partial overlaps) and for the final
+    // resolved price.
+    const addonsTotalDuration = selectedAddonIds.reduce((sum, id) => {
+      const a = allAddons.find((x) => x.id === id);
+      return sum + (a?.duration ?? 0);
+    }, 0);
+    const addonsTotalPrice = selectedAddonIds.reduce((sum, id) => {
+      const a = allAddons.find((x) => x.id === id);
+      return sum + (a?.price ?? 0);
+    }, 0);
+
     // Slot reservation: hold the longest possible duration so the chosen
     // member is guaranteed to fit. The actual stored duration is recomputed
     // below from the assigned member's tier.
-    const slotDuration = maxDuration(service);
     const startMinutes = parseInt(time.split(":")[0]) * 60 + parseInt(time.split(":")[1]);
-    const slotEndMinutes = startMinutes + slotDuration;
-    const slotEndHours = String(Math.floor(slotEndMinutes / 60)).padStart(2, "0");
-    const slotEndMins = String(slotEndMinutes % 60).padStart(2, "0");
-    const slotEndTime = `${slotEndHours}:${slotEndMins}`;
-
     const startAt = `${date}T${time}:00`;
 
     const availableMembers = await getAvailableMembersForSlot({
@@ -148,8 +231,9 @@ export async function POST(req: NextRequest) {
       serviceId,
       date,
       startTime: time,
-      endTime: slotEndTime,
       defaultAvailability: availability,
+      variantId,
+      extraDurationMinutes: addonsTotalDuration,
     });
 
     if (availableMembers.length === 0) {
@@ -164,12 +248,45 @@ export async function POST(req: NextRequest) {
     // gets a tighter booking; the slack between slotDuration and
     // durationMinutes is left free on the calendar.
     const assignedMemberId = availableMembers[0].id;
-    const durationMinutes = resolveDuration(service, { memberId: assignedMemberId });
+
+    // Pull this member's overrides for the service so price + duration
+    // resolution sees them. Variants/tiers/dynamic rules layer on top.
+    const { data: msRow } = await supabase
+      .from("member_services")
+      .select("price_override, duration_override")
+      .eq("workspace_id", workspaceId)
+      .eq("service_id", serviceId)
+      .eq("member_id", assignedMemberId)
+      .maybeSingle();
+    const memberPriceOverride =
+      msRow?.price_override === null || msRow?.price_override === undefined
+        ? undefined
+        : Number(msRow.price_override);
+    const memberDurationOverride =
+      msRow?.duration_override === null || msRow?.duration_override === undefined
+        ? undefined
+        : Number(msRow.duration_override);
+
+    const baseDurationMinutes = resolveDuration(service, {
+      memberId: assignedMemberId,
+      variantId,
+      memberDurationOverride,
+    });
+    const durationMinutes = baseDurationMinutes + addonsTotalDuration;
     const endMinutes = startMinutes + durationMinutes;
     const endHours = String(Math.floor(endMinutes / 60)).padStart(2, "0");
     const endMins = String(endMinutes % 60).padStart(2, "0");
     const endTime = `${endHours}:${endMins}`;
     const endAt = `${date}T${endTime}:00`;
+
+    // Canonical price: base (with overrides/variant/tier/dynamic rule) + addons.
+    const basePrice = resolvePrice(service, {
+      memberId: assignedMemberId,
+      memberPriceOverride,
+      variantId,
+      startAt,
+    });
+    const resolvedPrice = Math.max(0, Math.round((basePrice + addonsTotalPrice) * 100) / 100);
 
     // ---- find or create client ----
     let clientId: string | null = null;
@@ -264,6 +381,8 @@ export async function POST(req: NextRequest) {
         Array.isArray(addonIds) && addonIds.length > 0 ? addonIds : null,
       gift_card_code: giftCardCode || null,
       membership_id: membershipCandidate?.id ?? null,
+      intake_answers: intakeAnswersClean,
+      resolved_price: resolvedPrice,
       created_at: now,
       updated_at: now,
     });
@@ -302,7 +421,7 @@ export async function POST(req: NextRequest) {
           if (error) console.warn("[public/book] membership debit failed:", error.message);
         });
     }
-    if (giftCardCode && service.price > 0) {
+    if (giftCardCode && resolvedPrice > 0) {
       const { data: card } = await supabase
         .from("gift_cards")
         .select("id, remaining_balance, status")
@@ -310,7 +429,7 @@ export async function POST(req: NextRequest) {
         .eq("code", giftCardCode)
         .maybeSingle();
       if (card && card.status === "active") {
-        const draw = Math.min(Number(card.remaining_balance), service.price);
+        const draw = Math.min(Number(card.remaining_balance), resolvedPrice);
         const remaining = Number(card.remaining_balance) - draw;
         await supabase
           .from("gift_cards")
@@ -369,9 +488,13 @@ export async function POST(req: NextRequest) {
           month: "long",
           day: "numeric",
         });
+        const smsBody =
+          status === "pending"
+            ? `Hi ${clientName}, your ${service.name} booking request for ${formattedDate} at ${time} is received and pending confirmation. — ${businessName}`
+            : `Hi ${clientName}, your ${service.name} booking is confirmed for ${formattedDate} at ${time}. — ${businessName}`;
         await sendSMS({
           to: clientPhone,
-          body: `Hi ${clientName}, your ${service.name} booking is confirmed for ${formattedDate} at ${time}. — ${businessName}`,
+          body: smsBody,
         });
       } catch {
         // SMS failure should not block booking confirmation
@@ -391,19 +514,25 @@ export async function POST(req: NextRequest) {
           month: "long",
           day: "numeric",
         });
+        const isPending = status === "pending";
+        const heading = isPending ? "Booking Request Received" : "Booking Confirmed";
+        const subjectPrefix = isPending ? "Booking Request" : "Booking Confirmed";
+        const intro = isPending
+          ? `<p style="font-size:14px;color:#666;margin:0 0 24px;">${businessName} will review your request and confirm shortly.</p>`
+          : `<p style="font-size:14px;color:#666;margin:0 0 24px;">${businessName}</p>`;
         await resend.emails.send({
           from: `${businessName} <bookings@magiccrm.app>`,
           to: clientEmail,
-          subject: `Booking Confirmed — ${service.name} on ${formattedDate}`,
+          subject: `${subjectPrefix} — ${service.name} on ${formattedDate}`,
           html: `
             <div style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;">
-              <h1 style="font-size:20px;font-weight:700;color:#111;margin:0 0 8px;">Booking Confirmed</h1>
-              <p style="font-size:14px;color:#666;margin:0 0 24px;">${businessName}</p>
+              <h1 style="font-size:20px;font-weight:700;color:#111;margin:0 0 8px;">${heading}</h1>
+              ${intro}
               <div style="background:#f9f9f9;border-radius:12px;padding:20px;margin-bottom:24px;">
                 <p style="margin:0 0 12px;"><strong style="color:#111;">Service:</strong> <span style="color:#333;">${service.name}</span></p>
                 <p style="margin:0 0 12px;"><strong style="color:#111;">Date:</strong> <span style="color:#333;">${formattedDate}</span></p>
                 <p style="margin:0 0 12px;"><strong style="color:#111;">Time:</strong> <span style="color:#333;">${time} — ${endTime}</span></p>
-                ${service.price ? `<p style="margin:0;"><strong style="color:#111;">Price:</strong> <span style="color:#333;">$${Number(service.price).toFixed(2)}</span></p>` : ""}
+                ${resolvedPrice ? `<p style="margin:0;"><strong style="color:#111;">Price:</strong> <span style="color:#333;">$${Number(resolvedPrice).toFixed(2)}</span></p>` : ""}
               </div>
               <p style="font-size:12px;color:#999;margin:0;">Powered by Magic</p>
             </div>
@@ -414,10 +543,24 @@ export async function POST(req: NextRequest) {
       // Email failure should not block booking confirmation
     }
 
+    // Server decides whether the client must be redirected to the deposit
+    // checkout, honoring the service's `depositAppliesTo` (all/new/flagged).
+    // The booking page reads this flag instead of computing it client-side.
+    const requiresDeposit = await shouldRequireDeposit({
+      supabase,
+      workspaceId,
+      service,
+      clientEmail,
+    });
+
     return NextResponse.json({
       success: true,
       bookingId,
-      message: "Your booking has been confirmed!",
+      requiresDeposit,
+      message:
+        status === "pending"
+          ? "Your booking request has been received and is awaiting confirmation."
+          : "Your booking has been confirmed!",
       booking: {
         id: bookingId,
         serviceName: service.name,
@@ -425,8 +568,8 @@ export async function POST(req: NextRequest) {
         time,
         endTime,
         duration: durationMinutes,
-        price: service.price,
-        status: "confirmed",
+        price: resolvedPrice,
+        status,
       },
     });
   } catch (error) {

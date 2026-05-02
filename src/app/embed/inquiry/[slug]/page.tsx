@@ -78,13 +78,26 @@ export default function EmbedInquiryFormPage() {
 
   // Capture URL params (utm_source etc.) into hidden fields, plus any
   // ?fieldName=... prefill keys, once the form definition loads.
+  // Match against multiple key shapes (raw name, label, normalized) so the
+  // operator's URL doesn't have to know the internal field id.
   useEffect(() => {
     if (!form) return;
     const hidden = captureHiddenFieldValues(form.fields, searchParams);
     const prefilled: Record<string, string> = { ...hidden };
+    const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "");
+    const paramByNorm = new Map<string, string>();
+    if (searchParams) {
+      searchParams.forEach((v, k) => {
+        if (!paramByNorm.has(norm(k))) paramByNorm.set(norm(k), v);
+      });
+    }
     for (const f of form.fields) {
       if (f.type === "hidden") continue;
-      const got = searchParams?.get(f.name);
+      const direct = searchParams?.get(f.name);
+      const fuzzy =
+        paramByNorm.get(norm(f.name)) ??
+        (f.label ? paramByNorm.get(norm(f.label)) : undefined);
+      const got = direct ?? fuzzy;
       if (got) prefilled[f.name] = got;
     }
     if (Object.keys(prefilled).length > 0) {
@@ -149,10 +162,13 @@ export default function EmbedInquiryFormPage() {
   }
 
   if (!form) {
+    const isError = load.status === "error";
     return (
       <div className="flex items-center justify-center py-16 px-4">
         <p className="text-sm text-text-tertiary text-center">
-          We couldn&apos;t find this form.
+          {isError
+            ? "We had trouble loading this form. Please try again in a moment."
+            : "This form doesn't exist or has been removed."}
         </p>
       </div>
     );

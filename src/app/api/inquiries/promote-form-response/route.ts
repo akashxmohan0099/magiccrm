@@ -62,7 +62,6 @@ export async function POST(req: NextRequest) {
       status: "new",
       form_id: response.form_id,
       form_response_id: response.id,
-      submission_values: values,
       created_at: now,
       updated_at: now,
     });

@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   Calendar, Clock, User, Scissors, DollarSign, FileText,
-  Trash2, CheckCircle2, XCircle, Bell, Mail, CreditCard,
+  Trash2, CheckCircle2, XCircle, Bell, Mail, CreditCard, MapPin,
 } from "lucide-react";
 import { useBookingsStore } from "@/store/bookings";
 import { useClientsStore } from "@/store/clients";
@@ -12,6 +12,7 @@ import { useServicesStore } from "@/store/services";
 import { useTeamStore } from "@/store/team";
 import { usePaymentsStore } from "@/store/payments";
 import { useCommunicationStore } from "@/store/communication";
+import { useLocationsStore } from "@/store/locations";
 import { useAuth } from "@/hooks/useAuth";
 import { useCreatePayment } from "@/hooks/useCreatePayment";
 import { Booking } from "@/types/models";
@@ -20,6 +21,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { toast } from "@/components/ui/Toast";
+import { useMoney } from "@/lib/format/money";
 
 type Tab = "overview" | "activity" | "payment" | "actions";
 
@@ -30,13 +32,15 @@ interface BookingDetailProps {
   onEdit: (booking: Booking) => void;
 }
 
-export function BookingDetail({ open, onClose, bookingId, onEdit }: BookingDetailProps) {
+export function BookingDetail({ open, onClose, bookingId }: BookingDetailProps) {
   const { bookings, updateBooking, deleteBooking } = useBookingsStore();
   const { clients } = useClientsStore();
   const { services } = useServicesStore();
   const { members } = useTeamStore();
   const { documents } = usePaymentsStore();
   const { conversations } = useCommunicationStore();
+  const money = useMoney();
+  const { locations } = useLocationsStore();
   const { workspaceId } = useAuth();
   const { createPayment } = useCreatePayment();
 
@@ -63,6 +67,9 @@ export function BookingDetail({ open, onClose, bookingId, onEdit }: BookingDetai
     : null;
   const linkedConversation = booking?.conversationId
     ? conversations.find((c) => c.id === booking.conversationId) ?? null
+    : null;
+  const bookingLocation = booking?.locationId
+    ? locations.find((l) => l.id === booking.locationId) ?? null
     : null;
 
   // Activity events
@@ -97,18 +104,18 @@ export function BookingDetail({ open, onClose, bookingId, onEdit }: BookingDetai
 
     // Payment events
     if (linkedPayment) {
-      events.push({ time: linkedPayment.createdAt, label: `${linkedPayment.documentNumber} created`, detail: `$${linkedPayment.total}`, color: "bg-blue-500", icon: FileText });
+      events.push({ time: linkedPayment.createdAt, label: `${linkedPayment.documentNumber} created`, detail: money.format(linkedPayment.total, { withDecimals: true }), color: "bg-blue-500", icon: FileText });
       if (linkedPayment.sentAt) {
         events.push({ time: linkedPayment.sentAt, label: `${linkedPayment.documentNumber} sent`, color: "bg-violet-500", icon: Mail });
       }
       if (linkedPayment.paidAt) {
-        events.push({ time: linkedPayment.paidAt, label: `${linkedPayment.documentNumber} paid`, detail: `$${linkedPayment.total}`, color: "bg-emerald-500", icon: DollarSign });
+        events.push({ time: linkedPayment.paidAt, label: `${linkedPayment.documentNumber} paid`, detail: money.format(linkedPayment.total, { withDecimals: true }), color: "bg-emerald-500", icon: DollarSign });
       }
     }
 
     events.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
     return events;
-  }, [booking, service, linkedPayment]);
+  }, [booking, service, linkedPayment, money]);
 
   if (!booking) {
     return (
@@ -235,7 +242,9 @@ export function BookingDetail({ open, onClose, bookingId, onEdit }: BookingDetai
                         className="text-[13px] text-primary font-medium cursor-pointer hover:underline">{client?.name || "—"}</p>
                     </div>
                   </div>
-                  {/* Service — dropdown to change */}
+                  {/* Service — dropdown to change. Extras (additionalServiceIds)
+                      are shown as read-only chips beneath the primary picker;
+                      use the booking form's service basket to edit them. */}
                   <div className="flex items-center gap-3">
                     <Scissors className="w-4 h-4 text-text-secondary flex-shrink-0" />
                     <div className="flex-1">
@@ -247,6 +256,21 @@ export function BookingDetail({ open, onClose, bookingId, onEdit }: BookingDetai
                         <option value="">No service</option>
                         {services.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                       </select>
+                      {booking.additionalServiceIds && booking.additionalServiceIds.length > 0 && (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {booking.additionalServiceIds.map((id) => {
+                            const svc = services.find((s) => s.id === id);
+                            return (
+                              <span
+                                key={id}
+                                className="inline-flex items-center px-2 py-0.5 rounded-full bg-surface border border-border-light text-[11px] text-text-secondary"
+                              >
+                                + {svc?.name ?? "Unknown service"}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   </div>
                   {/* Assigned To — dropdown to reassign */}
@@ -285,6 +309,22 @@ export function BookingDetail({ open, onClose, bookingId, onEdit }: BookingDetai
                       </select>
                     </div>
                   </div>
+                  {(bookingLocation || booking.address) && (
+                    <div className="flex items-start gap-3">
+                      <MapPin className="w-4 h-4 text-text-secondary flex-shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] text-text-tertiary">Location</p>
+                        {bookingLocation && (
+                          <p className="text-[13px] text-foreground truncate">{bookingLocation.name}</p>
+                        )}
+                        {(booking.address || bookingLocation?.address) && (
+                          <p className="text-[12px] text-text-secondary truncate">
+                            {booking.address || bookingLocation?.address}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Notes — click to edit */}

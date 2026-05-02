@@ -34,6 +34,8 @@ export function mapWorkspaceSettingsFromDB(row: Record<string, unknown>): Worksp
     notificationDefaults: (row.notification_defaults ?? "email") as "email" | "sms" | "both",
     branding: (row.branding ?? {}) as { logo?: string; primaryColor?: string; accentColor?: string },
     bookingPageSlug: (row.booking_page_slug as string) || undefined,
+    currency: (row.currency as string) || undefined,
+    locale: (row.locale as string) || undefined,
     calendarSyncEnabled: (row.calendar_sync_enabled as boolean) ?? false,
     minNoticeHours: (row.min_notice_hours as number) ?? 4,
     maxAdvanceDays: (row.max_advance_days as number) ?? 56,
@@ -74,6 +76,8 @@ function mapWorkspaceSettingsToDB(
   if (data.notificationDefaults !== undefined) row.notification_defaults = data.notificationDefaults;
   if (data.branding !== undefined) row.branding = data.branding;
   if (data.bookingPageSlug !== undefined) row.booking_page_slug = data.bookingPageSlug || null;
+  if (data.currency !== undefined) row.currency = (data.currency as string) || null;
+  if (data.locale !== undefined) row.locale = (data.locale as string) || null;
   if (data.calendarSyncEnabled !== undefined) row.calendar_sync_enabled = data.calendarSyncEnabled;
   if (data.minNoticeHours !== undefined) row.min_notice_hours = data.minNoticeHours;
   if (data.maxAdvanceDays !== undefined) row.max_advance_days = data.maxAdvanceDays;

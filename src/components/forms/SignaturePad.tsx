@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 /**
  * Canvas-based signature pad. Outputs a base64 PNG via `onChange`. The
@@ -23,7 +23,11 @@ export function SignaturePad({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawingRef = useRef(false);
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
-  const [hasInk, setHasInk] = useState(!!value);
+  // hasInk is derived from `value` — onChange fires on pointer up, so the UI
+  // updates the moment the stroke completes. Mid-stroke "Signed" feedback was
+  // never that useful and removing the state avoids cascading renders inside
+  // the value-rehydration effect.
+  const hasInk = !!value;
 
   // Re-hydrate the canvas when value changes externally (e.g. form reset).
   useEffect(() => {
@@ -36,9 +40,6 @@ export function SignaturePad({
       const img = new Image();
       img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       img.src = value;
-      setHasInk(true);
-    } else {
-      setHasInk(false);
     }
   }, [value]);
 
@@ -85,7 +86,6 @@ export function SignaturePad({
     ctx.lineTo(next.x, next.y);
     ctx.stroke();
     lastPointRef.current = next;
-    setHasInk(true);
   };
 
   const handleEnd = () => {
@@ -103,7 +103,6 @@ export function SignaturePad({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    setHasInk(false);
     onChange("");
   };
 

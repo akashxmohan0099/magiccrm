@@ -57,6 +57,12 @@ export async function POST(req: NextRequest) {
     if (lookup.status === "not_found") {
       return NextResponse.json({ error: "Form not found" }, { status: 404 });
     }
+    if (lookup.status === "ambiguous") {
+      return NextResponse.json(
+        { error: "This form link is ambiguous. Please ask the business for a fresh link." },
+        { status: 409 },
+      );
+    }
     if (lookup.status === "disabled") {
       // Form exists but the operator turned it off — visitor shouldn't be
       // able to submit. 410 mirrors the info route.
@@ -123,7 +129,6 @@ export async function POST(req: NextRequest) {
         status: "new",
         form_id: form.id,
         form_response_id: responseId,
-        submission_values: submissionValues,
         created_at: now,
         updated_at: now,
       });

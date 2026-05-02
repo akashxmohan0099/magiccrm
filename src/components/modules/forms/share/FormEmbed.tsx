@@ -16,12 +16,17 @@ export function FormEmbed({
   form: Form;
   bookingPageSlug?: string;
 }) {
-  // Prefer the explicitly-configured app URL so production users don't see
-  // localhost:3000 here when they happen to visit the dashboard via a tunnel
-  // or staging domain. Falls back to window.location.origin for local dev
-  // where NEXT_PUBLIC_APP_URL isn't set.
+  // Use the operator's actual origin when they're on localhost or any
+  // host that doesn't match NEXT_PUBLIC_APP_URL — otherwise the share
+  // links point at the production domain even during dev/QA, which leads
+  // to "form not found" errors when the operator clicks Open. Production
+  // and staging visits use the configured base for consistent sharing.
   const configuredBase = process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/$/, "");
-  const baseUrl = configuredBase || (typeof window !== "undefined" ? window.location.origin : "");
+  const browserOrigin = typeof window !== "undefined" ? window.location.origin : "";
+  const isLocal =
+    typeof window !== "undefined" &&
+    /^(localhost|127\.|0\.0\.0\.0|\[::1\])/.test(window.location.hostname);
+  const baseUrl = isLocal ? browserOrigin : configuredBase || browserOrigin;
 
   // Standalone URL: a full-page experience for direct sharing.
   // Embed URL: stripped-down iframe-friendly route (X-Frame-Options bypassed).

@@ -1,8 +1,4 @@
-import { createHash } from "node:crypto";
 import type { NextConfig } from "next";
-
-const themeBootstrapScript = `(function(){try{if(!/^\\/dashboard/.test(location.pathname))return;var t=localStorage.getItem("magic-theme")||"light";if(t==="dark"||(t==="system"&&window.matchMedia("(prefers-color-scheme:dark)").matches))document.documentElement.classList.add("dark")}catch(e){}})()`;
-const themeScriptHash = createHash("sha256").update(themeBootstrapScript).digest("base64");
 
 // Shared CSP directives. The only one that varies between embed and
 // non-embed responses is `frame-ancestors`: `'none'` keeps customer
@@ -50,8 +46,8 @@ const nextConfig: NextConfig = {
     const isDevelopment = process.env.NODE_ENV === "development";
     // Next.js App Router emits inline hydration/prefetch scripts that aren't
     // covered by a single hash, so 'unsafe-inline' is required. Note that a
-    // hash in the source list disables 'unsafe-inline' in modern browsers,
-    // so we deliberately omit themeScriptHash here. Proper hardening is a
+    // hash in the source list disables 'unsafe-inline' in modern browsers.
+    // Proper hardening is a
     // per-request nonce + 'strict-dynamic' via middleware.
     const scriptSrc = isDevelopment
       ? ["'self'", "https://js.stripe.com", "'unsafe-inline'", "'unsafe-eval'"].join(" ")

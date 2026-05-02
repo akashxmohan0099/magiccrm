@@ -1,9 +1,112 @@
 import { createClient } from "@/lib/supabase";
-import type { Service, MemberService, ServiceCategory, LibraryAddon, Location } from "@/types/models";
+import type { Service, MemberService, ServiceCategory, LibraryAddon } from "@/types/models";
 
 // ---------------------------------------------------------------------------
 // snake_case <-> camelCase mapping — Service
 // ---------------------------------------------------------------------------
+
+/**
+ * Public-safe shape returned by /api/public/book/info.
+ *
+ * Strips fields the customer must not see (cancellation fees, internal
+ * pricing rules, deposit applies-to logic, raw category id, member overrides).
+ * The route's SELECT statement is the first line of defense; this mapper is
+ * the second — keep both in sync when adding a public-visible field.
+ */
+export interface PublicPackageInclusion {
+  serviceId: string;
+  /** Resolved child service name (for display). Empty when child is missing. */
+  serviceName: string;
+  /** Optional variant id chosen for this child. */
+  variantId?: string;
+  /** Resolved variant label, when variantId points at a known variant. */
+  variantName?: string;
+  /** Defaults to 1 when unset on the source row. */
+  quantity: number;
+}
+
+export interface PublicService {
+  id: string;
+  name: string;
+  description: string;
+  imageUrl: string;
+  duration: number;
+  price: number;
+  category: string;
+  priceType: string;
+  variants: unknown[];
+  priceTiers: unknown[];
+  addons: unknown[];
+  addonGroups: unknown[];
+  depositType: string;
+  depositAmount: number;
+  requiresCardOnFile: boolean;
+  requiresPatchTest: boolean;
+  patchTestValidityDays?: number;
+  patchTestMinLeadHours?: number;
+  intakeQuestions: unknown[];
+  allowGroupBooking: boolean;
+  maxGroupSize?: number;
+  rebookAfterDays?: number;
+  /** Empty array = available at every location. */
+  locationIds: string[];
+  /** Empty / undefined = bookable any weekday the workspace is open. */
+  availableWeekdays?: number[];
+  featured: boolean;
+  promoLabel: string;
+  promoPrice?: number;
+  promoStart?: string;
+  promoEnd?: string;
+  tags: string[];
+  /** True = this service represents a bundle. The customer picks the bundle
+   *  as a single card; price + duration are the bundle totals. */
+  isPackage: boolean;
+  /** Child services included in the package, with resolved names. Empty for
+   *  non-package services. Surfaced so the customer can see what's included
+   *  before booking. */
+  packageInclusions: PublicPackageInclusion[];
+}
+
+export function mapPublicServiceFromDB(row: Record<string, unknown>): PublicService {
+  return {
+    id: row.id as string,
+    name: row.name as string,
+    description: (row.description as string | null) ?? "",
+    imageUrl: (row.image_url as string | null) ?? "",
+    duration: Number(row.duration ?? 60),
+    price: Number(row.price ?? 0),
+    category: (row.category as string) ?? "",
+    priceType: (row.price_type as string) || "fixed",
+    variants: (row.variants as unknown[]) || [],
+    priceTiers: (row.price_tiers as unknown[]) || [],
+    addons: (row.addons as unknown[]) || [],
+    addonGroups: (row.addon_groups as unknown[]) || [],
+    depositType: (row.deposit_type as string) || "none",
+    depositAmount: Number(row.deposit_amount ?? 0),
+    requiresCardOnFile: Boolean(row.requires_card_on_file),
+    requiresPatchTest: Boolean(row.requires_patch_test),
+    patchTestValidityDays:
+      row.patch_test_validity_days != null ? Number(row.patch_test_validity_days) : undefined,
+    patchTestMinLeadHours:
+      row.patch_test_min_lead_hours != null ? Number(row.patch_test_min_lead_hours) : undefined,
+    intakeQuestions: (row.intake_questions as unknown[]) || [],
+    allowGroupBooking: Boolean(row.allow_group_booking),
+    maxGroupSize: row.max_group_size != null ? Number(row.max_group_size) : undefined,
+    rebookAfterDays: row.rebook_after_days != null ? Number(row.rebook_after_days) : undefined,
+    locationIds: (row.location_ids as string[] | null) ?? [],
+    availableWeekdays: (row.available_weekdays as number[] | null) ?? undefined,
+    featured: Boolean(row.featured),
+    promoLabel: (row.promo_label as string | null) ?? "",
+    promoPrice: row.promo_price != null ? Number(row.promo_price) : undefined,
+    promoStart: (row.promo_start as string | null) ?? undefined,
+    promoEnd: (row.promo_end as string | null) ?? undefined,
+    tags: (row.tags as string[] | null) ?? [],
+    isPackage: Boolean(row.is_package),
+    // packageInclusions is populated by the route — needs a name lookup that
+    // the row alone can't satisfy. Default to empty here.
+    packageInclusions: [],
+  };
+}
 
 /** Convert a Supabase row (snake_case) to a frontend Service (camelCase). */
 export function mapServiceFromDB(row: Record<string, unknown>): Service {
@@ -23,7 +126,8 @@ export function mapServiceFromDB(row: Record<string, unknown>): Service {
     requiresConfirmation: (row.requires_confirmation as boolean) ?? false,
     depositType: (row.deposit_type as Service["depositType"]) ?? "none",
     depositAmount: (row.deposit_amount as number) ?? 0,
-    locationType: (row.location_type as Service["locationType"]) ?? "studio",
+    // Deprecated; surfaced only so old rows round-trip without losing data.
+    locationType: (row.location_type as Service["locationType"]) ?? undefined,
     locationIds: (row.location_ids as string[] | null) ?? undefined,
     requiredResourceIds: (row.required_resource_ids as string[] | null) ?? undefined,
     categoryId: (row.category_id as string | null) ?? undefined,
@@ -60,6 +164,10 @@ export function mapServiceFromDB(row: Record<string, unknown>): Service {
     durationActiveAfter: (row.duration_active_after as number | null) ?? undefined,
     isPackage: (row.is_package as boolean | null) ?? undefined,
     packageItems: (row.package_items as Service["packageItems"]) || undefined,
+    imageUrl: (row.image_url as string | null) ?? undefined,
+    minNoticeHours: (row.min_notice_hours as number | null) ?? undefined,
+    maxAdvanceDays: (row.max_advance_days as number | null) ?? undefined,
+    cancellationWindowHours: (row.cancellation_window_hours as number | null) ?? undefined,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };
@@ -122,6 +230,10 @@ function mapServiceToDB(
   if (data.durationActiveAfter !== undefined) row.duration_active_after = data.durationActiveAfter;
   if (data.isPackage !== undefined) row.is_package = data.isPackage;
   if (data.packageItems !== undefined) row.package_items = data.packageItems;
+  if (data.imageUrl !== undefined) row.image_url = data.imageUrl || null;
+  if (data.minNoticeHours !== undefined) row.min_notice_hours = data.minNoticeHours;
+  if (data.maxAdvanceDays !== undefined) row.max_advance_days = data.maxAdvanceDays;
+  if (data.cancellationWindowHours !== undefined) row.cancellation_window_hours = data.cancellationWindowHours;
   if (data.createdAt !== undefined) row.created_at = data.createdAt;
   if (data.updatedAt !== undefined) row.updated_at = data.updatedAt;
 

@@ -22,9 +22,40 @@ import { toast } from "@/components/ui/Toast";
  * Usage:
  *   dbCreateInquiry(workspaceId, payload).catch(surfaceDbError("inquiries.add"));
  */
+/** Postgrest schema-cache misses look like real outages but they're a setup
+ *  issue — usually a missing migration or a stale PostgREST cache. Detecting
+ *  them lets us surface a much more actionable message instead of the
+ *  generic "couldn't save" toast. */
+function isSchemaCacheError(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const e = err as { message?: string; code?: string; hint?: string };
+  const msg = `${e.message ?? ""} ${e.hint ?? ""}`.toLowerCase();
+  return (
+    e.code === "PGRST205" ||
+    msg.includes("could not find the table") ||
+    msg.includes("schema cache")
+  );
+}
+
+// Schema-cache toasts get noisy fast (autosave can fire one per keystroke).
+// Throttle to one per minute so the operator gets the signal without being
+// drowned in red.
+let lastSchemaCacheToastAt = 0;
+
 export function surfaceDbError(operation: string) {
   return (err: unknown) => {
     console.error(`[store] ${operation} DB write failed:`, err);
+    if (isSchemaCacheError(err)) {
+      const now = Date.now();
+      if (now - lastSchemaCacheToastAt > 60_000) {
+        lastSchemaCacheToastAt = now;
+        toast(
+          "Database schema is out of date — a table this page needs doesn't exist yet. Run the latest Supabase migration (or refresh PostgREST's schema cache in the Supabase dashboard), then reload.",
+          "error",
+        );
+      }
+      return;
+    }
     toast(
       "Couldn't save your change to the server. Reload to see the latest, or try again.",
       "error",
