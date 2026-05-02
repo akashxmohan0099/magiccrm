@@ -149,31 +149,42 @@ src/components/modules/forms/
 
 Each file under 400 lines. PR title: `refactor: break FormsPage into editor sub-components`.
 
-### Phase 4 — Services breakdown (2 days)
+### ✅ Phase 4 — Services breakdown (DONE 2026-05-02)
+
+| File | Before | After | Sub-files created |
+|---|---|---|---|
+| `ServicesPage.tsx` | 1,353 | 880 | 5 in `list/` |
+| `ServicesPreview.tsx` | 2,983 | **666** (-78%) | 22 in `preview/` |
+| `ServiceDrawer.tsx` | 2,577 | 2,278 | 3 in `drawer/` |
+
+Final structure:
 
 ```
 src/components/modules/services/
-  ServicesPage.tsx           — list shell only (<300)
-  list/
-    ServicesGrid.tsx
-    ServiceCard.tsx
-  drawer/
-    ServiceDrawer.tsx        — shell, tab state (<300)
-    PricingTab.tsx
-    ScheduleTab.tsx
-    IntakeTab.tsx
-    ResourcesTab.tsx
-    PackagesTab.tsx
-    AddOnsTab.tsx
-  preview/
-    ServicesPreview.tsx      — shell (<300)
-    PreviewHeader.tsx
-    PreviewServiceList.tsx
-    PreviewBookingFlow.tsx
-    PreviewPaymentStep.tsx
+  ServicesPage.tsx               880   (was 1,353)
+  ServicesPreview.tsx            666   (was 2,983)
+  ServiceDrawer.tsx            2,278   (was 2,577) — deferred, see below
+  list/                          (5 files)
+    category-colors.ts
+    MemberAvatar.tsx
+    ServiceLetterCard.tsx
+    ServiceRow.tsx
+    sortable.tsx
+  preview/                       (17 files + 6 step files)
+    helpers.ts, types.ts
+    AddPill.tsx, AddonRow.tsx, ArtistChip.tsx, BackBar.tsx
+    CartArtistPicker.tsx, CartSidebar.tsx, CategoryAnchors.tsx
+    ConfigureServiceModal.tsx, FeaturedRow.tsx, Header.tsx
+    PriceDisplay.tsx, ServiceCards.tsx, ServiceMenu.tsx
+    Shells.tsx, StylePanel.tsx
+    steps/
+      BasketArtistPicker.tsx, ConfirmScreen.tsx, DatePicker.tsx
+      DetailsForm.tsx, IntakeField.tsx, TimePicker.tsx
+  drawer/                        (3 files)
+    Section.tsx, initial-state.ts, types.ts
 ```
 
-PR title: `refactor: split ServiceDrawer + ServicesPreview by tab`.
+**Deferred: ServiceDrawer further decomposition.** `ServiceDrawerFields` is one cohesive ~2,200-line form with ~50 interlinked `useState` hooks. Mechanical extraction isn't safe — the sub-sections would need every state setter passed as props (impractical) or state would need to be lifted into a `useServiceDraft()` hook mirroring `useFormDraft`. That's a real refactor, not a split. Schedule it as Phase 4d when ServiceDrawer next needs feature work.
 
 ### Phase 5 — Inquiries + Bookings (1 day)
 
