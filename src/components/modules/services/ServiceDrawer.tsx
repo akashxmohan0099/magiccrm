@@ -30,6 +30,8 @@ import { MarketingSection } from "./drawer/MarketingSection";
 import { BundleSection } from "./drawer/BundleSection";
 import { AddOnsSection } from "./drawer/AddOnsSection";
 import { BookingRulesSection } from "./drawer/BookingRulesSection";
+import { BasicsBlock } from "./drawer/BasicsBlock";
+import { TeamBlock } from "./drawer/TeamBlock";
 
 interface ServiceDrawerProps {
   open: boolean;
@@ -537,184 +539,22 @@ function ServiceDrawerFields({
         </div>
 
         {/* Basics */}
-        <div className="space-y-1">
-          <FormField label="Name" required error={errors.name}>
-            <input
-              autoFocus
-              type="text"
-              value={form.name}
-              onChange={(e) => update("name", e.target.value)}
-              placeholder="e.g. Bridal Trial"
-              className={inputClass}
-            />
-          </FormField>
-
-          <FormField label="Category">
-            <select
-              value={form.category}
-              onChange={(e) => update("category", e.target.value)}
-              className={inputClass}
-            >
-              {categoryOptions.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </FormField>
-
-          <FormField label="Description">
-            <textarea
-              value={form.description}
-              onChange={(e) => update("description", e.target.value)}
-              placeholder="What's included in this service…"
-              rows={2}
-              className={`${inputClass} resize-none`}
-            />
-          </FormField>
-
-          <LogoUpload
-            label="Image (1:1)"
-            hint="Square photo shown on the booking page. Falls back to a tinted letter card."
-            value={form.imageUrl}
-            onChange={(v) => update("imageUrl", v)}
-          />
-        </div>
+        <BasicsBlock form={form} update={update} errors={errors} categoryOptions={categoryOptions} />
 
         {/* Team */}
-        {activeMembers.length >= 2 && (
-        <div className="pt-5 border-t border-border-light">
-          <p className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider mb-3">
-            Team
-          </p>
-          <div className="space-y-3">
-            <div>
-              <label className="text-[12px] font-medium text-foreground block mb-2">
-                Provided by
-              </label>
-              <div
-                className={`text-[12px] px-3 py-2 rounded-lg border mb-2 ${
-                  selectedMemberIds.length === 0
-                    ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-                    : "bg-surface border-border-light text-text-secondary"
-                }`}
-              >
-                {selectedMemberIds.length === 0 ? (
-                  <span className="flex items-center gap-1.5">
-                    <Users className="w-3.5 h-3.5" /> Anyone — any active team member
-                  </span>
-                ) : (
-                  <span>
-                    {selectedMemberIds.length} member{selectedMemberIds.length === 1 ? "" : "s"} selected
-                    {" · "}
-                    <button
-                      type="button"
-                      onClick={() => setSelectedMemberIds([])}
-                      className="text-primary hover:underline cursor-pointer"
-                    >
-                      Reset to Anyone
-                    </button>
-                  </span>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {activeMembers.map((m) => {
-                  const isAnyoneMode = selectedMemberIds.length === 0;
-                  const selected = isAnyoneMode || selectedMemberIds.includes(m.id);
-                  return (
-                    <button
-                      key={m.id}
-                      type="button"
-                      onClick={() => toggleMember(m.id)}
-                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[12px] font-medium border cursor-pointer transition-colors ${
-                        selected
-                          ? "bg-primary text-white border-primary"
-                          : "bg-surface text-text-secondary border-border-light hover:text-foreground"
-                      }`}
-                    >
-                      {selected && <Check className="w-3 h-3" />}
-                      {m.name}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {showOverridesSection && (
-              <div className="pt-3 border-t border-border-light">
-                <button
-                  type="button"
-                  onClick={() => setShowStaffPrices((v) => !v)}
-                  className="flex items-center gap-1.5 text-[12px] font-medium text-text-secondary hover:text-foreground cursor-pointer"
-                >
-                  {showStaffPrices ? (
-                    <ChevronDown className="w-3.5 h-3.5" />
-                  ) : (
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  )}
-                  Custom price & duration per staff
-                  {(() => {
-                    const set =
-                      Object.values(memberOverrides).filter((v) => v.trim()).length +
-                      Object.values(memberDurationOverrides).filter((v) => v.trim()).length;
-                    return set > 0 ? (
-                      <span className="text-[11px] text-text-tertiary">({set} set)</span>
-                    ) : null;
-                  })()}
-                </button>
-                {showStaffPrices && (
-                  <div className="mt-3">
-                    <p className="text-[11px] text-text-tertiary mb-3">
-                      Override the base price or duration for a specific artist. Empty = inherit.
-                    </p>
-                    <div className="grid grid-cols-[1fr_100px_100px] gap-2 px-0.5 mb-1.5 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">
-                      <span>Artist</span>
-                      <span>Price ({money.symbol()})</span>
-                      <span>Duration (min)</span>
-                    </div>
-                    <div className="space-y-2">
-                      {activeMembers
-                        .filter((m) => selectedMemberIds.includes(m.id))
-                        .map((m) => (
-                          <div
-                            key={m.id}
-                            className="grid grid-cols-[1fr_100px_100px] gap-2 items-center"
-                          >
-                            <span className="text-[13px] text-foreground truncate">{m.name}</span>
-                            <input
-                              type="number"
-                              min={0}
-                              value={memberOverrides[m.id] ?? ""}
-                              onChange={(e) =>
-                                setMemberOverrides((prev) => ({ ...prev, [m.id]: e.target.value }))
-                              }
-                              placeholder="Base"
-                              className={smallInputClass}
-                            />
-                            <input
-                              type="number"
-                              min={0}
-                              step={5}
-                              value={memberDurationOverrides[m.id] ?? ""}
-                              onChange={(e) =>
-                                setMemberDurationOverrides((prev) => ({
-                                  ...prev,
-                                  [m.id]: e.target.value,
-                                }))
-                              }
-                              placeholder="Base"
-                              className={smallInputClass}
-                            />
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-        )}
+        <TeamBlock
+          activeMembers={activeMembers}
+          selectedMemberIds={selectedMemberIds}
+          setSelectedMemberIds={setSelectedMemberIds}
+          toggleMember={toggleMember}
+          showOverridesSection={showOverridesSection}
+          showStaffPrices={showStaffPrices}
+          setShowStaffPrices={setShowStaffPrices}
+          memberOverrides={memberOverrides}
+          setMemberOverrides={setMemberOverrides}
+          memberDurationOverrides={memberDurationOverrides}
+          setMemberDurationOverrides={setMemberDurationOverrides}
+        />
 
         {/* Pricing */}
         <div className="pt-5 border-t border-border-light">
