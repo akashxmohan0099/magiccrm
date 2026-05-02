@@ -24,6 +24,7 @@ import { BasicsBlock } from "./drawer/BasicsBlock";
 import { TeamBlock } from "./drawer/TeamBlock";
 import { PricingBlock } from "./drawer/PricingBlock";
 import { DurationBlock } from "./drawer/DurationBlock";
+import { Section } from "./drawer/Section";
 
 interface ServiceDrawerProps {
   open: boolean;
@@ -467,53 +468,46 @@ function ServiceDrawerFields({
       </div>
 
       {/* ── Essentials (Basics + Pricing + Duration + Team) ── */}
-      {/* Always-open block. Everything an artist needs to set up a service
-          before saving lives here; collapsibles below are policy/marketing. */}
-      <div className="bg-card-bg border border-border-light rounded-xl p-4 space-y-5">
-        <div className="flex items-baseline justify-between -mb-1">
-          <p className="text-[12px] font-semibold text-foreground uppercase tracking-wider">
-            Essentials
-          </p>
-          <p className="text-[11px] text-text-tertiary">
-            What this is, who delivers it, what it costs, how long it takes.
-          </p>
+      {/* Default-open. Collapsible so operators can scroll past it once filled
+          to reach Booking rules / Marketing without thumbing through the form. */}
+      <Section
+        title="Essentials"
+        subtitle="What this is, who delivers it, what it costs, how long it takes."
+        defaultOpen
+      >
+        <div className="space-y-5 pt-3">
+          <BasicsBlock form={form} update={update} errors={errors} categoryOptions={categoryOptions} />
+
+          <TeamBlock
+            activeMembers={activeMembers}
+            selectedMemberIds={selectedMemberIds}
+            setSelectedMemberIds={setSelectedMemberIds}
+            toggleMember={toggleMember}
+            showOverridesSection={showOverridesSection}
+            showStaffPrices={showStaffPrices}
+            setShowStaffPrices={setShowStaffPrices}
+            memberOverrides={memberOverrides}
+            setMemberOverrides={setMemberOverrides}
+            memberDurationOverrides={memberDurationOverrides}
+            setMemberDurationOverrides={setMemberDurationOverrides}
+          />
+
+          <PricingBlock
+            form={form}
+            update={update}
+            setForm={setForm}
+            errors={errors}
+            activeMembers={activeMembers}
+          />
+
+          <DurationBlock
+            form={form}
+            update={update}
+            errors={errors}
+            totalSplitDuration={totalSplitDuration}
+          />
         </div>
-
-        {/* Basics */}
-        <BasicsBlock form={form} update={update} errors={errors} categoryOptions={categoryOptions} />
-
-        {/* Team */}
-        <TeamBlock
-          activeMembers={activeMembers}
-          selectedMemberIds={selectedMemberIds}
-          setSelectedMemberIds={setSelectedMemberIds}
-          toggleMember={toggleMember}
-          showOverridesSection={showOverridesSection}
-          showStaffPrices={showStaffPrices}
-          setShowStaffPrices={setShowStaffPrices}
-          memberOverrides={memberOverrides}
-          setMemberOverrides={setMemberOverrides}
-          memberDurationOverrides={memberDurationOverrides}
-          setMemberDurationOverrides={setMemberDurationOverrides}
-        />
-
-        {/* Pricing */}
-        <PricingBlock
-          form={form}
-          update={update}
-          setForm={setForm}
-          errors={errors}
-          activeMembers={activeMembers}
-        />
-
-        {/* Duration */}
-        <DurationBlock
-          form={form}
-          update={update}
-          errors={errors}
-          totalSplitDuration={totalSplitDuration}
-        />
-      </div>{/* /Essentials card */}
+      </Section>
 
       {/* ── Booking rules ──────────────────────────────────── */}
       <BookingRulesSection service={service} form={form} update={update} setForm={setForm} />
