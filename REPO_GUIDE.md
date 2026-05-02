@@ -235,20 +235,27 @@ Sub-files created across these phases:
 - `services/drawer/` (8 files: types, initial-state, Section, MarketingSection, BundleSection, AddOnsSection, BookingRulesSection)
 - `forms/editor/style-options.tsx`
 
-### Phase 9 — Remaining work (deferred — requires more than mechanical extraction)
+### ✅ Phase 9 — Final senior-dev pass (DONE 2026-05-02)
 
-| File | Lines | Why deferred |
+After research on React form patterns and Next.js route handler conventions, applied a "real driver?" lens to the deferred list:
+
+| File | Real driver? | Verdict |
 |---|---|---|
-| `landing/CinematicDemo.tsx` | 1,522 | One cohesive animated marketing component |
-| `landing/ScrollMechanic.tsx` | 1,434 | One cohesive animated marketing component |
-| `landing/HeroSplit.tsx` | 808 | One cohesive animated marketing component |
-| `editor/FormEditor.tsx` | 1,311 | mode === "edit"/"style" tabs need state lifting |
-| `bookings/CalendarView.tsx` | 1,138 | Giant forwardRef with intricate scroll/drag state |
-| `services/ServiceDrawer.tsx` | 1,057 | Essentials section remains; needs `useServiceDraft` hook |
-| `lib/seed-data.ts` | 958 | Pure dev-only seed data, low value |
-| `app/book/[slug]/page.tsx` | 825 | One cohesive public booking flow |
-| `lib/onboarding.ts` | 806 | Onboarding business logic, cohesive |
-| `app/api/public/book/basket/route.ts` | 805 | Cohesive 700-line POST handler — needs full rewrite, not extraction |
+| `services/ServiceDrawer.tsx` (was 1,057) | Yes — operator opens dozens/day | **Done. 1,057 → 541 (-49%).** Basics, Duration, Team, Pricing blocks extracted via props pattern. Per-staff overrides handled by passing setters as props (no useReducer migration). Total session reduction: **2,577 → 541 (-79%)**. |
+| `app/api/public/book/basket/route.ts` (805) | No — works, no tests planned | **Leave.** Senior dev wouldn't refactor server code without a test/observability driver. |
+| `landing/CinematicDemo.tsx` (1,522) | No — single Framer Motion choreography | **Leave.** Splitting breaks animation timing. |
+| `landing/ScrollMechanic.tsx` (1,434) | No — single scroll choreography | **Leave.** |
+| `landing/HeroSplit.tsx` (808) | No — single hero animation | **Leave.** |
+| `editor/FormEditor.tsx` (1,311) | No — mode-switched tabs share state | **Leave** until next feature work. |
+| `bookings/CalendarView.tsx` (1,138) | No — large grids with drag/scroll commonly cohesive | **Leave.** Risk > reward. |
+| `lib/seed-data.ts` (958) | No — dev-only fixture | **Leave.** |
+| `lib/onboarding.ts` (806) | No — cohesive domain logic | **Leave.** |
+| `app/book/[slug]/page.tsx` (825) | No — single booking flow | **Leave.** |
+
+**Senior-dev principle that drove the call:** refactor when there's a real cost (testability, shared use, edit pain, onboarding friction). Don't refactor for vanity metrics. Documented this principle so future-you doesn't second-guess.
+
+Sub-files added in Phase 9 (`services/drawer/`):
+- BasicsBlock.tsx (70), DurationBlock.tsx (104), TeamBlock.tsx (179), PricingBlock.tsx (317)
 
 ### Phase 6 — Landing page (optional, 1 day)
 
