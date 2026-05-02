@@ -1,5 +1,9 @@
 # MAGIC CRM — Development Guide
 
+Last updated: 2026-05-02
+
+> See `REPO_GUIDE.md` for working rules, refactor plan, and hygiene checklists. This file is the architecture reference.
+
 ## Product
 
 Conversation-first CRM for Beauty & Wellness. Three entry points (booking form, inquiry form, unified comms) funnel into 5 core objects: Client, Booking, Inquiry, Conversation, Payment Document.
@@ -10,11 +14,27 @@ Clients are never created as a side-effect of any flow other than booking. Manua
 
 Direct component rendering. No schema system, no persona variants, no dynamic module assembly. Each tab has its own page component.
 
-### 12 Dashboard Tabs
+### Core Dashboard Tabs (always visible)
 
 **Daily Workflow:** Communications, Inquiries, Bookings, Calendar, Clients
 **Operations:** Payments, Marketing
 **Setup:** Services, Forms, Automations, Teams, Settings
+
+### Addon Modules (toggleable from `/dashboard/addons`)
+
+Defined in `src/lib/addon-modules.ts`. Routed via `src/app/dashboard/[moduleSlug]/page.tsx`. Visibility controlled by `useSettingsStore`.
+
+| Addon | Slug | Page component |
+|---|---|---|
+| Analytics | `analytics` | `modules/analytics/AnalyticsPage.tsx` |
+| Marketing | `marketing` | `modules/marketing/` (also a core tab) |
+| Gift Cards | `gift-cards` | `modules/gift-cards/` |
+| Loyalty & Referrals | `loyalty` | `modules/loyalty/LoyaltyPage.tsx` |
+| Business Insights | `ai-insights` | `modules/ai-insights/AIInsightsPage.tsx` |
+| Win-Back | `win-back` | `modules/win-back/WinBackPage.tsx` |
+| Proposals | `proposals` | `modules/proposals/ProposalsPage.tsx` |
+| Memberships | `memberships` | `modules/memberships/MembershipsPage.tsx` |
+| Documents | `documents` | `modules/documents/DocumentsPage.tsx` |
 
 ### Key Directories
 
@@ -31,7 +51,9 @@ src/
     auth/         — Workspace bootstrap, invites
     server/       — Server-side logic (automation runner, public booking)
   hooks/          — Custom React hooks
-  types/          — TypeScript type definitions (models.ts)
+  types/
+    models/       — TypeScript type definitions, split by domain
+    models/index.ts — barrel export
 ```
 
 ### Data Flow
@@ -50,20 +72,28 @@ Realtime → useRealtimeSync → Supabase Realtime → reload affected store
 
 ## Tech Stack
 
-- Next.js (App Router)
+- Next.js 16 (App Router)
 - React 19
 - TypeScript 5 (strict mode)
 - Tailwind CSS 4
-- Zustand 5 (state management, 12 stores)
+- Zustand 5 (state management)
 - Framer Motion (animations)
-- Supabase (database + auth + realtime + storage)
-- Stripe Connect (payments, on_behalf_of)
-- Twilio (SMS)
+- Supabase (database + auth + realtime + storage) — **LIVE**
+- Posthog (analytics) — LIVE
+- Sentry (error tracking) — LIVE
 
-Planned integrations (not yet wired):
+Wrappers exist but DORMANT (no API keys configured):
+- Stripe Connect (payments)
+- Twilio (SMS)
+- Resend (transactional email)
+- Anthropic API (inbox draft-reply)
+
+Not yet wired:
 - Nylas (email + calendar sync)
 - Meta Graph API (Instagram + Facebook DMs)
 - WhatsApp Cloud API
+
+Integration discipline: see REPO_GUIDE.md Section 8.
 
 ## Commands
 
@@ -92,6 +122,15 @@ npm run test:watch   # Watch mode tests
 - DB files map snake_case ↔ camelCase between Supabase and frontend
 - Errors: toast notifications via `@/components/ui/Toast`
 
-## Addon Modules (Untouched)
+## File Size Rules
 
-Legacy addon modules exist in `src/components/modules/` (leads, invoicing, jobs, proposals, etc.) but are NOT rendered by the core product. They may have broken imports. Do not fix them unless explicitly asked.
+- Component files: max 400 lines. Split into sub-components if exceeded.
+- Page components: max 200 lines. Move logic to `components/modules/<domain>/`.
+- API route handlers: max 100 lines. Extract logic to `src/lib/server/`.
+- Type files: max 300 lines. Split by domain.
+
+Full rules in REPO_GUIDE.md Section 4.
+
+## Server vs Client Components
+
+Default to Server Components. Add `"use client"` only when the file uses state, effects, event handlers, browser APIs, Zustand, or Framer Motion. See REPO_GUIDE.md Section 6.
