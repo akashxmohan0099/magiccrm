@@ -27,3 +27,13 @@ jobs:
 
       - name: Unit tests
         run: npm run test
+
+      - name: Build
+        # Catches Next.js-specific issues (server/client boundary, dynamic routes)
+        # that tsc + lint don't surface.
+        run: npm run build
+        env:
+          # Build requires public env vars to be present — supply harmless
+          # placeholders so the build doesn't fail at module-init time.
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-key

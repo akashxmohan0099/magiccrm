@@ -89,12 +89,9 @@ describe("mapPublicServiceFromDB", () => {
 
   it("drops server-only fields", () => {
     const out = mapPublicServiceFromDB(fullRow) as Record<string, unknown>;
-    // These must never reach the public payload.
-    expect(out).not.toHaveProperty("cancellationFee");
-    expect(out).not.toHaveProperty("cancellationWindowHours");
-    expect(out).not.toHaveProperty("depositNoShowFee");
-    expect(out).not.toHaveProperty("depositAutoCancelHours");
-    expect(out).not.toHaveProperty("depositAppliesTo");
+
+    // Internal scheduling + workspace metadata that the public has no
+    // business seeing.
     expect(out).not.toHaveProperty("dynamicPriceRules");
     // packageItems is the snake_case row column; the public shape exposes
     // resolved `packageInclusions` (populated by the route, not the mapper).
@@ -106,6 +103,11 @@ describe("mapPublicServiceFromDB", () => {
     expect(out).not.toHaveProperty("bufferBefore");
     expect(out).not.toHaveProperty("bufferAfter");
     expect(out).not.toHaveProperty("bufferMinutes");
+
+    // Note: deposit / cancellation fee fields ARE included on PublicService
+    // by design — the customer needs to see no-show fees, auto-cancel
+    // windows, and cancellation penalties BEFORE they agree to book. See
+    // the comments on the interface in lib/db/services.ts.
   });
 
   it("normalizes nullable / missing fields to safe defaults", () => {
