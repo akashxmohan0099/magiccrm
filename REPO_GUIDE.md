@@ -186,11 +186,42 @@ src/components/modules/services/
 
 **Deferred: ServiceDrawer further decomposition.** `ServiceDrawerFields` is one cohesive ~2,200-line form with ~50 interlinked `useState` hooks. Mechanical extraction isn't safe — the sub-sections would need every state setter passed as props (impractical) or state would need to be lifted into a `useServiceDraft()` hook mirroring `useFormDraft`. That's a real refactor, not a split. Schedule it as Phase 4d when ServiceDrawer next needs feature work.
 
-### Phase 5 — Inquiries + Bookings (1 day)
+### ✅ Phase 5 — Inquiries + Bookings (DONE 2026-05-02)
 
-`InquiriesPage.tsx` (900) → split list, detail panel, status pipeline.
-`BookingForm.tsx` (734) → split client picker, service picker, datetime, summary.
-`CalendarView.tsx` (1,269) → already complex; separate week/day/month views into siblings.
+| File | Before | After | Files extracted |
+|---|---|---|---|
+| `InquiriesPage.tsx` | 900 | 574 (-36%) | NotesEditor, InterestEditors, InlineStatusCell, helpers |
+| `BookingForm.tsx` | 734 | 734 | Skipped — single tight form, marginal gain |
+| `CalendarView.tsx` | 1,269 | 1,138 (-10%) | calendar-helpers (pure functions + constants) |
+
+CalendarView's main component is one giant `forwardRef`. Further splitting would need state lifting like ServiceDrawer.
+
+### ✅ Phase 4d — ServiceDrawer state-lifting (DONE 2026-05-02)
+
+Originally deferred but completed this session.
+
+| Step | Result |
+|---|---|
+| Extract Marketing, Bundle, AddOns sections | ServiceDrawer 2,278 → 1,794 (-484) |
+| Extract giant BookingRules section (~640 lines) | ServiceDrawer 1,794 → 1,057 (-737) |
+| **Total ServiceDrawer reduction** | **2,577 → 1,057 (-59%)** |
+
+Sub-files in `services/drawer/`:
+- types.ts, initial-state.ts, Section.tsx (helpers)
+- MarketingSection.tsx (113), BundleSection.tsx (181), AddOnsSection.tsx (288), BookingRulesSection.tsx (768)
+
+**Still inside ServiceDrawer.tsx:** the Essentials block (~500 lines) — Basics + Pricing + Duration + Team. Most state-coupled section (per-staff overrides cross-reference variants/tiers/members). Defer until next time it needs feature work.
+
+### Phase 6 — FormRenderer + Landing (in progress)
+
+| File | Before | After | Notes |
+|---|---|---|---|
+| `forms/FormRenderer.tsx` | 1,648 | 1,496 (-9%) | Extracted helpers, types, ThemeScope. Templates + FieldRow defer (need many cross-imports). |
+| `landing/CinematicDemo.tsx` | 1,522 | 1,522 | Untouched — marketing site only |
+| `landing/ScrollMechanic.tsx` | 1,434 | 1,434 | Untouched — marketing site only |
+| `editor/FormEditor.tsx` | 1,373 | 1,373 | Already extracted from FormsPage. Internal tab split needs state lifting. |
+| `app/onboarding/page.tsx` | 836 | 836 | Untouched |
+| `modules/teams/TeamsPage.tsx` | 932 | 932 | Untouched |
 
 ### Phase 6 — Landing page (optional, 1 day)
 
