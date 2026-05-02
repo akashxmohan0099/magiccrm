@@ -179,27 +179,6 @@ function clampInterval(
   return end > start ? { start, end } : null;
 }
 
-/** Subtract a set of intervals from a base interval. Intervals need not be sorted. */
-function subtractIntervals(
-  base: { start: number; end: number },
-  subtracts: { start: number; end: number }[],
-): { start: number; end: number }[] {
-  if (!subtracts.length) return [{ ...base }];
-  const sorted = subtracts
-    .map((iv) => clampInterval(iv, base))
-    .filter((iv): iv is { start: number; end: number } => iv !== null)
-    .sort((a, b) => a.start - b.start);
-
-  const out: { start: number; end: number }[] = [];
-  let cursor = base.start;
-  for (const iv of sorted) {
-    if (iv.start > cursor) out.push({ start: cursor, end: iv.start });
-    cursor = Math.max(cursor, iv.end);
-  }
-  if (cursor < base.end) out.push({ start: cursor, end: base.end });
-  return out;
-}
-
 function intervalLength(ivs: { start: number; end: number }[]): number {
   return ivs.reduce((acc, iv) => acc + (iv.end - iv.start), 0);
 }

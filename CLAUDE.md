@@ -1,8 +1,8 @@
 # MAGIC CRM — Development Guide
 
-Last updated: 2026-05-02
+Last updated: 2026-05-02 (post-Phase 10 sync)
 
-> See `REPO_GUIDE.md` for working rules, refactor plan, and hygiene checklists. This file is the architecture reference.
+> See `REPO_GUIDE.md` for working rules, refactor plan, and hygiene checklists. See `REVIEW_HANDOFF.md` for the post-refactor state summary. This file is the architecture reference.
 
 ## Product
 
@@ -42,18 +42,26 @@ Defined in `src/lib/addon-modules.ts`. Routed via `src/app/dashboard/[moduleSlug
 src/
   app/            — Next.js App Router pages + API routes
   components/
-    modules/      — Tab page components (one directory per tab)
-    ui/           — Shared UI components (DataTable, Modal, Toast, etc.)
-  store/          — 12 Zustand stores (all persist to localStorage)
+    modules/<domain>/   — Tab page components (one folder per domain)
+      services/drawer/  — ServiceDrawer split into Section components
+      services/preview/ — ServicesPreview split into 22 sub-components
+      forms/editor/     — FormEditor + tab files
+    forms/              — Cross-cutting form primitives (FormChrome, FieldRow, ThemeScope, renderer-helpers)
+    landing/            — Marketing site (CinematicDemo barrel + cinematic/ sub-folder, ScrollMechanic + scroll-mechanic-data)
+    ui/                 — Shared design system (DataTable, Modal, Toast, etc.)
+  store/                — 27 Zustand stores (all persist to localStorage)
   lib/
-    db/           — Supabase CRUD operations (one file per entity)
-    integrations/ — Stripe, Twilio
-    auth/         — Workspace bootstrap, invites
-    server/       — Server-side logic (automation runner, public booking)
-  hooks/          — Custom React hooks
-  types/
-    models/       — TypeScript type definitions, split by domain
-    models/index.ts — barrel export
+    db/<entity>.ts      — Supabase CRUD wrappers + snake/camel mapping (19 files)
+    services/           — Domain logic (category, membership-debit, resource-conflicts)
+    forms/              — Form validation + draft state (use-form-draft hook)
+    calendar/           — Slot generation + utilization
+    server/             — Server-only helpers (public-booking, etc.)
+    integrations/       — Stripe, Twilio, Resend, Anthropic wrappers (all DORMANT)
+    auth/               — Workspace bootstrap, invites
+    format/             — Display formatting (money, dates)
+    onboarding-*.ts     — Split: types, options, actions, service-templates (re-exported from onboarding.ts)
+  hooks/                — Cross-domain React hooks
+  types/                — 15 domain files + models.ts barrel
 ```
 
 ### Data Flow
@@ -100,18 +108,29 @@ Integration discipline: see REPO_GUIDE.md Section 8.
 ```bash
 npm run dev          # Development server
 npm run build        # Production build
+npm run typecheck    # tsc --noEmit
+npm run lint         # eslint
 npm run test         # Run vitest tests
 npm run test:watch   # Watch mode tests
+npm run test:e2e     # Playwright
 ```
 
 ## Database
 
-12 tables defined in `supabase/migration.sql`:
-- workspaces, workspace_members, workspace_settings
-- clients, bookings, inquiries, conversations, messages
-- payment_documents, payment_line_items
-- services, member_services, forms, automation_rules, campaigns
-- activity_log
+48 tables defined in `supabase/migration.sql`. Core domains:
+
+- **Workspace:** workspaces, workspace_members, workspace_settings, workspace_invites
+- **People:** clients, client_tags, client_photos, treatment_notes
+- **Catalog:** services, service_categories, member_services, library_addons, locations, resources
+- **Bookings:** bookings, booking_waitlist, calendar_blocks
+- **Inbox:** inquiries, conversations, messages
+- **Payments:** payment_documents, payment_line_items, refunds
+- **Forms:** forms, form_responses
+- **Marketing:** campaigns, automation_rules
+- **Addons:** gift_cards, memberships, membership_plans, client_memberships, proposals, documents, loyalty_*
+- **Audit:** activity_log
+
+Every table has `workspace_id` + RLS policy. See REPO_GUIDE.md Section 9.
 
 ## Conventions
 

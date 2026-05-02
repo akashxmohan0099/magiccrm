@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Check, Loader2, Send, ArrowRight, ArrowLeft, ExternalLink } from "lucide-react";
+import { Check, Loader2, Send, ArrowRight, ExternalLink } from "lucide-react";
 import type { FormSuccessVariant } from "@/types/models";
 import { splitMulti } from "@/lib/form-logic";
 import type { FormRendererProps, RenderableForm } from "./renderer-types";
@@ -10,10 +9,7 @@ import {
   effectiveLogo,
   fontClassFor,
   headingFontClassFor,
-  accentColorFor,
-  themeFor,
 } from "./renderer-helpers";
-import { ThemeScope } from "./ThemeScope";
 
 export function WelcomeView({
   form,

@@ -72,15 +72,21 @@ export async function resolveBookingWorkspaceBySlug(
 // fields back as plain text — React escapes by default but our SMS/email
 // bodies don't, so we strip HTML tags here so a "<script>...</script>"
 // payload never lands in a downstream channel that would render it.
+//
+// Block-level tag-pair stripper. Runs FIRST so `<script>alert(1)</script>`
+// vanishes including its inner text — otherwise the simple tag-stripper
+// below would leave "alert(1)" behind. Order matters: keep these aligned
+// with elements that can carry executable / displayable content.
+const SCRIPTABLE_TAGS_RE = /<(script|style|iframe|object|embed|noscript)\b[^>]*>[\s\S]*?<\/\1\s*>/gi;
 const HTML_TAG_RE = /<[^>]*>/g;
 // Strip C0/C1 control bytes that have no business in a name/notes field.
 // Built with `new RegExp` so the source stays plain ASCII — embedding raw
 // 0x00..0x1F bytes makes git treat the whole file as binary.
-// eslint-disable-next-line no-control-regex
 const CONTROL_CHARS_RE = new RegExp("[\x00-\x1F\x7F]", "g");
 
 export function sanitizeClientText(value: string, maxLen: number): string {
   return (value ?? "")
+    .replace(SCRIPTABLE_TAGS_RE, "")
     .replace(HTML_TAG_RE, "")
     .replace(CONTROL_CHARS_RE, "")
     .trim()

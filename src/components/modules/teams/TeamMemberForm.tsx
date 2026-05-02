@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Phone, Clock, Trash2, Instagram, Globe, Facebook } from "lucide-react";
+import { Clock, Trash2, Instagram, Globe, Facebook } from "lucide-react";
 import type {
   TeamMember,
   TeamRole,

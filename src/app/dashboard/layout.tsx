@@ -40,6 +40,8 @@ import { CommandPalette } from "@/components/ui/CommandPalette";
 import { useRealtimeSync } from "@/hooks/useRealtimeSync";
 import { useSupabaseSync } from "@/hooks/useSupabaseSync";
 import { seedAllStores } from "@/lib/seed-data";
+import { useClientsStore } from "@/store/clients";
+import { usePaymentsStore } from "@/store/payments";
 
 // ── Icon map for addon modules ──
 const ADDON_ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -141,6 +143,17 @@ function DashboardShell({ children }: { children: ReactNode }) {
     // No real workspace — seed demo data immediately
     seeded.current = true;
     seedAllStores();
+
+    // Drop orphan payment docs whose clientId no longer matches a client.
+    // Happens when a previous persona's seed ran, then was switched, leaving
+    // stale rows in localStorage. Cheap one-shot cleanup so the dashboard
+    // doesn't render "Unknown client" rows the operator can't action.
+    const clientIds = new Set(useClientsStore.getState().clients.map((c) => c.id));
+    const docs = usePaymentsStore.getState().documents;
+    const cleanDocs = docs.filter((d) => clientIds.has(d.clientId));
+    if (cleanDocs.length !== docs.length) {
+      usePaymentsStore.setState({ documents: cleanDocs });
+    }
   }, [authLoading, user, workspaceId]);
 
   const handleWorkspaceRepair = async () => {

@@ -1,6 +1,6 @@
 # MAGIC CRM — Repo Guide & Working Rules
 
-Last updated: 2026-05-02
+Last updated: 2026-05-02 (post-Phase 10 sync)
 Owner: Akash
 
 This is the operating manual for keeping the codebase sane. Everything in here is a rule, not a suggestion. If you find yourself wanting to break a rule, document why in the PR.
@@ -44,30 +44,51 @@ Supabase Postgres + Auth + RLS + Realtime
 
 ---
 
-## 2. Current repo health (snapshot 2026-05-02)
+## 2. Current repo health (snapshot 2026-05-02, post-refactor)
 
 | Metric | Value | Verdict |
 |---|---|---|
-| Total TS/TSX files | 337 | Healthy size for the feature surface |
-| Test files | 24 | Thin. Should be 50+ for this size. |
+| Total TS/TSX files | 441 | Up from 337 — extractions created sub-components, expected |
+| Test files | 24 | Thin. Target 50+ for this size. **Largest standing gap.** |
 | `any` types | 1 | Excellent |
 | `console.log` left in | 8 | Low. Clean up before each release. |
 | TODO/FIXME | 2 | Excellent |
-| Files over 500 lines | 20 | **Problem area** |
-| Files over 1000 lines | 8 | **Critical** |
-| `"use client"` directives | 141 | **Architectural smell** — see Section 6 |
-| `"use server"` directives | 0 | Server Actions completely unused |
+| Files over 500 lines | 31 | Down from worst case but list is longer than original snapshot — see refresh below |
+| Files over 1000 lines | 3 | Down from 8. Headline win. |
+| `"use client"` directives | 226 | Up from 141 — extractions inherited the directive. Server Component migration (Section 6) would consolidate to leaf islands. |
+| `"use server"` directives | 0 | Server Actions still unused |
 
-### The 7 critical files (refactor priority order)
+### The 8 original critical files — status after refactor
 
-1. `src/components/modules/forms/FormsPage.tsx` — 3,938 lines
-2. `src/components/modules/services/ServicesPreview.tsx` — 2,983 lines
-3. `src/components/modules/services/ServiceDrawer.tsx` — 2,577 lines
-4. `src/components/forms/FormRenderer.tsx` — 1,648 lines
-5. `src/components/landing/CinematicDemo.tsx` — 1,522 lines
-6. ~~`src/types/models.ts` — 1,458 lines~~ ✅ **Done 2026-05-02** — split into 15 domain files, models.ts is now a 41-line barrel
-7. `src/components/landing/ScrollMechanic.tsx` — 1,434 lines
-8. `src/components/modules/services/ServicesPage.tsx` — 1,353 lines
+| Original file | Lines before | Lines now | Reduction |
+|---|---|---|---|
+| `forms/FormsPage.tsx` | 3,938 | 770 | **-80%** |
+| `services/ServicesPreview.tsx` | 2,983 | 666 | **-78%** |
+| `services/ServiceDrawer.tsx` | 2,577 | 535 | **-79%** |
+| `forms/FormRenderer.tsx` | 1,648 | 581 | **-65%** |
+| `landing/CinematicDemo.tsx` | 1,522 | 20 | **-99%** (now barrel) |
+| `types/models.ts` | 1,458 | 41 | **-97%** (now barrel) |
+| `landing/ScrollMechanic.tsx` | 1,434 | 1,255 | -12% |
+| `services/ServicesPage.tsx` | 1,353 | 880 | -35% |
+
+### Files still over 500 lines (current)
+
+Top of the list — flagged for the next "real driver" check:
+
+| File | Lines | Notes |
+|---|---|---|
+| `forms/editor/FormEditor.tsx` | 1,311 | Tabbed editor; mode-switched tabs share state |
+| `landing/ScrollMechanic.tsx` | 1,255 | Single scroll choreography; data extracted, JSX cohesive |
+| `bookings/CalendarView.tsx` | 1,138 | Large grid with drag/scroll; helpers extracted |
+| `lib/seed-data.ts` | 958 | Dev-only fixture, prod-guarded; deliberately not split (no driver) |
+| `services/ServicesPage.tsx` | 880 | List + selection + bulk actions; cohesive |
+| `app/book/[slug]/page.tsx` | 825 | Single public booking flow |
+| `landing/HeroSplit.tsx` | 808 | Single hero animation |
+| `app/api/public/book/basket/route.ts` | 805 | Helpers extracted to `lib/server/public-booking.ts`; route still long |
+| `forms/FormsPage.tsx` | 770 | Was 3,938 |
+| `bookings/BookingForm.tsx` | 734 | Single tight form, marginal-gain split |
+| `app/dashboard/layout.tsx` | 721 | Sidebar + nav for ~25 routes |
+| `lib/forms/starters.ts` | 708 | Form template seed library |
 
 ---
 
@@ -241,21 +262,38 @@ After research on React form patterns and Next.js route handler conventions, app
 
 | File | Real driver? | Verdict |
 |---|---|---|
-| `services/ServiceDrawer.tsx` (was 1,057) | Yes — operator opens dozens/day | **Done. 1,057 → 541 (-49%).** Basics, Duration, Team, Pricing blocks extracted via props pattern. Per-staff overrides handled by passing setters as props (no useReducer migration). Total session reduction: **2,577 → 541 (-79%)**. |
-| `app/api/public/book/basket/route.ts` (805) | No — works, no tests planned | **Leave.** Senior dev wouldn't refactor server code without a test/observability driver. |
-| `landing/CinematicDemo.tsx` (1,522) | No — single Framer Motion choreography | **Leave.** Splitting breaks animation timing. |
-| `landing/ScrollMechanic.tsx` (1,434) | No — single scroll choreography | **Leave.** |
-| `landing/HeroSplit.tsx` (808) | No — single hero animation | **Leave.** |
+| `services/ServiceDrawer.tsx` (was 1,057) | Yes — operator opens dozens/day | **Done. 1,057 → 535 (-49%).** Basics, Duration, Team, Pricing blocks extracted via props pattern. Per-staff overrides handled by passing setters as props (no useReducer migration). Total session reduction: **2,577 → 535 (-79%)**. |
+| `app/api/public/book/basket/route.ts` (805) | No — works, no tests planned | **Leave** in Phase 9; revisited in Phase 10 (helpers extracted to `lib/server/public-booking.ts`). |
+| `landing/CinematicDemo.tsx` (1,522) | No — single Framer Motion choreography | Originally **Leave**. **Reversed in Phase 10:** had real nested components rendering separately, not one choreography. Split into `cinematic/` sub-folder; barrel kept for backwards compat. |
+| `landing/ScrollMechanic.tsx` (1,434) | No — single scroll choreography | Originally **Leave**. **Reversed in Phase 10:** data + helpers + inline SVG icons extracted to `scroll-mechanic-data.tsx`. JSX choreography intact. |
+| `landing/HeroSplit.tsx` (808) | No — single hero animation | **Leave.** Verified Phase 10. |
 | `editor/FormEditor.tsx` (1,311) | No — mode-switched tabs share state | **Leave** until next feature work. |
 | `bookings/CalendarView.tsx` (1,138) | No — large grids with drag/scroll commonly cohesive | **Leave.** Risk > reward. |
-| `lib/seed-data.ts` (958) | No — dev-only fixture | **Leave.** |
-| `lib/onboarding.ts` (806) | No — cohesive domain logic | **Leave.** |
+| `lib/seed-data.ts` (958) | No — dev-only fixture, prod-guarded | **Leave.** Re-verified Phase 10 — splitting trades single-file Cmd+F navigation for import-graph complexity in code that never ships. |
+| `lib/onboarding.ts` (806) | No — cohesive domain logic | Originally **Leave**. **Reversed in Phase 10:** option arrays consumed by other modules → split into `onboarding-options`, `onboarding-actions`, `onboarding-service-templates`, `onboarding-types`. Now 401 lines as a re-export shim. |
 | `app/book/[slug]/page.tsx` (825) | No — single booking flow | **Leave.** |
 
-**Senior-dev principle that drove the call:** refactor when there's a real cost (testability, shared use, edit pain, onboarding friction). Don't refactor for vanity metrics. Documented this principle so future-you doesn't second-guess.
+**Senior-dev principle that drove the call:** refactor when there's a real cost (testability, shared use, edit pain, onboarding friction). Don't refactor for vanity metrics. The Phase 10 reversals applied the same lens — if a "Leave" file turned out to have a real driver on second look (multiple components, cross-module reuse), it got split; if it didn't (seed-data, HeroSplit), it stayed.
 
 Sub-files added in Phase 9 (`services/drawer/`):
 - BasicsBlock.tsx (70), DurationBlock.tsx (104), TeamBlock.tsx (179), PricingBlock.tsx (317)
+
+### ✅ Phase 10 — Deferred-file audit + ServiceDrawer cleanup (DONE 2026-05-02)
+
+Re-examined every "Leave" verdict from Phase 9 with the same "real driver?" lens:
+
+| File | Outcome |
+|---|---|
+| `landing/CinematicDemo.tsx` | Split — 1,522 → 20 line barrel + 5 sub-files in `cinematic/` (data, ModulePickerDemo, FeatureCustomizeDemo, MobileFeatureDemo, DemoContent) |
+| `landing/ScrollMechanic.tsx` | Data layer extracted — 1,434 → 1,255; new `scroll-mechanic-data.tsx` (202 lines) |
+| `lib/onboarding.ts` | Split — 806 → 401 line shim + 4 per-concern files (options, actions, service-templates, types) |
+| `lib/seed-data.ts` | **Held.** Dev-only fixture, prod-guarded, single-file Cmd+F is the workflow. No driver. |
+| `app/api/public/book/basket/route.ts` | Helpers extracted to `lib/server/public-booking.ts` (465 lines). Route still 805 due to inline validation; revisit when adding tests. |
+| `services/drawer/BookingRulesSection.tsx` | Further split — 768 → 566; pulled out `IntakeSection`, `PatchTestSection`, `WhereSection`, `PaymentsSection` (combined Deposits + Cancellation) |
+
+Lint cleanup pass: removed 7 unused imports + 1 dead helper (`subtractIntervals` in `lib/calendar/utilization.ts`) + 1 redundant lint suppression. Fixed 1 `react-hooks/set-state-in-effect` error in `services/ServicesPage.tsx` by replacing the sync useEffect with a single `exitSelectionMode` callback wired into all dismissal points.
+
+**Final state: typecheck clean, lint clean.**
 
 ### Phase 6 — Landing page (optional, 1 day)
 
@@ -373,11 +411,23 @@ If a folder has 3+ files of the same kind (Modal, Drawer, Form), make a sub-fold
 
 ## 6. Server vs Client Components — the missing rule
 
-**Current state: 141 `"use client"` files, 0 `"use server"`.** You're using Next.js App Router but treating everything as a client app. This means:
+**Current state: 226 `"use client"` files, 0 `"use server"`.** You're using Next.js App Router but treating everything as a client app. This means:
 
 - All your pages ship to the browser as JS bundles, even when they don't need to.
 - Initial page loads are slower than they need to be.
 - You're missing Server Actions, which would replace many of your `/api/*` routes with simpler form-action functions.
+
+### Why a pilot conversion was deferred
+
+Started a pilot in Phase 10 — looked at `app/dashboard/page.tsx` and concluded that this isn't a 1-page pilot. The dashboard reads from 7 Zustand stores. Converting to Server Component means:
+
+1. Fetch initial data on the server from Supabase (`listBookings`, `listClients`, etc.)
+2. Pass as props to a thin Client island
+3. Replace `useStore()` calls with prop reads
+4. Move mutations from `store.update()` → Server Actions
+5. Delete the Zustand store (or keep it for optimistic UI only)
+
+Step 4-5 means rewriting the optimistic-update pattern that exists across all 12 stores. That's not a pilot, it's an architectural migration. **Phase 11 candidate, not review-blocking.**
 
 ### The rule going forward
 

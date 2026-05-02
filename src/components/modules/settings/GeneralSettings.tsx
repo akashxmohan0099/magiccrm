@@ -129,7 +129,7 @@ function GeneralSettingsContent({
       <motion.div
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+        transition={{ duration: 0.18, ease: [0.25, 0.1, 0.25, 1] }}
         className="relative overflow-hidden rounded-2xl p-6 sm:p-8"
         style={{
           background: `linear-gradient(135deg, ${brandColor}08 0%, ${brandColor}15 50%, ${brandColor}05 100%)`,

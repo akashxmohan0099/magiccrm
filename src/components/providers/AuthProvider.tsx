@@ -10,6 +10,20 @@ import {
   type WorkspaceMember,
 } from "@/hooks/useAuth";
 
+/**
+ * React Strict Mode double-mounts components in dev, which makes two
+ * Supabase clients race for the auth lock and produce noisy errors that
+ * look like real failures. The retry loop already handles them; we just
+ * filter them out of the console.
+ */
+function isLockContentionError(message: string): boolean {
+  return (
+    message.includes("Lock") &&
+    (message.includes("was released because another request stole it") ||
+      message.includes("was not released within"))
+  );
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const supabase = createClient();
@@ -44,6 +58,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             .maybeSingle();
 
           if (error) {
+            // Lock-contention errors come from React Strict Mode double-mount
+            // racing on the Supabase auth lock. The retry loop already handles
+            // them — logging at error-level just creates console noise that
+            // looks like a real failure to operators reading the inspector.
+            if (isLockContentionError(error.message)) {
+              continue;
+            }
             console.error(`[useAuth] fetchMember attempt ${attempt + 1} error:`, error.message);
             continue;
           }
@@ -54,6 +75,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             return;
           }
         } catch (error) {
+          if (error instanceof Error && isLockContentionError(error.message)) {
+            continue;
+          }
           console.error(`[useAuth] fetchMember attempt ${attempt + 1} threw:`, error);
         }
       }
@@ -123,7 +147,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setMember(null);
         }
       } catch (error) {
-        console.warn("[useAuth] init failed, running in demo mode:", error);
+        // Lock-contention is React Strict Mode noise — the second mount wins
+        // and the app continues normally. Other errors (network, bad keys)
+        // are still worth surfacing.
+        const msg = error instanceof Error ? error.message : String(error);
+        if (!isLockContentionError(msg)) {
+          console.warn("[useAuth] init failed, running in demo mode:", error);
+        }
         // Don't wait for the timeout — immediately stop loading
         if (!cancelled) setLoading(false);
         return;

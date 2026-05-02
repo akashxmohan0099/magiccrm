@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 
 export function SettingsSection({
   icon: Icon,
@@ -13,13 +13,22 @@ export function SettingsSection({
   title: string;
   description?: string;
   children: React.ReactNode;
+  /** Stagger offset (seconds). Capped at 0.06s so the page never feels
+   *  laggy — a long stagger trades polish for perceived load delay. */
   delay?: number;
 }) {
+  // Honor system "reduce motion" — the section just appears, no fade.
+  const reduced = useReducedMotion();
+  const cappedDelay = Math.min(delay, 0.06);
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={reduced ? false : { opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay, ease: [0.25, 0.1, 0.25, 1] }}
+      transition={
+        reduced
+          ? { duration: 0 }
+          : { duration: 0.18, delay: cappedDelay, ease: [0.25, 0.1, 0.25, 1] }
+      }
       className="bg-card-bg border border-border-light rounded-2xl p-6 sm:p-8"
     >
       <div className="flex items-center gap-3 mb-6">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { SlidersHorizontal, Search } from "lucide-react";
 import { ALL_FEATURE_MODULES, MODULE_DEMOS } from "./data";

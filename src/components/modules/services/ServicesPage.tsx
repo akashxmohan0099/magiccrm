@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import {
   Plus, DollarSign, Trash2, ChevronDown, ChevronRight, Pencil, FolderPlus,
   Upload, MoreHorizontal, X, Check, ToggleLeft, ToggleRight, Eye, GripVertical,
@@ -124,22 +124,21 @@ export function ServicesPage() {
     return () => document.removeEventListener("click", handler);
   }, [openCategoryMenu]);
 
+  // Single exit-point: clears both flags so re-entering selection mode is
+  // always a fresh slate. Use this anywhere selection mode is dismissed.
+  const exitSelectionMode = useCallback(() => {
+    setSelectionMode(false);
+    setSelectedIds(new Set());
+  }, []);
+
   useEffect(() => {
     if (!selectionMode) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setSelectionMode(false);
-        setSelectedIds(new Set());
-      }
+      if (e.key === "Escape") exitSelectionMode();
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [selectionMode]);
-
-  // Drop selections when leaving selection mode so re-entering is fresh.
-  useEffect(() => {
-    if (!selectionMode) setSelectedIds(new Set());
-  }, [selectionMode]);
+  }, [selectionMode, exitSelectionMode]);
 
   const toggleSelected = (id: string) => {
     setSelectedIds((prev) => {
@@ -167,14 +166,14 @@ export function ServicesPage() {
       updateService(id, { enabled }, workspaceId || undefined);
     });
     toast(`${enabled ? "Enabled" : "Disabled"} ${selectedIds.size} service${selectedIds.size === 1 ? "" : "s"}`);
-    setSelectionMode(false);
+    exitSelectionMode();
   };
 
   const bulkDelete = () => {
     const count = selectedIds.size;
     selectedIds.forEach((id) => deleteService(id, workspaceId || undefined));
     toast(`Deleted ${count} service${count === 1 ? "" : "s"}`);
-    setSelectionMode(false);
+    exitSelectionMode();
     setBulkDeleteOpen(false);
   };
 
@@ -193,7 +192,7 @@ export function ServicesPage() {
       );
     });
     toast(`Moved ${selectedIds.size} service${selectedIds.size === 1 ? "" : "s"} to ${targetCat}`);
-    setSelectionMode(false);
+    exitSelectionMode();
     setBulkMoveOpen(false);
   };
 
@@ -761,7 +760,7 @@ export function ServicesPage() {
           </button>
           <div className="w-px h-6 bg-border-light" />
           <button
-            onClick={() => setSelectionMode(false)}
+            onClick={exitSelectionMode}
             className="p-1.5 rounded-lg text-text-tertiary hover:text-foreground hover:bg-surface cursor-pointer transition-colors"
             title="Exit selection mode"
           >

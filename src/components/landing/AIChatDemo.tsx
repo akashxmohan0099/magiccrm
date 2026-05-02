@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Check, Users, Calendar, Receipt, MessageCircle, BarChart3, Send, Bot,
+  Users, Calendar, Receipt, MessageCircle, BarChart3, Send, Bot,
 } from "lucide-react";
 import { viewportConfig, sectionHeadingVariants, sectionTransition } from "@/app/landing-data";
 

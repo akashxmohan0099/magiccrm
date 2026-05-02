@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Loader2, Upload, X as XIcon } from "lucide-react";
+import { Upload, X as XIcon } from "lucide-react";
 import type { FormFieldConfig } from "@/types/models";
-import { isFieldVisible, splitMulti } from "@/lib/form-logic";
+import { splitMulti } from "@/lib/form-logic";
 import { SignaturePad } from "./SignaturePad";
 import type { RenderableService } from "./renderer-types";
 import { autocompleteFor, selectPlaceholderText } from "./renderer-helpers";

@@ -283,7 +283,7 @@ export default function DashboardPage() {
                     </p>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-medium text-foreground truncate">{clientMap.get(b.clientId)?.name || "Client"}</p>
+                    <p className="text-[13px] font-medium text-foreground truncate">{clientMap.get(b.clientId)?.name || "Unknown client"}</p>
                     <p className="text-[11px] text-text-secondary truncate">{serviceMap.get(b.serviceId || "")?.name || "Service"}</p>
                   </div>
                   <StatusBadge status={b.status} />
@@ -312,7 +312,7 @@ export default function DashboardPage() {
                       <p className="text-[13px] font-medium text-foreground">{d.documentNumber}</p>
                       <span className="text-[10px] font-medium text-text-tertiary uppercase bg-surface px-1.5 py-0.5 rounded">{d.label}</span>
                     </div>
-                    <p className="text-[11px] text-text-secondary truncate">{clientMap.get(d.clientId)?.name || "Client"}</p>
+                    <p className="text-[11px] text-text-secondary truncate">{clientMap.get(d.clientId)?.name || "Unknown client"}</p>
                   </div>
                   <div className="text-right flex-shrink-0">
                     <p className="text-[13px] font-bold text-foreground">${d.total.toLocaleString()}</p>
