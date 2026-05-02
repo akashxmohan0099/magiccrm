@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, ReactNode } from "react";
+import { useState, useMemo } from "react";
 import { ChevronDown, ChevronRight, Users, Check, Plus, Trash2 } from "lucide-react";
 import { useServicesStore } from "@/store/services";
 import { useTeamStore } from "@/store/team";
@@ -8,7 +8,7 @@ import { useFormsStore } from "@/store/forms";
 import { useLocationsStore } from "@/store/locations";
 import { useResourcesStore } from "@/store/resources";
 import { useAuth } from "@/hooks/useAuth";
-import {
+import type {
   Service,
   ServicePriceType,
   ServiceVariant,
@@ -20,12 +20,23 @@ import {
   PackageItem,
 } from "@/types/models";
 import { generateId } from "@/lib/id";
-import { resolveServiceCategoryName } from "@/lib/services/category";
 import { useMoney } from "@/lib/format/money";
 import { SlideOver } from "@/components/ui/SlideOver";
 import { FormField } from "@/components/ui/FormField";
 import { Button } from "@/components/ui/Button";
 import { LogoUpload } from "@/components/ui/LogoUpload";
+import type {
+  FormState,
+  VariantInput,
+  TierInput,
+  AddonInput,
+  AddonGroupInput,
+  IntakeInput,
+  PackageItemInput,
+  DynamicPriceRuleInput,
+} from "./drawer/types";
+import { getInitialState } from "./drawer/initial-state";
+import { Section } from "./drawer/Section";
 
 interface ServiceDrawerProps {
   open: boolean;
@@ -35,260 +46,8 @@ interface ServiceDrawerProps {
   categories: string[];
 }
 
-interface VariantInput {
-  id: string;
-  name: string;
-  price: string;
-  duration: string;
-}
 
-interface TierInput {
-  id: string;
-  name: string;
-  price: string;
-  duration: string; // empty = inherit base duration
-  memberIds: string[];
-}
 
-interface AddonInput {
-  id: string;
-  name: string;
-  price: string;
-  duration: string;
-  groupId: string; // "" = ungrouped
-}
-
-interface AddonGroupInput {
-  id: string;
-  name: string;
-  minSelect: string;
-  maxSelect: string; // "" = unlimited
-}
-
-interface IntakeInput {
-  id: string;
-  label: string;
-  type: ServiceIntakeQuestionType;
-  required: boolean;
-  options: string; // comma-separated for input ease
-  hint: string;
-}
-
-interface PackageItemInput {
-  id: string;
-  serviceId: string;
-  variantId: string; // "" if no variant or service has no variants
-}
-
-interface FormState {
-  name: string;
-  category: string;
-  description: string;
-  imageUrl: string;
-  // Pricing
-  priceType: ServicePriceType;
-  price: string; // base / fixed / "from" anchor
-  variants: VariantInput[];
-  priceTiers: TierInput[];
-  addons: AddonInput[];
-  addonGroups: AddonGroupInput[];
-  isPackage: boolean;
-  packageItems: PackageItemInput[];
-  // Time
-  durationSplit: boolean;
-  duration: string;
-  durationActiveBefore: string;
-  durationProcessing: string;
-  durationActiveAfter: string;
-  // Existing
-  bufferBefore: string;
-  bufferAfter: string;
-  minNoticeHours: string;
-  maxAdvanceDays: string;
-  availableWeekdays: number[];
-  requiresConfirmation: boolean;
-  requiresCardOnFile: boolean;
-  depositType: "none" | "percentage" | "fixed";
-  depositAmount: string;
-  depositAppliesTo: DepositAppliesTo;
-  depositNoShowFee: string;
-  depositAutoCancelHours: string;
-  cancellationWindowHours: string;
-  cancellationFee: string;
-  intakeQuestions: IntakeInput[];
-  intakeFormId: string;
-  featured: boolean;
-  promoLabel: string;
-  promoPrice: string;
-  promoStart: string;
-  promoEnd: string;
-  tagsRaw: string; // comma-separated for input
-  /** Empty = all locations (or no multi-location at all). */
-  locationIds: string[];
-  /** Resource ids required for this service. */
-  requiredResourceIds: string[];
-  // Patch test
-  requiresPatchTest: boolean;
-  patchTestValidityDays: string;
-  patchTestMinLeadHours: string;
-  patchTestCategory: string;
-  // Rebook
-  rebookAfterDays: string;
-  // Group bookings
-  allowGroupBooking: boolean;
-  maxGroupSize: string;
-  // Dynamic pricing
-  dynamicPriceRules: DynamicPriceRuleInput[];
-  enabled: boolean;
-}
-
-interface DynamicPriceRuleInput {
-  id: string;
-  label: string;
-  weekdays: number[];
-  startTime: string;
-  endTime: string;
-  modifierType: "percent" | "amount";
-  modifierValue: string;
-}
-
-function getInitialState(
-  service: Service | undefined,
-  defaultCategory: string,
-  categories: Array<{ id: string; name: string }> = [],
-): FormState {
-  const variants: VariantInput[] = (service?.variants ?? []).map((v) => ({
-    id: v.id,
-    name: v.name,
-    price: String(v.price),
-    duration: String(v.duration),
-  }));
-  const priceTiers: TierInput[] = (service?.priceTiers ?? []).map((t) => ({
-    id: t.id,
-    name: t.name,
-    price: String(t.price),
-    duration: t.duration != null ? String(t.duration) : "",
-    memberIds: [...t.memberIds],
-  }));
-  const addons: AddonInput[] = (service?.addons ?? []).map((a) => ({
-    id: a.id,
-    name: a.name,
-    price: String(a.price),
-    duration: String(a.duration),
-    groupId: a.groupId ?? "",
-  }));
-  const addonGroups: AddonGroupInput[] = (service?.addonGroups ?? []).map((g) => ({
-    id: g.id,
-    name: g.name,
-    minSelect: String(g.minSelect ?? 0),
-    maxSelect: g.maxSelect != null ? String(g.maxSelect) : "",
-  }));
-  const packageItems: PackageItemInput[] = (service?.packageItems ?? []).map((p) => ({
-    id: p.id,
-    serviceId: p.serviceId,
-    variantId: p.variantId ?? "",
-  }));
-  const intakeQuestions: IntakeInput[] = (service?.intakeQuestions ?? []).map((q) => ({
-    id: q.id,
-    label: q.label,
-    type: q.type,
-    required: q.required,
-    options: (q.options ?? []).join(", "),
-    hint: q.hint ?? "",
-  }));
-
-  const hasSplit =
-    (service?.durationActiveBefore ?? 0) > 0 ||
-    (service?.durationProcessing ?? 0) > 0 ||
-    (service?.durationActiveAfter ?? 0) > 0;
-
-  // Resolve via helper so a service with only `categoryId` (and no legacy
-  // free-text `category`) still hydrates the dropdown correctly.
-  const resolvedCategory = service
-    ? resolveServiceCategoryName(service, categories) || service.category || defaultCategory
-    : defaultCategory;
-
-  return {
-    name: service?.name ?? "",
-    category: resolvedCategory,
-    description: service?.description ?? "",
-    imageUrl: service?.imageUrl ?? "",
-    priceType: service?.priceType ?? "fixed",
-    price: service ? String(service.price) : "",
-    variants,
-    priceTiers,
-    addons,
-    addonGroups,
-    isPackage: service?.isPackage ?? false,
-    packageItems,
-    durationSplit: hasSplit,
-    duration: service ? String(service.duration) : "60",
-    durationActiveBefore:
-      service?.durationActiveBefore != null ? String(service.durationActiveBefore) : "",
-    durationProcessing:
-      service?.durationProcessing != null ? String(service.durationProcessing) : "",
-    durationActiveAfter:
-      service?.durationActiveAfter != null ? String(service.durationActiveAfter) : "",
-    // Prefer the new split fields. Fall back to the legacy single bufferMinutes
-    // (which historically meant "after"), placing the migrated value into
-    // bufferAfter so existing services don't lose their padding.
-    bufferBefore:
-      service?.bufferBefore != null ? String(service.bufferBefore) : "0",
-    bufferAfter:
-      service?.bufferAfter != null
-        ? String(service.bufferAfter)
-        : service != null
-          ? String(service.bufferMinutes ?? 0)
-          : "0",
-    minNoticeHours: service?.minNoticeHours != null ? String(service.minNoticeHours) : "",
-    maxAdvanceDays: service?.maxAdvanceDays != null ? String(service.maxAdvanceDays) : "",
-    availableWeekdays: service?.availableWeekdays ?? [],
-    requiresConfirmation: service?.requiresConfirmation ?? false,
-    requiresCardOnFile: service?.requiresCardOnFile ?? false,
-    depositType: service?.depositType ?? "none",
-    depositAmount: service ? String(service.depositAmount ?? 0) : "0",
-    depositAppliesTo: service?.depositAppliesTo ?? "all",
-    depositNoShowFee:
-      service?.depositNoShowFee != null ? String(service.depositNoShowFee) : "",
-    depositAutoCancelHours:
-      service?.depositAutoCancelHours != null ? String(service.depositAutoCancelHours) : "",
-    cancellationWindowHours:
-      service?.cancellationWindowHours != null ? String(service.cancellationWindowHours) : "",
-    cancellationFee:
-      service?.cancellationFee != null ? String(service.cancellationFee) : "",
-    intakeQuestions,
-    intakeFormId: service?.intakeFormId ?? "",
-    featured: service?.featured ?? false,
-    promoLabel: service?.promoLabel ?? "",
-    promoPrice: service?.promoPrice != null ? String(service.promoPrice) : "",
-    promoStart: service?.promoStart ?? "",
-    promoEnd: service?.promoEnd ?? "",
-    tagsRaw: (service?.tags ?? []).join(", "),
-    locationIds: service?.locationIds ?? [],
-    requiredResourceIds: service?.requiredResourceIds ?? [],
-    requiresPatchTest: service?.requiresPatchTest ?? false,
-    patchTestValidityDays:
-      service?.patchTestValidityDays != null ? String(service.patchTestValidityDays) : "",
-    patchTestMinLeadHours:
-      service?.patchTestMinLeadHours != null ? String(service.patchTestMinLeadHours) : "",
-    patchTestCategory: service?.patchTestCategory ?? "",
-    rebookAfterDays:
-      service?.rebookAfterDays != null ? String(service.rebookAfterDays) : "",
-    allowGroupBooking: service?.allowGroupBooking ?? false,
-    maxGroupSize:
-      service?.maxGroupSize != null ? String(service.maxGroupSize) : "",
-    dynamicPriceRules: (service?.dynamicPriceRules ?? []).map((r) => ({
-      id: r.id,
-      label: r.label,
-      weekdays: [...r.weekdays],
-      startTime: r.startTime,
-      endTime: r.endTime,
-      modifierType: r.modifierType,
-      modifierValue: String(r.modifierValue),
-    })),
-    enabled: service?.enabled ?? true,
-  };
-}
 
 export function ServiceDrawer({ open, onClose, service, defaultCategory, categories }: ServiceDrawerProps) {
   // Stable per-instance key keeps form state fresh between Add/Edit/different
@@ -2517,61 +2276,3 @@ function ServiceDrawerFields({
   );
 }
 
-// ── Section helper ─────────────────────────────────────────────
-// Card wrapper with a clickable header. Optional inline action (e.g. a checkbox)
-// stays clickable without toggling the section.
-
-function Section({
-  title,
-  subtitle,
-  badge,
-  defaultOpen = true,
-  action,
-  children,
-}: {
-  title: string;
-  subtitle?: string;
-  badge?: string;
-  defaultOpen?: boolean;
-  action?: ReactNode;
-  children: ReactNode;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <div className="bg-card-bg border border-border-light rounded-xl overflow-hidden">
-      <div className="flex items-center px-4 py-3 gap-3">
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          className="flex items-center gap-2 flex-1 min-w-0 text-left cursor-pointer"
-          aria-expanded={open}
-        >
-          {open ? (
-            <ChevronDown className="w-4 h-4 text-text-tertiary flex-shrink-0" />
-          ) : (
-            <ChevronRight className="w-4 h-4 text-text-tertiary flex-shrink-0" />
-          )}
-          <span className="text-[13px] font-semibold text-foreground">{title}</span>
-          {badge && (
-            <span className="text-[11px] font-medium text-text-tertiary bg-surface px-1.5 py-0.5 rounded">
-              {badge}
-            </span>
-          )}
-          {subtitle && !open && (
-            <span className="text-[12px] text-text-tertiary truncate">· {subtitle}</span>
-          )}
-        </button>
-        {action && (
-          <div onClick={(e) => e.stopPropagation()} className="flex-shrink-0">
-            {action}
-          </div>
-        )}
-      </div>
-      {open && (
-        <div className="px-4 pb-4 pt-1 border-t border-border-light bg-surface/30">
-          {children}
-        </div>
-      )}
-    </div>
-  );
-}
