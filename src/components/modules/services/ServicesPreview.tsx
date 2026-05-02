@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Clock,
   Users,
   Sparkles,
-  ArrowLeft,
   Check,
   X,
   Maximize2,
@@ -17,7 +16,6 @@ import {
   ChevronRight,
   ChevronDown,
   Palette,
-  List,
 } from "lucide-react";
 import { useServicesStore } from "@/store/services";
 import { resolveServiceCategoryName } from "@/lib/services/category";
@@ -58,8 +56,11 @@ import { ArtistChip } from "./preview/ArtistChip";
 import { PriceDisplay } from "./preview/PriceDisplay";
 import { AddPill } from "./preview/AddPill";
 import { AddonRow } from "./preview/AddonRow";
-
-type Layout = "classic" | "compact" | "grid";
+import type { Layout, Step } from "./preview/types";
+import { Header } from "./preview/Header";
+import { BackBar } from "./preview/BackBar";
+import { CartArtistPicker } from "./preview/CartArtistPicker";
+import { CategoryAnchors } from "./preview/CategoryAnchors";
 
 interface ServicesPreviewProps {
   open: boolean;
@@ -459,7 +460,6 @@ function FullscreenShell({
 
 // ── Booking flow ────────────────────────────────────────────────────
 
-type Step = "menu" | "artist" | "date" | "time" | "details" | "confirm";
 
 interface BasketItem {
   serviceId: string;
@@ -1322,151 +1322,8 @@ function CartSidebar({
 
 // ── Subcomponents ────────────────────────────────────────────────────
 
-function Header({
-  businessName,
-  primaryColor,
-  logoUrl,
-  coverImage,
-  headingClass = "",
-}: {
-  businessName: string;
-  primaryColor: string;
-  logoUrl?: string;
-  coverImage?: string;
-  headingClass?: string;
-}) {
-  return (
-    <div className="pb-8">
-      {coverImage && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={coverImage}
-          alt=""
-          className="w-full aspect-[3/1] object-cover rounded-2xl mb-6 shadow-[0_12px_32px_-14px_rgba(0,0,0,0.16)]"
-        />
-      )}
-      <div className="text-center pt-2">
-        {logoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={logoUrl}
-            alt={businessName}
-            className="w-16 h-16 rounded-2xl object-cover mx-auto mb-5 shadow-[0_12px_32px_-12px_rgba(0,0,0,0.18)]"
-          />
-        ) : (
-          <div
-            className="w-16 h-16 rounded-2xl mx-auto mb-5 flex items-center justify-center text-white text-2xl font-bold shadow-[0_12px_32px_-12px_rgba(0,0,0,0.18)]"
-            style={{
-              backgroundImage: `linear-gradient(135deg, ${primaryColor} 0%, ${primaryColor}cc 100%)`,
-            }}
-          >
-            {businessName.charAt(0).toUpperCase()}
-          </div>
-        )}
-        <h2 className={`text-[28px] font-bold text-foreground tracking-tight leading-tight ${headingClass}`}>
-          {businessName}
-        </h2>
-        <p className="text-[13px] text-text-secondary mt-1.5">Book your appointment online</p>
-      </div>
-    </div>
-  );
-}
 
-function BackBar({
-  step,
-  basketServices,
-  artist,
-  date,
-  time,
-  businessName,
-  onBack,
-}: {
-  step: Step;
-  basketServices: Service[];
-  artist: TeamMember | null;
-  date: string | null;
-  time: string | null;
-  businessName: string;
-  onBack: () => void;
-}) {
-  const titles: Record<Step, string> = {
-    menu: businessName,
-    artist: "Choose your artist",
-    date: "Pick a date",
-    time: "Pick a time",
-    details: "Your details",
-    confirm: "Confirmed",
-  };
-  const breadcrumb = (() => {
-    if (basketServices.length === 0) return null;
-    const head = basketServices[0].name;
-    const more = basketServices.length - 1;
-    return more > 0 ? `${head} +${more}` : head;
-  })();
-  return (
-    <div className="flex items-center gap-2 -mt-2 mb-2">
-      <button
-        onClick={onBack}
-        className="p-1.5 rounded-lg hover:bg-card-bg text-text-secondary cursor-pointer"
-      >
-        <ArrowLeft className="w-4 h-4" />
-      </button>
-      <div className="min-w-0">
-        <p className="text-[15px] font-semibold text-foreground truncate">{titles[step]}</p>
-        {breadcrumb && (
-          <p className="text-[11px] text-text-tertiary truncate">
-            {breadcrumb}
-            {artist && ` · with ${artist.name}`}
-            {date && ` · ${formatDate(date)}`}
-            {time && ` · ${time}`}
-          </p>
-        )}
-      </div>
-    </div>
-  );
-}
 
-function CartArtistPicker({
-  service,
-  artistId,
-  activeMembers,
-  getServiceMembers,
-  onChange,
-}: {
-  service: Service;
-  artistId: string | null;
-  activeMembers: TeamMember[];
-  getServiceMembers: (id: string) => string[];
-  onChange: (artistId: string | null) => void;
-}) {
-  // Only members eligible for THIS service show in the picker.
-  const assignedIds = getServiceMembers(service.id);
-  const eligible =
-    assignedIds.length === 0
-      ? activeMembers
-      : activeMembers.filter((m) => assignedIds.includes(m.id));
-  const selected = artistId ? eligible.find((m) => m.id === artistId) : null;
-  const label = selected ? selected.name : "Any stylist";
-
-  return (
-    <div className="mt-1.5 ml-2.5 pl-3 border-l border-border-light/70">
-      <select
-        value={artistId ?? ""}
-        onChange={(e) => onChange(e.target.value === "" ? null : e.target.value)}
-        className="text-[11px] text-text-secondary bg-transparent border-0 outline-none cursor-pointer hover:text-foreground appearance-none pr-3 -ml-0.5"
-        aria-label={`Stylist for ${service.name}`}
-      >
-        <option value="">▾ Any stylist</option>
-        {eligible.map((m) => (
-          <option key={m.id} value={m.id}>
-            ▾ {m.name}
-          </option>
-        ))}
-      </select>
-      <span className="sr-only">{label}</span>
-    </div>
-  );
-}
 
 function FeaturedRow({
   services,
@@ -2668,155 +2525,4 @@ function ServiceCardGrid({
 
 // ── Category anchor pills ────────────────────────────────────────────
 
-function CategoryAnchors({
-  categories,
-  primaryColor,
-}: {
-  categories: string[];
-  primaryColor: string;
-}) {
-  const [active, setActive] = useState<string | null>(categories[0] ?? null);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    const onDown = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuOpen(false);
-      }
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setMenuOpen(false);
-    };
-    document.addEventListener("mousedown", onDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [menuOpen]);
-
-  // Update active pill on scroll using IntersectionObserver. The first
-  // category that crosses the top half of the viewport wins.
-  useEffect(() => {
-    if (categories.length === 0) return;
-    const observers: IntersectionObserver[] = [];
-    const visible = new Map<string, number>();
-    categories.forEach((cat) => {
-      const el = document.getElementById(`cat-${slugify(cat)}`);
-      if (!el) return;
-      const obs = new IntersectionObserver(
-        (entries) => {
-          for (const e of entries) {
-            visible.set(cat, e.intersectionRatio);
-          }
-          // Pick the most-visible category
-          let best: string | null = null;
-          let bestRatio = -1;
-          for (const c of categories) {
-            const r = visible.get(c) ?? 0;
-            if (r > bestRatio) {
-              bestRatio = r;
-              best = c;
-            }
-          }
-          if (best && bestRatio > 0) setActive(best);
-        },
-        { rootMargin: "-20% 0px -60% 0px", threshold: [0, 0.25, 0.5, 0.75, 1] },
-      );
-      obs.observe(el);
-      observers.push(obs);
-    });
-    return () => {
-      observers.forEach((o) => o.disconnect());
-    };
-  }, [categories]);
-
-  if (categories.length <= 1) return null;
-
-  const onClick = (cat: string) => {
-    const el = document.getElementById(`cat-${slugify(cat)}`);
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-    setActive(cat);
-    setMenuOpen(false);
-  };
-
-  return (
-    <div className="sticky top-0 z-20 -mx-4 px-4 py-2.5 mb-4 bg-surface/85 backdrop-blur-md border-b border-border-light/60">
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1 min-w-0">
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pr-6">
-            {categories.map((cat) => {
-              const isActive = active === cat;
-              return (
-                <button
-                  key={cat}
-                  onClick={() => onClick(cat)}
-                  className={`px-3.5 py-1.5 rounded-full text-[12px] font-semibold whitespace-nowrap cursor-pointer transition-colors ${
-                    isActive ? "text-white shadow-[0_4px_12px_-4px_rgba(0,0,0,0.18)]" : "text-text-secondary hover:text-foreground hover:bg-card-bg"
-                  }`}
-                  style={
-                    isActive
-                      ? {
-                          backgroundImage: `linear-gradient(135deg, ${primaryColor} 0%, ${primaryColor}dd 100%)`,
-                        }
-                      : undefined
-                  }
-                >
-                  {cat}
-                </button>
-              );
-            })}
-          </div>
-          <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-surface to-transparent" />
-        </div>
-        <div ref={menuRef} className="relative flex-shrink-0">
-          <button
-            onClick={() => setMenuOpen((v) => !v)}
-            aria-label="All categories"
-            aria-expanded={menuOpen}
-            className={`p-1.5 rounded-full cursor-pointer transition-colors ${
-              menuOpen
-                ? "bg-surface text-foreground"
-                : "text-text-secondary hover:text-foreground hover:bg-surface"
-            }`}
-          >
-            <List className="w-4 h-4" />
-          </button>
-          <AnimatePresence>
-            {menuOpen && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.96, y: -4 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.96, y: -4 }}
-                transition={{ duration: 0.12 }}
-                className="absolute right-0 top-full mt-1.5 min-w-[180px] max-w-[240px] max-h-[60vh] overflow-y-auto bg-card-bg border border-border-light rounded-xl shadow-[0_12px_32px_-12px_rgba(0,0,0,0.18)] py-1.5 z-30"
-              >
-                {categories.map((cat) => {
-                  const isActive = active === cat;
-                  return (
-                    <button
-                      key={cat}
-                      onClick={() => onClick(cat)}
-                      className="w-full flex items-center justify-between gap-3 px-3 py-2 text-left text-[13px] text-foreground hover:bg-surface cursor-pointer"
-                    >
-                      <span className="truncate">{cat}</span>
-                      {isActive && (
-                        <Check
-                          className="w-3.5 h-3.5 flex-shrink-0"
-                          style={{ color: primaryColor }}
-                        />
-                      )}
-                    </button>
-                  );
-                })}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
-    </div>
-  );
-}
 
