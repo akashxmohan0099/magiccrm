@@ -131,16 +131,21 @@ function DashboardShell({ children }: { children: ReactNode }) {
     enabled: !authLoading && !syncing && !!workspaceId,
   });
 
-  // Seed sample data when no authenticated workspace exists.
-  // Runs immediately — seedAllStores() checks if stores are already populated.
+  // Seed sample data only for fully-unauthenticated visitors. Earlier
+  // versions seeded whenever `workspaceId` was null — including the
+  // window between auth resolving and member-row fetch returning — which
+  // raced useSupabaseSync and overwrote real workspace data with the
+  // demo dataset for any signed-in user.
   const seeded = useRef(false);
   useEffect(() => {
     if (seeded.current) return;
     // Wait for auth to settle
     if (authLoading) return;
-    // If we have a real authenticated workspace, don't seed
-    if (workspaceId && user) return;
-    // No real workspace — seed demo data immediately
+    // ANY signed-in user owns their data path; never substitute demo seed.
+    // (If their workspace lookup eventually fails, the auto-bootstrap effect
+    //  below creates a real workspace_member row instead of seeding fakes.)
+    if (user) return;
+    // No auth user at all — render demo dataset for the unauthed shell.
     seeded.current = true;
     seedAllStores();
 

@@ -16,6 +16,8 @@ interface LineItemDrawerProps {
   eligibleMembers: PublicMember[];
   onSave: (patch: { artistId?: string; variantId?: string; tierId?: string; addonIds: string[] }) => void;
   onRemove: () => void;
+  /** ISO datetime of the picked slot — see CartPane.startAt for rationale. */
+  startAt?: string | null;
 }
 
 /**
@@ -30,6 +32,7 @@ export function LineItemDrawer({
   eligibleMembers,
   onSave,
   onRemove,
+  startAt = null,
 }: LineItemDrawerProps) {
   const [artistId, setArtistId] = useState<string | undefined>(item?.artistId);
   const [variantId, setVariantId] = useState<string | undefined>(item?.variantId);
@@ -49,8 +52,8 @@ export function LineItemDrawer({
 
   const computed = useMemo(() => {
     if (!service) return null;
-    return computeLine(service, { variantId, tierId, addonIds });
-  }, [service, variantId, tierId, addonIds]);
+    return computeLine(service, { variantId, tierId, addonIds, startAt });
+  }, [service, variantId, tierId, addonIds, startAt]);
 
   const handleSave = () => {
     onSave({ artistId, variantId, tierId, addonIds });

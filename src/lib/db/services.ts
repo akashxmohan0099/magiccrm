@@ -67,6 +67,9 @@ export interface PublicService {
   /** Patch-test category clients must have on file. Matches ClientPatchTest.category. */
   patchTestCategory?: string;
   intakeQuestions: unknown[];
+  /** Off-peak / premium pricing rules. Applied to the cart line price when
+   *  the customer has picked a slot, mirroring the server's submit handler. */
+  dynamicPriceRules?: unknown[];
   allowGroupBooking: boolean;
   maxGroupSize?: number;
   rebookAfterDays?: number;
@@ -130,6 +133,7 @@ export function mapPublicServiceFromDB(row: Record<string, unknown>): PublicServ
       row.patch_test_min_lead_hours != null ? Number(row.patch_test_min_lead_hours) : undefined,
     patchTestCategory: (row.patch_test_category as string) || undefined,
     intakeQuestions: (row.intake_questions as unknown[]) || [],
+    dynamicPriceRules: (row.dynamic_price_rules as unknown[] | null) ?? undefined,
     allowGroupBooking: Boolean(row.allow_group_booking),
     maxGroupSize: row.max_group_size != null ? Number(row.max_group_size) : undefined,
     rebookAfterDays: row.rebook_after_days != null ? Number(row.rebook_after_days) : undefined,

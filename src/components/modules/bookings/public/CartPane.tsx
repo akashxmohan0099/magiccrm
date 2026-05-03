@@ -25,6 +25,10 @@ interface CartPaneProps {
   giftCardBalance?: number;
   /** Selected location — only rendered when the workspace exposed a picker. */
   location?: PublicLocation | null;
+  /** ISO datetime of the picked slot. When set, computeLine applies the
+   *  service's dynamic-pricing rule so the cart matches what the server
+   *  will charge at submit. Null until a slot is picked. */
+  startAt?: string | null;
   /** Forwarded to the outer aside so callers can apply layout (sticky etc). */
   className?: string;
 }
@@ -34,7 +38,7 @@ interface CartPaneProps {
  * totals, and the primary Continue CTA. Stays in sync with the sessionStorage
  * cart store so refreshes don't lose state.
  */
-export function CartPane({ serviceMap, memberMap, memberServiceMap = {}, members = [], businessName, onContinue, onEdit, continueLabel = "Continue", continueDisabled = false, giftCardBalance = 0, location = null, className = "" }: CartPaneProps) {
+export function CartPane({ serviceMap, memberMap, memberServiceMap = {}, members = [], businessName, onContinue, onEdit, continueLabel = "Continue", continueDisabled = false, giftCardBalance = 0, location = null, startAt = null, className = "" }: CartPaneProps) {
   const items = useBookingCart((s) => s.items);
   const removeItem = useBookingCart((s) => s.removeItem);
   const guests = useBookingCart((s) => s.guests);
@@ -53,6 +57,7 @@ export function CartPane({ serviceMap, memberMap, memberServiceMap = {}, members
         variantId: it.variantId,
         tierId: it.tierId,
         addonIds: it.addonIds,
+        startAt,
       });
       return { item: it, service, computed };
     })
@@ -87,7 +92,7 @@ export function CartPane({ serviceMap, memberMap, memberServiceMap = {}, members
     .map((g) => {
       const service = serviceMap.get(g.serviceId);
       if (!service) return null;
-      const computed = computeLine(service, { addonIds: g.addonIds });
+      const computed = computeLine(service, { addonIds: g.addonIds, startAt });
       return { guest: g, service, computed };
     })
     .filter(

@@ -35,6 +35,23 @@ export interface PublicAddonGroup {
   sortOrder: number;
 }
 
+/** Off-peak / premium-hour pricing rule. Applied to the resolved base price
+ *  (post variant/tier) when the booking start falls inside the rule's window.
+ *  First matching rule wins; rules are operator-ordered. */
+export interface PublicDynamicPriceRule {
+  id: string;
+  label: string;
+  /** Empty array = "every weekday". 0 = Sunday. */
+  weekdays: number[];
+  /** "HH:MM" inclusive lower bound. */
+  startTime: string;
+  /** "HH:MM" inclusive upper bound. */
+  endTime: string;
+  modifierType: "percent" | "amount";
+  /** Negative = discount, positive = surcharge. */
+  modifierValue: number;
+}
+
 /** Inline intake question authored on the service. Rendered in Details. */
 export type PublicIntakeQuestionType = "text" | "longtext" | "select" | "yesno" | "date" | "number";
 export interface PublicIntakeQuestion {
@@ -95,6 +112,10 @@ export interface PublicService {
   patchTestMinLeadHours?: number;
   /** Patch-test category clients must have on file. Matches ClientPatchTest.category. */
   patchTestCategory?: string;
+  /** Off-peak / premium pricing rules. Applied to the cart line price when
+   *  the customer has picked a date+time. Empty/undefined = no dynamic
+   *  pricing for this service. */
+  dynamicPriceRules?: PublicDynamicPriceRule[];
   /** Per-service intake questions rendered in the Details step. */
   intakeQuestions: PublicIntakeQuestion[];
   /** Group bookings + max party size — needed to gate the guest panel. */

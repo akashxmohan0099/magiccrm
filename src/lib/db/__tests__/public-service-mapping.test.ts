@@ -92,7 +92,6 @@ describe("mapPublicServiceFromDB", () => {
 
     // Internal scheduling + workspace metadata that the public has no
     // business seeing.
-    expect(out).not.toHaveProperty("dynamicPriceRules");
     // packageItems is the snake_case row column; the public shape exposes
     // resolved `packageInclusions` (populated by the route, not the mapper).
     expect(out).not.toHaveProperty("packageItems");
@@ -104,10 +103,12 @@ describe("mapPublicServiceFromDB", () => {
     expect(out).not.toHaveProperty("bufferAfter");
     expect(out).not.toHaveProperty("bufferMinutes");
 
-    // Note: deposit / cancellation fee fields ARE included on PublicService
-    // by design — the customer needs to see no-show fees, auto-cancel
-    // windows, and cancellation penalties BEFORE they agree to book. See
-    // the comments on the interface in lib/db/services.ts.
+    // Note: deposit / cancellation fee fields AND dynamicPriceRules ARE
+    // included on PublicService by design — the customer needs to see
+    // no-show fees, auto-cancel windows, cancellation penalties, and the
+    // dynamic-pricing-adjusted total in the cart BEFORE they agree to book.
+    // The cart applies the same modifier the server's submit handler will,
+    // so the displayed price matches the charge.
   });
 
   it("normalizes nullable / missing fields to safe defaults", () => {

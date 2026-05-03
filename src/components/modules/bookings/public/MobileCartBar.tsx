@@ -9,13 +9,15 @@ import { computeLine, formatPrice } from "./helpers";
 interface MobileCartBarProps {
   serviceMap: Map<string, PublicService>;
   onContinue: () => void;
+  /** ISO datetime of the picked slot — see CartPane.startAt for rationale. */
+  startAt?: string | null;
 }
 
 /**
  * Sticky bottom bar shown on mobile when the cart has items. Always visible,
  * thumb-reachable, summarizes count + total + Continue.
  */
-export function MobileCartBar({ serviceMap, onContinue }: MobileCartBarProps) {
+export function MobileCartBar({ serviceMap, onContinue, startAt = null }: MobileCartBarProps) {
   const items = useBookingCart((s) => s.items);
   const guests = useBookingCart((s) => s.guests);
 
@@ -27,6 +29,7 @@ export function MobileCartBar({ serviceMap, onContinue }: MobileCartBarProps) {
         variantId: it.variantId,
         tierId: it.tierId,
         addonIds: it.addonIds,
+        startAt,
       });
       return { qty: it.qty, service, price: computed.price };
     })
@@ -35,7 +38,7 @@ export function MobileCartBar({ serviceMap, onContinue }: MobileCartBarProps) {
   const guestSubtotal = guests.reduce((s, g) => {
     const svc = serviceMap.get(g.serviceId);
     if (!svc) return s;
-    return s + computeLine(svc, { addonIds: g.addonIds }).price;
+    return s + computeLine(svc, { addonIds: g.addonIds, startAt }).price;
   }, 0);
   const count = lines.reduce((s, l) => s + l.qty, 0) + guests.length;
   const subtotal = lines.reduce((s, l) => s + l.price * l.qty, 0) + guestSubtotal;

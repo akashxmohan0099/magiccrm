@@ -3,6 +3,7 @@
  * Prices are stored as plain numbers (AUD); durations are minutes.
  */
 
+import { applyDynamicPricing } from "@/lib/services/price";
 import type { PublicService } from "./types";
 
 export function formatPrice(amount: number, currency = "AUD"): string {
@@ -27,12 +28,20 @@ export function lineDeposit(service: PublicService, linePrice: number): number {
  * Catalog-card display price. Variants/tiers/from-priced services show their
  * lowest possible price prefixed "From".
  *
+ * Returns the discounted price + the original (struckThrough) when a promo is
+ * active — promoPercent and promoPrice are both supported. Variants and tiered
+ * services use their cheapest child as the anchor; a fixed promoPrice is only
+ * surfaced when it actually beats that anchor.
+ *
  * service.price is the base/anchor for fixed and from pricing. For variants
  * and tiered it is unused by the operator (the children carry the prices),
  * so including it would let an unset 0 win and surface "From $0" on the
  * customer menu even when every child is priced.
  */
-export function displayCardPrice(service: PublicService): { price: number; isFrom: boolean } {
+export function displayCardPrice(
+  service: PublicService,
+  now: Date = new Date(),
+): { price: number; isFrom: boolean; struckThrough?: number } {
   const hasVariants =
     service.priceType === "variants" && service.variants.length > 0;
   const hasTiers =
@@ -52,18 +61,35 @@ export function displayCardPrice(service: PublicService): { price: number; isFro
     service.priceType === "from" ||
     service.priceType === "variants" ||
     service.priceType === "tiered";
+
+  if (isPromoActive(service, now)) {
+    if (
+      service.promoPercent != null &&
+      service.promoPercent > 0 &&
+      service.promoPercent < 100
+    ) {
+      const discounted = Math.round(min * (1 - service.promoPercent / 100));
+      if (discounted < min) {
+        return { price: discounted, isFrom, struckThrough: min };
+      }
+    }
+    if (service.promoPrice != null && service.promoPrice < min) {
+      return { price: service.promoPrice, isFrom, struckThrough: min };
+    }
+  }
+
   return { price: min, isFrom };
 }
 
 /**
  * Whether the service's promo is currently active. A promo is active when
- * `promoPrice` is set and `today` falls inside `[promoStart, promoEnd]`
- * (open-ended bounds count as "always" on that side).
+ * either `promoPrice` or `promoPercent` is set and `today` falls inside
+ * `[promoStart, promoEnd]` (open-ended bounds count as "always" on that side).
  *
  * Pure helper — accepts an explicit `now` so tests can pin time.
  */
 export function isPromoActive(service: PublicService, now: Date = new Date()): boolean {
-  if (service.promoPrice == null) return false;
+  if (service.promoPrice == null && service.promoPercent == null) return false;
   const today = now.toISOString().slice(0, 10);
   if (service.promoStart && today < service.promoStart) return false;
   if (service.promoEnd && today > service.promoEnd) return false;
@@ -119,32 +145,46 @@ export interface ComputedLine {
  * Resolve the effective price + duration for a cart line, applying:
  *   1. variant override (replaces base price+duration when chosen)
  *   2. tier override (replaces base, optionally overriding duration)
- *   3. addons (additive on top)
+ *   3. dynamic pricing rule (applied to the resolved base when startAt is supplied)
+ *   4. addons (additive on top — addons themselves don't get the modifier)
  * Also enforces addon group min/max selection rules.
+ *
+ * `startAt` is an ISO datetime ("YYYY-MM-DDTHH:MM:SS"). When omitted, the
+ * cart shows the un-adjusted base; when present, the cart total matches what
+ * the server's submit handler will charge.
  */
 export function computeLine(
   service: PublicService,
-  selections: { variantId?: string; tierId?: string; addonIds: string[] }
+  selections: {
+    variantId?: string;
+    tierId?: string;
+    addonIds: string[];
+    startAt?: string | Date | null;
+  }
 ): ComputedLine {
-  let price = service.price;
+  let base = service.price;
   let duration = service.duration;
   const subtitleParts: string[] = [];
 
   if (selections.variantId) {
     const v = service.variants.find((x) => x.id === selections.variantId);
     if (v) {
-      price = v.price;
+      base = v.price;
       duration = v.duration;
       subtitleParts.push(v.name);
     }
   } else if (selections.tierId) {
     const t = service.priceTiers.find((x) => x.id === selections.tierId);
     if (t) {
-      price = t.price;
+      base = t.price;
       duration = t.duration ?? duration;
       subtitleParts.push(t.name);
     }
   }
+
+  // Dynamic pricing applies to the resolved base BEFORE addons. Matches the
+  // server-side resolvePrice + addons assembly in /api/public/book.
+  let price = applyDynamicPricing(base, service.dynamicPriceRules, selections.startAt);
 
   for (const addonId of selections.addonIds) {
     const a = service.addons.find((x) => x.id === addonId);

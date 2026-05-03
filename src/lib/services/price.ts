@@ -1,4 +1,39 @@
-import type { Service } from "@/types/models";
+import type { Service, DynamicPriceRule } from "@/types/models";
+
+/**
+ * Apply the first matching off-peak/premium rule to a base price. Rules are
+ * operator-ordered; first match wins. Returns the original base when nothing
+ * matches, or there's no startAt to evaluate against.
+ *
+ * Extracted from resolvePrice so the public cart's computeLine and the
+ * server's submit handler share the exact same modifier math.
+ */
+export function applyDynamicPricing(
+  base: number,
+  rules: DynamicPriceRule[] | undefined | null,
+  startAt: string | Date | null | undefined,
+): number {
+  if (!startAt || !rules || rules.length === 0) return base;
+  const date = typeof startAt === "string" ? new Date(startAt) : startAt;
+  const weekday = date.getDay();
+  const minutes = date.getHours() * 60 + date.getMinutes();
+  const toMin = (hhmm: string) => {
+    const [h, m] = hhmm.split(":").map((n) => Number(n) || 0);
+    return h * 60 + m;
+  };
+  for (const rule of rules) {
+    if (rule.weekdays.length > 0 && !rule.weekdays.includes(weekday)) continue;
+    const start = toMin(rule.startTime);
+    const end = toMin(rule.endTime);
+    if (minutes < start || minutes > end) continue;
+    const adjusted =
+      rule.modifierType === "percent"
+        ? base + (base * rule.modifierValue) / 100
+        : base + rule.modifierValue;
+    return Math.max(0, Math.round(adjusted * 100) / 100);
+  }
+  return base;
+}
 
 /**
  * Resolves the actual price a client pays for a service given the optional
@@ -38,31 +73,7 @@ export function resolvePrice(
     base = service.price;
   }
 
-  // Apply dynamic pricing if a startAt is supplied + rules exist. The first
-  // matching rule wins; rules are operator-ordered.
-  if (startAt && service.dynamicPriceRules && service.dynamicPriceRules.length > 0) {
-    const date = typeof startAt === "string" ? new Date(startAt) : startAt;
-    const weekday = date.getDay();
-    const minutes = date.getHours() * 60 + date.getMinutes();
-    const toMin = (hhmm: string) => {
-      const [h, m] = hhmm.split(":").map((n) => Number(n) || 0);
-      return h * 60 + m;
-    };
-    for (const rule of service.dynamicPriceRules) {
-      if (rule.weekdays.length > 0 && !rule.weekdays.includes(weekday)) continue;
-      const start = toMin(rule.startTime);
-      const end = toMin(rule.endTime);
-      if (minutes < start || minutes > end) continue;
-      // Match. Apply modifier and clamp at zero — never go negative.
-      const adjusted =
-        rule.modifierType === "percent"
-          ? base + (base * rule.modifierValue) / 100
-          : base + rule.modifierValue;
-      return Math.max(0, Math.round(adjusted * 100) / 100);
-    }
-  }
-
-  return base;
+  return applyDynamicPricing(base, service.dynamicPriceRules, startAt);
 }
 
 /**

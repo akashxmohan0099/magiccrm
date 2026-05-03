@@ -25,7 +25,7 @@ interface ServiceCardProps {
  */
 export function ServiceCard({ service, selected, onAdd, onRemove }: ServiceCardProps) {
   const handleClick = () => (selected ? onRemove() : onAdd());
-  const { price, isFrom } = displayCardPrice(service);
+  const { price, isFrom, struckThrough } = displayCardPrice(service);
   const promoActive = isPromoActive(service);
 
   return (
@@ -110,13 +110,14 @@ export function ServiceCard({ service, selected, onAdd, onRemove }: ServiceCardP
                 {formatDuration(displayCardDuration(service))}
               </span>
               <span className="text-text-tertiary/60">·</span>
-              {promoActive && service.promoPrice != null ? (
+              {struckThrough != null ? (
                 <span className="inline-flex items-center gap-1.5">
+                  {isFrom && <span className="text-text-tertiary">From</span>}
                   <span className="line-through text-text-tertiary">
-                    {formatPrice(price)}
+                    {formatPrice(struckThrough)}
                   </span>
                   <span className="font-semibold text-primary">
-                    {formatPrice(service.promoPrice)}
+                    {formatPrice(price)}
                   </span>
                 </span>
               ) : (

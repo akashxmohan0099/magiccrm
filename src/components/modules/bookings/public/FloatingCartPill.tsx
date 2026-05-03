@@ -12,6 +12,8 @@ interface FloatingCartPillProps {
    *  pill appears so the user can re-enter the cart. */
   sentinelRef: RefObject<HTMLDivElement | null>;
   serviceMap: Map<string, PublicService>;
+  /** ISO datetime of the picked slot — see CartPane.startAt for rationale. */
+  startAt?: string | null;
 }
 
 /**
@@ -19,7 +21,7 @@ interface FloatingCartPillProps {
  * once the user has scrolled past the right-rail cart, mirroring Fresha's
  * "1 selected service ↑" widget. Mobile already has its own sticky bar.
  */
-export function FloatingCartPill({ sentinelRef, serviceMap }: FloatingCartPillProps) {
+export function FloatingCartPill({ sentinelRef, serviceMap, startAt = null }: FloatingCartPillProps) {
   const items = useBookingCart((s) => s.items);
   const guests = useBookingCart((s) => s.guests);
   const [cartOutOfView, setCartOutOfView] = useState(false);
@@ -39,7 +41,7 @@ export function FloatingCartPill({ sentinelRef, serviceMap }: FloatingCartPillPr
     .map((it) => {
       const svc = serviceMap.get(it.serviceId);
       if (!svc) return null;
-      const c = computeLine(svc, { variantId: it.variantId, tierId: it.tierId, addonIds: it.addonIds });
+      const c = computeLine(svc, { variantId: it.variantId, tierId: it.tierId, addonIds: it.addonIds, startAt });
       return { qty: it.qty, price: c.price, service: svc };
     })
     .filter((x): x is { qty: number; price: number; service: PublicService } => x !== null);
@@ -50,7 +52,7 @@ export function FloatingCartPill({ sentinelRef, serviceMap }: FloatingCartPillPr
   const guestSubtotal = guests.reduce((s, g) => {
     const svc = serviceMap.get(g.serviceId);
     if (!svc) return s;
-    return s + computeLine(svc, { addonIds: g.addonIds }).price;
+    return s + computeLine(svc, { addonIds: g.addonIds, startAt }).price;
   }, 0);
   const count = computed.reduce((s, c) => s + c.qty, 0) + guests.length;
   const subtotal =
