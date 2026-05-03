@@ -4,9 +4,11 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import {
   Plus, DollarSign, Trash2, ChevronDown, ChevronRight, Pencil, FolderPlus,
   Upload, MoreHorizontal, X, Check, ToggleLeft, ToggleRight, Eye, GripVertical,
-  Sparkles, ArrowRight, CheckSquare, FolderInput, MapPin, Box,
+  Sparkles, ArrowRight, CheckSquare, FolderInput, MapPin, Box, Link2, Copy,
+  ArrowUpRight,
 } from "lucide-react";
 import { useServicesStore } from "@/store/services";
+import { useSettingsStore } from "@/store/settings";
 import { useAuth } from "@/hooks/useAuth";
 import type { Service } from "@/types/models";
 import { resolveServiceCategoryName } from "@/lib/services/category";
@@ -14,6 +16,7 @@ import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { CSVImportWizard } from "@/components/modules/shared/CSVImportWizard";
+import { dbUpsertWorkspaceSettings } from "@/lib/db/settings";
 import { toast } from "@/components/ui/Toast";
 import { ServiceDrawer } from "./ServiceDrawer";
 import { ServicesPreview } from "./ServicesPreview";
@@ -67,6 +70,81 @@ export function ServicesPage() {
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [locationsOpen, setLocationsOpen] = useState(false);
   const [resourcesOpen, setResourcesOpen] = useState(false);
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const [bookingMenuOpen, setBookingMenuOpen] = useState(false);
+  const [bookingLinkCopied, setBookingLinkCopied] = useState(false);
+  const [slugEditing, setSlugEditing] = useState(false);
+  const [slugDraft, setSlugDraft] = useState("");
+
+  const settings = useSettingsStore((s) => s.settings);
+  const updateSettings = useSettingsStore((s) => s.updateSettings);
+  const bookingSlug = settings?.bookingPageSlug?.trim();
+  const bookingOrigin = typeof window !== "undefined" ? window.location.origin : "";
+  const bookingUrl = bookingSlug ? `${bookingOrigin}/book/${bookingSlug}` : "";
+
+  // Mirror the normalization used by GeneralSettings + workspace bootstrap so a
+  // slug saved from this popover round-trips identically to one saved there.
+  const normalizeSlug = (value: string) =>
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 48);
+
+  useEffect(() => {
+    if (!moreMenuOpen && !bookingMenuOpen) return;
+    const handler = () => {
+      setMoreMenuOpen(false);
+      setBookingMenuOpen(false);
+      setSlugEditing(false);
+    };
+    document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
+  }, [moreMenuOpen, bookingMenuOpen]);
+
+  const handleCopyBookingLink = () => {
+    if (!bookingUrl) return;
+    navigator.clipboard.writeText(bookingUrl).catch(() => {});
+    setBookingLinkCopied(true);
+    setTimeout(() => setBookingLinkCopied(false), 2000);
+  };
+
+  const startEditingSlug = () => {
+    setSlugDraft(bookingSlug ?? "");
+    setSlugEditing(true);
+  };
+
+  const [savingSlug, setSavingSlug] = useState(false);
+
+  const saveSlug = async () => {
+    const cleaned = normalizeSlug(slugDraft);
+    if (!cleaned) return;
+    if (!workspaceId) {
+      toast("Workspace isn't ready yet. Please try again in a moment.", "error");
+      return;
+    }
+    setSavingSlug(true);
+    try {
+      // Hit Supabase directly so we can surface a clear error if the slug is
+      // already taken (the global unique index on booking_page_slug would
+      // otherwise fail silently inside the store's fire-and-forget upsert).
+      await dbUpsertWorkspaceSettings(workspaceId, { bookingPageSlug: cleaned });
+      // Mirror to local store so UI reflects the change immediately.
+      updateSettings({ bookingPageSlug: cleaned }, workspaceId);
+      setSlugDraft(cleaned);
+      setSlugEditing(false);
+      toast("Booking page link saved.", "success");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      if (/duplicate key|unique|booking_page_slug/i.test(msg)) {
+        toast(`"${cleaned}" is already taken — try a different one.`, "error");
+      } else {
+        toast(msg || "Couldn't save the booking link. Please try again.", "error");
+      }
+    } finally {
+      setSavingSlug(false);
+    }
+  };
 
   // Build a name-keyed grouping (still the rendering key — display, drawer
   // default, bulk-move dropdown all use names) plus an ordered list driven by
@@ -392,26 +470,176 @@ export function ServicesPage() {
                 <span className="hidden sm:inline">{selectionMode ? "Done" : "Select"}</span>
               </Button>
             )}
-            <Button variant="secondary" size="sm" onClick={() => setLocationsOpen(true)}>
-              <MapPin className="w-4 h-4 sm:mr-1.5" />
-              <span className="hidden sm:inline">Locations</span>
-            </Button>
-            <Button variant="secondary" size="sm" onClick={() => setResourcesOpen(true)}>
-              <Box className="w-4 h-4 sm:mr-1.5" />
-              <span className="hidden sm:inline">Resources</span>
-            </Button>
-            <Button variant="secondary" size="sm" onClick={() => setStarterOpen(true)}>
-              <Sparkles className="w-4 h-4 sm:mr-1.5" />
-              <span className="hidden sm:inline">Starter menu</span>
-            </Button>
-            <Button variant="secondary" size="sm" onClick={() => setImportOpen(true)}>
-              <Upload className="w-4 h-4 sm:mr-1.5" />
-              <span className="hidden sm:inline">Import</span>
-            </Button>
+            <div className="relative">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setBookingMenuOpen((v) => !v);
+                  setMoreMenuOpen(false);
+                }}
+              >
+                <Link2 className="w-4 h-4 sm:mr-1.5" />
+                <span className="hidden sm:inline">Booking link</span>
+              </Button>
+              {bookingMenuOpen && (
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute right-0 top-full mt-1 z-20 bg-card-bg border border-border-light rounded-lg shadow-lg p-3 w-[340px]"
+                >
+                  <p className="text-xs font-medium text-foreground mb-1">
+                    Public booking page
+                  </p>
+                  <p className="text-[11px] text-text-secondary mb-2">
+                    Share this link so clients can book the services below.
+                  </p>
+                  {!bookingSlug || slugEditing ? (
+                    <>
+                      <div className="flex items-stretch bg-surface border border-border-light rounded-lg overflow-hidden mb-2 focus-within:ring-2 focus-within:ring-foreground/10 focus-within:border-foreground transition-all">
+                        <span className="px-2 flex items-center text-[11px] text-text-tertiary bg-card-bg border-r border-border-light select-none">
+                          {bookingOrigin.replace(/^https?:\/\//, "")}/book/
+                        </span>
+                        <input
+                          autoFocus
+                          type="text"
+                          value={slugDraft}
+                          onChange={(e) => setSlugDraft(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") saveSlug();
+                            if (e.key === "Escape") {
+                              setSlugEditing(false);
+                              setSlugDraft("");
+                            }
+                          }}
+                          placeholder="your-business"
+                          className="flex-1 min-w-0 px-2 py-1.5 bg-transparent text-[12px] text-foreground placeholder:text-text-tertiary focus:outline-none"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={saveSlug}
+                          disabled={!normalizeSlug(slugDraft) || savingSlug}
+                        >
+                          <Check className="w-3.5 h-3.5 mr-1.5" />
+                          {savingSlug ? "Saving…" : "Save"}
+                        </Button>
+                        {bookingSlug && (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => {
+                              setSlugEditing(false);
+                              setSlugDraft("");
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="bg-surface rounded-lg border border-border-light px-2 py-1.5 mb-2 flex items-center gap-2">
+                        <code className="flex-1 text-[11px] text-text-secondary break-all">
+                          {bookingUrl}
+                        </code>
+                        <button
+                          onClick={startEditingSlug}
+                          title="Edit slug"
+                          className="p-1 rounded text-text-secondary hover:text-foreground hover:bg-card-bg cursor-pointer transition-colors"
+                        >
+                          <Pencil className="w-3 h-3" />
+                        </button>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button variant="secondary" size="sm" onClick={handleCopyBookingLink}>
+                          {bookingLinkCopied ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 mr-1.5" /> Copied!
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3.5 h-3.5 mr-1.5" /> Copy
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => window.open(bookingUrl, "_blank")}
+                        >
+                          <ArrowUpRight className="w-3.5 h-3.5 mr-1.5" /> Open
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
             <Button variant="secondary" size="sm" onClick={() => setPreviewOpen(true)}>
               <Eye className="w-4 h-4 sm:mr-1.5" />
               <span className="hidden sm:inline">Preview</span>
             </Button>
+            <div className="relative">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMoreMenuOpen((v) => !v);
+                  setBookingMenuOpen(false);
+                }}
+                title="More"
+              >
+                <MoreHorizontal className="w-4 h-4" />
+              </Button>
+              {moreMenuOpen && (
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute right-0 top-full mt-1 z-20 bg-card-bg border border-border-light rounded-lg shadow-lg py-1 min-w-[180px]"
+                >
+                  <button
+                    onClick={() => {
+                      setLocationsOpen(true);
+                      setMoreMenuOpen(false);
+                    }}
+                    className="w-full text-left px-3 py-2 text-[13px] text-foreground hover:bg-surface cursor-pointer flex items-center gap-2"
+                  >
+                    <MapPin className="w-3.5 h-3.5" /> Locations
+                  </button>
+                  <button
+                    onClick={() => {
+                      setResourcesOpen(true);
+                      setMoreMenuOpen(false);
+                    }}
+                    className="w-full text-left px-3 py-2 text-[13px] text-foreground hover:bg-surface cursor-pointer flex items-center gap-2"
+                  >
+                    <Box className="w-3.5 h-3.5" /> Resources
+                  </button>
+                  <button
+                    onClick={() => {
+                      setStarterOpen(true);
+                      setMoreMenuOpen(false);
+                    }}
+                    className="w-full text-left px-3 py-2 text-[13px] text-foreground hover:bg-surface cursor-pointer flex items-center gap-2"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" /> Starter menu
+                  </button>
+                  <button
+                    onClick={() => {
+                      setImportOpen(true);
+                      setMoreMenuOpen(false);
+                    }}
+                    className="w-full text-left px-3 py-2 text-[13px] text-foreground hover:bg-surface cursor-pointer flex items-center gap-2"
+                  >
+                    <Upload className="w-3.5 h-3.5" /> Import
+                  </button>
+                </div>
+              )}
+            </div>
             <Button variant="primary" size="sm" onClick={() => setNewCategoryOpen(true)}>
               <FolderPlus className="w-4 h-4 mr-1.5" /> Add Category
             </Button>
