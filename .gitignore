@@ -54,3 +54,5 @@ supabase/.temp/
 
 # ad-hoc SQL utilities — keep locally, don't commit
 scripts/local/
+supabase/.runner.mjs
+supabase/.backups/
